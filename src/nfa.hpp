@@ -1,12 +1,11 @@
 #ifndef NFA_HPP
 #define NFA_HPP
 
-#include <iostream>
 #include <cstddef>
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
 
 // template<typename T>
 // concept Hashable = requires(T a) {
@@ -27,35 +26,33 @@ public:
         }
       }
     }
+    Node* addTransition(T transition, V newNodeValue) {
+      if (transitions_.contains(transition)) {
+        return nullptr;
+      }
 
-    const V& getValue() { return value_; }
-    const std::unordered_map<T, Node*>& getTransitions() { return transitions_; }
+      Node* newNode = new Node(std::move(newNodeValue));
+      transitions_.emplace(std::move(transition), newNode);
+      return newNode;
+    }
 
-    private:
-      Node(V&& value) : value_(std::move(value)) {}
+    V value_;
+    std::unordered_map<T, Node*> transitions_;
 
-      V value_;
-      std::unordered_map<T, Node*> transitions_;
+  private:
+    Node(V&& value) : value_(std::move(value)) {}
   };
 
   NFA(V value) : root_(new Node(std::move(value))) {}
-  ~NFA() { if (root_) delete root_; };
+  ~NFA() {
+    if (root_) delete root_;
+  };
   NFA(const NFA& other) = default;
   NFA(NFA&& other) = default;
   NFA& operator=(const NFA& other) = default;
   NFA& operator=(NFA&& other) = default;
 
   Node* getRoot() { return root_; }
-  Node* addTransition(Node* node, V newNodeValue, T transition) {
-    if (node->transitions_.contains(transition)) {
-      return nullptr;
-    }
-
-    Node* newNode = new Node(std::move(newNodeValue));
-    node->transitions_.emplace(std::move(transition), newNode);
-    return newNode;
-  }
-
   Node* run(const std::vector<T>& input) {
     Node* currentNode = root_;
     for (const T& trans : input) {
@@ -76,7 +73,6 @@ public:
 
 private:
   Node* root_;
-
 };
 
 #endif

@@ -9,8 +9,11 @@ all: $(BINARIES)
 clean:
 	find . -type f -executable -delete
 
-main: src/main.cpp src/NFA.hpp
+main: src/main.cpp src/nfa.hpp
 	$(CXX) $(CXXFLAGS) src/main.cpp -o main
 
-test: test/NFATest.cpp src/NFA.hpp
-	$(CXX) $(CXXFLAGS) test/NFATest.cpp -o NFATest
+nfa_test: test/nfa_test.cpp src/nfa.hpp
+	$(CXX) $(CXXFLAGS) test/nfa_test.cpp -o nfa_test
+
+rules_test: test/rules_test.cpp src/rules.hpp src/nfa.hpp
+	$(CXX) $(CXXFLAGS) test/rules_test.cpp -o rules_test
