@@ -13,44 +13,44 @@ using namespace prez;
 UnitTest tester = UnitTest::createTester();
 
 void testAddRhses() {
-  RuleList ruleList;
-  addRhses(ruleList, Symbol::EXPR);
+  RuleSet ruleSet;
+  addRhses(ruleSet, Symbol::EXPR);
 
   const Rule expected0 = {Symbol::EXPR, {Symbol::INT}, 0};
   const Rule expected1 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
-  tester.assertEquals(2, ruleList.size());
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected0));
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected1));
+  tester.assertEquals(2, ruleSet.size());
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected0));
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected1));
 }
 
 void testEpsilonTransition() {
   const Rule init = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
-  RuleList ruleList = {init};
-  DFA_t dfa(ruleList);
-  epsilonTransition(ruleList);
+  RuleSet ruleSet = {init};
+  DFA_t dfa(ruleSet);
+  epsilonTransition(ruleSet);
 
   const Rule expected0 = {Symbol::EXPR, {Symbol::INT}, 0};
   const Rule expected1 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
-  tester.assertEquals(3, ruleList.size());
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), init));
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected0));
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected1));
+  tester.assertEquals(3, ruleSet.size());
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), init));
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected0));
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected1));
 }
 
 void testInitDFA() {
   DFA_t initialNfa = initDFA();
-  const RuleList& ruleList = initialNfa.getRoot()->getValue();
+  const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
 
   const Rule expectedRule0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
   const Rule expectedRule1 = {Symbol::EXPR, {Symbol::INT}, 0};
   const Rule expectedRule2 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
-  tester.assertEquals(3, ruleList.size());
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expectedRule0));
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expectedRule1));
-  tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expectedRule2));
+  tester.assertEquals(3, ruleSet.size());
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule0));
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule1));
+  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule2));
 }
 
 void testCreateTransitions() {
@@ -61,18 +61,18 @@ void testCreateTransitions() {
   createTransitions(dfa, dfa.getRoot());
 
   const auto& transitions = dfa.getRoot()->getTransitions();
-  const RuleList& ruleListExpr = transitions.at(Symbol::EXPR)->getValue();
-  const RuleList& ruleListInt = transitions.at(Symbol::INT)->getValue();
+  const RuleSet& ruleSetExpr = transitions.at(Symbol::EXPR)->getValue();
+  const RuleSet& ruleSetInt = transitions.at(Symbol::INT)->getValue();
   const Rule expectedExpr0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
   const Rule expectedInt0 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 1};
   const Rule expectedInt1 = {Symbol::EXPR, {Symbol::INT}, 1};
 
   tester.assertEquals(2, transitions.size());
-  tester.assertEquals(1, ruleListExpr.size());
-  tester.assertEquals(1, count(ruleListExpr.begin(), ruleListExpr.end(), expectedExpr0));
-  tester.assertEquals(2, ruleListInt.size());
-  tester.assertEquals(1, count(ruleListInt.begin(), ruleListInt.end(), expectedInt0));
-  tester.assertEquals(1, count(ruleListInt.begin(), ruleListInt.end(), expectedInt1));
+  tester.assertEquals(1, ruleSetExpr.size());
+  tester.assertEquals(1, count(ruleSetExpr.begin(), ruleSetExpr.end(), expectedExpr0));
+  tester.assertEquals(2, ruleSetInt.size());
+  tester.assertEquals(1, count(ruleSetInt.begin(), ruleSetInt.end(), expectedInt0));
+  tester.assertEquals(1, count(ruleSetInt.begin(), ruleSetInt.end(), expectedInt1));
 }
 
 void testCreateTransitionsEndRule() {

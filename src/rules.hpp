@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <queue>
 #include <stdexcept>
 #include <string>
@@ -173,35 +174,36 @@ struct Rule {
   }
 };
 
-/* Nodes of the DFA */
-using RuleList = vector<Rule>;
-using DFA_t = DFA<RuleList, Symbol>;
-
 // TODO: Fix these hash functions
 namespace std {
   template <>
   struct hash<Rule> {
-    size_t operator()(Rule const& rule) const noexcept {
-      size_t h1 = std::hash<Symbol>{}(rule.lhs);
+    size_t operator()(const Rule& rule) const noexcept {
+      size_t h1 = std::hash<Symbol>()(rule.lhs);
       size_t h2 = 0;
-      size_t len = rule.rhs.size();
-      for (size_t i = 0; i < len; ++i) {
-        h2 += std::hash<Symbol>{}(rule.rhs[i]);
+      std::hash<Symbol> hasher;
+      for (const Symbol& symbol : rule.rhs) {
+        h2 += hasher(symbol);
       }
-      size_t h3 = std::hash<size_t>{}(rule.pos);
+      size_t h3 = std::hash<size_t>()(rule.pos);
       return h3 + h1 ^ (h2 << 1);
     }
   };
 }  // namespace std
 
+/* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
+ * should be equal if they contain the same rules (in any order) */
+using RuleSet = unordered_set<Rule>;
+using DFA_t = DFA<RuleSet, Symbol>;
+
 namespace std {
   template <>
-  struct hash<RuleList> {
-    size_t operator()(RuleList const& ruleList) const noexcept {
-      size_t len = ruleList.size();
+  struct hash<RuleSet> {
+    size_t operator()(const RuleSet& ruleSet) const noexcept {
+      std::hash<Rule> hasher;
       size_t h = 0;
-      for (size_t i = 0; i < len; ++i) {
-        h += std::hash<Rule>{}(ruleList[i]);
+      for (const Rule& rule : ruleSet) {
+        h += hasher(rule);
       }
       return h;
     }
@@ -211,39 +213,48 @@ namespace std {
 bool isVariable(Symbol symbol) { return grammar.contains(symbol); }
 
 /* Adds all "symbol -> .rhs" rules to rule list */
-void addRhses(RuleList& ruleList, Symbol symbol) {
-  RuleRhs& rhses = grammar[symbol];
+void addRhses(RuleSet& ruleSet, Symbol symbol) {
+  const RuleRhs& rhses = grammar.at(symbol);
   for (const auto& rhs : rhses) {
-    ruleList.push_back({symbol, rhs, 0});
+    ruleSet.insert({ symbol, rhs, 0 });
+  }
+}
+
+void addRhses(vector<Rule>& ruleList, Symbol symbol) {
+  const RuleRhs& rhses = grammar.at(symbol);
+  for (const auto& rhs : rhses) {
+    ruleList.push_back({ symbol, rhs, 0 });
   }
 }
 
 /* Adds possible rules to node's state via epsilon transition in DFA.
  * Ex: S -> A.B, then add all rules B -> ??? */
-void epsilonTransition(RuleList& ruleList) {
+void epsilonTransition(RuleSet& ruleSet) {
   // Keep track of the symbols whose rules we've already added to this rule list.
   unordered_set<Symbol> used;
-  size_t ruleNum = 0;
+  vector<Rule> newRules;
 
   // Keep expanding variables (epsilon transition) until we've determined all the
   // possible rule positions we could be in.
-  while (ruleNum < ruleList.size()) {
-    const Rule& rule = ruleList[ruleNum];
-    if (!rule.atEnd()) {
-      Symbol nextSymbol = rule.nextSymbol();
-      if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
-        addRhses(ruleList, nextSymbol);
-        used.insert(nextSymbol);
-      }
+  for (const Rule& rule : ruleSet) {
+    if (rule.atEnd()) {
+      continue;
     }
-    ++ruleNum;
+
+    Symbol nextSymbol = rule.nextSymbol();
+    if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
+      addRhses(newRules, nextSymbol);
+      used.insert(nextSymbol);
+    }
   }
+  ruleSet.insert(
+      std::make_move_iterator(newRules.begin()), std::make_move_iterator(newRules.end()));
 }
 
 /* For each rule of this node, construct the transitions to successors. */
 std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
   // Create map of transitions to new nodes
-  std::unordered_map<Symbol, RuleList> newTransitions;
+  std::unordered_map<Symbol, RuleSet> newTransitions;
   for (const Rule& rule : node->getValue()) {
     if (rule.atEnd()) {
       continue;
@@ -252,9 +263,9 @@ std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node*
     Symbol nextSymbol = rule.nextSymbol();
     // If transition does not exist yet, create the successor node
     if (!newTransitions.contains(nextSymbol)) {
-      newTransitions.emplace(nextSymbol, RuleList{rule.nextStep()});
+      newTransitions.emplace(nextSymbol, RuleSet{rule.nextStep()});
     } else {  // Otherwise, add it to the existing rule list
-      newTransitions.at(nextSymbol).push_back(rule.nextStep());
+      newTransitions.at(nextSymbol).insert(rule.nextStep());
     }
   }
 
@@ -273,10 +284,11 @@ std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node*
 
 /* Constructs the starting node of the DFA */
 DFA_t initDFA() {
-  RuleList firstList;
-  addRhses(firstList, Symbol::STMT);
-  epsilonTransition(firstList);
-  DFA_t dfa(firstList);
+  RuleSet firstSet;
+  // NOTE: Symbol::STMT must be a specified starting point
+  addRhses(firstSet, Symbol::STMT);
+  epsilonTransition(firstSet);
+  DFA_t dfa(firstSet);
   return dfa;
 }
 

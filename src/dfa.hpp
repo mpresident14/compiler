@@ -66,6 +66,7 @@ public:
     return currentNode;
   }
 
+  // TODO: Make newNodeValue a universal reference so that we can forward it
   const Node* addTransition(const Node* node, T transition, V newNodeValue) {
     // No duplicate or updated transitions
     if (node->transitions_.contains(transition)) {
@@ -81,6 +82,8 @@ public:
     }
 
     // Otherwise, create a new node
+    // TODO: If we make nodes_ hold V*s and insert the address of newNode.value,
+    // we can avoid expensive copies
     const Node* newNode = new Node(newNodeValue);
     node->transitions_.emplace(std::move(transition), newNode);
     nodes_.emplace(newNodeValue, newNode);
