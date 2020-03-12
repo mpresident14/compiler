@@ -24,9 +24,10 @@ public:
     friend class NFA;
 
     ~Node() {
+      deleterCalled_ = true;
       for (auto& keyVal : transitions_) {
         Node* node = keyVal.second;
-        if (node) {
+        if (node && !node->deleterCalled_) {
           delete node;
         }
       }
@@ -49,6 +50,7 @@ public:
 
     V value_;
     std::unordered_map<T, Node*> transitions_;
+    bool deleterCalled_ = false;
   };
 
   NFA(V value) : root_(new Node(value)) {
