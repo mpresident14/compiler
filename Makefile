@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 CXX = clang++
 CXXFLAGS = -std=c++2a -Wall -Wextra -pedantic -g -I ./src
-BINARIES = main test
+BINARIES = main rules_test nfa_test
 HEADERS = src/nfa.hpp src/rules.hpp
 
 all: $(BINARIES)

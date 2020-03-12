@@ -1,12 +1,11 @@
 #include "nfa.hpp"
 #include "rules.hpp"
 
-#include <iostream>
 #include <cstddef>
+#include <iostream>
 #include <string>
 
 using namespace std;
-
 
 int main() {
   NFA_t nfa = buildNFA();
@@ -17,5 +16,6 @@ int main() {
   cout << nfa.run({Symbol::EXPR, Symbol::DOLLAR}) << endl;
   cout << nfa.run({Symbol::INT, Symbol::PLUS, Symbol::INT}) << endl;
   cout << nfa.run({Symbol::INT, Symbol::PLUS, Symbol::EXPR}) << endl;
+  cout << nfa << endl;
   return 0;
 }

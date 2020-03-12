@@ -84,27 +84,12 @@ void testCreateTransitionsEndRule() {
   tester.assertEquals(0, transitions.size());
 }
 
-// void testForError() {
-//   const Rule rule = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
-//   NFA_t nfa({rule});
-//   addTransitions(nfa.getRoot());
-
-//   auto& transitions = nfa.getRoot()->getTransitions();
-//   for (auto& tpair : transitions) {
-//     cout << "BEFORE: " << *tpair.second << endl;
-//     epsilonTransition(tpair.second);
-//     cout << "AFTER: " << *tpair.second << endl;
-//   }
-// }
-
-
 int main(int, char**) {
   testAddRhses();
   testEpsilonTransition();
   testInitNFA();
   testCreateTransitions();
   testCreateTransitionsEndRule();
-  // testForError();
 
   return 0;
 }
