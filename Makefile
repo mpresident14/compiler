@@ -3,13 +3,14 @@ SHELL = /bin/bash
 CXX = clang++
 CXXFLAGS = -std=c++2a -Wall -Wextra -pedantic -g -I ./src
 BINARIES = main test
+HEADERS = src/nfa.hpp src/rules.hpp
 
 all: $(BINARIES)
 
 clean:
 	find . -type f -executable -delete
 
-main: src/main.cpp src/nfa.hpp
+main: src/main.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) src/main.cpp -o main
 
 nfa_test: test/nfa_test.cpp src/nfa.hpp

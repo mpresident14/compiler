@@ -10,11 +10,34 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <stdexcept>
+
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 
 /* Actual symbols in the grammar */
 enum class Symbol { PLUS, DOLLAR, INT, EXPR, STMT };
+std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
+  switch (sym) {
+    case Symbol::PLUS:
+      out << "PLUS";
+      break;
+    case Symbol::DOLLAR:
+      out << "DOLLAR";
+      break;
+    case Symbol::INT:
+      out << "INT";
+      break;
+    case Symbol::EXPR:
+      out << "EXPR";
+      break;
+    case Symbol::STMT:
+      out << "STMT";
+      break;
+  }
+  return out;
+}
 
 /* The types that each symbol in the grammar can be */
 enum class SymbolType { PLUS, DOLLAR, INT, EINT, EPLUS, SEXPR };
@@ -30,7 +53,7 @@ using Grammar = unordered_map<Symbol, RuleRhs>;
 // NOTE: Starting point of the grammar must have a special name so that we
 // know where to start building the NFA from.
 Grammar grammar = {{Symbol::STMT, RuleRhs{{Symbol::EXPR, Symbol::DOLLAR}}},
-    {Symbol::EXPR, RuleRhs{{Symbol::INT}, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}}}};
+    {Symbol::EXPR, RuleRhs{{Symbol::INT}, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}}}};
 
 /***********
  * OBJECTS *
@@ -115,11 +138,38 @@ struct Rule {
 
   bool atEnd() const { return pos == rhs.size(); }
   /* Given a rule "S -> A.B", returns B */
-  Symbol nextSymbol() const { return rhs[pos]; }
+  // TODO: Throw on illegal access?
+  Symbol nextSymbol() const {
+    if (pos == rhs.size()) {
+      throw std::invalid_argument("Out of bounds");
+    }
+    return rhs[pos];
+  }
   /* Given a rule "S -> A.B", returns "S -> AB." */
-  Rule nextStep() const { return {lhs, rhs, pos + 1}; }
-  bool operator==(const Rule& other) {
+  Rule nextStep() const {
+    if (pos == rhs.size()) {
+      throw std::invalid_argument("Out of bounds");
+    }
+    return {lhs, rhs, pos + 1};
+  }
+  // TODO: Make appropriate functions noexcept and const(expr)
+  bool operator==(const Rule& other) const {
     return lhs == other.lhs && rhs == other.rhs && pos == other.pos;
+  }
+  friend std::ostream& operator<<(std::ostream& out, const Rule& rule) {
+    out << "( " << rule.lhs << " -> ";
+    size_t len = rule.rhs.size();
+    for (size_t i = 0; i < len; ++i) {
+      if (i == rule.pos) {
+        out << '.';
+      }
+      out << rule.rhs[i] << ' ';
+    }
+    if (rule.pos == len) {
+      out << '.';
+    }
+    out << ')';
+    return out;
   }
 };
 using RuleList = vector<Rule>;
@@ -135,6 +185,8 @@ void addRhses(RuleList& ruleList, Symbol symbol) {
   }
 }
 
+/* Adds possible rules to node's state via epsilon transition in NFA.
+ * Ex: S -> A.B, then add all rules B -> ??? */
 void epsilonTransition(NFA_t::Node* node) {
   // Keep track of the symbols whose rules we've already added to this rule list.
   unordered_set<Symbol> used;
@@ -144,15 +196,19 @@ void epsilonTransition(NFA_t::Node* node) {
   // Keep expanding variables (epsilon transition) until we've determined all the
   // possible rule positions we could be in.
   while (ruleNum < ruleList.size()) {
-    Symbol nextSymbol = ruleList[ruleNum].nextSymbol();
-    if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
-      addRhses(ruleList, nextSymbol);
-      used.insert(nextSymbol);
+    const Rule& rule = ruleList[ruleNum];
+    if (!rule.atEnd()) {
+      Symbol nextSymbol = rule.nextSymbol();
+      if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
+        addRhses(ruleList, nextSymbol);
+        used.insert(nextSymbol);
+      }
     }
     ++ruleNum;
   }
 }
 
+/* Constructs the starting node of the NFA */
 NFA_t initNFA() {
   RuleList firstList;
   addRhses(firstList, Symbol::STMT);
@@ -184,16 +240,19 @@ void addTransitions(NFA_t::Node* node) {
 // TODO: Make vectors pointers to vectors to avoid all the unnecessary copies
 NFA_t buildNFA() {
   queue<NFA_t::Node*> q;
-  NFA<RuleList, Symbol> nfa = initNFA();
+  NFA_t nfa = initNFA();
   q.push(nfa.getRoot());
 
   while (!q.empty()) {
-    NFA_t::Node* node = q.back();
+    cout << "\n--------------------------------" << endl;
+    cout << nfa << endl;
+    cout << "--------------------------------\n" << endl;
+    NFA_t::Node* node = q.front();
     q.pop();
     addTransitions(node);
-    for (auto& transSuccessor : node->transitions_) {
-      epsilonTransition(transSuccessor.second);
-      q.push(transSuccessor.second);
+    for (auto& transitionSuccessor : node->transitions_) {
+      epsilonTransition(transitionSuccessor.second);
+      q.push(transitionSuccessor.second);
     }
   }
 

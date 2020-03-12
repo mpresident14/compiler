@@ -6,6 +6,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <queue>
+
+#include <prez/print_stuff.hpp>
 
 // template<typename T>
 // concept Hashable = requires(T a) {
@@ -26,6 +29,7 @@ public:
         }
       }
     }
+
     Node* addTransition(T transition, V newNodeValue) {
       if (transitions_.contains(transition)) {
         return nullptr;
@@ -34,6 +38,11 @@ public:
       Node* newNode = new Node(std::move(newNodeValue));
       transitions_.emplace(std::move(transition), newNode);
       return newNode;
+    }
+
+    friend std::ostream& operator<<(std::ostream& out, const Node& node) {
+      out << prez::containerToString(node.value_);
+      return out;
     }
 
     V value_;
@@ -52,7 +61,7 @@ public:
   NFA& operator=(const NFA& other) = default;
   NFA& operator=(NFA&& other) = default;
 
-  Node* getRoot() { return root_; }
+  Node* getRoot() const { return root_; }
   Node* run(const std::vector<T>& input) {
     Node* currentNode = root_;
     for (const T& trans : input) {
@@ -66,12 +75,19 @@ public:
     return currentNode;
   }
 
-  // friend std::ostream& operator<<(std::ostream& out, const NFA& nfa) {
-  //   Node* currentNode = root_;
-
-  // }
+  friend std::ostream& operator<<(std::ostream& out, const NFA& nfa) {
+    return nfa.doStream(out, nfa.getRoot(), 0);
+  }
 
 private:
+  std::ostream& doStream(std::ostream& out, NFA::Node* node, size_t depth) const {
+    out << std::string(depth, '\t') << *node << '\n';
+    for (auto& transSuccs : node->transitions_) {
+      doStream(out, transSuccs.second, depth + 1);
+    }
+    return out;
+  }
+
   Node* root_;
 };
 
