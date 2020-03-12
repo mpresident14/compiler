@@ -17,7 +17,7 @@ void testAddRhses() {
   addRhses(ruleList, Symbol::EXPR);
 
   const Rule expected0 = {Symbol::EXPR, {Symbol::INT}, 0};
-  const Rule expected1 = {Symbol::EXPR, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule expected1 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(2, ruleList.size());
   tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected0));
@@ -26,12 +26,12 @@ void testAddRhses() {
 
 void testEpsilonTransition() {
   const Rule init = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
-  NFA_t nfa({init});
-  epsilonTransition(nfa.getRoot());
+  RuleList ruleList = {init};
+  NFA_t nfa(ruleList);
+  epsilonTransition(ruleList);
 
   const Rule expected0 = {Symbol::EXPR, {Symbol::INT}, 0};
-  const Rule expected1 = {Symbol::EXPR, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}, 0};
-  const RuleList& ruleList = nfa.getRoot()->value_;
+  const Rule expected1 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(3, ruleList.size());
   tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), init));
@@ -41,11 +41,11 @@ void testEpsilonTransition() {
 
 void testInitNFA() {
   NFA_t initialNfa = initNFA();
-  const RuleList& ruleList = initialNfa.getRoot()->value_;
+  const RuleList& ruleList = initialNfa.getRoot()->getValue();
 
   const Rule expectedRule0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
   const Rule expectedRule1 = {Symbol::EXPR, {Symbol::INT}, 0};
-  const Rule expectedRule2 = {Symbol::EXPR, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule expectedRule2 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(3, ruleList.size());
   tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expectedRule0));
@@ -53,58 +53,58 @@ void testInitNFA() {
   tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expectedRule2));
 }
 
-void testaddTransitions() {
+void testCreateTransitions() {
   const Rule rule0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
   const Rule rule1 = {Symbol::EXPR, {Symbol::INT}, 0};
-  const Rule rule2 = {Symbol::EXPR, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule rule2 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
   NFA_t nfa({rule0, rule1, rule2});
-  addTransitions(nfa.getRoot());
+  createTransitions(nfa, nfa.getRoot());
 
-  auto& transitions = nfa.getRoot()->transitions_;
-  const RuleList& ruleListExpr = transitions[Symbol::EXPR]->value_;
-  const RuleList& ruleListInt = transitions[Symbol::INT]->value_;
+  const auto& transitions = nfa.getRoot()->getTransitions();
+  const RuleList& ruleListExpr = transitions.at(Symbol::EXPR)->getValue();
+  const RuleList& ruleListInt = transitions.at(Symbol::INT)->getValue();
   const Rule expectedExpr0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
-  const Rule expectedExpr1 = {Symbol::EXPR, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}, 1};
-  const Rule expectedInt0 = {Symbol::EXPR, {Symbol::INT}, 1};
+  const Rule expectedInt0 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 1};
+  const Rule expectedInt1 = {Symbol::EXPR, {Symbol::INT}, 1};
 
   tester.assertEquals(2, transitions.size());
-  tester.assertEquals(2, ruleListExpr.size());
+  tester.assertEquals(1, ruleListExpr.size());
   tester.assertEquals(1, count(ruleListExpr.begin(), ruleListExpr.end(), expectedExpr0));
-  tester.assertEquals(1, count(ruleListExpr.begin(), ruleListExpr.end(), expectedExpr1));
-  tester.assertEquals(1, ruleListInt.size());
+  tester.assertEquals(2, ruleListInt.size());
   tester.assertEquals(1, count(ruleListInt.begin(), ruleListInt.end(), expectedInt0));
+  tester.assertEquals(1, count(ruleListInt.begin(), ruleListInt.end(), expectedInt1));
 }
 
-void testaddTransitionsEndRule() {
+void testCreateTransitionsEndRule() {
   const Rule rule = {Symbol::EXPR, {Symbol::INT}, 1};
   NFA_t nfa({rule});
-  addTransitions(nfa.getRoot());
+  createTransitions(nfa, nfa.getRoot());
 
-  auto& transitions = nfa.getRoot()->transitions_;
+  auto& transitions = nfa.getRoot()->getTransitions();
   tester.assertEquals(0, transitions.size());
 }
 
-void testForError() {
-  const Rule rule = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
-  NFA_t nfa({rule});
-  addTransitions(nfa.getRoot());
+// void testForError() {
+//   const Rule rule = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
+//   NFA_t nfa({rule});
+//   addTransitions(nfa.getRoot());
 
-  auto& transitions = nfa.getRoot()->transitions_;
-  for (auto& tpair : transitions) {
-    cout << "BEFORE: " << *tpair.second << endl;
-    epsilonTransition(tpair.second);
-    cout << "AFTER: " << *tpair.second << endl;
-  }
-}
+//   auto& transitions = nfa.getRoot()->getTransitions();
+//   for (auto& tpair : transitions) {
+//     cout << "BEFORE: " << *tpair.second << endl;
+//     epsilonTransition(tpair.second);
+//     cout << "AFTER: " << *tpair.second << endl;
+//   }
+// }
 
 
 int main(int, char**) {
-  // testAddRhses();
-  // testEpsilonTransition();
-  // testInitNFA();
-  // testaddTransitions();
-  // testaddTransitionsEndRule();
-  testForError();
+  testAddRhses();
+  testEpsilonTransition();
+  testInitNFA();
+  testCreateTransitions();
+  testCreateTransitionsEndRule();
+  // testForError();
 
   return 0;
 }

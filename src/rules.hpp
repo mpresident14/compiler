@@ -6,11 +6,11 @@
 #include <cstddef>
 #include <iostream>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <stdexcept>
 
 #include <prez/print_stuff.hpp>
 
@@ -48,6 +48,7 @@ enum class SymbolType { PLUS, DOLLAR, INT, EINT, EPLUS, SEXPR };
 
 /* The actual grammar */
 using RuleRhs = vector<vector<Symbol>>;
+// TODO: Multimap
 using Grammar = unordered_map<Symbol, RuleRhs>;
 
 // NOTE: Starting point of the grammar must have a special name so that we
@@ -130,7 +131,6 @@ struct SExpr : VariableObj {
  *  NFA CONSTRUCTION  *
  **********************/
 
-/* Nodes of the NFA */
 struct Rule {
   Symbol lhs;
   vector<Symbol> rhs;
@@ -172,8 +172,42 @@ struct Rule {
     return out;
   }
 };
+
+/* Nodes of the NFA */
 using RuleList = vector<Rule>;
 using NFA_t = NFA<RuleList, Symbol>;
+
+// TODO: Fix these hash functions
+namespace std {
+  template <>
+  struct hash<Rule> {
+    size_t operator()(Rule const& rule) const noexcept {
+      size_t h1 = std::hash<Symbol>{}(rule.lhs);
+      size_t h2 = 0;
+      size_t len = rule.rhs.size();
+      for (size_t i = 0; i < len; ++i) {
+        h2 += std::hash<Symbol>{}(rule.rhs[i]);
+      }
+      size_t h3 = std::hash<size_t>{}(rule.pos);
+      return h3 + h1 ^ (h2 << 1);
+    }
+  };
+}  // namespace std
+
+namespace std {
+  template <>
+  struct hash<RuleList> {
+    size_t operator()(RuleList const& ruleList) const noexcept {
+      size_t len = ruleList.size();
+      size_t h = 0;
+      for (size_t i = 0; i < len; ++i) {
+        h += std::hash<Rule>{}(ruleList[i]);
+      }
+      return h;
+    }
+  };
+}  // namespace std
+
 
 bool isVariable(Symbol symbol) { return grammar.contains(symbol); }
 
@@ -187,10 +221,9 @@ void addRhses(RuleList& ruleList, Symbol symbol) {
 
 /* Adds possible rules to node's state via epsilon transition in NFA.
  * Ex: S -> A.B, then add all rules B -> ??? */
-void epsilonTransition(NFA_t::Node* node) {
+void epsilonTransition(RuleList& ruleList) {
   // Keep track of the symbols whose rules we've already added to this rule list.
   unordered_set<Symbol> used;
-  RuleList& ruleList = node->value_;
   size_t ruleNum = 0;
 
   // Keep expanding variables (epsilon transition) until we've determined all the
@@ -212,29 +245,57 @@ void epsilonTransition(NFA_t::Node* node) {
 NFA_t initNFA() {
   RuleList firstList;
   addRhses(firstList, Symbol::STMT);
+  epsilonTransition(firstList);
   NFA_t nfa(firstList);
-  epsilonTransition(nfa.getRoot());
   return nfa;
 }
 
-/* For each rule of this node, construct the transitions to successors.
- * We don't epsilon-transition the successors in the this function. */
-void addTransitions(NFA_t::Node* node) {
-  std::unordered_map<Symbol, NFA_t::Node*>& transitions = node->transitions_;
-  for (const Rule& rule : node->value_) {
+/* For each rule of this node, construct the transitions to successors. */
+std::vector<NFA_t::Node*> createTransitions(NFA_t& nfa, NFA_t::Node* node) {
+  // const std::unordered_map<Symbol, NFA_t::Node*>& transitions = node->getTransitions();
+  // for (const Rule& rule : node->getValue()) {
+  //   if (rule.atEnd()) {
+  //     continue;
+  //   }
+
+  //   Symbol nextSymbol = rule.nextSymbol();
+  //   // If transition does not exist yet, create the successor node
+  //   if (!transitions.contains(nextSymbol)) {
+  //     node->addTransition(nextSymbol, { rule.nextStep() });
+  //   } else {
+  //     RuleList& nextRules = transitions.at(nextSymbol)->getValue();
+  //     nextRules.push_back(rule.nextStep());
+  //   }
+  // }
+
+  // Create map of transitions to new nodes
+  std::unordered_map<Symbol, RuleList> newTransitions;
+  for (const Rule& rule : node->getValue()) {
     if (rule.atEnd()) {
       continue;
     }
 
     Symbol nextSymbol = rule.nextSymbol();
     // If transition does not exist yet, create the successor node
-    if (!transitions.contains(nextSymbol)) {
-      node->addTransition(nextSymbol, { rule.nextStep() });
-    } else {
-      RuleList& nextRules = transitions[nextSymbol]->value_;
-      nextRules.push_back(rule.nextStep());
+    if (!newTransitions.contains(nextSymbol)) {
+      newTransitions.emplace(nextSymbol, RuleList{rule.nextStep()});
+    } else {  // Otherwise, add it to the existing rule list
+      newTransitions.at(nextSymbol).push_back(rule.nextStep());
     }
   }
+
+  // Apply epsilon transitions and create the transition
+  std::vector<NFA_t::Node*> addedNodes;
+  for (auto& transitionRules : newTransitions) {
+    epsilonTransition(transitionRules.second);
+    NFA_t::Node* newNode = nfa.addTransition(node, transitionRules.first, transitionRules.second);
+    if (newNode) {
+      addedNodes.push_back(newNode);
+    }
+    cout << "\n\n\n--------------------------------------------------------------------------" << endl;
+    cout << nfa << endl;
+  }
+  return addedNodes;
 }
 
 // TODO: Make vectors pointers to vectors to avoid all the unnecessary copies
@@ -244,15 +305,11 @@ NFA_t buildNFA() {
   q.push(nfa.getRoot());
 
   while (!q.empty()) {
-    cout << "\n--------------------------------" << endl;
-    cout << nfa << endl;
-    cout << "--------------------------------\n" << endl;
     NFA_t::Node* node = q.front();
     q.pop();
-    addTransitions(node);
-    for (auto& transitionSuccessor : node->transitions_) {
-      epsilonTransition(transitionSuccessor.second);
-      q.push(transitionSuccessor.second);
+    std::vector<NFA_t::Node*> addedNodes = createTransitions(nfa, node);
+    for (NFA_t::Node* newNode : addedNodes) {
+      q.push(newNode);
     }
   }
 

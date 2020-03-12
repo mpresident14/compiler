@@ -15,7 +15,7 @@ int main() {
 
   cout << nfa.run({Symbol::INT}) << endl;
   cout << nfa.run({Symbol::EXPR, Symbol::DOLLAR}) << endl;
-  cout << nfa.run({Symbol::EXPR, Symbol::PLUS, Symbol::INT}) << endl;
-  cout << nfa.run({Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}) << endl;
+  cout << nfa.run({Symbol::INT, Symbol::PLUS, Symbol::INT}) << endl;
+  cout << nfa.run({Symbol::INT, Symbol::PLUS, Symbol::EXPR}) << endl;
   return 0;
 }
