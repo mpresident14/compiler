@@ -251,26 +251,10 @@ NFA_t initNFA() {
 }
 
 /* For each rule of this node, construct the transitions to successors. */
-std::vector<NFA_t::Node*> createTransitions(NFA_t& nfa, NFA_t::Node* node) {
-  // const std::unordered_map<Symbol, NFA_t::Node*>& transitions = node->getTransitions();
-  // for (const Rule& rule : node->getValue()) {
-  //   if (rule.atEnd()) {
-  //     continue;
-  //   }
-
-  //   Symbol nextSymbol = rule.nextSymbol();
-  //   // If transition does not exist yet, create the successor node
-  //   if (!transitions.contains(nextSymbol)) {
-  //     node->addTransition(nextSymbol, { rule.nextStep() });
-  //   } else {
-  //     RuleList& nextRules = transitions.at(nextSymbol)->getValue();
-  //     nextRules.push_back(rule.nextStep());
-  //   }
-  // }
-
+std::vector<const NFA_t::Node*> createTransitions(NFA_t& nfa, const NFA_t::Node& node) {
   // Create map of transitions to new nodes
   std::unordered_map<Symbol, RuleList> newTransitions;
-  for (const Rule& rule : node->getValue()) {
+  for (const Rule& rule : node.getValue()) {
     if (rule.atEnd()) {
       continue;
     }
@@ -285,30 +269,30 @@ std::vector<NFA_t::Node*> createTransitions(NFA_t& nfa, NFA_t::Node* node) {
   }
 
   // Apply epsilon transitions and create the transition
-  std::vector<NFA_t::Node*> addedNodes;
+  std::vector<const NFA_t::Node*> addedNodes;
   for (auto& transitionRules : newTransitions) {
     epsilonTransition(transitionRules.second);
-    NFA_t::Node* newNode = nfa.addTransition(node, transitionRules.first, transitionRules.second);
+    const NFA_t::Node* newNode = nfa.addTransition(node, transitionRules.first, transitionRules.second);
     if (newNode) {
       addedNodes.push_back(newNode);
     }
-    cout << "\n\n\n--------------------------------------------------------------------------" << endl;
-    cout << nfa << endl;
+    // cout << "\n\n\n--------------------------------------------------------------------------" << endl;
+    // cout << nfa << endl;
   }
   return addedNodes;
 }
 
 // TODO: Make vectors pointers to vectors to avoid all the unnecessary copies
 NFA_t buildNFA() {
-  queue<NFA_t::Node*> q;
+  queue<const NFA_t::Node*> q;
   NFA_t nfa = initNFA();
-  q.push(nfa.getRoot());
+  q.push(&nfa.getRoot());
 
   while (!q.empty()) {
-    NFA_t::Node* node = q.front();
+    const NFA_t::Node* node = q.front();
     q.pop();
-    std::vector<NFA_t::Node*> addedNodes = createTransitions(nfa, node);
-    for (NFA_t::Node* newNode : addedNodes) {
+    std::vector<const NFA_t::Node*> addedNodes = createTransitions(nfa, *node);
+    for (const NFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
   }
