@@ -1,5 +1,5 @@
-#ifndef NFA_HPP
-#define NFA_HPP
+#ifndef DFA_HPP
+#define DFA_HPP
 
 #include <cstddef>
 #include <iostream>
@@ -12,11 +12,11 @@
 #include <prez/print_stuff.hpp>
 
 template <typename V, typename T>
-class NFA {
+class DFA {
 public:
   struct Node {
   public:
-    friend class NFA;
+    friend class DFA;
 
     ~Node() {
       // Deal with cyclic references to prevent invalid free
@@ -45,12 +45,12 @@ public:
     bool deleterCalled_ = false;
   };
 
-  NFA(V value) : root_(new Node(value)), nodes_{{std::move(value), root_}} {}
-  ~NFA() { delete root_; };
-  NFA(const NFA& other) = delete;
-  NFA(NFA&& other) = default;
-  NFA& operator=(const NFA& other) = delete;
-  NFA& operator=(NFA&& other) = default;
+  DFA(V value) : root_(new Node(value)), nodes_{{std::move(value), root_}} {}
+  ~DFA() { if (root_) delete root_; };
+  DFA(const DFA& other) = delete;
+  DFA(DFA&& other) = default;
+  DFA& operator=(const DFA& other) = delete;
+  DFA& operator=(DFA&& other) = default;
 
   const Node* getRoot() const { return root_; }
   const Node* run(const std::vector<T>& input) {
@@ -87,9 +87,9 @@ public:
     return newNode;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, const NFA& nfa) {
+  friend std::ostream& operator<<(std::ostream& out, const DFA& dfa) {
     std::unordered_set<const Node*> visited;
-    return nfa.doStream(out, nfa.getRoot(), 0, visited);
+    return dfa.doStream(out, dfa.getRoot(), 0, visited);
   }
 
 private:
@@ -109,7 +109,7 @@ private:
 
   const Node* root_;
   // Allows us to check whether a node with some value exists in the
-  // NFA and grab a pointer to it.
+  // DFA and grab a pointer to it.
   std::unordered_map<V, const Node*> nodes_;
 };
 

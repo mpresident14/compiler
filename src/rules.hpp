@@ -1,7 +1,7 @@
 #ifndef RULES_HPP
 #define RULES_HPP
 
-#include "nfa.hpp"
+#include "dfa.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -52,7 +52,7 @@ using RuleRhs = vector<vector<Symbol>>;
 using Grammar = unordered_map<Symbol, RuleRhs>;
 
 // NOTE: Starting point of the grammar must have a special name so that we
-// know where to start building the NFA from.
+// know where to start building the DFA from.
 Grammar grammar = {{Symbol::STMT, RuleRhs{{Symbol::EXPR, Symbol::DOLLAR}}},
     {Symbol::EXPR, RuleRhs{{Symbol::INT}, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}}}};
 
@@ -128,7 +128,7 @@ struct SExpr : VariableObj {
 };
 
 /**********************
- *  NFA CONSTRUCTION  *
+ *  DFA CONSTRUCTION  *
  **********************/
 
 struct Rule {
@@ -173,9 +173,9 @@ struct Rule {
   }
 };
 
-/* Nodes of the NFA */
+/* Nodes of the DFA */
 using RuleList = vector<Rule>;
-using NFA_t = NFA<RuleList, Symbol>;
+using DFA_t = DFA<RuleList, Symbol>;
 
 // TODO: Fix these hash functions
 namespace std {
@@ -218,7 +218,7 @@ void addRhses(RuleList& ruleList, Symbol symbol) {
   }
 }
 
-/* Adds possible rules to node's state via epsilon transition in NFA.
+/* Adds possible rules to node's state via epsilon transition in DFA.
  * Ex: S -> A.B, then add all rules B -> ??? */
 void epsilonTransition(RuleList& ruleList) {
   // Keep track of the symbols whose rules we've already added to this rule list.
@@ -241,7 +241,7 @@ void epsilonTransition(RuleList& ruleList) {
 }
 
 /* For each rule of this node, construct the transitions to successors. */
-std::vector<const NFA_t::Node*> createTransitions(NFA_t& nfa, const NFA_t::Node* node) {
+std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
   // Create map of transitions to new nodes
   std::unordered_map<Symbol, RuleList> newTransitions;
   for (const Rule& rule : node->getValue()) {
@@ -259,11 +259,11 @@ std::vector<const NFA_t::Node*> createTransitions(NFA_t& nfa, const NFA_t::Node*
   }
 
   // Apply epsilon transitions and create the transition
-  std::vector<const NFA_t::Node*> addedNodes;
+  std::vector<const DFA_t::Node*> addedNodes;
   for (auto& transitionRules : newTransitions) {
     epsilonTransition(transitionRules.second);
-    const NFA_t::Node* newNode =
-        nfa.addTransition(node, transitionRules.first, transitionRules.second);
+    const DFA_t::Node* newNode =
+        dfa.addTransition(node, transitionRules.first, transitionRules.second);
     if (newNode) {
       addedNodes.push_back(newNode);
     }
@@ -271,30 +271,30 @@ std::vector<const NFA_t::Node*> createTransitions(NFA_t& nfa, const NFA_t::Node*
   return addedNodes;
 }
 
-/* Constructs the starting node of the NFA */
-NFA_t initNFA() {
+/* Constructs the starting node of the DFA */
+DFA_t initDFA() {
   RuleList firstList;
   addRhses(firstList, Symbol::STMT);
   epsilonTransition(firstList);
-  NFA_t nfa(firstList);
-  return nfa;
+  DFA_t dfa(firstList);
+  return dfa;
 }
 
-NFA_t buildNFA() {
-  queue<const NFA_t::Node*> q;
-  NFA_t nfa = initNFA();
-  q.push(nfa.getRoot());
+DFA_t buildDFA() {
+  queue<const DFA_t::Node*> q;
+  DFA_t dfa = initDFA();
+  q.push(dfa.getRoot());
 
   while (!q.empty()) {
-    const NFA_t::Node* node = q.front();
+    const DFA_t::Node* node = q.front();
     q.pop();
-    std::vector<const NFA_t::Node*> addedNodes = createTransitions(nfa, node);
-    for (const NFA_t::Node* newNode : addedNodes) {
+    std::vector<const DFA_t::Node*> addedNodes = createTransitions(dfa, node);
+    for (const DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
   }
 
-  return nfa;
+  return dfa;
 }
 
 #endif

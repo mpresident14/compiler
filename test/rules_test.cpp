@@ -27,7 +27,7 @@ void testAddRhses() {
 void testEpsilonTransition() {
   const Rule init = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
   RuleList ruleList = {init};
-  NFA_t nfa(ruleList);
+  DFA_t dfa(ruleList);
   epsilonTransition(ruleList);
 
   const Rule expected0 = {Symbol::EXPR, {Symbol::INT}, 0};
@@ -39,8 +39,8 @@ void testEpsilonTransition() {
   tester.assertEquals(1, count(ruleList.begin(), ruleList.end(), expected1));
 }
 
-void testInitNFA() {
-  NFA_t initialNfa = initNFA();
+void testInitDFA() {
+  DFA_t initialNfa = initDFA();
   const RuleList& ruleList = initialNfa.getRoot()->getValue();
 
   const Rule expectedRule0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
@@ -57,10 +57,10 @@ void testCreateTransitions() {
   const Rule rule0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 0};
   const Rule rule1 = {Symbol::EXPR, {Symbol::INT}, 0};
   const Rule rule2 = {Symbol::EXPR, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
-  NFA_t nfa({rule0, rule1, rule2});
-  createTransitions(nfa, nfa.getRoot());
+  DFA_t dfa({rule0, rule1, rule2});
+  createTransitions(dfa, dfa.getRoot());
 
-  const auto& transitions = nfa.getRoot()->getTransitions();
+  const auto& transitions = dfa.getRoot()->getTransitions();
   const RuleList& ruleListExpr = transitions.at(Symbol::EXPR)->getValue();
   const RuleList& ruleListInt = transitions.at(Symbol::INT)->getValue();
   const Rule expectedExpr0 = {Symbol::STMT, {Symbol::EXPR, Symbol::DOLLAR}, 1};
@@ -77,17 +77,17 @@ void testCreateTransitions() {
 
 void testCreateTransitionsEndRule() {
   const Rule rule = {Symbol::EXPR, {Symbol::INT}, 1};
-  NFA_t nfa({rule});
-  createTransitions(nfa, nfa.getRoot());
+  DFA_t dfa({rule});
+  createTransitions(dfa, dfa.getRoot());
 
-  auto& transitions = nfa.getRoot()->getTransitions();
+  auto& transitions = dfa.getRoot()->getTransitions();
   tester.assertEquals(0, transitions.size());
 }
 
 int main(int, char**) {
   testAddRhses();
   testEpsilonTransition();
-  testInitNFA();
+  testInitDFA();
   testCreateTransitions();
   testCreateTransitionsEndRule();
 
