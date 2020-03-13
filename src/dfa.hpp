@@ -104,7 +104,8 @@ public:
 
     // Otherwise, create a new node
     // TODO: If we make valueToNode_ hold V*s and insert the address of newNode.value,
-    // we can avoid expensive copies
+    // we can avoid expensive copies. Would have to define equality and hash of V* to be
+    // that of V
     const Node* newNode = new Node(newNodeValue);
     node->transitions_.emplace(std::move(transition), newNode);
     valueToNode_.emplace(newNodeValue, newNode);

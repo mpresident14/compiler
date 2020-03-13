@@ -49,6 +49,8 @@ std::ostream& operator<<(std::ostream& out, const Concrete& type) {
  * OBJECTS *
  ***********/
 
+// TODO: Association enum and Predence for TokenObjs, just NONE for VariableObjs
+
 struct Obj {
   virtual ~Obj() {}
   virtual Symbol getSymbol() const = 0;

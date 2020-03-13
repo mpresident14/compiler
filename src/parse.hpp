@@ -156,10 +156,12 @@ DFA_t buildDFA() {
 Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *reduceStart) {
   Concrete retType = Concrete::NONE;
   for (const auto& rule : node->getValue()) {
+    // Make sure we have completed the rule
     if (!rule.atEnd()) {
       continue;
     }
 
+    // Match the rule with the top of the stack
     size_t i = rule.rhs.size() - 1;
     size_t j = stk.size() - 1;
     while (j >= 0) {
