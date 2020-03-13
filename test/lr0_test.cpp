@@ -10,88 +10,119 @@
 using namespace std;
 using namespace prez;
 
-// TODO: Replace this test with the actual LR0 grammar test
 
-UnitTest tester = UnitTest::createTester();
+UnitTest TESTER = UnitTest::createTester();
+
+int eval(Term* tInt) { return ((TInt*) tInt)->i_; }
+int eval(Expr* expr) {
+  switch (expr->getType()) {
+    case Concrete::ETERM:
+      return eval(((ETerm*) expr) ->t_);
+    case Concrete::EPLUS:
+      return eval(((EPlus*) expr)->t_) + eval(((EPlus*) expr)->e_);
+    default:
+      return -1;
+  }
+}
 
 void testAddRhses() {
   RuleSet ruleSet;
   addRhses(ruleSet, Symbol::EXPR);
 
-  const Rule expected0 = {Concrete::EINT, {Symbol::INT}, 0};
-  const Rule expected1 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0};
+  const Rule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
 
-  tester.assertEquals(2, ruleSet.size());
-  tester.assertTrue(ruleSet.contains(expected0));
-  tester.assertTrue(ruleSet.contains(expected1));
+  TESTER.assertEquals(2, ruleSet.size());
+  TESTER.assertTrue(ruleSet.contains(expected0));
+  TESTER.assertTrue(ruleSet.contains(expected1));
 }
 
 void testEpsilonTransition() {
-  const Rule init = {Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0};
-  RuleSet ruleSet = {init};
-  DFA_t dfa(ruleSet);
+  const Rule init1 = {Concrete::ETERM, {Symbol::TERM}, 0};
+  const Rule init2 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
+  RuleSet ruleSet = {init1, init2};
   epsilonTransition(ruleSet);
 
-  const Rule expected0 = {Concrete::EINT, {Symbol::INT}, 0};
-  const Rule expected1 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule expected = {Concrete::TINT, {Symbol::INT}, 0};
 
-  tester.assertEquals(3, ruleSet.size());
-  tester.assertTrue(ruleSet.contains(init));
-  tester.assertTrue(ruleSet.contains(expected0));
-  tester.assertTrue(ruleSet.contains(expected1));
+  TESTER.assertEquals(3, ruleSet.size());
+  TESTER.assertTrue(ruleSet.contains(init1));
+  TESTER.assertTrue(ruleSet.contains(init2));
+  TESTER.assertTrue(ruleSet.contains(expected));
 }
 
 void testInitDFA() {
   DFA_t initialNfa = initDFA();
   const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
 
-  const Rule expectedRule0 = {Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0};
-  const Rule expectedRule1 = {Concrete::EINT, {Symbol::INT}, 0};
-  const Rule expectedRule2 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
+  const Rule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0};
+  const Rule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
+  const Rule expected2 = {Concrete::TINT, {Symbol::INT}, 0};
 
-  tester.assertEquals(3, ruleSet.size());
-  tester.assertTrue(ruleSet.contains(expectedRule0));
-  tester.assertTrue(ruleSet.contains(expectedRule1));
-  tester.assertTrue(ruleSet.contains(expectedRule2));
+  TESTER.assertEquals(3, ruleSet.size());
+  TESTER.assertTrue(ruleSet.contains(expected0));
+  TESTER.assertTrue(ruleSet.contains(expected1));
+  TESTER.assertTrue(ruleSet.contains(expected2));
 }
 
 void testCreateTransitions() {
-  const Rule rule0 = {Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0};
-  const Rule rule1 = {Concrete::EINT, {Symbol::INT}, 0};
-  const Rule rule2 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
-  DFA_t dfa({rule0, rule1, rule2});
+  const Rule rule0 = {Concrete::TINT, {Symbol::INT}, 0};
+  const Rule rule1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 2};
+
+  DFA_t dfa({rule0, rule1});
   createTransitions(dfa, dfa.getRoot());
-
   const auto& transitions = dfa.getRoot()->getTransitions();
-  const RuleSet& ruleSetExpr = transitions.at(Symbol::EXPR)->getValue();
-  const RuleSet& ruleSetInt = transitions.at(Symbol::INT)->getValue();
-  const Rule expectedExpr0 = {Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 1};
-  const Rule expectedInt0 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 1};
-  const Rule expectedInt1 = {Concrete::EINT, {Symbol::INT}, 1};
+  const RuleSet& ruleSet0 = transitions.at(Symbol::INT)->getValue();
+  const RuleSet& ruleSet1 = transitions.at(Symbol::TERM)->getValue();
 
-  tester.assertEquals(2, transitions.size());
-  tester.assertEquals(1, ruleSetExpr.size());
-  tester.assertTrue(ruleSetExpr.contains(expectedExpr0));
-  tester.assertEquals(2, ruleSetInt.size());
-  tester.assertTrue(ruleSetInt.contains(expectedInt0));
-  tester.assertTrue(ruleSetInt.contains(expectedInt1));
+  const Rule expected0 = {Concrete::TINT, {Symbol::INT}, 1};
+  const Rule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3};
+
+  TESTER.assertEquals(2, transitions.size());
+  TESTER.assertEquals(1, ruleSet0.size());
+  TESTER.assertTrue(ruleSet0.contains(expected0));
+  TESTER.assertEquals(1, ruleSet1.size());
+  TESTER.assertTrue(ruleSet1.contains(expected1));
 }
 
 void testCreateTransitionsEndRule() {
-  const Rule rule = {Concrete::SEXPR, {Symbol::INT}, 1};
+  const Rule rule = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3};
   DFA_t dfa({rule});
   createTransitions(dfa, dfa.getRoot());
-
   auto& transitions = dfa.getRoot()->getTransitions();
-  tester.assertEquals(0, transitions.size());
+
+  TESTER.assertEquals(0, transitions.size());
 }
 
-int main(int, char**) {
+
+void testShiftReduce() {
+  DFA_t dfa = buildDFA();
+  auto expr0 = parse(dfa, { new Int("1") });
+  auto expr1 = parse(dfa, { new Int("1"), new Plus(), new Int("2") });
+  auto expr2 = parse(dfa, { new Int("1"), new Plus(), new Int("2"), new Plus(), new Int("50") });
+
+  auto noParse0 = parse(dfa, { new Int("1"), new Plus() });
+  auto noParse1 = parse(dfa, { new Plus(), new Int("2") });
+  auto noParse2 = parse(dfa, { new Int("1"), new Int("2"), new Plus(), new Int("50") });
+  auto noParse3 = parse(dfa, { new Int("1"), new Plus(), new Plus(), new Int("50") });
+
+  TESTER.assertEquals(1, eval(expr0.get()));
+  TESTER.assertEquals(3, eval(expr1.get()));
+  TESTER.assertEquals(53, eval(expr2.get()));
+
+  TESTER.assertEquals(nullptr, noParse0);
+  TESTER.assertEquals(nullptr, noParse1);
+  TESTER.assertEquals(nullptr, noParse2);
+  TESTER.assertEquals(nullptr, noParse3);
+}
+
+int main() {
   testAddRhses();
   testEpsilonTransition();
   testInitDFA();
   testCreateTransitions();
   testCreateTransitionsEndRule();
+  testShiftReduce();
 
   return 0;
 }

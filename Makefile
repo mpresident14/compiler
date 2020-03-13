@@ -5,10 +5,15 @@ CXXFLAGS = -std=c++2a -Wall -Wextra -pedantic -g -I ./src
 BINARIES = main lr0_test dfa_test
 HEADERS = src/*.hpp
 
+
 all: $(BINARIES)
 
 clean:
 	find . -type f -executable -delete
+
+runtests:
+	./dfa_test
+	./lr0_test
 
 main: src/main.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) src/main.cpp -o main

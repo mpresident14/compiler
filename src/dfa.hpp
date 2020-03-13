@@ -54,7 +54,7 @@ public:
 
   const Node* getRoot() const { return root_; }
 
-  const Node* run(const std::vector<T>& input) {
+  const Node* run(const std::vector<T>& input) const {
     const Node* currentNode = root_;
     for (const T& inputToken : input) {
       currentNode = step(currentNode, inputToken);
@@ -66,7 +66,7 @@ public:
   }
 
   /* Step from node with transition inputToken */
-  const Node* step(const Node* node, const T& inputToken) {
+  const Node* step(const Node* node, const T& inputToken) const {
     auto iter = node->transitions_.find(inputToken);
     if (iter == node->transitions_.end()) {
       return nullptr;

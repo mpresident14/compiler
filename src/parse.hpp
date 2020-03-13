@@ -180,11 +180,13 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
   return retType;
 }
 
-unique_ptr<ROOT_TYPE> parse(vector<TokenObj*> inputTokens) {
-  DFA_t dfa = buildDFA();
+unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, vector<TokenObj*> inputTokens) {
   TokenObj* tok = inputTokens[0];
   vector<Obj*> stk = { tok };
   const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), tok->getSymbol());
+  if (currentNode == nullptr) {
+    return nullptr;
+  }
 
   size_t i = 1;
   size_t inputSize = inputTokens.size();
