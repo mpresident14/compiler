@@ -12,12 +12,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
 
-/* Actual symbols in the grammar */
+/* Terminals and nonterminals in the grammar */
 enum class Symbol { PLUS, DOLLAR, INT, EXPR, STMT };
 std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
@@ -40,106 +41,38 @@ std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   return out;
 }
 
-/* The types that each symbol in the grammar can be */
-enum class SymbolType { PLUS, DOLLAR, INT, EINT, EPLUS, SEXPR };
+/* The concrete types that symbols in the grammar can be */
+enum class Concrete { EINT, EPLUS, SEXPR, NONE };
+std::ostream& operator<<(std::ostream& out, const Concrete& type) {
+  switch (type) {
+    case Concrete::EINT:
+      out << "EINT";
+      break;
+    case Concrete::EPLUS:
+      out << "EPLUS";
+      break;
+    case Concrete::SEXPR:
+      out << "SEXPR";
+      break;
+    case Concrete::NONE:
+      out << "NONE";
+      break;
+  }
+  return out;
+}
 
 /***********
  *  RULES  *
  ***********/
 
-/* The actual grammar */
-using RuleRhs = vector<vector<Symbol>>;
-// TODO: Multimap
-using Grammar = unordered_map<Symbol, RuleRhs>;
-
-// NOTE: Starting point of the grammar must have a special name so that we
-// know where to start building the DFA from.
-Grammar grammar = {{Symbol::STMT, RuleRhs{{Symbol::EXPR, Symbol::DOLLAR}}},
-    {Symbol::EXPR, RuleRhs{{Symbol::INT}, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}}}};
-
-/***********
- * OBJECTS *
- ***********/
-struct SymbolObj {
-  virtual ~SymbolObj() {}
-  virtual Symbol getSymbol() = 0;
-  virtual SymbolType getType() = 0;
-  virtual bool isToken() = 0;
-};
-
-struct TokenObj : SymbolObj {
-  virtual bool isToken() { return true; }
-};
-
-struct VariableObj : SymbolObj {
-  virtual bool isToken() { return false; }
-};
-
-/* Tokens */
-struct Plus : TokenObj {
-  Symbol getSymbol() { return Symbol::PLUS; }
-  SymbolType getType() { return SymbolType::PLUS; }
-};
-struct Dollar : TokenObj {
-  Symbol getSymbol() { return Symbol::DOLLAR; }
-  SymbolType getType() { return SymbolType::DOLLAR; }
-};
-// TODO: Not sure about how to handle tokens with info
-struct Int : TokenObj {
-  Int(const string& str) : i_(atoi(str.c_str())) {}
-  Symbol getSymbol() { return Symbol::INT; }
-  SymbolType getType() { return SymbolType::INT; }
-  int i_;
-};
-
-/* Expr */
-struct Expr : VariableObj {
-  virtual ~Expr(){};
-  Symbol getSymbol() { return Symbol::EXPR; }
-};
-
-struct EInt : VariableObj {
-  EInt(int i) : i_(i) {}
-  SymbolType getType() { return SymbolType::EINT; }
-  int i_;
-};
-
-struct EPlus : VariableObj {
-  EPlus(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~EPlus() {
-    delete e1_;
-    delete e2_;
-  }
-  SymbolType getType() { return SymbolType::EPLUS; }
-  Expr* e1_;
-  Expr* e2_;
-};
-
-/* Stmt */
-struct Stmt : VariableObj {
-  virtual ~Stmt() {}
-  Symbol getSymbol() { return Symbol::STMT; }
-};
-
-struct SExpr : VariableObj {
-  SExpr(Expr* e1) : e1_(e1) {}
-  ~SExpr() { delete e1_; }
-  SymbolType getType() { return SymbolType::SEXPR; }
-  Expr* e1_;
-};
-
-/**********************
- *  DFA CONSTRUCTION  *
- **********************/
-
 struct Rule {
-  Symbol lhs;
-  vector<Symbol> rhs;
-  unsigned pos;
+  const Concrete lhs;
+  const vector<Symbol> rhs;
+  const size_t pos;
 
   bool atEnd() const { return pos == rhs.size(); }
   /* Given a rule "S -> A.B", returns B */
-  // TODO: Throw on illegal access?
+  // TODO: Remove throw when done
   Symbol nextSymbol() const {
     if (pos == rhs.size()) {
       throw std::invalid_argument("Out of bounds");
@@ -179,7 +112,7 @@ namespace std {
   template <>
   struct hash<Rule> {
     size_t operator()(const Rule& rule) const noexcept {
-      size_t h1 = std::hash<Symbol>()(rule.lhs);
+      size_t h1 = std::hash<Concrete>()(rule.lhs);
       size_t h2 = 0;
       std::hash<Symbol> hasher;
       for (const Symbol& symbol : rule.rhs) {
@@ -191,10 +124,11 @@ namespace std {
   };
 }  // namespace std
 
+
+
 /* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
  * should be equal if they contain the same rules (in any order) */
 using RuleSet = unordered_set<Rule>;
-using DFA_t = DFA<RuleSet, Symbol>;
 
 namespace std {
   template <>
@@ -210,20 +144,43 @@ namespace std {
   };
 }  // namespace std
 
+using Grammar = unordered_map<Symbol, vector<Rule>>;
+
+// NOTE: Starting point of the grammar must have a special name so that we
+// know where to start building the DFA from.
+Grammar grammar = {
+  {Symbol::STMT,
+      {
+        Rule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0}
+      }
+  },
+  {Symbol::EXPR,
+      {
+        Rule{Concrete::EINT, {Symbol::INT}, 0},
+        Rule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0}
+      },
+  }
+};
+
+/**********************
+ *  DFA CONSTRUCTION  *
+ **********************/
+using DFA_t = DFA<RuleSet, Symbol>;
+
 bool isVariable(Symbol symbol) { return grammar.contains(symbol); }
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol) {
-  const RuleRhs& rhses = grammar.at(symbol);
-  for (const auto& rhs : rhses) {
-    ruleSet.insert({ symbol, rhs, 0 });
+  const vector<Rule>& rules = grammar.at(symbol);
+  for (const Rule& rule : rules) {
+    ruleSet.insert(rule);
   }
 }
 
 void addRhses(vector<Rule>& ruleList, Symbol symbol) {
-  const RuleRhs& rhses = grammar.at(symbol);
-  for (const auto& rhs : rhses) {
-    ruleList.push_back({ symbol, rhs, 0 });
+  const vector<Rule>& rules = grammar.at(symbol);
+  for (const Rule& rule : rules) {
+    ruleList.push_back(rule);
   }
 }
 
@@ -292,6 +249,8 @@ DFA_t initDFA() {
   return dfa;
 }
 
+// TODO: We shouldn't have to build the DFA every time someone calls parse().
+// Instead, we should just hard code all the nodes after building the first time
 DFA_t buildDFA() {
   queue<const DFA_t::Node*> q;
   DFA_t dfa = initDFA();
@@ -308,5 +267,156 @@ DFA_t buildDFA() {
 
   return dfa;
 }
+
+
+/***********
+ * OBJECTS *
+ ***********/
+
+struct Obj {
+  virtual ~Obj() {}
+  virtual Symbol getSymbol() = 0;
+  virtual bool isToken() = 0;
+};
+
+struct TokenObj : Obj {
+  // TODO: Remove isToken() method
+  bool isToken() override { return true; }
+};
+
+struct VariableObj : Obj {
+  bool isToken() override { return false; }
+  virtual Concrete getType() = 0;
+};
+
+/* Tokens */
+struct Plus : TokenObj {
+  Symbol getSymbol() override { return Symbol::PLUS; }
+};
+struct Dollar : TokenObj {
+  Symbol getSymbol() override { return Symbol::DOLLAR; }
+};
+// TODO: Not sure about how to handle tokens with info
+struct Int : TokenObj {
+  Int(const string& str) : i_(atoi(str.c_str())) {}
+  Symbol getSymbol() override { return Symbol::INT; }
+  operator int() const { return i_; }
+  int i_;
+};
+
+/* Expr */
+struct Expr : VariableObj {
+  virtual ~Expr(){};
+  Symbol getSymbol() override { return Symbol::EXPR; }
+};
+
+struct EInt : Expr {
+  EInt(Obj* i) : i_(*(Int*) i) {}
+  Concrete getType() override { return Concrete::EINT; }
+  int i_;
+};
+
+struct EPlus : Expr {
+  EPlus(Obj* e1, Obj* e2) : e1_((Expr*) e1), e2_((Expr*) e2) {}
+  ~EPlus() {
+    delete e1_;
+    delete e2_;
+  }
+  Concrete getType() override { return Concrete::EPLUS; }
+  Expr* e1_;
+  Expr* e2_;
+};
+
+/* Stmt */
+struct Stmt : VariableObj {
+  virtual ~Stmt() {}
+  Symbol getSymbol() override { return Symbol::STMT; }
+};
+
+struct SExpr : Stmt {
+  SExpr(Obj* e1) : e1_((Expr*) e1) {}
+  ~SExpr() { delete e1_; }
+  Concrete getType() override { return Concrete::SEXPR; }
+  Expr* e1_;
+};
+
+/**********************
+ *   SHIFT-REDUCING   *
+ **********************/
+
+Obj* construct(Concrete type, Obj** args) {
+  switch (type) {
+    case Concrete::EINT: return new EInt(args[0]);
+    case Concrete::EPLUS: return new EPlus(args[0], args[2]);
+    case Concrete::SEXPR: return new SExpr(args[0]);
+    default: throw std::invalid_argument("Out of options.");
+  }
+}
+
+Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *reduceStart) {
+  Concrete retType = Concrete::NONE;
+  for (const auto& rule : node->getValue()) {
+    if (!rule.atEnd()) {
+      continue;
+    }
+
+    // TODO: change these to size_ts by shifting to start right away
+    int i = rule.rhs.size() - 1;
+    int j = stk.size() - 1;
+    while (j >= 0) {
+      if (rule.rhs[i] != stk[j]->getSymbol()) {
+        break;
+      }
+
+      // TODO: For now, just always reduce
+      if (i == 0) {
+        *reduceStart = (size_t) j;
+        // retType = rule.lhs;
+        return rule.lhs;
+      }
+    }
+  }
+  return retType;
+}
+
+unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
+  DFA_t dfa = buildDFA();
+  vector<Obj*> stk = { inputTokens[0] };
+  size_t i = 1;
+  size_t inputSize = inputTokens.size();
+
+  const DFA_t::Node* currentNode = dfa.getRoot();
+  // Stop when root of grammar is the only thing on the stack
+  while (!(stk.size() == 1 && stk[0]->getSymbol() == Symbol::STMT)) {
+    size_t reduceStart;
+    Concrete type = tryReduce(currentNode, stk, &reduceStart);
+    if (type != Concrete::NONE) {
+      // Construct the new object, pop the arguments off the stack,
+      // and push the new object onto it.
+      Obj* newObj = construct(type, &stk.data()[reduceStart]);
+      stk.erase(stk.begin() + reduceStart, stk.end());
+      stk.push_back(newObj);
+      // Restart the DFA.
+      // TODO: Only backtrack as far as the reduction (store path)
+      currentNode = dfa.getRoot();
+    } else {
+      // Didn't reduce to S
+      if (i == inputSize) {
+        return nullptr;
+      }
+      TokenObj* token = inputTokens[i];
+      stk.push_back(token);
+      currentNode = dfa.step(currentNode, token->getSymbol());
+      // No transition
+      if (currentNode == nullptr) {
+        return nullptr;
+      }
+      ++i;
+    }
+  }
+
+  return unique_ptr<Stmt>((Stmt*) (stk[0]));
+}
+
 
 #endif

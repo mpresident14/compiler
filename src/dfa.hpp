@@ -53,17 +53,25 @@ public:
   DFA& operator=(DFA&& other) = default;
 
   const Node* getRoot() const { return root_; }
+
   const Node* run(const std::vector<T>& input) {
     const Node* currentNode = root_;
-    for (const T& trans : input) {
-      auto iter = currentNode->transitions_.find(trans);
-      if (iter == currentNode->transitions_.end()) {
+    for (const T& inputToken : input) {
+      currentNode = step(currentNode, inputToken);
+      if (currentNode == nullptr) {
         return nullptr;
-      } else {
-        currentNode = iter->second;
       }
     }
     return currentNode;
+  }
+
+  /* Step from node with transition inputToken */
+  const Node* step(const Node* node, const T& inputToken) {
+    auto iter = node->transitions_.find(inputToken);
+    if (iter == node->transitions_.end()) {
+      return nullptr;
+    }
+    return iter->second;
   }
 
   // TODO: Make newNodeValue a universal reference so that we can forward it
