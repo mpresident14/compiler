@@ -51,23 +51,27 @@ std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 
 struct Obj {
   virtual ~Obj() {}
-  virtual Symbol getSymbol() = 0;
+  virtual Symbol getSymbol() const = 0;
+  virtual bool isToken() const = 0;
 };
 
-struct TokenObj : Obj {};
+struct TokenObj : Obj {
+  bool isToken() const override { return true; };
+};
 
 struct VariableObj : Obj {
-  virtual Concrete getType() = 0;
+  virtual Concrete getType() const = 0;
+  bool isToken() const override { return false; };
 };
 
 /* Tokens */
 struct Plus : TokenObj {
-  Symbol getSymbol() override { return Symbol::PLUS; }
+  Symbol getSymbol() const override { return Symbol::PLUS; }
 };
 
 struct Int : TokenObj {
   Int(const std::string& str) : i_(atoi(str.c_str())) {}
-  Symbol getSymbol() override { return Symbol::INT; }
+  Symbol getSymbol() const override { return Symbol::INT; }
   operator int() const { return i_; }
   int i_;
 };
@@ -75,25 +79,25 @@ struct Int : TokenObj {
 /* Term */
 struct Term : VariableObj {
   virtual ~Term(){};
-  Symbol getSymbol() override { return Symbol::TERM; }
+  Symbol getSymbol() const override { return Symbol::TERM; }
 };
 
 struct TInt : Term {
   TInt(Obj* i) : i_(*(Int*) i) {}
-  Concrete getType() override { return Concrete::TINT; }
+  Concrete getType() const override { return Concrete::TINT; }
   int i_;
 };
 
 /* Expr */
 struct Expr : VariableObj {
   virtual ~Expr(){};
-  Symbol getSymbol() override { return Symbol::EXPR; }
+  Symbol getSymbol() const override { return Symbol::EXPR; }
 };
 
 struct ETerm : Expr {
   ETerm(Obj* t) : t_((Term*) t) {}
   ~ETerm() { delete t_; }
-  Concrete getType() override { return Concrete::ETERM; }
+  Concrete getType() const override { return Concrete::ETERM; }
   Term* t_;
 };
 
@@ -103,7 +107,7 @@ struct EPlus : Expr {
     delete e_;
     delete t_;
   }
-  Concrete getType() override { return Concrete::EPLUS; }
+  Concrete getType() const override { return Concrete::EPLUS; }
   Expr* e_;
   Term* t_;
 };

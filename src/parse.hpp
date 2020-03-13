@@ -180,11 +180,21 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
   return retType;
 }
 
-unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, vector<TokenObj*> inputTokens) {
+/* Clear pointers starting at index i */
+template <typename T>
+void cleanPtrsFrom(const vector<T*>& ptrVec, size_t i) {
+  size_t size = ptrVec.size();
+  for (; i < size; ++i) {
+    delete ptrVec[i];
+  }
+}
+
+unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputTokens) {
   TokenObj* tok = inputTokens[0];
   vector<Obj*> stk = { tok };
   const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), tok->getSymbol());
   if (currentNode == nullptr) {
+    cleanPtrsFrom(inputTokens, 0);
     return nullptr;
   }
 
@@ -200,8 +210,17 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, vector<TokenObj*> inputTokens) {
       // Construct the new object, pop the arguments off the stack,
       // and push the new object onto it.
       Obj* newObj = construct(type, &stk.data()[reduceStart]);
-      stk.erase(stk.begin() + reduceStart, stk.end());
+      size_t stkSize = stk.size();
+      for (size_t j = 0; j < stkSize - reduceStart; ++j) {
+        // Tokens are not encapsulated within the underlying object, so the
+        // pointers need to be deleted
+        if (stk.back()->isToken()) {
+          delete stk.back();
+        }
+        stk.pop_back();
+      }
       stk.push_back(newObj);
+
       // Restart the DFA.
       // TODO: Only backtrack as far as the reduction (store path)
       vector<Symbol> stkSymbols;
@@ -209,15 +228,18 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, vector<TokenObj*> inputTokens) {
         [](Obj* ptr) { return ptr->getSymbol(); });
       currentNode = dfa.run(stkSymbols);
     } else {
-      // Didn't reduce to S
+      // No more tokens, didn't reduce to S
       if (i == inputSize) {
+        cleanPtrsFrom(stk, 0);
         return nullptr;
       }
       TokenObj* token = inputTokens[i];
       stk.push_back(token);
       currentNode = dfa.step(currentNode, token->getSymbol());
-      // No transition
+      // No transition for this token
       if (currentNode == nullptr) {
+        cleanPtrsFrom(stk, 0);
+        cleanPtrsFrom(inputTokens, i + 1);
         return nullptr;
       }
       ++i;
