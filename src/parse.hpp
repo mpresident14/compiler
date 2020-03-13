@@ -189,8 +189,9 @@ unique_ptr<ROOT_TYPE> parse(vector<TokenObj*> inputTokens) {
   size_t i = 1;
   size_t inputSize = inputTokens.size();
 
-  // Stop when root of grammar is the only thing on the stack
-  while (!(stk.size() == 1 && stk[0]->getSymbol() == ROOT_SYM)) {
+  // Stop when we have consumed all the input and the root of grammar
+  // is the only thing on the stack
+  while (!(i == inputSize && stk.size() == 1 && stk[0]->getSymbol() == ROOT_SYM)) {
     size_t reduceStart;
     Concrete type = tryReduce(currentNode, stk, &reduceStart);
     if (type != Concrete::NONE) {
