@@ -10,6 +10,8 @@
 using namespace std;
 using namespace prez;
 
+// TODO: Replace this test with the actual LR0 grammar test
+
 UnitTest tester = UnitTest::createTester();
 
 void testAddRhses() {

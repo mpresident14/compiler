@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 CXX = clang++
 CXXFLAGS = -std=c++2a -Wall -Wextra -pedantic -g -I ./src
-BINARIES = main rules_test dfa_test
+BINARIES = main lr0_test dfa_test
 HEADERS = src/*.hpp
 
 all: $(BINARIES)
@@ -16,5 +16,5 @@ main: src/main.cpp $(HEADERS)
 dfa_test: test/dfa_test.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) test/dfa_test.cpp -o dfa_test
 
-rules_test: test/rules_test.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) test/rules_test.cpp -o rules_test
+lr0_test: test/lr0_test.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) test/lr0_test.cpp -o lr0_test
