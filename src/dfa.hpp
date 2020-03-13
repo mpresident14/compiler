@@ -30,7 +30,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& out, const Node& node) {
-      return out << prez::containerToString(node.value_);
+      return out << node.value_;
     }
 
     const V& getValue() const { return value_; }

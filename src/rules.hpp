@@ -360,9 +360,8 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
       continue;
     }
 
-    // TODO: change these to size_ts by shifting to start right away
-    int i = rule.rhs.size() - 1;
-    int j = stk.size() - 1;
+    size_t i = rule.rhs.size() - 1;
+    size_t j = stk.size() - 1;
     while (j >= 0) {
       if (rule.rhs[i] != stk[j]->getSymbol()) {
         break;
@@ -370,10 +369,12 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
 
       // TODO: For now, just always reduce
       if (i == 0) {
-        *reduceStart = (size_t) j;
+        *reduceStart = j;
         // retType = rule.lhs;
         return rule.lhs;
       }
+      --i;
+      --j;
     }
   }
   return retType;
@@ -381,11 +382,13 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
 
 unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
   DFA_t dfa = buildDFA();
-  vector<Obj*> stk = { inputTokens[0] };
+  TokenObj* tok = inputTokens[0];
+  vector<Obj*> stk = { tok };
+  const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), tok->getSymbol());
+
   size_t i = 1;
   size_t inputSize = inputTokens.size();
 
-  const DFA_t::Node* currentNode = dfa.getRoot();
   // Stop when root of grammar is the only thing on the stack
   while (!(stk.size() == 1 && stk[0]->getSymbol() == Symbol::STMT)) {
     size_t reduceStart;
@@ -398,7 +401,10 @@ unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
       stk.push_back(newObj);
       // Restart the DFA.
       // TODO: Only backtrack as far as the reduction (store path)
-      currentNode = dfa.getRoot();
+      vector<Symbol> stkSymbols;
+      std::transform(stk.begin(), stk.end(), std::back_inserter(stkSymbols),
+        [](Obj* ptr) { return ptr->getSymbol(); });
+      currentNode = dfa.run(stkSymbols);
     } else {
       // Didn't reduce to S
       if (i == inputSize) {
