@@ -45,8 +45,6 @@ std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-const Symbol AST_ROOT = Symbol::EXPR;
-
 /***********
  * OBJECTS *
  ***********/
@@ -74,22 +72,10 @@ struct Int : TokenObj {
   int i_;
 };
 
-/* Expr */
-struct Expr : VariableObj {
-  virtual ~Expr(){};
-  Symbol getSymbol() override { return Symbol::EXPR; }
-};
-
-
-struct EPlus : Expr {
-  EPlus(Obj* e1, Obj* e2) : e1_((Expr*) e1), e2_((Expr*) e2) {}
-  ~EPlus() {
-    delete e1_;
-    delete e2_;
-  }
-  Concrete getType() override { return Concrete::EPLUS; }
-  Expr* e1_;
-  Expr* e2_;
+/* Term */
+struct Term : VariableObj {
+  virtual ~Term(){};
+  Symbol getSymbol() override { return Symbol::TERM; }
 };
 
 struct TInt : Term {
@@ -98,26 +84,41 @@ struct TInt : Term {
   int i_;
 };
 
-/* Start */
-struct Start : VariableObj {
-  virtual ~Start() {}
-  Symbol getSymbol() override { return Symbol::S; }
+/* Expr */
+struct Expr : VariableObj {
+  virtual ~Expr(){};
+  Symbol getSymbol() override { return Symbol::EXPR; }
 };
 
-struct SExpr : Start {
-  SExpr(Obj* e1) : e1_((Expr*) e1) {}
-  ~SExpr() { delete e1_; }
-  Concrete getType() override { return Concrete::SEXPR; }
-  Expr* e1_;
+struct ETerm : Expr {
+  ETerm(Obj* t) : t_((Term*) t) {}
+  ~ETerm() { delete t_; }
+  Concrete getType() override { return Concrete::ETERM; }
+  Term* t_;
 };
+
+struct EPlus : Expr {
+  EPlus(Obj* e, Obj* t) : e_((Expr*) e), t_((Term*) t) {}
+  ~EPlus() {
+    delete e_;
+    delete t_;
+  }
+  Concrete getType() override { return Concrete::EPLUS; }
+  Expr* e_;
+  Term* t_;
+};
+
 
 Obj* construct(Concrete type, Obj** args) {
   switch (type) {
-    case Concrete::EINT: return new EInt(args[0]);
+    case Concrete::TINT: return new TInt(args[0]);
+    case Concrete::ETERM: return new ETerm(args[0]);
     case Concrete::EPLUS: return new EPlus(args[0], args[2]);
-    case Concrete::SEXPR: return new SExpr(args[0]);
     default: throw std::invalid_argument("Out of options.");
   }
 }
+
+const Symbol ROOT_SYM = Symbol::EXPR;
+using ROOT_TYPE = Expr;
 
 #endif

@@ -48,9 +48,6 @@ std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-const Symbol AST_ROOT = Symbol::STMT;
-
-
 /***********
  * OBJECTS *
  ***********/
@@ -94,14 +91,11 @@ struct EInt : Expr {
 };
 
 struct EPlus : Expr {
-  EPlus(Obj* e1, Obj* e2) : e1_((Expr*) e1), e2_((Expr*) e2) {}
-  ~EPlus() {
-    delete e1_;
-    delete e2_;
-  }
+  EPlus(Obj* i, Obj* e) : i_(*(Int*) i), e_((Expr*) e) {}
+  ~EPlus() { delete e_; }
   Concrete getType() override { return Concrete::EPLUS; }
-  Expr* e1_;
-  Expr* e2_;
+  int i_;
+  Expr* e_;
 };
 
 /* Stmt */
@@ -125,5 +119,8 @@ Obj* construct(Concrete type, Obj** args) {
     default: throw std::invalid_argument("Out of options.");
   }
 }
+
+const Symbol ROOT_SYM = Symbol::STMT;
+using ROOT_TYPE = Stmt;
 
 #endif

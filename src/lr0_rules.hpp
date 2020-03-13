@@ -2,7 +2,7 @@
 #define RULES_HPP
 
 #include "dfa.hpp"
-#include "slr1_grammar.hpp"
+#include "lr0_grammar.hpp"
 
 #include <cstddef>
 #include <iostream>

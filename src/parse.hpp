@@ -3,24 +3,42 @@
 
 #include "dfa.hpp"
 #include "lr0_rules.hpp"
-#include "slr1_grammar.hpp"
+#include "lr0_grammar.hpp"
+// #include "slr1_grammar.hpp"
 
 #include <iostream>
 #include <cstddef>
 #include <string>
 
-// NOTE: Stmting point of the grammar must have a special name AST_ROOT so that we
+// NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
 // know where to start building the DFA from.
-const Grammar GRAMMAR_SLR1 = {
-  {AST_ROOT,
+
+/* SLR1 Grammar */
+// const Grammar GRAMMAR = {
+//   {ROOT_SYM,
+//       {
+//         Rule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0}
+//       }
+//   },
+//   {Symbol::EXPR,
+//       {
+//         Rule{Concrete::EINT, {Symbol::INT}, 0},
+//         Rule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0}
+//       },
+//   }
+// };
+
+/* LR0 Grammar */
+const Grammar GRAMMAR = {
+  {ROOT_SYM,
       {
-        Rule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0}
+        Rule{Concrete::ETERM, {Symbol::TERM}, 0},
+        Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
       }
   },
-  {Symbol::EXPR,
+  {Symbol::TERM,
       {
-        Rule{Concrete::EINT, {Symbol::INT}, 0},
-        Rule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0}
+        Rule{Concrete::TINT, {Symbol::INT}, 0},
       },
   }
 };
@@ -30,18 +48,18 @@ const Grammar GRAMMAR_SLR1 = {
  **********************/
 using DFA_t = DFA<RuleSet, Symbol>;
 
-bool isVariable(Symbol symbol) { return GRAMMAR_SLR1.contains(symbol); }
+bool isVariable(Symbol symbol) { return GRAMMAR.contains(symbol); }
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol) {
-  const vector<Rule>& rules = GRAMMAR_SLR1.at(symbol);
+  const vector<Rule>& rules = GRAMMAR.at(symbol);
   for (const Rule& rule : rules) {
     ruleSet.insert(rule);
   }
 }
 
 void addRhses(vector<Rule>& ruleList, Symbol symbol) {
-  const vector<Rule>& rules = GRAMMAR_SLR1.at(symbol);
+  const vector<Rule>& rules = GRAMMAR.at(symbol);
   for (const Rule& rule : rules) {
     ruleList.push_back(rule);
   }
@@ -105,8 +123,8 @@ std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node*
 /* Constructs the starting node of the DFA */
 DFA_t initDFA() {
   RuleSet firstSet;
-  // NOTE: AST_ROOT must be a specified starting point
-  addRhses(firstSet, AST_ROOT);
+  // NOTE: ROOT_SYM must be a specified starting point
+  addRhses(firstSet, ROOT_SYM);
   epsilonTransition(firstSet);
   DFA_t dfa(firstSet);
   return dfa;
@@ -135,7 +153,7 @@ DFA_t buildDFA() {
  *   SHIFT-REDUCING   *
  **********************/
 
-Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *reduceStmt) {
+Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *reduceStart) {
   Concrete retType = Concrete::NONE;
   for (const auto& rule : node->getValue()) {
     if (!rule.atEnd()) {
@@ -151,7 +169,7 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
 
       // TODO: For now, just always reduce
       if (i == 0) {
-        *reduceStmt = j;
+        *reduceStart = j;
         // retType = rule.lhs;
         return rule.lhs;
       }
@@ -162,7 +180,7 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
   return retType;
 }
 
-unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
+unique_ptr<ROOT_TYPE> parse(vector<TokenObj*> inputTokens) {
   DFA_t dfa = buildDFA();
   TokenObj* tok = inputTokens[0];
   vector<Obj*> stk = { tok };
@@ -172,14 +190,14 @@ unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
   size_t inputSize = inputTokens.size();
 
   // Stop when root of grammar is the only thing on the stack
-  while (!(stk.size() == 1 && stk[0]->getSymbol() == AST_ROOT)) {
-    size_t reduceStmt;
-    Concrete type = tryReduce(currentNode, stk, &reduceStmt);
+  while (!(stk.size() == 1 && stk[0]->getSymbol() == ROOT_SYM)) {
+    size_t reduceStart;
+    Concrete type = tryReduce(currentNode, stk, &reduceStart);
     if (type != Concrete::NONE) {
       // Construct the new object, pop the arguments off the stack,
       // and push the new object onto it.
-      Obj* newObj = construct(type, &stk.data()[reduceStmt]);
-      stk.erase(stk.begin() + reduceStmt, stk.end());
+      Obj* newObj = construct(type, &stk.data()[reduceStart]);
+      stk.erase(stk.begin() + reduceStart, stk.end());
       stk.push_back(newObj);
       // Restart the DFA.
       // TODO: Only backtrack as far as the reduction (store path)
@@ -203,7 +221,7 @@ unique_ptr<Stmt> parse(vector<TokenObj*> inputTokens) {
     }
   }
 
-  return unique_ptr<Stmt>((Stmt*) (stk[0]));
+  return unique_ptr<ROOT_TYPE>((ROOT_TYPE*) (stk[0]));
 }
 
 
