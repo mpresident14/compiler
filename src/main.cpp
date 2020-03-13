@@ -1,5 +1,4 @@
-#include "dfa.hpp"
-#include "rules.hpp"
+#include "parse.hpp"
 
 #include <cstddef>
 #include <iostream>
