@@ -18,16 +18,7 @@ public:
   public:
     friend class DFA;
 
-    ~Node() {
-      // Deal with cyclic references to prevent invalid free
-      deleterCalled_ = true;
-      for (auto& keyVal : transitions_) {
-        const Node* node = keyVal.second;
-        if (node && !node->deleterCalled_) {
-          delete node;
-        }
-      }
-    }
+    bool operator==(const Node& other) const { return value_ == other.value_; }
 
     friend std::ostream& operator<<(std::ostream& out, const Node& node) {
       return out << node.value_;
@@ -45,8 +36,30 @@ public:
     bool deleterCalled_ = false;
   };
 
-  DFA(V value) : root_(new Node(value)), nodes_{{std::move(value), root_}} {}
-  ~DFA() { if (root_) delete root_; };
+  friend struct Node;
+
+  DFA(V value)
+      : root_(new Node(value)), valueToNode_{{std::move(value), root_}} {}
+
+  ~DFA() {
+    // Delete via BFS
+    std::queue<const Node*> q;
+    q.push(root_);
+    std::unordered_set<const Node*> visited = {root_};
+    while (!q.empty()) {
+      const Node* node = q.front();
+      q.pop();
+      for (auto& keyVal : node->transitions_) {
+        const Node* successor = keyVal.second;
+        if (!visited.contains(successor)) {
+          q.push(successor);
+          visited.insert(successor);
+        }
+      }
+      delete node;
+    }
+  };
+
   DFA(const DFA& other) = delete;
   DFA(DFA&& other) = default;
   DFA& operator=(const DFA& other) = delete;
@@ -83,18 +96,18 @@ public:
 
     // If a node with this value already exists, just add a transition to the
     // existing node
-    if (nodes_.contains(newNodeValue)) {
-      const Node* successor = nodes_.at(newNodeValue);
+    if (valueToNode_.contains(newNodeValue)) {
+      const Node* successor = valueToNode_.at(newNodeValue);
       node->transitions_.emplace(std::move(transition), successor);
       return nullptr;
     }
 
     // Otherwise, create a new node
-    // TODO: If we make nodes_ hold V*s and insert the address of newNode.value,
+    // TODO: If we make valueToNode_ hold V*s and insert the address of newNode.value,
     // we can avoid expensive copies
     const Node* newNode = new Node(newNodeValue);
     node->transitions_.emplace(std::move(transition), newNode);
-    nodes_.emplace(newNodeValue, newNode);
+    valueToNode_.emplace(newNodeValue, newNode);
     return newNode;
   }
 
@@ -121,7 +134,7 @@ private:
   const Node* root_;
   // Allows us to check whether a node with some value exists in the
   // DFA and grab a pointer to it.
-  std::unordered_map<V, const Node*> nodes_;
+  std::unordered_map<V, const Node*> valueToNode_;
 };
 
 #endif
