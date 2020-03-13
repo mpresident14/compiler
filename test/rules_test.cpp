@@ -20,8 +20,8 @@ void testAddRhses() {
   const Rule expected1 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(2, ruleSet.size());
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected0));
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected1));
+  tester.assertTrue(ruleSet.contains(expected0));
+  tester.assertTrue(ruleSet.contains(expected1));
 }
 
 void testEpsilonTransition() {
@@ -34,9 +34,9 @@ void testEpsilonTransition() {
   const Rule expected1 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(3, ruleSet.size());
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), init));
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected0));
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expected1));
+  tester.assertTrue(ruleSet.contains(init));
+  tester.assertTrue(ruleSet.contains(expected0));
+  tester.assertTrue(ruleSet.contains(expected1));
 }
 
 void testInitDFA() {
@@ -48,9 +48,9 @@ void testInitDFA() {
   const Rule expectedRule2 = {Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0};
 
   tester.assertEquals(3, ruleSet.size());
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule0));
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule1));
-  tester.assertEquals(1, count(ruleSet.begin(), ruleSet.end(), expectedRule2));
+  tester.assertTrue(ruleSet.contains(expectedRule0));
+  tester.assertTrue(ruleSet.contains(expectedRule1));
+  tester.assertTrue(ruleSet.contains(expectedRule2));
 }
 
 void testCreateTransitions() {
@@ -69,12 +69,10 @@ void testCreateTransitions() {
 
   tester.assertEquals(2, transitions.size());
   tester.assertEquals(1, ruleSetExpr.size());
-  tester.assertEquals(1, count(ruleSetExpr.begin(), ruleSetExpr.end(), expectedExpr0));
+  tester.assertTrue(ruleSetExpr.contains(expectedExpr0));
   tester.assertEquals(2, ruleSetInt.size());
   tester.assertTrue(ruleSetInt.contains(expectedInt0));
-  tester.assertEquals(1, count(ruleSetInt.begin(), ruleSetInt.end(), expectedInt1));
-
-  cout << dfa << endl;
+  tester.assertTrue(ruleSetInt.contains(expectedInt1));
 }
 
 void testCreateTransitionsEndRule() {
