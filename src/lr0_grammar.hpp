@@ -85,7 +85,7 @@ struct Term : VariableObj {
 };
 
 struct TInt : Term {
-  TInt(Obj* i) : i_(*(Int*) i) {}
+  TInt(int i) : i_(i) {}
   Concrete getType() const override { return Concrete::TINT; }
   int i_;
 };
@@ -97,14 +97,14 @@ struct Expr : VariableObj {
 };
 
 struct ETerm : Expr {
-  ETerm(Obj* t) : t_((Term*) t) {}
+  ETerm(Term* t) : t_(t) {}
   ~ETerm() { delete t_; }
   Concrete getType() const override { return Concrete::ETERM; }
   Term* t_;
 };
 
 struct EPlus : Expr {
-  EPlus(Obj* e, Obj* t) : e_((Expr*) e), t_((Term*) t) {}
+  EPlus(Expr* e, Term* t) : e_(e), t_(t) {}
   ~EPlus() {
     delete e_;
     delete t_;
@@ -117,9 +117,9 @@ struct EPlus : Expr {
 
 Obj* construct(Concrete type, Obj** args) {
   switch (type) {
-    case Concrete::TINT: return new TInt(args[0]);
-    case Concrete::ETERM: return new ETerm(args[0]);
-    case Concrete::EPLUS: return new EPlus(args[0], args[2]);
+    case Concrete::TINT: return new TInt(*(Int*) args[0]);
+    case Concrete::ETERM: return new ETerm((Term*) args[0]);
+    case Concrete::EPLUS: return new EPlus((Expr*) args[0], (Term*) args[2]);
     default: throw std::invalid_argument("Out of options.");
   }
 }
