@@ -7,18 +7,17 @@
 #include <cstddef>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <queue>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <memory>
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
-
 
 /***********
  *  RULES  *
@@ -83,8 +82,6 @@ namespace std {
   };
 }  // namespace std
 
-
-
 /* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
  * should be equal if they contain the same rules (in any order) */
 using RuleSet = unordered_set<Rule>;
@@ -104,6 +101,5 @@ namespace std {
 }  // namespace std
 
 using Grammar = unordered_map<Symbol, vector<Rule>>;
-
 
 #endif

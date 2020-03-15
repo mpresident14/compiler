@@ -2,12 +2,12 @@
 #define PARSE_HPP
 
 #include "dfa.hpp"
-#include "lr0_rules.hpp"
 #include "lr0_grammar.hpp"
+#include "lr0_rules.hpp"
 // #include "slr1_grammar.hpp"
 
-#include <iostream>
 #include <cstddef>
+#include <iostream>
 #include <string>
 
 // NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
@@ -30,18 +30,17 @@
 
 /* LR0 Grammar */
 const Grammar GRAMMAR = {
-  {ROOT_SYM,
-      {
-        Rule{Concrete::ETERM, {Symbol::TERM}, 0},
-        Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
-      }
-  },
-  {Symbol::TERM,
-      {
-        Rule{Concrete::TINT, {Symbol::INT}, 0},
-      },
-  }
-};
+    {ROOT_SYM,
+        {
+            Rule{Concrete::ETERM, {Symbol::TERM}, 0},
+            Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
+        }},
+    {
+        Symbol::TERM,
+        {
+            Rule{Concrete::TINT, {Symbol::INT}, 0},
+        },
+    }};
 
 /**********************
  *  DFA CONSTRUCTION  *
@@ -153,9 +152,48 @@ DFA_t buildDFA() {
  *   SHIFT-REDUCING   *
  **********************/
 
-Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *reduceStart) {
+struct StackObj {
+  // No deleter since pointers will be passed to the client
+  void* obj;
+  Symbol symbol;
+  Concrete type;
+
+  void deleteObj() const {
+    switch (symbol) {
+      case Symbol::INT:
+        delete (Int*)obj;
+        break;
+      case Symbol::PLUS:
+        delete (Plus*)obj;
+        break;
+      case Symbol::TERM:
+        delete (Term*)obj;
+        break;
+      case Symbol::EXPR:
+        delete (Expr*)obj;
+        break;
+      default:
+        throw std::invalid_argument("Can't delete. Out of options.");
+    }
+  }
+};
+
+StackObj construct(Concrete type, StackObj* args) {
+  switch (type) {
+    case Concrete::TINT:
+      return StackObj{new TInt(*(Int*)args[0].obj), toSymbol(type), type};
+    case Concrete::ETERM:
+      return StackObj{new ETerm((Term*)args[0].obj), toSymbol(type), type};
+    case Concrete::EPLUS:
+      return StackObj{new EPlus((Expr*)args[0].obj, (Term*)args[2].obj), toSymbol(type), type};
+    default:
+      throw std::invalid_argument("Can't construct. Out of options.");
+  }
+}
+
+Concrete tryReduce(const DFA_t::Node* node, const vector<StackObj>& stk, size_t* reduceStart) {
   Concrete retType = Concrete::NONE;
-  for (const auto& rule : node->getValue()) {
+  for (const Rule& rule : node->getValue()) {
     // Make sure we have completed the rule
     if (!rule.atEnd()) {
       continue;
@@ -165,7 +203,7 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
     size_t i = rule.rhs.size() - 1;
     size_t j = stk.size() - 1;
     while (j >= 0) {
-      if (rule.rhs[i] != stk[j]->getSymbol()) {
+      if (rule.rhs[i] != stk[j].symbol) {
         break;
       }
 
@@ -182,19 +220,18 @@ Concrete tryReduce(const DFA_t::Node* node, const vector<Obj*>& stk, size_t *red
   return retType;
 }
 
-/* Clear pointers starting at index i */
-template <typename T>
-void cleanPtrsFrom(const vector<T*>& ptrVec, size_t i) {
-  size_t size = ptrVec.size();
+/* Clear from StackObj::obj starting at index i */
+void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
+  size_t size = stackObjs.size();
   for (; i < size; ++i) {
-    delete ptrVec[i];
+    stackObjs[i].deleteObj();
   }
 }
 
-unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputTokens) {
-  TokenObj* tok = inputTokens[0];
-  vector<Obj*> stk = { tok };
-  const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), tok->getSymbol());
+unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<StackObj>& inputTokens) {
+  StackObj firstToken = inputTokens[0];
+  vector<StackObj> stk = {firstToken};
+  const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), firstToken.symbol);
   if (currentNode == nullptr) {
     cleanPtrsFrom(inputTokens, 0);
     return nullptr;
@@ -205,19 +242,19 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputToke
 
   // Stop when we have consumed all the input and the root of grammar
   // is the only thing on the stack
-  while (!(i == inputSize && stk.size() == 1 && stk[0]->getSymbol() == ROOT_SYM)) {
+  while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == ROOT_SYM)) {
     size_t reduceStart;
     Concrete type = tryReduce(currentNode, stk, &reduceStart);
     if (type != Concrete::NONE) {
       // Construct the new object, pop the arguments off the stack,
       // and push the new object onto it.
-      Obj* newObj = construct(type, &stk.data()[reduceStart]);
+      StackObj newObj = construct(type, &stk.data()[reduceStart]);
       size_t stkSize = stk.size();
       for (size_t j = 0; j < stkSize - reduceStart; ++j) {
         // Tokens are not encapsulated within the underlying object, so the
         // pointers need to be deleted
-        if (stk.back()->isToken()) {
-          delete stk.back();
+        if (static_cast<int>(stk.back().symbol) < static_cast<int>(Symbol::ENDTOKENS)) {
+          stk.back().deleteObj();
         }
         stk.pop_back();
       }
@@ -226,8 +263,9 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputToke
       // Restart the DFA.
       // TODO: Only backtrack as far as the reduction (store path)
       vector<Symbol> stkSymbols;
-      std::transform(stk.begin(), stk.end(), std::back_inserter(stkSymbols),
-        [](Obj* ptr) { return ptr->getSymbol(); });
+      std::transform(stk.begin(), stk.end(), std::back_inserter(stkSymbols), [](StackObj stkObj) {
+        return stkObj.symbol;
+      });
       currentNode = dfa.run(stkSymbols);
     } else {
       // No more tokens, didn't reduce to S
@@ -235,9 +273,9 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputToke
         cleanPtrsFrom(stk, 0);
         return nullptr;
       }
-      TokenObj* token = inputTokens[i];
+      StackObj token = inputTokens[i];
       stk.push_back(token);
-      currentNode = dfa.step(currentNode, token->getSymbol());
+      currentNode = dfa.step(currentNode, token.symbol);
       // No transition for this token
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);
@@ -248,8 +286,7 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<TokenObj*>& inputToke
     }
   }
 
-  return unique_ptr<ROOT_TYPE>((ROOT_TYPE*) (stk[0]));
+  return unique_ptr<ROOT_TYPE>((ROOT_TYPE*)(stk[0].obj));
 }
-
 
 #endif

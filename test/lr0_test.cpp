@@ -10,16 +10,15 @@
 using namespace std;
 using namespace prez;
 
-
 UnitTest TESTER = UnitTest::createTester();
 
-int eval(Term* tInt) { return ((TInt*) tInt)->i_; }
+int eval(Term* tInt) { return ((TInt*)tInt)->i_; }
 int eval(Expr* expr) {
   switch (expr->getType()) {
     case Concrete::ETERM:
-      return eval(((ETerm*) expr) ->t_);
+      return eval(((ETerm*)expr)->t_);
     case Concrete::EPLUS:
-      return eval(((EPlus*) expr)->t_) + eval(((EPlus*) expr)->e_);
+      return eval(((EPlus*)expr)->t_) + eval(((EPlus*)expr)->e_);
     default:
       return -1;
   }
@@ -94,17 +93,36 @@ void testCreateTransitionsEndRule() {
   TESTER.assertEquals(0, transitions.size());
 }
 
-
 void testShiftReduce() {
   DFA_t dfa = buildDFA();
-  auto expr0 = parse(dfa, { new Int("1") });
-  auto expr1 = parse(dfa, { new Int("1"), new Plus(), new Int("2") });
-  auto expr2 = parse(dfa, { new Int("1"), new Plus(), new Int("2"), new Plus(), new Int("50") });
+  auto expr0 = parse(dfa, {StackObj{new Int("1"), Symbol::INT, Concrete::NONE}});
+  auto expr1 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+  auto expr2 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
 
-  auto noParse0 = parse(dfa, { new Int("1"), new Plus() });
-  auto noParse1 = parse(dfa, { new Plus(), new Int("2") });
-  auto noParse2 = parse(dfa, { new Int("1"), new Int("2"), new Plus(), new Int("50") });
-  auto noParse3 = parse(dfa, { new Int("1"), new Plus(), new Plus(), new Int("50") });
+  auto noParse0 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE}});
+  auto noParse1 = parse(dfa,
+      {StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+  auto noParse2 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  auto noParse3 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
 
   TESTER.assertEquals(1, eval(expr0.get()));
   TESTER.assertEquals(3, eval(expr1.get()));

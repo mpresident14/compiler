@@ -1,8 +1,8 @@
 #ifndef SLR1_GRAMMAR_HPP
 #define SLR1_GRAMMAR_HPP
 
-#include <iostream>
 #include <cstddef>
+#include <iostream>
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
@@ -85,13 +85,13 @@ struct Expr : VariableObj {
 };
 
 struct EInt : Expr {
-  EInt(Obj* i) : i_(*(Int*) i) {}
+  EInt(Obj* i) : i_(*(Int*)i) {}
   Concrete getType() override { return Concrete::EINT; }
   int i_;
 };
 
 struct EPlus : Expr {
-  EPlus(Obj* i, Obj* e) : i_(*(Int*) i), e_((Expr*) e) {}
+  EPlus(Obj* i, Obj* e) : i_(*(Int*)i), e_((Expr*)e) {}
   ~EPlus() { delete e_; }
   Concrete getType() override { return Concrete::EPLUS; }
   int i_;
@@ -105,7 +105,7 @@ struct Stmt : VariableObj {
 };
 
 struct RExpr : Stmt {
-  RExpr(Obj* e1) : e1_((Expr*) e1) {}
+  RExpr(Obj* e1) : e1_((Expr*)e1) {}
   ~RExpr() { delete e1_; }
   Concrete getType() override { return Concrete::SEXPR; }
   Expr* e1_;
@@ -113,10 +113,14 @@ struct RExpr : Stmt {
 
 Obj* construct(Concrete type, Obj** args) {
   switch (type) {
-    case Concrete::EINT: return new EInt(args[0]);
-    case Concrete::EPLUS: return new EPlus(args[0], args[2]);
-    case Concrete::SEXPR: return new RExpr(args[0]);
-    default: throw std::invalid_argument("Out of options.");
+    case Concrete::EINT:
+      return new EInt(args[0]);
+    case Concrete::EPLUS:
+      return new EPlus(args[0], args[2]);
+    case Concrete::SEXPR:
+      return new RExpr(args[0]);
+    default:
+      throw std::invalid_argument("Out of options.");
   }
 }
 

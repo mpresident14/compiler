@@ -1,12 +1,12 @@
 #ifndef LR0_GRAMMAR_HPP
 #define LR0_GRAMMAR_HPP
 
-#include <iostream>
 #include <cstddef>
+#include <iostream>
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { PLUS, INT, TERM, EXPR };
+enum class Symbol { PLUS, INT, ENDTOKENS, TERM, EXPR };
 std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::PLUS:
@@ -20,6 +20,9 @@ std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
       break;
     case Symbol::EXPR:
       out << "EXPR";
+      break;
+    case Symbol::ENDTOKENS:
+      out << "ENDTOKENS";
       break;
   }
   return out;
@@ -45,43 +48,32 @@ std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
+const Symbol concreteToSymbol[] = {Symbol::EXPR, Symbol::EXPR, Symbol::TERM};
+inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+
 /***********
  * OBJECTS *
  ***********/
 
 // TODO: Association enum and Predence for TokenObjs, just NONE for VariableObjs
 
-struct Obj {
-  virtual ~Obj() {}
-  virtual Symbol getSymbol() const = 0;
-  virtual bool isToken() const = 0;
-};
-
-struct TokenObj : Obj {
-  bool isToken() const override { return true; };
-};
-
-struct VariableObj : Obj {
-  virtual Concrete getType() const = 0;
-  bool isToken() const override { return false; };
-};
-
 /* Tokens */
-struct Plus : TokenObj {
-  Symbol getSymbol() const override { return Symbol::PLUS; }
-};
+struct Plus {};
 
-struct Int : TokenObj {
+struct Int {
   Int(const std::string& str) : i_(atoi(str.c_str())) {}
-  Symbol getSymbol() const override { return Symbol::INT; }
   operator int() const { return i_; }
   int i_;
 };
 
+// NOTE: getType() not required for parsing, but helpful for client
+// TODO: Perhaps pass an argument to the generator that uses existing
+// classes or creates them for you
+
 /* Term */
-struct Term : VariableObj {
+struct Term {
   virtual ~Term(){};
-  Symbol getSymbol() const override { return Symbol::TERM; }
+  virtual Concrete getType() const = 0;
 };
 
 struct TInt : Term {
@@ -91,9 +83,9 @@ struct TInt : Term {
 };
 
 /* Expr */
-struct Expr : VariableObj {
+struct Expr {
   virtual ~Expr(){};
-  Symbol getSymbol() const override { return Symbol::EXPR; }
+  virtual Concrete getType() const = 0;
 };
 
 struct ETerm : Expr {
@@ -113,16 +105,6 @@ struct EPlus : Expr {
   Expr* e_;
   Term* t_;
 };
-
-
-Obj* construct(Concrete type, Obj** args) {
-  switch (type) {
-    case Concrete::TINT: return new TInt(*(Int*) args[0]);
-    case Concrete::ETERM: return new ETerm((Term*) args[0]);
-    case Concrete::EPLUS: return new EPlus((Expr*) args[0], (Term*) args[2]);
-    default: throw std::invalid_argument("Out of options.");
-  }
-}
 
 const Symbol ROOT_SYM = Symbol::EXPR;
 using ROOT_TYPE = Expr;

@@ -38,8 +38,7 @@ public:
 
   friend struct Node;
 
-  DFA(V value)
-      : root_(new Node(value)), valueToNode_{{std::move(value), root_}} {}
+  DFA(V value) : root_(new Node(value)), valueToNode_{{std::move(value), root_}} {}
 
   ~DFA() {
     // Delete via BFS

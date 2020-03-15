@@ -9,7 +9,6 @@
 using namespace std;
 using namespace prez;
 
-
 int main() {
   DFA_t dfa = buildDFA();
   // cout << dfa.run({Symbol::INT, Symbol::PLUS, Symbol::INT, Symbol::DOLLAR}) << endl;
