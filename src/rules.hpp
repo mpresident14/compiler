@@ -13,10 +13,6 @@
 
 #include <prez/print_stuff.hpp>
 
-/***********
- *  RULES  *
- ***********/
-
 struct Rule {
   const Concrete lhs;
   const std::vector<Symbol> rhs;
