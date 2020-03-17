@@ -38,3 +38,8 @@
 !Makefile
 
 .vscode/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
