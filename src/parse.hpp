@@ -57,10 +57,10 @@ void addRhses(RuleSet& ruleSet, Symbol symbol) {
   }
 }
 
-void addRhses(vector<Rule>& ruleList, Symbol symbol) {
+void addRhses(std::queue<Rule>& ruleQueue, Symbol symbol) {
   const vector<Rule>& rules = GRAMMAR.at(symbol);
   for (const Rule& rule : rules) {
-    ruleList.push_back(rule);
+    ruleQueue.push(rule);
   }
 }
 
@@ -69,10 +69,9 @@ void addRhses(vector<Rule>& ruleList, Symbol symbol) {
 void epsilonTransition(RuleSet& ruleSet) {
   // Keep track of the symbols whose rules we've already added to this rule list.
   unordered_set<Symbol> used;
-  vector<Rule> newRules;
+  std::queue<Rule> ruleQueue;
 
-  // Keep expanding variables (epsilon transition) until we've determined all the
-  // possible rule positions we could be in.
+  // Expand variables (epsilon transition) in the initial rules.
   for (const Rule& rule : ruleSet) {
     if (rule.atEnd()) {
       continue;
@@ -80,12 +79,26 @@ void epsilonTransition(RuleSet& ruleSet) {
 
     Symbol nextSymbol = rule.nextSymbol();
     if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
-      addRhses(newRules, nextSymbol);
+      addRhses(ruleQueue, nextSymbol);
       used.insert(nextSymbol);
     }
   }
-  ruleSet.insert(
-      std::make_move_iterator(newRules.begin()), std::make_move_iterator(newRules.end()));
+
+  // Keep expanding variables (epsilon transition) until we've determined all the
+  // possible rule positions we could be in.
+  while (!ruleQueue.empty()) {
+    const Rule& rule = *ruleSet.insert(std::move(ruleQueue.front())).first;
+    ruleQueue.pop();
+    if (rule.atEnd()) {
+      continue;
+    }
+
+    Symbol nextSymbol = rule.nextSymbol();
+    if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
+      addRhses(ruleQueue, nextSymbol);
+      used.insert(nextSymbol);
+    }
+  }
 }
 
 /* For each rule of this node, construct the transitions to successors. */
