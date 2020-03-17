@@ -111,6 +111,7 @@ public:
   Parser<nullptr_t> consume(Fn&& consumeFn) const;
 
   T parse(const std::string&) const;
+  T parse(std::istream&) const;
 
   /* Lazily assign parser for recursive grammars */
   void set(Parser&& other);

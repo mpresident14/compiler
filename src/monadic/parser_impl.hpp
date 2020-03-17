@@ -42,10 +42,15 @@ Parser<T>::Parser(Parser&& other)
 
 template <typename T>
 T Parser<T>::parse(const std::string& input) const {
+  std::stringstream inputStream(input);
+  return parse(inputStream);
+}
+
+template <typename T>
+T Parser<T>::parse(std::istream& inputStream) const {
   using namespace std;
 
   size_t errPos = 0;
-  stringstream inputStream(input);
   std::optional<T> optResult = (**parseFn_)(inputStream, &errPos);
   if (!optResult.has_value()) {
     string line;
