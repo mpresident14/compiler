@@ -6,10 +6,10 @@
 
 #include <cstddef>
 #include <ostream>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <stdexcept>
 
 #include <prez/print_stuff.hpp>
 

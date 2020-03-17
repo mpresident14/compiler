@@ -44,9 +44,7 @@ private:
 
   // The extra parentheses cause "(this)" to be an expression more complicated
   // than a name, so decltype returns a reference (see p.29 of EMC++)
-  constexpr bool isThisRValue() const {
-    return std::is_rvalue_reference_v<decltype((this))>;
-  }
+  constexpr bool isThisRValue() const { return std::is_rvalue_reference_v<decltype((this))>; }
 
 public:
   // Unneccesary, but being explicit never hurts
@@ -74,8 +72,8 @@ public:
   Parser<T> alt(Parser<T> nextParser) const;
 
   // mapFn must accept an rvalue reference and return a non-reference
-  template <typename Fn, typename R = std::invoke_result_t<Fn, T&&>> requires !std::is_lvalue_reference_v<R>
-  Parser<R> transform(Fn&& mapFn) const;
+  template <typename Fn, typename R = std::invoke_result_t<Fn, T&&>>
+  requires !std::is_lvalue_reference_v<R> Parser<R> transform(Fn && mapFn) const;
 
   template <typename R>
   Parser<std::pair<T, R>> combine(Parser<R> nextParser) const;
@@ -160,9 +158,8 @@ namespace parsers {
   template <typename T>
   requires rvalue<T&&> Parser<T> createBasic(T&& obj) {
     // Lambda is mutable so we can move obj
-    return Parser<T>{[obj = move(obj)](istream&, size_t*) mutable {
-      return createReturnObject(move(obj));
-    }};
+    return Parser<T>{
+        [obj = move(obj)](istream&, size_t*) mutable { return createReturnObject(move(obj)); }};
   }
 
   /* fail() and lazy() are the same under the hood, but identifying them
@@ -178,7 +175,7 @@ namespace parsers {
   const Parser<char> anyChar([](istream& input, size_t* errPos) -> optional<char> {
     if (input.peek() == EOF) {
       input.clear();
-      *errPos = max(*errPos, (size_t) input.tellg());
+      *errPos = max(*errPos, (size_t)input.tellg());
       return {};
     }
 
@@ -211,15 +208,14 @@ namespace parsers {
       });
 
   // Not worrying about overflow
-  const Parser<unsigned> anyUnsigned =
-      anyDigit.some().transform([](vector<unsigned>&& nums) {
-        unsigned result = 0;
-        for (auto iter = nums.begin(); iter != nums.end(); ++iter) {
-          result *= 10;
-          result += *iter;
-        }
-        return result;
-      });
+  const Parser<unsigned> anyUnsigned = anyDigit.some().transform([](vector<unsigned>&& nums) {
+    unsigned result = 0;
+    for (auto iter = nums.begin(); iter != nums.end(); ++iter) {
+      result *= 10;
+      result += *iter;
+    }
+    return result;
+  });
 
   // Not worrying about overflow or conversion errors
   // clang-format off
@@ -232,16 +228,14 @@ namespace parsers {
   // clang-format on
 
   const Parser<double> decimal =
-      thisChar('.')
-          .ignoreAndThen(anyDigit.many())
-          .transform([](vector<unsigned>&& nums) {
-            double dec = 0;
-            for (auto iter = nums.rbegin(); iter != nums.rend(); ++iter) {
-              dec += *iter;
-              dec /= 10;
-            }
-            return dec;
-          });
+      thisChar('.').ignoreAndThen(anyDigit.many()).transform([](vector<unsigned>&& nums) {
+        double dec = 0;
+        for (auto iter = nums.rbegin(); iter != nums.rend(); ++iter) {
+          dec += *iter;
+          dec /= 10;
+        }
+        return dec;
+      });
 
   const Parser<double> anyUDouble =
       anyUnsigned.combine(decimal)
@@ -258,8 +252,7 @@ namespace parsers {
           .alt(anyUDouble);
   // clang-format on
 
-  const Parser<string> whitespace =
-      anyChar.verify([](char c) { return (bool)isspace(c); }).many();
+  const Parser<string> whitespace = anyChar.verify([](char c) { return (bool)isspace(c); }).many();
 
   template <typename T>
   Parser<T> skipws(Parser<T> p) {

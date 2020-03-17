@@ -2,8 +2,8 @@
 #define REGEX_HPP
 
 #include <algorithm>
-#include <ostream>
 #include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -18,7 +18,7 @@ using RgxPtr = std::shared_ptr<Regex>;
 
 class Regex {
 public:
-  virtual ~Regex() {};
+  virtual ~Regex(){};
   virtual void toStream(std::ostream& out) const = 0;
   virtual RgxPtr getDeriv(char) const = 0;
   virtual bool isNullable() const = 0;
@@ -53,7 +53,6 @@ public:
 private:
   char c_;
 };
-
 
 class Alt : public Regex {
 public:

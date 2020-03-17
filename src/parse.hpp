@@ -8,9 +8,9 @@
 
 #include <cstddef>
 #include <memory>
-#include <vector>
 #include <queue>
 #include <unordered_set>
+#include <vector>
 
 // NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
 // know where to start building the DFA from.

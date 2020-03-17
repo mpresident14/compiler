@@ -12,7 +12,4 @@ using namespace std;
 using namespace prez;
 // using namespace parsers;
 
-int main() {
-
-  return 0;
-}
+int main() { return 0; }

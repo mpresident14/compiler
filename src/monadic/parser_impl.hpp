@@ -27,8 +27,7 @@ Parser<T>::~Parser() {
 }
 
 template <typename T>
-Parser<T>::Parser(const Parser& other)
-    : parseFn_(other.parseFn_), lazyCount_(other.lazyCount_) {
+Parser<T>::Parser(const Parser& other) : parseFn_(other.parseFn_), lazyCount_(other.lazyCount_) {
   if (lazyCount_) {
     ++(*lazyCount_);
   }
@@ -79,8 +78,7 @@ P Parser<T>::andThen(Fn&& pGenFn) const {
   using namespace std;
 
   return {// This must be mutable to call pGenFn's non-const () operator
-      [parseFn = isThisRValue() ? move(parseFn_) : parseFn_,
-          pGenFn = forward<Fn>(pGenFn)](
+      [parseFn = isThisRValue() ? move(parseFn_) : parseFn_, pGenFn = forward<Fn>(pGenFn)](
           std::istream& input, size_t* errPos) mutable -> optional<parsers::ptype_t<P>> {
         // Always reset to original position if either parser fails
         size_t origPos = input.tellg();
@@ -139,7 +137,6 @@ Parser<R> Parser<T>::transform(Fn&& mapFn) const {
                      T&& obj) mutable { return parsers::createBasic(mapFn(move(obj))); });
 }
 
-
 // Pass nextParser by value since we have to copy it into the lambda anyways.
 template <typename T>
 template <typename R>
@@ -151,9 +148,8 @@ Parser<std::pair<T, R>> Parser<T>::combine(Parser<R> nextParser) const {
         // In order to move obj1, the lambda must be mutable
         // Safe to move obj1 and obj2 because of andThen() does not need their
         // values anymore.
-        [obj1 = move(obj1)](R&& obj2) mutable {
-          return parsers::createBasic(make_pair(move(obj1), move(obj2)));
-        });
+        [obj1 = move(obj1)](
+            R&& obj2) mutable { return parsers::createBasic(make_pair(move(obj1), move(obj2))); });
   });
 }
 
@@ -206,45 +202,44 @@ template <typename U>
 Parser<std::enable_if_t<std::is_same_v<U, char>, std::string>> Parser<T>::many() const {
   using namespace std;
 
-  return Parser<string>{[parseFn = isThisRValue() ? move(parseFn_) : parseFn_](
-                            std::istream& input, size_t* errPos) {
-    size_t oldErrPos = *errPos;
-    // Run parser until it fails and put each result in the list
-    string parsedChars;
-    std::optional<char> optResult = (**parseFn)(input, errPos);
-    while (optResult.has_value()) {
-      // value() is a char, no need to move it
-      parsedChars.append(1, optResult.value());
-      optResult = (**parseFn)(input, errPos);
-    }
+  return Parser<string>{
+      [parseFn = isThisRValue() ? move(parseFn_) : parseFn_](std::istream& input, size_t* errPos) {
+        size_t oldErrPos = *errPos;
+        // Run parser until it fails and put each result in the list
+        string parsedChars;
+        std::optional<char> optResult = (**parseFn)(input, errPos);
+        while (optResult.has_value()) {
+          // value() is a char, no need to move it
+          parsedChars.append(1, optResult.value());
+          optResult = (**parseFn)(input, errPos);
+        }
 
-    // Reset errPos because many() does not fail when the underlying parser fails.
-    *errPos = oldErrPos;
-    return parsers::createReturnObject(move(parsedChars));
-  }};
+        // Reset errPos because many() does not fail when the underlying parser fails.
+        *errPos = oldErrPos;
+        return parsers::createReturnObject(move(parsedChars));
+      }};
 }
 
 template <typename T>
 template <typename U>
-Parser<std::enable_if_t<!std::is_same_v<U, char>, std::vector<T>>> Parser<T>::many()
-    const {
+Parser<std::enable_if_t<!std::is_same_v<U, char>, std::vector<T>>> Parser<T>::many() const {
   using namespace std;
 
-  return Parser<vector<T>>{[parseFn = isThisRValue() ? move(parseFn_) : parseFn_](
-                               std::istream& input, size_t* errPos) {
-    size_t oldErrPos = *errPos;
-    // Run parser until it fails and put each result in the list
-    vector<T> parsedObjs;
-    std::optional<T> optResult = (**parseFn)(input, errPos);
-    while (optResult.has_value()) {
-      parsedObjs.push_back(move(optResult.value()));
-      optResult = (**parseFn)(input, errPos);
-    }
+  return Parser<vector<T>>{
+      [parseFn = isThisRValue() ? move(parseFn_) : parseFn_](std::istream& input, size_t* errPos) {
+        size_t oldErrPos = *errPos;
+        // Run parser until it fails and put each result in the list
+        vector<T> parsedObjs;
+        std::optional<T> optResult = (**parseFn)(input, errPos);
+        while (optResult.has_value()) {
+          parsedObjs.push_back(move(optResult.value()));
+          optResult = (**parseFn)(input, errPos);
+        }
 
-    // Reset errPos because many() does not fail when the underlying parser fails
-    *errPos = oldErrPos;
-    return parsers::createReturnObject(move(parsedObjs));
-  }};
+        // Reset errPos because many() does not fail when the underlying parser fails
+        *errPos = oldErrPos;
+        return parsers::createReturnObject(move(parsedObjs));
+      }};
 }
 
 template <typename T>
@@ -261,8 +256,7 @@ Parser<std::enable_if_t<std::is_same_v<U, char>, std::string>> Parser<T>::some()
 
 template <typename T>
 template <typename U>
-Parser<std::enable_if_t<!std::is_same_v<U, char>, std::vector<T>>> Parser<T>::some()
-    const {
+Parser<std::enable_if_t<!std::is_same_v<U, char>, std::vector<T>>> Parser<T>::some() const {
   using namespace std;
 
   return combine(many()).transform([](auto&& objAndObjVec) {
@@ -301,7 +295,6 @@ Parser<std::nullptr_t> Parser<T>::consume(Fn&& consumeFn) const {
     return parsers::createBasic(nullptr);
   });
 }
-
 
 template <typename T>
 void Parser<T>::set(Parser&& other) {
