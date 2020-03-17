@@ -295,7 +295,7 @@ Parser<T> Parser<T>::thenIgnore(Parser<R> nextParser) const {
 
 template <typename T>
 template <typename Fn>
-Parser<nullptr_t> Parser<T>::consume(Fn&& consumeFn) const {
+Parser<std::nullptr_t> Parser<T>::consume(Fn&& consumeFn) const {
   return andThen([consumeFn = move(consumeFn)](T&& obj) mutable {
     consumeFn(move(obj));
     return parsers::createBasic(nullptr);

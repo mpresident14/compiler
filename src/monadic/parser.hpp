@@ -108,7 +108,7 @@ public:
   Parser<T> thenIgnore(Parser<R> nextParser) const;
 
   template <typename Fn>
-  Parser<nullptr_t> consume(Fn&& consumeFn) const;
+  Parser<std::nullptr_t> consume(Fn&& consumeFn) const;
 
   T parse(const std::string&) const;
   T parse(std::istream&) const;
