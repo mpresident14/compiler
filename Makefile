@@ -111,19 +111,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named main
-
-# Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 main
-.PHONY : main
-
-# fast build rule for target.
-main/fast:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
-
-#=============================================================================
 # Target rules for targets named dfa_test
 
 # Build rule for target.
@@ -137,6 +124,19 @@ dfa_test/fast:
 .PHONY : dfa_test/fast
 
 #=============================================================================
+# Target rules for targets named main
+
+# Build rule for target.
+main: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 main
+.PHONY : main
+
+# fast build rule for target.
+main/fast:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
+.PHONY : main/fast
+
+#=============================================================================
 # Target rules for targets named lr0_test
 
 # Build rule for target.
@@ -148,46 +148,6 @@ lr0_test: cmake_check_build_system
 lr0_test/fast:
 	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/build
 .PHONY : lr0_test/fast
-
-#=============================================================================
-# Target rules for targets named generate
-
-# Build rule for target.
-generate: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 generate
-.PHONY : generate
-
-# fast build rule for target.
-generate/fast:
-	$(MAKE) -f CMakeFiles/generate.dir/build.make CMakeFiles/generate.dir/build
-.PHONY : generate/fast
-
-src/generate.o: src/generate.cpp.o
-
-.PHONY : src/generate.o
-
-# target to build an object file
-src/generate.cpp.o:
-	$(MAKE) -f CMakeFiles/generate.dir/build.make CMakeFiles/generate.dir/src/generate.cpp.o
-.PHONY : src/generate.cpp.o
-
-src/generate.i: src/generate.cpp.i
-
-.PHONY : src/generate.i
-
-# target to preprocess a source file
-src/generate.cpp.i:
-	$(MAKE) -f CMakeFiles/generate.dir/build.make CMakeFiles/generate.dir/src/generate.cpp.i
-.PHONY : src/generate.cpp.i
-
-src/generate.s: src/generate.cpp.s
-
-.PHONY : src/generate.s
-
-# target to generate assembly for a file
-src/generate.cpp.s:
-	$(MAKE) -f CMakeFiles/generate.dir/build.make CMakeFiles/generate.dir/src/generate.cpp.s
-.PHONY : src/generate.cpp.s
 
 src/main.o: src/main.cpp.o
 
@@ -215,6 +175,36 @@ src/main.s: src/main.cpp.s
 src/main.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
+
+src/parse.o: src/parse.cpp.o
+
+.PHONY : src/parse.o
+
+# target to build an object file
+src/parse.cpp.o:
+	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.o
+	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.o
+.PHONY : src/parse.cpp.o
+
+src/parse.i: src/parse.cpp.i
+
+.PHONY : src/parse.i
+
+# target to preprocess a source file
+src/parse.cpp.i:
+	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.i
+	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.i
+.PHONY : src/parse.cpp.i
+
+src/parse.s: src/parse.cpp.s
+
+.PHONY : src/parse.s
+
+# target to generate assembly for a file
+src/parse.cpp.s:
+	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.s
+	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.s
+.PHONY : src/parse.cpp.s
 
 test/dfa_test.o: test/dfa_test.cpp.o
 
@@ -277,17 +267,16 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... main"
-	@echo "... dfa_test"
-	@echo "... lr0_test"
 	@echo "... edit_cache"
-	@echo "... generate"
-	@echo "... src/generate.o"
-	@echo "... src/generate.i"
-	@echo "... src/generate.s"
+	@echo "... dfa_test"
+	@echo "... main"
+	@echo "... lr0_test"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/parse.o"
+	@echo "... src/parse.i"
+	@echo "... src/parse.s"
 	@echo "... test/dfa_test.o"
 	@echo "... test/dfa_test.i"
 	@echo "... test/dfa_test.s"

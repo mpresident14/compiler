@@ -5,19 +5,13 @@
 #include "lr0_grammar.hpp"
 
 #include <cstddef>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <queue>
-#include <stdexcept>
-#include <string>
+#include <ostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <stdexcept>
 
 #include <prez/print_stuff.hpp>
-
-using namespace std;
 
 /***********
  *  RULES  *
@@ -25,7 +19,7 @@ using namespace std;
 
 struct Rule {
   const Concrete lhs;
-  const vector<Symbol> rhs;
+  const std::vector<Symbol> rhs;
   const size_t pos;
 
   bool atEnd() const { return pos == rhs.size(); }
@@ -84,7 +78,7 @@ namespace std {
 
 /* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
  * should be equal if they contain the same rules (in any order) */
-using RuleSet = unordered_set<Rule>;
+using RuleSet = std::unordered_set<Rule>;
 
 namespace std {
   template <>
@@ -100,6 +94,6 @@ namespace std {
   };
 }  // namespace std
 
-using Grammar = unordered_map<Symbol, vector<Rule>>;
+using Grammar = std::unordered_map<Symbol, std::vector<Rule>>;
 
 #endif

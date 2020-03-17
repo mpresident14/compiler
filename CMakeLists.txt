@@ -22,6 +22,7 @@ set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I ./src")
 include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src")
 
 add_executable(main src/main.cpp)
-add_executable(lr0_test test/lr0_test.cpp)
-add_executable(dfa_test test/dfa_test.cpp)
-add_executable(generate src/generate.cpp)
+add_executable(lr0_test test/lr0_test.cpp src/parse.cpp)
+add_executable(dfa_test test/dfa_test.cpp src/parse.cpp)
+
+# add_executable(generate src/generate.cpp parse.cpp)

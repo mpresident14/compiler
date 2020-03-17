@@ -7,7 +7,7 @@
 
 /* Terminals and nonterminals in the grammar */
 enum class Symbol { PLUS, INT, ENDTOKENS, TERM, EXPR };
-std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
+inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::PLUS:
       out << "PLUS";
@@ -30,7 +30,7 @@ std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
 
 /* The concrete types that symbols in the grammar can be */
 enum class Concrete { ETERM, EPLUS, TINT, NONE };
-std::ostream& operator<<(std::ostream& out, const Concrete& type) {
+inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   switch (type) {
     case Concrete::ETERM:
       out << "ETERM";
