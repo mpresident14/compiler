@@ -107,6 +107,9 @@ public:
   template <typename R>
   Parser<T> thenIgnore(Parser<R> nextParser) const;
 
+  template <typename Fn>
+  Parser<nullptr_t> consume(Fn&& consumeFn) const;
+
   T parse(const std::string&) const;
 
   /* Lazily assign parser for recursive grammars */
@@ -261,6 +264,9 @@ namespace parsers {
   Parser<T> skipws(Parser<T> p) {
     return whitespace.ignoreAndThen(move(p));
   }
+
+  const Parser<string> word = anyChar.verify([](char c) { return (bool)isalpha(c); }).many();
+
 }  // namespace parsers
 
 #include "parser_impl.hpp"

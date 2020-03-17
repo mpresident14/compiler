@@ -4,23 +4,17 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
 using namespace prez;
+using namespace parsers;
 
 int main() {
-  DFA_t dfa = buildDFA();
-  // cout << dfa.run({Symbol::INT, Symbol::PLUS, Symbol::INT, Symbol::DOLLAR}) << endl;
-  // cout << dfa.run({Symbol::INT, Symbol::DOLLAR}) << endl;
-
-  // cout << dfa.run({Symbol::INT}) << endl;
-  // cout << dfa.run({Symbol::EXPR, Symbol::DOLLAR}) << endl;
-  // cout << dfa.run({Symbol::INT, Symbol::PLUS, Symbol::INT}) << endl;
-  // cout << dfa.run({Symbol::INT, Symbol::PLUS, Symbol::EXPR}) << endl;
-  // cout << dfa << endl;
-
-  cout << dfa << endl;
+  vector<string> strings;
+  word.consume([&strings](string&& str) mutable { strings.push_back(move(str)); }).parse("hello");
+  cout << strings << endl;
   return 0;
 }

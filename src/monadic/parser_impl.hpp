@@ -282,11 +282,21 @@ Parser<T> Parser<T>::thenIgnore(Parser<R> nextParser) const {
 
   return andThen([nextParser = move(nextParser)](T&& obj) {
     return nextParser.transform(
-        // In order to forward obj, the lambda must be mutable
+        // In order to move obj, the lambda must be mutable
         // Safe to move obj because andThen() will not need it again.
         [obj = move(obj)](R&&) mutable { return move(obj); });
   });
 }
+
+template <typename T>
+template <typename Fn>
+Parser<nullptr_t> Parser<T>::consume(Fn&& consumeFn) const {
+  return andThen([consumeFn = move(consumeFn)](T&& obj) mutable {
+    consumeFn(move(obj));
+    return parsers::createBasic(nullptr);
+  });
+}
+
 
 template <typename T>
 void Parser<T>::set(Parser&& other) {
