@@ -5,7 +5,6 @@ using namespace std;
 /**********************
  *  DFA CONSTRUCTION  *
  **********************/
-bool isVariable(Symbol symbol) { return GRAMMAR.contains(symbol); }
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol) {
@@ -25,8 +24,8 @@ void addRhses(queue<Rule>& ruleQueue, Symbol symbol) {
 /* Adds possible rules to node's state via epsilon transition in DFA.
  * Ex: S -> A.B, then add all rules B -> ??? */
 void epsilonTransition(RuleSet& ruleSet) {
-  // Keep track of the symbols whose rules we've already added to this rule list.
-  unordered_set<Symbol> used;
+  // Keep track of the symbols (variables only) whose rules we've already added to this rule list.
+  bitset<toInt(Symbol::STARTTOKENS)> used;
   queue<Rule> ruleQueue;
 
   // Expand variables (epsilon transition) in the initial rules.
@@ -36,9 +35,9 @@ void epsilonTransition(RuleSet& ruleSet) {
     }
 
     Symbol nextSymbol = rule.nextSymbol();
-    if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
+    if (isVariable(nextSymbol) && !used[toInt(nextSymbol)]) {
       addRhses(ruleQueue, nextSymbol);
-      used.insert(nextSymbol);
+      used[toInt(nextSymbol)] = true;
     }
   }
 
@@ -52,9 +51,9 @@ void epsilonTransition(RuleSet& ruleSet) {
     }
 
     Symbol nextSymbol = rule.nextSymbol();
-    if (isVariable(nextSymbol) && !used.contains(nextSymbol)) {
+    if (isVariable(nextSymbol) && !used[toInt(nextSymbol)]) {
       addRhses(ruleQueue, nextSymbol);
-      used.insert(nextSymbol);
+      used[toInt(nextSymbol)] = true;
     }
   }
 }
@@ -62,6 +61,7 @@ void epsilonTransition(RuleSet& ruleSet) {
 /* For each rule of this node, construct the transitions to successors. */
 vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
   // Create map of transitions to new nodes
+  // TODO: Symbol is an enum, use an array instead
   unordered_map<Symbol, RuleSet> newTransitions;
   for (const Rule& rule : node->getValue()) {
     if (rule.atEnd()) {

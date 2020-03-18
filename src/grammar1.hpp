@@ -6,7 +6,7 @@
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON };
+enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON, NUMSYMBOLS };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::T:
@@ -38,6 +38,9 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
       break;
     case Symbol::X:
       out << "X";
+      break;
+    case Symbol::NUMSYMBOLS:
+      out << "NUMSYMBOLS";
       break;
   }
   return out;
@@ -84,8 +87,10 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 const Symbol concreteToSymbol[] = {
   Symbol::S, Symbol::S, Symbol::C, Symbol::C, Symbol::C, Symbol::X, Symbol::X, Symbol::Y, Symbol::Y, Symbol::Y};
 
-inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
-inline bool isToken(Symbol symbol) { return static_cast<int>(symbol) > static_cast<int>(Symbol::STARTTOKENS); }
+constexpr Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
+constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
+constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
 
 const Symbol ROOT_SYM = Symbol::S;
 

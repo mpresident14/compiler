@@ -10,6 +10,7 @@
 #include <queue>
 #include <unordered_set>
 #include <vector>
+#include <bitset>
 
 
 // NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
@@ -19,8 +20,6 @@
  *  DFA CONSTRUCTION  *
  **********************/
 using DFA_t = DFA<RuleSet, Symbol>;
-
-bool isVariable(Symbol symbol);
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol);

@@ -6,7 +6,7 @@
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { TERM, EXPR, STARTTOKENS, PLUS, INT };
+enum class Symbol { TERM, EXPR, STARTTOKENS, PLUS, INT, NUMSYMBOLS };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::PLUS:
@@ -23,6 +23,9 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
       break;
     case Symbol::STARTTOKENS:
       out << "STARTTOKENS";
+      break;
+    case Symbol::NUMSYMBOLS:
+      out << "NUMSYMBOLS";
       break;
   }
   return out;
@@ -50,8 +53,10 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 
 const Symbol concreteToSymbol[] = {Symbol::EXPR, Symbol::EXPR, Symbol::TERM};
 
-inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
-inline bool isToken(Symbol symbol) { return static_cast<int>(symbol) > static_cast<int>(Symbol::STARTTOKENS); }
+constexpr Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
+constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
+constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
 
 /***********
  * OBJECTS *
