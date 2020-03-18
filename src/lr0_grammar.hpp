@@ -109,4 +109,23 @@ struct EPlus : Expr {
 const Symbol ROOT_SYM = Symbol::EXPR;
 using ROOT_TYPE = Expr;
 
+
+#include "rules.hpp"
+
+/* LR0 Grammar */
+const Grammar GRAMMAR = {
+    {ROOT_SYM,
+        {
+            Rule{Concrete::ETERM, {Symbol::TERM}, 0},
+            Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
+        }
+    },
+    {
+        Symbol::TERM,
+        {
+            Rule{Concrete::TINT, {Symbol::INT}, 0},
+        },
+    }
+};
+
 #endif

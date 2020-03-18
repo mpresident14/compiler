@@ -1,9 +1,6 @@
 #ifndef RULES_HPP
 #define RULES_HPP
 
-#include "dfa.hpp"
-#include "lr0_grammar.hpp"
-
 #include <cstddef>
 #include <ostream>
 #include <stdexcept>
@@ -91,5 +88,6 @@ namespace std {
 }  // namespace std
 
 using Grammar = std::unordered_map<Symbol, std::vector<Rule>>;
+
 
 #endif

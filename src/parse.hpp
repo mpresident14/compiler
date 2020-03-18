@@ -3,7 +3,6 @@
 
 #include "dfa.hpp"
 #include "lr0_grammar.hpp"
-#include "rules.hpp"
 // #include "slr1_grammar.hpp"
 
 #include <cstddef>
@@ -12,37 +11,9 @@
 #include <unordered_set>
 #include <vector>
 
+
 // NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
 // know where to start building the DFA from.
-
-/* SLR1 Grammar */
-// const Grammar GRAMMAR = {
-//   {ROOT_SYM,
-//       {
-//         Rule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0}
-//       }
-//   },
-//   {Symbol::EXPR,
-//       {
-//         Rule{Concrete::EINT, {Symbol::INT}, 0},
-//         Rule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0}
-//       },
-//   }
-// };
-
-/* LR0 Grammar */
-const Grammar GRAMMAR = {
-    {ROOT_SYM,
-        {
-            Rule{Concrete::ETERM, {Symbol::TERM}, 0},
-            Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
-        }},
-    {
-        Symbol::TERM,
-        {
-            Rule{Concrete::TINT, {Symbol::INT}, 0},
-        },
-    }};
 
 /**********************
  *  DFA CONSTRUCTION  *

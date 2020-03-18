@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named main
+
+# Build rule for target.
+main: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 main
+.PHONY : main
+
+# fast build rule for target.
+main/fast:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
+.PHONY : main/fast
+
+#=============================================================================
 # Target rules for targets named dfa_test
 
 # Build rule for target.
@@ -124,17 +137,17 @@ dfa_test/fast:
 .PHONY : dfa_test/fast
 
 #=============================================================================
-# Target rules for targets named main
+# Target rules for targets named null_first_follow_test
 
 # Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 main
-.PHONY : main
+null_first_follow_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 null_first_follow_test
+.PHONY : null_first_follow_test
 
 # fast build rule for target.
-main/fast:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
+null_first_follow_test/fast:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/build
+.PHONY : null_first_follow_test/fast
 
 #=============================================================================
 # Target rules for targets named lr0_test
@@ -175,6 +188,33 @@ src/main.s: src/main.cpp.s
 src/main.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
+
+src/null_first_follow.o: src/null_first_follow.cpp.o
+
+.PHONY : src/null_first_follow.o
+
+# target to build an object file
+src/null_first_follow.cpp.o:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.o
+.PHONY : src/null_first_follow.cpp.o
+
+src/null_first_follow.i: src/null_first_follow.cpp.i
+
+.PHONY : src/null_first_follow.i
+
+# target to preprocess a source file
+src/null_first_follow.cpp.i:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.i
+.PHONY : src/null_first_follow.cpp.i
+
+src/null_first_follow.s: src/null_first_follow.cpp.s
+
+.PHONY : src/null_first_follow.s
+
+# target to generate assembly for a file
+src/null_first_follow.cpp.s:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.s
+.PHONY : src/null_first_follow.cpp.s
 
 src/parse.o: src/parse.cpp.o
 
@@ -287,6 +327,33 @@ test/lr0_test.cpp.s:
 	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/test/lr0_test.cpp.s
 .PHONY : test/lr0_test.cpp.s
 
+test/null_first_follow_test.o: test/null_first_follow_test.cpp.o
+
+.PHONY : test/null_first_follow_test.o
+
+# target to build an object file
+test/null_first_follow_test.cpp.o:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.o
+.PHONY : test/null_first_follow_test.cpp.o
+
+test/null_first_follow_test.i: test/null_first_follow_test.cpp.i
+
+.PHONY : test/null_first_follow_test.i
+
+# target to preprocess a source file
+test/null_first_follow_test.cpp.i:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.i
+.PHONY : test/null_first_follow_test.cpp.i
+
+test/null_first_follow_test.s: test/null_first_follow_test.cpp.s
+
+.PHONY : test/null_first_follow_test.s
+
+# target to generate assembly for a file
+test/null_first_follow_test.cpp.s:
+	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.s
+.PHONY : test/null_first_follow_test.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -294,13 +361,17 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... edit_cache"
-	@echo "... dfa_test"
 	@echo "... main"
+	@echo "... dfa_test"
+	@echo "... null_first_follow_test"
 	@echo "... lr0_test"
+	@echo "... edit_cache"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/null_first_follow.o"
+	@echo "... src/null_first_follow.i"
+	@echo "... src/null_first_follow.s"
 	@echo "... src/parse.o"
 	@echo "... src/parse.i"
 	@echo "... src/parse.s"
@@ -313,6 +384,9 @@ help:
 	@echo "... test/lr0_test.o"
 	@echo "... test/lr0_test.i"
 	@echo "... test/lr0_test.s"
+	@echo "... test/null_first_follow_test.o"
+	@echo "... test/null_first_follow_test.i"
+	@echo "... test/null_first_follow_test.s"
 .PHONY : help
 
 

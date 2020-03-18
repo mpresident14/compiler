@@ -127,4 +127,21 @@ Obj* construct(Concrete type, Obj** args) {
 const Symbol ROOT_SYM = Symbol::STMT;
 using ROOT_TYPE = Stmt;
 
+#include "rules.hpp"
+
+/* SLR1 Grammar */
+const Grammar GRAMMAR = {
+  {ROOT_SYM,
+      {
+        Rule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}, 0}
+      }
+  },
+  {Symbol::EXPR,
+      {
+        Rule{Concrete::EINT, {Symbol::INT}, 0},
+        Rule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}, 0}
+      },
+  }
+};
+
 #endif
