@@ -60,29 +60,28 @@ void epsilonTransition(RuleSet& ruleSet) {
 
 /* For each rule of this node, construct the transitions to successors. */
 vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
-  // Create map of transitions to new nodes
-  // TODO: Symbol is an enum, use an array instead
-  unordered_map<Symbol, RuleSet> newTransitions;
+  // Get all the valid transition symbols and map each of them to a new set of rules
+  constexpr int numVariables = toInt(Symbol::NUMSYMBOLS);
+  RuleSet newTransitions[numVariables];
+
   for (const Rule& rule : node->getValue()) {
     if (rule.atEnd()) {
       continue;
     }
-
-    Symbol nextSymbol = rule.nextSymbol();
-    // If transition does not exist yet, create the successor node
-    if (!newTransitions.contains(nextSymbol)) {
-      newTransitions.emplace(nextSymbol, RuleSet{rule.nextStep()});
-    } else {  // Otherwise, add it to the existing rule list
-      newTransitions.at(nextSymbol).insert(rule.nextStep());
-    }
+    newTransitions[toInt(rule.nextSymbol())].insert(rule.nextStep());
   }
 
   // Apply epsilon transitions and create the transition
   vector<const DFA_t::Node*> addedNodes;
-  for (auto& transitionRules : newTransitions) {
-    epsilonTransition(transitionRules.second);
+  for (size_t i = 0; i < numVariables; ++i) {
+    RuleSet& transitionRules = newTransitions[i];
+    // No valid transition
+    if (transitionRules.empty()) {
+      continue;
+    }
+    epsilonTransition(transitionRules);
     const DFA_t::Node* newNode =
-        dfa.addTransition(node, transitionRules.first, transitionRules.second);
+        dfa.addTransition(node, static_cast<Symbol>(i), move(transitionRules));
     if (newNode) {
       addedNodes.push_back(newNode);
     }
