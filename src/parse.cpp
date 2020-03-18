@@ -217,7 +217,7 @@ unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const vector<StackObj>& inputToken
       for (size_t j = 0; j < stkSize - reduceStart; ++j) {
         // Tokens are not encapsulated within the underlying object, so the
         // pointers need to be deleted
-        if (static_cast<int>(stk.back().symbol) < static_cast<int>(Symbol::ENDTOKENS)) {
+        if (isToken(stk.back().symbol)) {
           stk.back().deleteObj();
         }
         stk.pop_back();

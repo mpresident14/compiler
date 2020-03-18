@@ -17,7 +17,7 @@ struct Rule {
 
   bool atEnd() const { return pos == rhs.size(); }
   /* Given a rule "S -> A.B", returns B */
-  // TODO: Remove throw when done
+  // TODO: Remove throw and make noexcept when done
   Symbol nextSymbol() const {
     if (pos == rhs.size()) {
       throw std::invalid_argument("Out of bounds");

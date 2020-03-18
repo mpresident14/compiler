@@ -6,7 +6,7 @@
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { T, B, A, Z, EPSILON, ENDTOKENS, S, Y, C, X };
+enum class Symbol { S, Y, C, X, STARTTOKENS, T, B, A, Z, EPSILON };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::T:
@@ -24,8 +24,8 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::EPSILON:
       out << "EPSILON";
       break;
-    case Symbol::ENDTOKENS:
-      out << "ENDTOKENS";
+    case Symbol::STARTTOKENS:
+      out << "STARTTOKENS";
       break;
     case Symbol::S:
       out << "S";
@@ -83,8 +83,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 
 const Symbol concreteToSymbol[] = {
   Symbol::S, Symbol::S, Symbol::C, Symbol::C, Symbol::C, Symbol::X, Symbol::X, Symbol::Y, Symbol::Y, Symbol::Y};
-inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
 
+inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+inline bool isToken(Symbol symbol) { return static_cast<int>(symbol) > static_cast<int>(Symbol::STARTTOKENS); }
 
 const Symbol ROOT_SYM = Symbol::S;
 

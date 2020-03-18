@@ -6,7 +6,7 @@
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { PLUS, INT, ENDTOKENS, TERM, EXPR };
+enum class Symbol { TERM, EXPR, STARTTOKENS, PLUS, INT };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::PLUS:
@@ -21,8 +21,8 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::EXPR:
       out << "EXPR";
       break;
-    case Symbol::ENDTOKENS:
-      out << "ENDTOKENS";
+    case Symbol::STARTTOKENS:
+      out << "STARTTOKENS";
       break;
   }
   return out;
@@ -49,7 +49,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 }
 
 const Symbol concreteToSymbol[] = {Symbol::EXPR, Symbol::EXPR, Symbol::TERM};
+
 inline Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+inline bool isToken(Symbol symbol) { return static_cast<int>(symbol) > static_cast<int>(Symbol::STARTTOKENS); }
 
 /***********
  * OBJECTS *
@@ -120,8 +122,7 @@ const Grammar GRAMMAR = {
             Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
         }
     },
-    {
-        Symbol::TERM,
+    {Symbol::TERM,
         {
             Rule{Concrete::TINT, {Symbol::INT}, 0},
         },
