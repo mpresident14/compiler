@@ -6,7 +6,7 @@
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, Y, C, X, STARTTOKENS, T, B, A, Z, EPSILON };
+enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::T:
