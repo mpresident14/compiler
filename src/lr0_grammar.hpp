@@ -123,13 +123,13 @@ using ROOT_TYPE = Expr;
 const Grammar GRAMMAR = {
     {ROOT_SYM,
         {
-            Rule{Concrete::ETERM, {Symbol::TERM}, 0},
-            Rule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0},
+            GrammarRule{Concrete::ETERM, {Symbol::TERM}},
+            GrammarRule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}},
         }
     },
     {Symbol::TERM,
         {
-            Rule{Concrete::TINT, {Symbol::INT}, 0},
+            GrammarRule{Concrete::TINT, {Symbol::INT}},
         },
     }
 };

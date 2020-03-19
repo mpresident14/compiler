@@ -25,7 +25,7 @@ using DFA_t = DFA<RuleSet, Symbol>;
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol);
-void addRhses(std::queue<Rule>& ruleQueue, Symbol symbol);
+void addRhses(std::queue<DFARule>& ruleQueue, Symbol symbol);
 
 /* Adds possible rules to node's state via epsilon transition in DFA.
  * Ex: S -> A.B, then add all rules B -> ??? */

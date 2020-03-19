@@ -8,16 +8,16 @@ using namespace std;
 
 /* Adds all "symbol -> .rhs" rules to rule list */
 void addRhses(RuleSet& ruleSet, Symbol symbol) {
-  const vector<Rule>& rules = GRAMMAR.at(symbol);
-  for (const Rule& rule : rules) {
-    ruleSet.insert(rule);
+  const vector<GrammarRule>& rules = GRAMMAR.at(symbol);
+  for (const GrammarRule& rule : rules) {
+    ruleSet.insert(DFARule{rule.lhs, rule.rhs, 0});
   }
 }
 
-void addRhses(queue<Rule>& ruleQueue, Symbol symbol) {
-  const vector<Rule>& rules = GRAMMAR.at(symbol);
-  for (const Rule& rule : rules) {
-    ruleQueue.push(rule);
+void addRhses(queue<DFARule>& ruleQueue, Symbol symbol) {
+  const vector<GrammarRule>& rules = GRAMMAR.at(symbol);
+  for (const GrammarRule& rule : rules) {
+    ruleQueue.push(DFARule{rule.lhs, rule.rhs, 0});
   }
 }
 
@@ -26,10 +26,10 @@ void addRhses(queue<Rule>& ruleQueue, Symbol symbol) {
 void epsilonTransition(RuleSet& ruleSet) {
   // Keep track of the symbols (variables only) whose rules we've already added to this rule list.
   bitset<toInt(Symbol::STARTTOKENS)> used;
-  queue<Rule> ruleQueue;
+  queue<DFARule> ruleQueue;
 
   // Expand variables (epsilon transition) in the initial rules.
-  for (const Rule& rule : ruleSet) {
+  for (const DFARule& rule : ruleSet) {
     if (rule.atEnd()) {
       continue;
     }
@@ -44,7 +44,7 @@ void epsilonTransition(RuleSet& ruleSet) {
   // Keep expanding variables (epsilon transition) until we've determined all the
   // possible rule positions we could be in.
   while (!ruleQueue.empty()) {
-    const Rule& rule = *ruleSet.insert(move(ruleQueue.front())).first;
+    const DFARule& rule = *ruleSet.insert(move(ruleQueue.front())).first;
     ruleQueue.pop();
     if (rule.atEnd()) {
       continue;
@@ -64,7 +64,7 @@ vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node
   constexpr int numVariables = toInt(Symbol::NUMSYMBOLS);
   RuleSet newTransitions[numVariables];
 
-  for (const Rule& rule : node->getValue()) {
+  for (const DFARule& rule : node->getValue()) {
     if (rule.atEnd()) {
       continue;
     }
@@ -156,7 +156,7 @@ StackObj construct(Concrete type, StackObj* args) {
 
 Concrete tryReduce(const DFA_t::Node* node, const vector<StackObj>& stk, size_t* reduceStart) {
   Concrete retType = Concrete::NONE;
-  for (const Rule& rule : node->getValue()) {
+  for (const DFARule& rule : node->getValue()) {
     // Make sure we have completed the rule
     if (!rule.atEnd()) {
       continue;

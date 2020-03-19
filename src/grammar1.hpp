@@ -100,28 +100,28 @@ const Symbol ROOT_SYM = Symbol::S;
 const Grammar GRAMMAR = {
     {Symbol::S,
         {
-            Rule{Concrete::S1, {Symbol::T, Symbol::Y}, 0},
-            Rule{Concrete::S2, {Symbol::Y, Symbol::C, Symbol::X}, 0},
+            GrammarRule{Concrete::S1, {Symbol::T, Symbol::Y}},
+            GrammarRule{Concrete::S2, {Symbol::Y, Symbol::C, Symbol::X}},
         }
     },
     {Symbol::C,
         {
-            Rule{Concrete::C1, {Symbol::C, Symbol::X}, 0},
-            Rule{Concrete::C2, {Symbol::Y}, 0},
-            Rule{Concrete::C3, {Symbol::B}, 0},
+            GrammarRule{Concrete::C1, {Symbol::C, Symbol::X}},
+            GrammarRule{Concrete::C2, {Symbol::Y}},
+            GrammarRule{Concrete::C3, {Symbol::B}},
         }
     },
     {Symbol::X,
         {
-            Rule{Concrete::X1, {Symbol::X, Symbol::X}, 0},
-            Rule{Concrete::X2, {Symbol::A}, 0},
+            GrammarRule{Concrete::X1, {Symbol::X, Symbol::X}},
+            GrammarRule{Concrete::X2, {Symbol::A}},
         }
     },
     {Symbol::Y,
         {
-            Rule{Concrete::Y1, {Symbol::EPSILON}, 0},
-            Rule{Concrete::Y2, {Symbol::B}, 0},
-            Rule{Concrete::Y3, {Symbol::Y, Symbol::Z}, 0},
+            GrammarRule{Concrete::Y1, {Symbol::EPSILON}},
+            GrammarRule{Concrete::Y2, {Symbol::B}},
+            GrammarRule{Concrete::Y3, {Symbol::Y, Symbol::Z}},
         }
     }
 };

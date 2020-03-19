@@ -44,7 +44,7 @@ BitSetVars getNullabilities() {
 
   for (const auto& symbolAndRules : GRAMMAR) {
     Symbol symbol = symbolAndRules.first;
-    for (const Rule& rule : symbolAndRules.second) {
+    for (const GrammarRule& rule : symbolAndRules.second) {
       // Epsilon is always nullable, so this symbol is nullable
       // NOTE: Symbol::EPSILON is a special symbol we include when
       // the user leaves empty arguments, so a rule with epsilon will
@@ -106,7 +106,7 @@ std::vector<BitSetToks> getFirsts() {
   for (const auto& symbolAndRules : GRAMMAR) {
     Symbol symbol = symbolAndRules.first;
     UnionEquation& unionEq = equations[toInt(symbol)];
-    for (const Rule& rule : symbolAndRules.second) {
+    for (const GrammarRule& rule : symbolAndRules.second) {
       for (const Symbol& rhsSymbol : rule.rhs) {
         // If rule is empty, there is no first, so skip it
         if (rhsSymbol == Symbol::EPSILON) {
