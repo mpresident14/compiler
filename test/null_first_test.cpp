@@ -1,7 +1,7 @@
-// null_first.hpp relies on a grammar, so we have to include grammar1.hpp before.
+// null_first.hpp relies on a grammar, so we have to include nullable_grammar.hpp before.
 // This setup allows us to use arbitrary grammars for null_first without getting
 // multiple definitions of Symbol, Concrete, etc.
-#include "test/grammar1.hpp"
+#include "test/nullable_grammar.hpp"
 #include "null_first.hpp"
 
 #include <prez/unit_test.hpp>
