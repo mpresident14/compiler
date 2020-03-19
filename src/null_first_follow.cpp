@@ -5,12 +5,11 @@
 using namespace std;
 
 /* Iterate to find the least fixed point */
-void computeNullabilities(BitSet& nullabilities, vector<vector<BitRef>>* equations) {
-  size_t size = nullabilities.size();
+void computeNullabilities(BitSetVars& nullabilities, vector<vector<BitRef>>* equations) {
   bool changed = true;
   while (changed) {
     changed = false;
-    for (size_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < numVariables; ++i) {
       // If the nullability for this symbol is already true, no need to evaluate it again
       if (nullabilities[i]) {
         continue;
@@ -28,7 +27,7 @@ void computeNullabilities(BitSet& nullabilities, vector<vector<BitRef>>* equatio
                 [](const BitRef& bitref) { return bitref; });
           });
       if (newValue != nullabilities[i]) {
-        nullabilities[i] = newValue;
+        nullabilities[i] = move(newValue);
         changed = true;
       }
     }
@@ -39,11 +38,10 @@ void computeNullabilities(BitSet& nullabilities, vector<vector<BitRef>>* equatio
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitRef> */
-BitSet getNullabilities() {
-  BitSet nullabilities;
-  constexpr size_t size = nullabilities.size();
+BitSetVars getNullabilities() {
+  BitSetVars nullabilities;
+  vector<vector<BitRef>> equations[numVariables];
 
-  vector<vector<BitRef>> equations[size];
   for (const auto& symbolAndRules : GRAMMAR) {
     Symbol symbol = symbolAndRules.first;
     for (const Rule& rule : symbolAndRules.second) {
@@ -61,8 +59,8 @@ BitSet getNullabilities() {
       }
       // Otherwise build the conjunction bitset
       vector<BitRef> conjunctions;
-      for (const Symbol& symbol : rule.rhs) {
-        conjunctions.push_back(nullabilities[static_cast<int>(symbol)]);
+      for (const Symbol& rhsSymbol : rule.rhs) {
+        conjunctions.push_back(nullabilities[static_cast<int>(rhsSymbol)]);
       }
       equations[static_cast<int>(symbol)].push_back(move(conjunctions));
     }
@@ -71,3 +69,66 @@ BitSet getNullabilities() {
   computeNullabilities(nullabilities, equations);
   return nullabilities;
 }
+
+
+struct UnionEquation {
+  BitSetToks tokenSet;
+  vector<BitSetToks*> setRefs;
+};
+
+
+/* Iterate to find the least fixed point */
+void computeFirsts(vector<BitSetToks>& firsts, UnionEquation* equations) {
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (size_t i = 0; i < numVariables; ++i) {
+      const UnionEquation& unionEq = equations[i];
+      // Take union of all the bitsets
+      BitSetToks newValue = unionEq.tokenSet;
+      for (const BitSetToks* bitset : unionEq.setRefs) {
+        newValue |= *bitset;
+      }
+      if (newValue != firsts[i]) {
+        firsts[i] = move(newValue);
+        changed = true;
+      }
+    }
+  }
+}
+
+
+std::vector<BitSetToks> getFirsts() {
+  vector<BitSetToks> firsts(numVariables);
+  UnionEquation equations[numVariables];
+  BitSetVars nullabilities = getNullabilities();
+
+  for (const auto& symbolAndRules : GRAMMAR) {
+    Symbol symbol = symbolAndRules.first;
+    UnionEquation& unionEq = equations[toInt(symbol)];
+    for (const Rule& rule : symbolAndRules.second) {
+      for (const Symbol& rhsSymbol : rule.rhs) {
+        // If rule is empty, there is no first, so skip it
+        if (rhsSymbol == Symbol::EPSILON) {
+          break;
+        }
+        // Tokens are never nullable, so first can only be the token
+        if (isToken(rhsSymbol)) {
+          unionEq.tokenSet[toIntTokenOffset(rhsSymbol)] = true;
+          break;
+        }
+
+        // Add first of this variable to the equation. If the variable is nullable
+        // also add the next symbol, and so forth
+        unionEq.setRefs.push_back(&firsts[toInt(rhsSymbol)]);
+        if (!nullabilities[toInt(rhsSymbol)]) {
+          break;
+        }
+      }
+    }
+  }
+
+  computeFirsts(firsts, equations);
+  return firsts;
+}
+

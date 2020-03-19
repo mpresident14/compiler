@@ -89,6 +89,7 @@ const Symbol concreteToSymbol[] = {
 
 constexpr Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
 constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
+constexpr int toIntTokenOffset(Symbol symbol) { return toInt(symbol) - toInt(Symbol::STARTTOKENS) - 1; }
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
 
@@ -97,7 +98,7 @@ const Symbol ROOT_SYM = Symbol::S;
 #include "rules.hpp"
 
 const Grammar GRAMMAR = {
-    {ROOT_SYM,
+    {Symbol::S,
         {
             Rule{Concrete::S1, {Symbol::T, Symbol::Y}, 0},
             Rule{Concrete::S2, {Symbol::Y, Symbol::C, Symbol::X}, 0},
@@ -119,7 +120,7 @@ const Grammar GRAMMAR = {
     {Symbol::Y,
         {
             Rule{Concrete::Y1, {Symbol::EPSILON}, 0},
-            Rule{Concrete::Y2, {Symbol::C}, 0},
+            Rule{Concrete::Y2, {Symbol::B}, 0},
             Rule{Concrete::Y3, {Symbol::Y, Symbol::Z}, 0},
         }
     }

@@ -8,10 +8,15 @@
 #include <string>
 #include <bitset>
 #include <algorithm>
+#include <array>
 
-using BitSet = std::bitset<static_cast<int>(Symbol::STARTTOKENS)>;
-using BitRef = BitSet::reference;
+constexpr size_t numVariables = toInt(Symbol::STARTTOKENS);
+constexpr size_t numTokens = toInt(Symbol::EPSILON) - toInt(Symbol::STARTTOKENS) - 1;
+using BitSetVars = std::bitset<numVariables>;
+using BitSetToks = std::bitset<numTokens>;
+using BitRef = BitSetVars::reference;
 
-BitSet getNullabilities();
+BitSetVars getNullabilities();
+std::vector<BitSetToks> getFirsts();
 
 #endif

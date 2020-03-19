@@ -9,14 +9,36 @@ using namespace prez;
 UnitTest tester = UnitTest::createTester();
 
 void testGetNullabilities() {
-  // Y = true, X = false, C = true, S = false
+  // NULLABLE(Y) = true
+  // NULLABLE(X) = false
+  // NULLABLE(C) = true
+  // NULLABLE(S) = false
   // (bit positions decrease from left to right)
-  BitSet expected("1010");
+  BitSetVars expected("1010");
   tester.assertEquals(expected, getNullabilities());
 }
 
-int main(int, char**) {
+
+void testGetFirsts() {
+  // FIRST(S) = {Z, A, B, T}
+  // FIRST(C) = {Z, A, B}
+  // FIRST(X) = {A}
+  // FIRST(Y) = {Z, B}
+  BitSetToks expectedS("1111");
+  BitSetToks expectedC("1110");
+  BitSetToks expectedX("0100");
+  BitSetToks expectedY("1010");
+
+  vector<BitSetToks> actual = getFirsts();
+  tester.assertEquals(expectedS, actual[toInt(Symbol::S)]);
+  tester.assertEquals(expectedC, actual[toInt(Symbol::C)]);
+  tester.assertEquals(expectedX, actual[toInt(Symbol::X)]);
+  tester.assertEquals(expectedY, actual[toInt(Symbol::Y)]);
+}
+
+int main() {
   testGetNullabilities();
+  testGetFirsts();
 
   return 0;
 }
