@@ -1,5 +1,8 @@
-#include "null_first_follow.hpp"
-#include "grammar1.hpp"
+// null_first.hpp relies on a grammar, so we have to include grammar1.hpp before.
+// This setup allows us to use arbitrary grammars for null_first without getting
+// multiple definitions of Symbol, Concrete, etc.
+#include "test/grammar1.hpp"
+#include "null_first.hpp"
 
 #include <prez/unit_test.hpp>
 

@@ -111,43 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named main
+# Target rules for targets named null_first_test
 
 # Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 main
-.PHONY : main
+null_first_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 null_first_test
+.PHONY : null_first_test
 
 # fast build rule for target.
-main/fast:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
-
-#=============================================================================
-# Target rules for targets named dfa_test
-
-# Build rule for target.
-dfa_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 dfa_test
-.PHONY : dfa_test
-
-# fast build rule for target.
-dfa_test/fast:
-	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/build
-.PHONY : dfa_test/fast
-
-#=============================================================================
-# Target rules for targets named null_first_follow_test
-
-# Build rule for target.
-null_first_follow_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 null_first_follow_test
-.PHONY : null_first_follow_test
-
-# fast build rule for target.
-null_first_follow_test/fast:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/build
-.PHONY : null_first_follow_test/fast
+null_first_test/fast:
+	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/build
+.PHONY : null_first_test/fast
 
 #=============================================================================
 # Target rules for targets named lr0_test
@@ -162,116 +136,18 @@ lr0_test/fast:
 	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/build
 .PHONY : lr0_test/fast
 
-src/main.o: src/main.cpp.o
+#=============================================================================
+# Target rules for targets named dfa_test
 
-.PHONY : src/main.o
+# Build rule for target.
+dfa_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 dfa_test
+.PHONY : dfa_test
 
-# target to build an object file
-src/main.cpp.o:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
-
-src/main.i: src/main.cpp.i
-
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
-
-src/null_first_follow.o: src/null_first_follow.cpp.o
-
-.PHONY : src/null_first_follow.o
-
-# target to build an object file
-src/null_first_follow.cpp.o:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.o
-.PHONY : src/null_first_follow.cpp.o
-
-src/null_first_follow.i: src/null_first_follow.cpp.i
-
-.PHONY : src/null_first_follow.i
-
-# target to preprocess a source file
-src/null_first_follow.cpp.i:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.i
-.PHONY : src/null_first_follow.cpp.i
-
-src/null_first_follow.s: src/null_first_follow.cpp.s
-
-.PHONY : src/null_first_follow.s
-
-# target to generate assembly for a file
-src/null_first_follow.cpp.s:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/src/null_first_follow.cpp.s
-.PHONY : src/null_first_follow.cpp.s
-
-src/parse.o: src/parse.cpp.o
-
-.PHONY : src/parse.o
-
-# target to build an object file
-src/parse.cpp.o:
-	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.o
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.o
-.PHONY : src/parse.cpp.o
-
-src/parse.i: src/parse.cpp.i
-
-.PHONY : src/parse.i
-
-# target to preprocess a source file
-src/parse.cpp.i:
-	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.i
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.i
-.PHONY : src/parse.cpp.i
-
-src/parse.s: src/parse.cpp.s
-
-.PHONY : src/parse.s
-
-# target to generate assembly for a file
-src/parse.cpp.s:
-	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/src/parse.cpp.s
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/src/parse.cpp.s
-.PHONY : src/parse.cpp.s
-
-src/regex.o: src/regex.cpp.o
-
-.PHONY : src/regex.o
-
-# target to build an object file
-src/regex.cpp.o:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.o
-.PHONY : src/regex.cpp.o
-
-src/regex.i: src/regex.cpp.i
-
-.PHONY : src/regex.i
-
-# target to preprocess a source file
-src/regex.cpp.i:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.i
-.PHONY : src/regex.cpp.i
-
-src/regex.s: src/regex.cpp.s
-
-.PHONY : src/regex.s
-
-# target to generate assembly for a file
-src/regex.cpp.s:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.s
-.PHONY : src/regex.cpp.s
+# fast build rule for target.
+dfa_test/fast:
+	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/build
+.PHONY : dfa_test/fast
 
 test/dfa_test.o: test/dfa_test.cpp.o
 
@@ -327,32 +203,32 @@ test/lr0_test.cpp.s:
 	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/test/lr0_test.cpp.s
 .PHONY : test/lr0_test.cpp.s
 
-test/null_first_follow_test.o: test/null_first_follow_test.cpp.o
+test/null_first_test.o: test/null_first_test.cpp.o
 
-.PHONY : test/null_first_follow_test.o
+.PHONY : test/null_first_test.o
 
 # target to build an object file
-test/null_first_follow_test.cpp.o:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.o
-.PHONY : test/null_first_follow_test.cpp.o
+test/null_first_test.cpp.o:
+	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/test/null_first_test.cpp.o
+.PHONY : test/null_first_test.cpp.o
 
-test/null_first_follow_test.i: test/null_first_follow_test.cpp.i
+test/null_first_test.i: test/null_first_test.cpp.i
 
-.PHONY : test/null_first_follow_test.i
+.PHONY : test/null_first_test.i
 
 # target to preprocess a source file
-test/null_first_follow_test.cpp.i:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.i
-.PHONY : test/null_first_follow_test.cpp.i
+test/null_first_test.cpp.i:
+	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/test/null_first_test.cpp.i
+.PHONY : test/null_first_test.cpp.i
 
-test/null_first_follow_test.s: test/null_first_follow_test.cpp.s
+test/null_first_test.s: test/null_first_test.cpp.s
 
-.PHONY : test/null_first_follow_test.s
+.PHONY : test/null_first_test.s
 
 # target to generate assembly for a file
-test/null_first_follow_test.cpp.s:
-	$(MAKE) -f CMakeFiles/null_first_follow_test.dir/build.make CMakeFiles/null_first_follow_test.dir/test/null_first_follow_test.cpp.s
-.PHONY : test/null_first_follow_test.cpp.s
+test/null_first_test.cpp.s:
+	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/test/null_first_test.cpp.s
+.PHONY : test/null_first_test.cpp.s
 
 # Help Target
 help:
@@ -361,32 +237,19 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... main"
-	@echo "... dfa_test"
-	@echo "... null_first_follow_test"
+	@echo "... null_first_test"
 	@echo "... lr0_test"
 	@echo "... edit_cache"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
-	@echo "... src/null_first_follow.o"
-	@echo "... src/null_first_follow.i"
-	@echo "... src/null_first_follow.s"
-	@echo "... src/parse.o"
-	@echo "... src/parse.i"
-	@echo "... src/parse.s"
-	@echo "... src/regex.o"
-	@echo "... src/regex.i"
-	@echo "... src/regex.s"
+	@echo "... dfa_test"
 	@echo "... test/dfa_test.o"
 	@echo "... test/dfa_test.i"
 	@echo "... test/dfa_test.s"
 	@echo "... test/lr0_test.o"
 	@echo "... test/lr0_test.i"
 	@echo "... test/lr0_test.s"
-	@echo "... test/null_first_follow_test.o"
-	@echo "... test/null_first_follow_test.i"
-	@echo "... test/null_first_follow_test.s"
+	@echo "... test/null_first_test.o"
+	@echo "... test/null_first_test.i"
+	@echo "... test/null_first_test.s"
 .PHONY : help
 
 

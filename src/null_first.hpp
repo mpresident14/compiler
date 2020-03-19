@@ -1,11 +1,16 @@
-#include "null_first_follow.hpp"
+#ifndef NULL_FIRST_HPP
+#define NULL_FIRST_HPP
 
-#include <prez/print_stuff.hpp>
-
-using namespace std;
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <string>
 
 /* Iterate to find the least fixed point */
-void computeNullabilities(BitSetVars& nullabilities, vector<vector<BitRef>>* equations) {
+void computeNullabilities(BitSetVars& nullabilities, std::vector<std::vector<BitRef>>* equations) {
+  using namespace std;
+
   bool changed = true;
   while (changed) {
     changed = false;
@@ -34,6 +39,8 @@ void computeNullabilities(BitSetVars& nullabilities, vector<vector<BitRef>>* equ
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitRef> */
 BitSetVars getNullabilities() {
+  using namespace std;
+
   BitSetVars nullabilities;
   vector<vector<BitRef>> equations[numVariables];
 
@@ -67,11 +74,13 @@ BitSetVars getNullabilities() {
 
 struct UnionEquation {
   BitSetToks tokenSet;
-  vector<BitSetToks*> setRefs;
+  std::vector<BitSetToks*> setRefs;
 };
 
 /* Iterate to find the least fixed point */
-void computeFirsts(vector<BitSetToks>& firsts, UnionEquation* equations) {
+void computeFirsts(std::vector<BitSetToks>& firsts, UnionEquation* equations) {
+  using namespace std;
+
   bool changed = true;
   while (changed) {
     changed = false;
@@ -91,6 +100,8 @@ void computeFirsts(vector<BitSetToks>& firsts, UnionEquation* equations) {
 }
 
 std::vector<BitSetToks> getFirsts() {
+  using namespace std;
+
   vector<BitSetToks> firsts(numVariables);
   UnionEquation equations[numVariables];
   BitSetVars nullabilities = getNullabilities();
@@ -123,3 +134,6 @@ std::vector<BitSetToks> getFirsts() {
   computeFirsts(firsts, equations);
   return firsts;
 }
+
+
+#endif

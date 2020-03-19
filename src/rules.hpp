@@ -65,7 +65,8 @@ namespace std {
         h2 += hasher(symbol);
       }
       size_t h3 = std::hash<size_t>()(rule.pos);
-      return h3 + h1 ^ (h2 << 1);
+      size_t h4 = std::hash<BitSetToks>()(rule.lookahead);
+      return h4 + h3 + h1 ^ (h2 << 1);
     }
   };
 }  // namespace std
