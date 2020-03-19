@@ -11,6 +11,8 @@
 
 #include <prez/print_stuff.hpp>
 
+// TODO: If we specialize DFA for when T is an enum, we can use arrays for node transitions
+// instead of a hashmap
 template <typename V, typename T>
 class DFA {
 public:

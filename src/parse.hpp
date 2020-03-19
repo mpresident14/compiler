@@ -5,15 +5,14 @@
 #include "lr0_grammar.hpp"
 // #include "slr1_grammar.hpp"
 
+#include <bitset>
 #include <cstddef>
 #include <memory>
 #include <queue>
 #include <unordered_set>
 #include <vector>
-#include <bitset>
 
 #include <prez/print_stuff.hpp>
-
 
 // NOTE: Starting point of the grammar must have a special name ROOT_SYM so that we
 // know where to start building the DFA from.

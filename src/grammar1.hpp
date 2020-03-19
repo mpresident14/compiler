@@ -1,12 +1,12 @@
 #ifndef GRAMMAR1_HPP
 #define GRAMMAR1_HPP
 
+#include <bitset>
 #include <cstddef>
 #include <iostream>
-#include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON, NUMSYMBOLS };
+enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::T:
@@ -39,15 +39,12 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::X:
       out << "X";
       break;
-    case Symbol::NUMSYMBOLS:
-      out << "NUMSYMBOLS";
-      break;
   }
   return out;
 }
 
 /* The concrete types that symbols in the grammar can be */
-enum class Concrete { S1, S2, C1, C2, C3, X1, X2, Y1, Y2, Y3};
+enum class Concrete { S1, S2, C1, C2, C3, X1, X2, Y1, Y2, Y3 };
 inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   switch (type) {
     case Concrete::S1:
@@ -84,47 +81,60 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-const Symbol concreteToSymbol[] = {
-  Symbol::S, Symbol::S, Symbol::C, Symbol::C, Symbol::C, Symbol::X, Symbol::X, Symbol::Y, Symbol::Y, Symbol::Y};
+const Symbol concreteToSymbol[] = {Symbol::S,
+    Symbol::S,
+    Symbol::C,
+    Symbol::C,
+    Symbol::C,
+    Symbol::X,
+    Symbol::X,
+    Symbol::Y,
+    Symbol::Y,
+    Symbol::Y};
 
-constexpr Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+constexpr Symbol toSymbol(Concrete concrete) {
+  return concreteToSymbol[static_cast<int>(concrete)];
+}
 constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
-constexpr int toIntTokenOffset(Symbol symbol) { return toInt(symbol) - toInt(Symbol::STARTTOKENS) - 1; }
+constexpr int toIntTokenOffset(Symbol symbol) {
+  return toInt(symbol) - toInt(Symbol::STARTTOKENS) - 1;
+}
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
 
-const Symbol ROOT_SYM = Symbol::S;
+constexpr size_t numVariables = toInt(Symbol::STARTTOKENS);
+constexpr size_t numTokens = toInt(Symbol::EPSILON) - toInt(Symbol::STARTTOKENS) - 1;
+constexpr size_t numSymbols = toInt(Symbol::EPSILON);
+
+using BitSetVars = std::bitset<numVariables>;
+using BitSetToks = std::bitset<numTokens>;
+using BitRef = BitSetVars::reference;
 
 #include "rules.hpp"
 
-const Grammar GRAMMAR = {
-    {Symbol::S,
-        {
-            GrammarRule{Concrete::S1, {Symbol::T, Symbol::Y}},
-            GrammarRule{Concrete::S2, {Symbol::Y, Symbol::C, Symbol::X}},
-        }
-    },
+constexpr Symbol ROOT_SYM = Symbol::S;
+
+const Grammar GRAMMAR = {{Symbol::S,
+                             {
+                                 GrammarRule{Concrete::S1, {Symbol::T, Symbol::Y}},
+                                 GrammarRule{Concrete::S2, {Symbol::Y, Symbol::C, Symbol::X}},
+                             }},
     {Symbol::C,
         {
             GrammarRule{Concrete::C1, {Symbol::C, Symbol::X}},
             GrammarRule{Concrete::C2, {Symbol::Y}},
             GrammarRule{Concrete::C3, {Symbol::B}},
-        }
-    },
+        }},
     {Symbol::X,
         {
             GrammarRule{Concrete::X1, {Symbol::X, Symbol::X}},
             GrammarRule{Concrete::X2, {Symbol::A}},
-        }
-    },
+        }},
     {Symbol::Y,
         {
             GrammarRule{Concrete::Y1, {Symbol::EPSILON}},
             GrammarRule{Concrete::Y2, {Symbol::B}},
             GrammarRule{Concrete::Y3, {Symbol::Y, Symbol::Z}},
-        }
-    }
-};
-
+        }}};
 
 #endif

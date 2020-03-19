@@ -130,18 +130,11 @@ using ROOT_TYPE = Stmt;
 #include "rules.hpp"
 
 /* SLR1 Grammar */
-const Grammar GRAMMAR = {
-  {ROOT_SYM,
-      {
-        GrammarRule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}}
-      }
-  },
-  {Symbol::EXPR,
-      {
-        GrammarRule{Concrete::EINT, {Symbol::INT}},
-        GrammarRule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}}
-      },
-  }
-};
+const Grammar GRAMMAR = {{ROOT_SYM, {GrammarRule{Concrete::SEXPR, {Symbol::EXPR, Symbol::DOLLAR}}}},
+    {
+        Symbol::EXPR,
+        {GrammarRule{Concrete::EINT, {Symbol::INT}},
+            GrammarRule{Concrete::EPLUS, {Symbol::INT, Symbol::PLUS, Symbol::EXPR}}},
+    }};
 
 #endif

@@ -1,5 +1,5 @@
-#include "grammar1.hpp"
 #include "null_first_follow.hpp"
+#include "grammar1.hpp"
 
 #include <prez/unit_test.hpp>
 
@@ -17,7 +17,6 @@ void testGetNullabilities() {
   BitSetVars expected("1010");
   tester.assertEquals(expected, getNullabilities());
 }
-
 
 void testGetFirsts() {
   // FIRST(S) = {Z, A, B, T}

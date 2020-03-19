@@ -17,14 +17,10 @@ void computeNullabilities(BitSetVars& nullabilities, vector<vector<BitRef>>* equ
 
       const vector<vector<BitRef>>& disjunctions = equations[i];
       // Nullable if any of the conjunctions evaluate to true
-      bool newValue = std::any_of(
-          disjunctions.cbegin(),
-          disjunctions.cend(),
-          [](const vector<BitRef>& conj) {
+      bool newValue =
+          std::any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
             return std::all_of(
-                conj.cbegin(),
-                conj.cend(),
-                [](const BitRef& bitref) { return bitref; });
+                conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
           });
       if (newValue != nullabilities[i]) {
         nullabilities[i] = move(newValue);
@@ -33,7 +29,6 @@ void computeNullabilities(BitSetVars& nullabilities, vector<vector<BitRef>>* equ
     }
   }
 }
-
 
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
@@ -70,12 +65,10 @@ BitSetVars getNullabilities() {
   return nullabilities;
 }
 
-
 struct UnionEquation {
   BitSetToks tokenSet;
   vector<BitSetToks*> setRefs;
 };
-
 
 /* Iterate to find the least fixed point */
 void computeFirsts(vector<BitSetToks>& firsts, UnionEquation* equations) {
@@ -96,7 +89,6 @@ void computeFirsts(vector<BitSetToks>& firsts, UnionEquation* equations) {
     }
   }
 }
-
 
 std::vector<BitSetToks> getFirsts() {
   vector<BitSetToks> firsts(numVariables);
@@ -131,4 +123,3 @@ std::vector<BitSetToks> getFirsts() {
   computeFirsts(firsts, equations);
   return firsts;
 }
-

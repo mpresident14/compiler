@@ -10,14 +10,14 @@ using namespace std;
 void addRhses(RuleSet& ruleSet, Symbol symbol) {
   const vector<GrammarRule>& rules = GRAMMAR.at(symbol);
   for (const GrammarRule& rule : rules) {
-    ruleSet.insert(DFARule{rule.lhs, rule.rhs, 0});
+    ruleSet.insert(DFARule{rule.lhs, rule.rhs, 0, BitSetToks()});
   }
 }
 
 void addRhses(queue<DFARule>& ruleQueue, Symbol symbol) {
   const vector<GrammarRule>& rules = GRAMMAR.at(symbol);
   for (const GrammarRule& rule : rules) {
-    ruleQueue.push(DFARule{rule.lhs, rule.rhs, 0});
+    ruleQueue.push(DFARule{rule.lhs, rule.rhs, 0, BitSetToks()});
   }
 }
 
@@ -61,8 +61,7 @@ void epsilonTransition(RuleSet& ruleSet) {
 /* For each rule of this node, construct the transitions to successors. */
 vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
   // Get all the valid transition symbols and map each of them to a new set of rules
-  constexpr int numVariables = toInt(Symbol::NUMSYMBOLS);
-  RuleSet newTransitions[numVariables];
+  RuleSet newTransitions[numSymbols];
 
   for (const DFARule& rule : node->getValue()) {
     if (rule.atEnd()) {
@@ -73,7 +72,7 @@ vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node
 
   // Apply epsilon transitions and create the transition
   vector<const DFA_t::Node*> addedNodes;
-  for (size_t i = 0; i < numVariables; ++i) {
+  for (size_t i = 0; i < numSymbols; ++i) {
     RuleSet& transitionRules = newTransitions[i];
     // No valid transition
     if (transitionRules.empty()) {

@@ -28,8 +28,9 @@ void testAddRhses() {
   RuleSet ruleSet;
   addRhses(ruleSet, Symbol::EXPR);
 
-  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0};
-  const DFARule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
+  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule expected1 = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
 
   TESTER.assertEquals(2, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(expected0));
@@ -37,12 +38,13 @@ void testAddRhses() {
 }
 
 void testEpsilonTransition() {
-  const DFARule init1 = {Concrete::ETERM, {Symbol::TERM}, 0};
-  const DFARule init2 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
+  const DFARule init1 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule init2 = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
   RuleSet ruleSet = {init1, init2};
   epsilonTransition(ruleSet);
 
-  const DFARule expected = {Concrete::TINT, {Symbol::INT}, 0};
+  const DFARule expected = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
 
   TESTER.assertEquals(3, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(init1));
@@ -54,9 +56,10 @@ void testInitDFA() {
   DFA_t initialNfa = initDFA();
   const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
 
-  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0};
-  const DFARule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0};
-  const DFARule expected2 = {Concrete::TINT, {Symbol::INT}, 0};
+  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule expected1 = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
+  const DFARule expected2 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
 
   TESTER.assertEquals(3, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(expected0));
@@ -65,8 +68,9 @@ void testInitDFA() {
 }
 
 void testCreateTransitions() {
-  const DFARule rule0 = {Concrete::TINT, {Symbol::INT}, 0};
-  const DFARule rule1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 2};
+  const DFARule rule0 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+  const DFARule rule1 = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 2, BitSetToks()};
 
   DFA_t dfa({rule0, rule1});
   createTransitions(dfa, dfa.getRoot());
@@ -74,8 +78,9 @@ void testCreateTransitions() {
   const RuleSet& ruleSet0 = transitions.at(Symbol::INT)->getValue();
   const RuleSet& ruleSet1 = transitions.at(Symbol::TERM)->getValue();
 
-  const DFARule expected0 = {Concrete::TINT, {Symbol::INT}, 1};
-  const DFARule expected1 = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3};
+  const DFARule expected0 = {Concrete::TINT, {Symbol::INT}, 1, BitSetToks()};
+  const DFARule expected1 = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3, BitSetToks()};
 
   TESTER.assertEquals(2, transitions.size());
   TESTER.assertEquals(1, ruleSet0.size());
@@ -85,7 +90,8 @@ void testCreateTransitions() {
 }
 
 void testCreateTransitionsEndRule() {
-  const DFARule rule = {Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3};
+  const DFARule rule = {
+      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3, BitSetToks()};
   DFA_t dfa({rule});
   createTransitions(dfa, dfa.getRoot());
   auto& transitions = dfa.getRoot()->getTransitions();

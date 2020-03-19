@@ -14,6 +14,7 @@ struct DFARule {
   Concrete lhs;
   std::vector<Symbol> rhs;
   size_t pos;
+  BitSetToks lookahead;
 
   bool atEnd() const { return pos == rhs.size(); }
   /* Given a rule "S -> A.B", returns B */
@@ -29,11 +30,11 @@ struct DFARule {
     if (pos == rhs.size()) {
       throw std::invalid_argument("Out of bounds");
     }
-    return {lhs, rhs, pos + 1};
+    return {lhs, rhs, pos + 1, lookahead};
   }
   // TODO: Make appropriate functions noexcept and const(expr)
   bool operator==(const DFARule& other) const {
-    return lhs == other.lhs && rhs == other.rhs && pos == other.pos;
+    return lhs == other.lhs && rhs == other.rhs && pos == other.pos && lookahead == other.lookahead;
   }
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
     out << "( " << rule.lhs << " -> ";
@@ -87,13 +88,11 @@ namespace std {
   };
 }  // namespace std
 
-
 struct GrammarRule {
   const Concrete lhs;
   const std::vector<Symbol> rhs;
 };
 
 using Grammar = std::unordered_map<Symbol, std::vector<GrammarRule>>;
-
 
 #endif

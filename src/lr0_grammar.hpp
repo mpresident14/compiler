@@ -1,12 +1,13 @@
 #ifndef LR0_GRAMMAR_HPP
 #define LR0_GRAMMAR_HPP
 
+#include <bitset>
 #include <cstddef>
 #include <iostream>
 #include <string>
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { TERM, EXPR, STARTTOKENS, PLUS, INT, NUMSYMBOLS };
+enum class Symbol { TERM, EXPR, STARTTOKENS, PLUS, INT, EPSILON };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::PLUS:
@@ -24,8 +25,8 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::STARTTOKENS:
       out << "STARTTOKENS";
       break;
-    case Symbol::NUMSYMBOLS:
-      out << "NUMSYMBOLS";
+    case Symbol::EPSILON:
+      out << "EPSILON";
       break;
   }
   return out;
@@ -53,10 +54,23 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
 
 const Symbol concreteToSymbol[] = {Symbol::EXPR, Symbol::EXPR, Symbol::TERM};
 
-constexpr Symbol toSymbol(Concrete concrete) { return concreteToSymbol[static_cast<int>(concrete)]; }
+constexpr Symbol toSymbol(Concrete concrete) {
+  return concreteToSymbol[static_cast<int>(concrete)];
+}
 constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
+constexpr int toIntTokenOffset(Symbol symbol) {
+  return toInt(symbol) - toInt(Symbol::STARTTOKENS) - 1;
+}
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
+
+constexpr size_t numVariables = toInt(Symbol::STARTTOKENS);
+constexpr size_t numTokens = toInt(Symbol::EPSILON) - toInt(Symbol::STARTTOKENS) - 1;
+constexpr size_t numSymbols = toInt(Symbol::EPSILON);
+
+using BitSetVars = std::bitset<numVariables>;
+using BitSetToks = std::bitset<numTokens>;
+using BitRef = BitSetVars::reference;
 
 /***********
  * OBJECTS *
@@ -116,7 +130,6 @@ struct EPlus : Expr {
 const Symbol ROOT_SYM = Symbol::EXPR;
 using ROOT_TYPE = Expr;
 
-
 #include "rules.hpp"
 
 /* LR0 Grammar */
@@ -125,13 +138,12 @@ const Grammar GRAMMAR = {
         {
             GrammarRule{Concrete::ETERM, {Symbol::TERM}},
             GrammarRule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}},
-        }
-    },
-    {Symbol::TERM,
+        }},
+    {
+        Symbol::TERM,
         {
             GrammarRule{Concrete::TINT, {Symbol::INT}},
         },
-    }
-};
+    }};
 
 #endif
