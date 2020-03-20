@@ -118,17 +118,9 @@ constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIn
  * OBJECTS *
  ***********/
 
-/* Tokens with data */
-struct Int {
-  Int(const std::string& str) : i_(atoi(str.c_str())) {}
-  operator int() const { return i_; }
-  int i_;
-};
-
 // NOTE: getType() not required for parsing, but helpful for client
 // TODO: Perhaps pass an argument to the generator that uses existing
 // classes or creates them for you
-
 
 /* Expr */
 struct Expr {
@@ -195,7 +187,7 @@ struct StackObj {
 void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::INT:
-      delete (Int*)obj;
+      delete (int*)obj;
       break;
     case Symbol::EXPR:
       delete (Expr*)obj;
@@ -209,7 +201,7 @@ void StackObj::deleteObj() const noexcept {
 StackObj construct(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::EINT:
-      return StackObj{new EInt(*(Int*)args[0].obj), toSymbol(type), type};
+      return StackObj{new EInt(*(int*)args[0].obj), toSymbol(type), type};
     case Concrete::EPLUS:
       return StackObj{new EPlus((Expr*)args[0].obj, (Expr*)args[2].obj), toSymbol(type), type};
     case Concrete::ETIMES:
