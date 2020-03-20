@@ -24,19 +24,20 @@
  *       | Alts BAR Regex  { RegexVector($0, $2) }
  *
  * Concats {RegexVector}
- * Concats := Regex EMPTY Regex   { RegexVector($0, $2) }
- *          | Concats EMPTY Regex { RegexVector($0, $2) }
+ * Concats := Regex Regex   { RegexVector($0, $2) }
+ *          | Concats Regex { RegexVector($0, $2) }
  *
  *
  * */
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, EMPTY, CHAR, EPSILON };
+enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, CHAR, EPSILON };
 /* The concrete types that symbols in the grammar can be */
 enum class Concrete { SCONC, RALT, RCONCAT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
 enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
 /* 0 means unspecified precedence */
-constexpr size_t tokenPrecedence[] = {1, 4, 0};
+constexpr size_t overridePrecedence[] = {0,0,0,0,0,0,4,4,0};
+constexpr size_t tokenPrecedence[] = {1, 4};
 constexpr Associativity tokenAssoc[] = {Associativity::LEFT, Associativity::UNSPECIFIED};
 constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS, Symbol::CONCATS, Symbol::CONCATS};
 
@@ -59,9 +60,6 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
       break;
     case Symbol::BAR:
       out << "BAR";
-      break;
-    case Symbol::EMPTY:
-      out << "EMPTY";
       break;
     case Symbol::CHAR:
       out << "CHAR";
@@ -106,6 +104,7 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
+
 /*********
  * UTILS *
  *********/
@@ -144,6 +143,10 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
   }
   return v;
 }
+
+#include "rules.hpp"
+
+constexpr size_t ruleOverridePrecedence(const DFARule& rule) { return overridePrecedence[static_cast<int>(rule.lhs)]; }
 
 
 /***********
@@ -214,9 +217,9 @@ void* constructObj(Concrete type, StackObj* args) {
     case Concrete::AALT:
       return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
     case Concrete::CREGEX:
-      return new RegexVector((Regex*)args[0].obj, (Regex*)args[2].obj);
+      return new RegexVector((Regex*)args[0].obj, (Regex*)args[1].obj);
     case Concrete::CCONCAT:
-      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
+      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[1].obj);
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*) args[0].obj);
     default:
@@ -228,7 +231,6 @@ StackObj construct(Concrete type, StackObj* args) {
   return StackObj{constructObj(type, args), toSymbol(type), type};
 }
 
-#include "rules.hpp"
 
 /* LR0 Grammar */
 const Grammar GRAMMAR = {
@@ -249,8 +251,8 @@ const Grammar GRAMMAR = {
         }},
     {Symbol::CONCATS,
         {
-            GrammarRule{Concrete::CREGEX, {Symbol::REGEX, Symbol::EMPTY, Symbol::REGEX}},
-            GrammarRule{Concrete::CCONCAT, {Symbol::CONCATS, Symbol::EMPTY, Symbol::REGEX}},
+            GrammarRule{Concrete::CREGEX, {Symbol::REGEX, Symbol::REGEX}},
+            GrammarRule{Concrete::CCONCAT, {Symbol::CONCATS, Symbol::REGEX}},
         }}
 };
 

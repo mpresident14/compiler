@@ -18,13 +18,11 @@ int main() {
       {StackObj{new char('a'), Symbol::CHAR, Concrete::NONE},
       StackObj{nullptr, Symbol::BAR, Concrete::NONE},
       StackObj{new char('b'), Symbol::CHAR, Concrete::NONE},
-      StackObj{nullptr, Symbol::EMPTY, Concrete::NONE},
       StackObj{new char('c'), Symbol::CHAR, Concrete::NONE}});
   cout << r1.get() << endl;
 
   unique_ptr<Regex> r2 = parse(dfa,
       {StackObj{new char('a'), Symbol::CHAR, Concrete::NONE},
-      StackObj{nullptr, Symbol::EMPTY, Concrete::NONE},
       StackObj{new char('b'), Symbol::CHAR, Concrete::NONE},
       StackObj{nullptr, Symbol::BAR, Concrete::NONE},
       StackObj{new char('c'), Symbol::CHAR, Concrete::NONE}});

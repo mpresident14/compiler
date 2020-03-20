@@ -217,9 +217,11 @@ Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<
       if (i == 0) {
         // Potential shift-reduce conflict
         if (shiftableRule) {
-          size_t rulePrecedence = 0;
+          // Check to see if user has overridden the token-specified precedence of this rule
+          // Otherwise rule precedence is that of last token in rule
+          size_t rulePrecedence = ruleOverridePrecedence(rule);
           Symbol rulesLastToken = getLastToken(rule);
-          if (rulesLastToken != Symbol::EPSILON) {
+          if (rulePrecedence == 0 && rulesLastToken != Symbol::EPSILON) {
             rulePrecedence = getPrecedence(rulesLastToken);
           }
           // Unspecified precedence -> conflict! (Resolve by shifting)
