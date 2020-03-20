@@ -262,75 +262,78 @@ Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<
   return retType;
 }
 
-// /* Clear from StackObj::obj starting at index i */
-// void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
-//   size_t size = stackObjs.size();
-//   for (; i < size; ++i) {
-//     stackObjs[i].deleteObj();
-//   }
-// }
+/* Clear from StackObj::obj starting at index i */
+void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
+  size_t size = stackObjs.size();
+  for (; i < size; ++i) {
+    stackObjs[i].deleteObj();
+  }
+}
 
-// std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
-//   using namespace std;
+std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
+  using namespace std;
 
-//   StackObj firstToken = inputTokens[0];
-//   vector<StackObj> stk = {firstToken};
-//   const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), firstToken.symbol);
-//   if (currentNode == nullptr) {
-//     cleanPtrsFrom(inputTokens, 0);
-//     return nullptr;
-//   }
+  StackObj firstToken = inputTokens[0];
+  vector<StackObj> stk = {firstToken};
+  const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), firstToken.symbol);
+  if (currentNode == nullptr) {
+    cleanPtrsFrom(inputTokens, 0);
+    return nullptr;
+  }
 
-//   size_t i = 1;
-//   size_t inputSize = inputTokens.size();
+  size_t i = 1;
+  size_t inputSize = inputTokens.size();
 
-//   // Stop when we have consumed all the input and the root of grammar
-//   // is the only thing on the stack
-//   while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == Symbol::S)) {
-//     size_t reduceStart;
-//     Concrete type = tryReduce(currentNode, stk, &reduceStart);
-//     if (type != Concrete::NONE) {
-//       // Construct the new object, pop the arguments off the stack,
-//       // and push the new object onto it.
-//       StackObj newObj = construct(type, &stk.data()[reduceStart]);
-//       size_t stkSize = stk.size();
-//       for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-//         // Tokens are not encapsulated within the underlying object, so the
-//         // pointers need to be deleted
-//         if (isToken(stk.back().symbol)) {
-//           stk.back().deleteObj();
-//         }
-//         stk.pop_back();
-//       }
-//       stk.push_back(newObj);
+  // Stop when we have consumed all the input and the root of grammar
+  // is the only thing on the stack
+  while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == Symbol::S)) {
+    size_t reduceStart;
+    Symbol nextInputToken = i == inputSize ? Symbol::EPSILON : inputTokens[i].symbol;
+    Concrete type = tryReduce(currentNode, nextInputToken, stk, &reduceStart);
+    // Reduce
+    if (type != Concrete::NONE) {
+      // Construct the new object, pop the arguments off the stack,
+      // and push the new object onto it.
+      StackObj newObj = construct(type, &stk.data()[reduceStart]);
+      size_t stkSize = stk.size();
+      for (size_t j = 0; j < stkSize - reduceStart; ++j) {
+        // Tokens are not encapsulated within the underlying object, so the
+        // pointers need to be deleted
+        if (isToken(stk.back().symbol)) {
+          stk.back().deleteObj();
+        }
+        stk.pop_back();
+      }
+      stk.push_back(newObj);
 
-//       // Restart the DFA.
-//       // TODO: Only backtrack as far as the reduction (store path)
-//       vector<Symbol> stkSymbols;
-//       transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
-//         return stkObj.symbol;
-//       });
-//       currentNode = dfa.run(stkSymbols);
-//     } else {
-//       // No more tokens, didn't reduce to S
-//       if (i == inputSize) {
-//         cleanPtrsFrom(stk, 0);
-//         return nullptr;
-//       }
-//       StackObj token = inputTokens[i];
-//       stk.push_back(token);
-//       currentNode = dfa.step(currentNode, token.symbol);
-//       // No transition for this token
-//       if (currentNode == nullptr) {
-//         cleanPtrsFrom(stk, 0);
-//         cleanPtrsFrom(inputTokens, i + 1);
-//         return nullptr;
-//       }
-//       ++i;
-//     }
-//   }
+      // Restart the DFA.
+      // TODO: Only backtrack as far as the reduction (store path)
+      vector<Symbol> stkSymbols;
+      transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
+        return stkObj.symbol;
+      });
+      currentNode = dfa.run(stkSymbols);
+    } else { // Shift
+      // No more tokens, didn't reduce to S
+      if (i == inputSize) {
+        cleanPtrsFrom(stk, 0);
+        return nullptr;
+      }
+      StackObj token = inputTokens[i];
+      stk.push_back(token);
+      currentNode = dfa.step(currentNode, token.symbol);
+      // No transition for this token
+      if (currentNode == nullptr) {
+        cleanPtrsFrom(stk, 0);
+        cleanPtrsFrom(inputTokens, i + 1);
+        return nullptr;
+      }
+      ++i;
+    }
+  }
 
-//   return unique_ptr<ROOT_TYPE>(((Start*)(stk[0].obj))->r_);
-// }
+  // Remove the actual grammar root from the fake root we encapsulated it with
+  return unique_ptr<ROOT_TYPE>(((Start*)(stk[0].obj))->r_);
+}
 
 #endif

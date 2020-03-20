@@ -140,11 +140,13 @@ struct Int {
 struct Expr {
   virtual ~Expr(){};
   virtual Concrete getType() const = 0;
+  virtual int eval() const = 0;
 };
 
 struct EInt : Expr {
   EInt(int i) : i_(i) {}
   Concrete getType() const override { return Concrete::EINT; }
+  int eval() const override { return i_; }
   int i_;
 };
 
@@ -152,6 +154,7 @@ struct EPlus : Expr {
   EPlus(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
   ~EPlus() { delete e1_; delete e2_; }
   Concrete getType() const override { return Concrete::EPLUS; }
+  int eval() const override { return e1_->eval() + e2_->eval(); }
   Expr* e1_;
   Expr* e2_;
 };
@@ -160,6 +163,7 @@ struct ETimes : Expr {
   ETimes(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
   ~ETimes() { delete e1_; delete e2_; }
   Concrete getType() const override { return Concrete::EPLUS; }
+  int eval() const override { return e1_->eval() * e2_->eval(); }
   Expr* e1_;
   Expr* e2_;
 };
@@ -221,7 +225,9 @@ StackObj construct(Concrete type, StackObj* args) {
     case Concrete::EPLUS:
       return StackObj{new EPlus((Expr*)args[0].obj, (Expr*)args[2].obj), toSymbol(type), type};
     case Concrete::ETIMES:
-      return StackObj{new EPlus((Expr*)args[0].obj, (Expr*)args[2].obj), toSymbol(type), type};
+      return StackObj{new ETimes((Expr*)args[0].obj, (Expr*)args[2].obj), toSymbol(type), type};
+    case Concrete::SCONC:
+      return StackObj{new Start((Expr*) args[0].obj), toSymbol(type), type};
     default:
       throw std::invalid_argument("Can't construct. Out of options.");
   }

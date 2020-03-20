@@ -342,46 +342,76 @@ void testTryReduce_equalPrecedence_leftAssoc() {
   TESTER.assertEquals(0, reduceStart);
 }
 
-// void testShiftReduce() {
-//   DFA_t dfa = buildDFA();
-//   auto expr0 = parse(dfa, {StackObj{new Int("1"), Symbol::INT, Concrete::NONE}});
-//   auto expr1 = parse(dfa,
-//       {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
-//   auto expr2 = parse(dfa,
-//       {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+void testShiftReduce() {
+  DFA_t dfa = buildDFA();
+  auto expr0 = parse(dfa, {StackObj{new Int("1"), Symbol::INT, Concrete::NONE}});
+  // 1 + 2
+  auto expr1 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+  // 1 + 2 + 50
+  auto expr2 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  // 1 + 2 * 50
+  auto expr3 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  // 1 * 2 + 50
+  auto expr4 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  // 1 * 2 * 50
+  auto expr5 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
 
-//   auto noParse0 = parse(dfa,
-//       {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE}});
-//   auto noParse1 = parse(dfa,
-//       {StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
-//   auto noParse2 = parse(dfa,
-//       {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
-//   auto noParse3 = parse(dfa,
-//       {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-//           StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  // 1 +
+  auto noParse0 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE}});
+  // + 2
+  auto noParse1 = parse(dfa,
+      {StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+  // 1 2 + 50
+  auto noParse2 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+  // 1 + + 50
+  auto noParse3 = parse(dfa,
+      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
 
-//   TESTER.assertEquals(1, eval(expr0.get()));
-//   TESTER.assertEquals(3, eval(expr1.get()));
-//   TESTER.assertEquals(53, eval(expr2.get()));
+  TESTER.assertEquals(1, expr0->eval());
+  TESTER.assertEquals(3, expr1->eval());
+  TESTER.assertEquals(53, expr2->eval());
+  TESTER.assertEquals(101, expr3->eval());
+  TESTER.assertEquals(52, expr4->eval());
+  TESTER.assertEquals(100, expr5->eval());
 
-//   TESTER.assertEquals(nullptr, noParse0);
-//   TESTER.assertEquals(nullptr, noParse1);
-//   TESTER.assertEquals(nullptr, noParse2);
-//   TESTER.assertEquals(nullptr, noParse3);
-// }
+  TESTER.assertEquals(nullptr, noParse0);
+  TESTER.assertEquals(nullptr, noParse1);
+  TESTER.assertEquals(nullptr, noParse2);
+  TESTER.assertEquals(nullptr, noParse3);
+}
 
 int main() {
   // To test stderr output
@@ -400,7 +430,7 @@ int main() {
   testTryReduce_higherRulePrecedence();
   testTryReduce_unspecifiedPrecedence();
   testTryReduce_equalPrecedence_leftAssoc();
-  // testShiftReduce();
+  testShiftReduce();
 
   return 0;
 }
