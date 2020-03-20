@@ -5,6 +5,7 @@
 #include "parse.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <cstddef>
 #include <iostream>
 #include <string>
@@ -194,6 +195,7 @@ void testTryReduce_noMatchStack() {
   size_t reduceStart;
 
   TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -212,6 +214,7 @@ void testTryReduce_notAtEnd() {
   size_t reduceStart;
 
   TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 void testTryReduce_notInLookahead() {
@@ -229,6 +232,7 @@ void testTryReduce_notInLookahead() {
   size_t reduceStart;
 
   TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -252,6 +256,7 @@ void testTryReduce_lowerRulePrecedence_hasShiftable() {
   size_t reduceStart;
 
   TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::STAR, stk, &reduceStart));
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -270,6 +275,7 @@ void testTryReduce_lowerRulePrecedence_noShiftable() {
   size_t reduceStart;
 
   TESTER.assertEquals(Concrete::EPLUS, tryReduce(dfa.getRoot(), Symbol::STAR, stk, &reduceStart));
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -293,6 +299,7 @@ void testTryReduce_higherRulePrecedence() {
 
   TESTER.assertEquals(Concrete::ETIMES, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
   TESTER.assertEquals(0, reduceStart);
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -317,6 +324,7 @@ void testTryReduce_unspecifiedPrecedence() {
   TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::INT, stk, &reduceStart));
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
   errBuffer.str("");
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 
@@ -340,6 +348,7 @@ void testTryReduce_equalPrecedence_leftAssoc() {
 
   TESTER.assertEquals(Concrete::ETIMES, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
   TESTER.assertEquals(0, reduceStart);
+  for_each(stk.cbegin(), stk.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 void testShiftReduce() {

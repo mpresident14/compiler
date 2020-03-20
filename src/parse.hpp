@@ -333,7 +333,10 @@ std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& 
   }
 
   // Remove the actual grammar root from the fake root we encapsulated it with
-  return unique_ptr<ROOT_TYPE>(((Start*)(stk[0].obj))->r_);
+  Start* start = (Start*)(stk[0].obj);
+  unique_ptr<ROOT_TYPE> root(start->r_);
+  delete start;
+  return root;
 }
 
 #endif
