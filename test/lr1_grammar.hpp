@@ -70,6 +70,7 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
  *********/
 
 constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
+constexpr size_t overridePrecedence[] = {0,0,0,0};
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -218,6 +219,8 @@ StackObj construct(Concrete type, StackObj* args) {
 }
 
 #include "rules.hpp"
+
+constexpr size_t ruleOverridePrecedence(const DFARule& rule) { return overridePrecedence[static_cast<int>(rule.lhs)]; }
 
 /* LR0 Grammar */
 const Grammar GRAMMAR = {

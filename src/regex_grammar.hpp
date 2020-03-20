@@ -36,7 +36,7 @@ enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, CHAR, EPSILON };
 enum class Concrete { SCONC, RALT, RCONCAT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
 enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
 /* 0 means unspecified precedence */
-constexpr size_t overridePrecedence[] = {0,0,0,0,0,0,4,4,0};
+constexpr size_t overridePrecedence[] = {0,0,0,0,0,0,4,4};
 constexpr size_t tokenPrecedence[] = {1, 4};
 constexpr Associativity tokenAssoc[] = {Associativity::LEFT, Associativity::UNSPECIFIED};
 constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS, Symbol::CONCATS, Symbol::CONCATS};
