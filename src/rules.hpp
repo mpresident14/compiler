@@ -14,7 +14,9 @@ struct DFARule {
   Concrete lhs;
   std::vector<Symbol> rhs;
   size_t pos;
-  BitSetToks lookahead;
+  // Allows us to change lookahead while it is inside of a RuleSet, which is ok b/c
+  // lookahead is not involved in the hash function or equality for RuleSets
+  mutable BitSetToks lookahead;
 
   bool atEnd() const { return pos == rhs.size(); }
   /* Given a rule "S -> A.B", returns B */

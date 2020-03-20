@@ -83,6 +83,7 @@ void epsilonTransition(RuleSet& ruleSet) {
   while (!ruleQueue.empty()) {
     DFARule& rule = ruleQueue.front();
     auto iter = ruleSet.find(rule);
+    // If rule is not yet in the set, add it
     if (iter == ruleSet.end()) {
       addRhses(ruleQueue, rule);
       ruleSet.insert(move(rule));
@@ -90,22 +91,23 @@ void epsilonTransition(RuleSet& ruleSet) {
       continue;
     }
 
+    // If rule is already in the set, check to see if the new rule has any new
+    // members its lookahead set. If so, replace existing rule with new one.
     const DFARule& existingRule = *iter;
     BitSetToks unionToks = rule.lookahead | existingRule.lookahead;
     if (existingRule.lookahead != unionToks) {
-      rule.lookahead = move(unionToks);
-      ruleSet.erase(iter);
+      // TODO: Might be faster to just do operator|= again
+      existingRule.lookahead = move(unionToks);
       // Only add RHSes if we insert the rule into the set because everything in the
       // set has already been expanded
       addRhses(ruleQueue, rule);
-      ruleSet.insert(move(rule));
     }
 
     ruleQueue.pop();
   }
 }
 
-// /* For each rule of this node, construct the transitions to successors. */
+/* For each rule of this node, construct the transitions to successors. */
 // std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
 //   using namespace std;
 
@@ -137,14 +139,13 @@ void epsilonTransition(RuleSet& ruleSet) {
 //   return addedNodes;
 // }
 
-// /* Constructs the starting node of the DFA */
-// DFA_t initDFA() {
-//   RuleSet firstSet;
-//   addRhses(firstSet, Symbol::S);
-//   epsilonTransition(firstSet);
-//   DFA_t dfa(firstSet);
-//   return dfa;
-// }
+/* Constructs the starting node of the DFA */
+DFA_t initDFA() {
+  RuleSet firstSet{ DFARule{Concrete::SCONC, {ROOT_SYM}, 0, BitSetToks()}};
+  epsilonTransition(firstSet);
+  DFA_t dfa(firstSet);
+  return dfa;
+}
 
 // // TODO: We shouldn't have to build the DFA every time someone calls parse().
 // // Instead, we should just hard code all the nodes after building the first time

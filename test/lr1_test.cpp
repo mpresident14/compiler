@@ -93,20 +93,31 @@ void testEpsilonTransition() {
 }
 
 
-// void testInitDFA() {
-//   DFA_t initialNfa = initDFA();
-//   const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
+void testInitDFA() {
+  DFA_t initialNfa = initDFA();
+  const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
 
-//   const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
-//   const DFARule expected1 = {
-//       Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
-//   const DFARule expected2 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+  const DFARule initRule = {Concrete::SCONC,
+      {Symbol::EXPR},
+      0,
+      BitSetToks() /* {} */};
+  const DFARule expected0 = {
+      Concrete::EINT, {Symbol::INT}, 0, BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule expected1 = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule expected2 = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
 
-//   TESTER.assertEquals(3, ruleSet.size());
-//   TESTER.assertTrue(ruleSet.contains(expected0));
-//   TESTER.assertTrue(ruleSet.contains(expected1));
-//   TESTER.assertTrue(ruleSet.contains(expected2));
-// }
+  TESTER.assertEquals(4, ruleSet.size());
+  TESTER.assertEquals(initRule, *ruleSet.find(initRule));
+  TESTER.assertEquals(expected0, *ruleSet.find(expected0));
+  TESTER.assertEquals(expected1, *ruleSet.find(expected1));
+  TESTER.assertEquals(expected2, *ruleSet.find(expected2));
+}
 
 // void testCreateTransitions() {
 //   const DFARule rule0 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
@@ -185,7 +196,7 @@ int main() {
   testRuleEquality();
   testAddRhses();
   testEpsilonTransition();
-  // testInitDFA();
+  testInitDFA();
   // testCreateTransitions();
   // testCreateTransitionsEndRule();
   // testShiftReduce();
