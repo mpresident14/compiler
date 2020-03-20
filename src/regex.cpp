@@ -5,11 +5,11 @@ using namespace std;
 //   (see https://github.com/hmc-cs132-spring2020/hw1-derivs-mpresident14/blob/develop/Deriv.hs)
 
 bool EmptySet::isNullable() const { return false; }
-Regex* EmptySet::getDeriv(char) const { return new EmptySet(); }
+RgxPtr EmptySet::getDeriv(char) const { return make_shared<EmptySet>(); }
 void EmptySet::toStream(ostream& out) const { out << "EMPTYSET"; }
 
 bool Epsilon::isNullable() const { return true; }
-Regex* Epsilon::getDeriv(char) const { return new EmptySet(); }
+RgxPtr Epsilon::getDeriv(char) const { return make_shared<EmptySet>(); }
 void Epsilon::toStream(ostream& out) const { out << "EPSILON"; }
 
 
@@ -20,11 +20,11 @@ Character::Character(char c) : c_{c} {}
 
 bool Character::isNullable() const { return false; }
 
-Regex* Character::getDeriv(char c) const {
+RgxPtr Character::getDeriv(char c) const {
   if (c == c_) {
-    return new Epsilon();
+    return make_shared<Epsilon>();
   }
-  return new EmptySet();
+  return make_shared<EmptySet>();
 }
 
 void Character::toStream(ostream& out) const { out << "CHAR " << c_; }
@@ -33,19 +33,15 @@ void Character::toStream(ostream& out) const { out << "CHAR " << c_; }
 /***************
  * RegexVector *
  ***************/
-RegexVector::RegexVector(Regex* r1, Regex* r2) : rgxs_{r1, r2} {}
+RegexVector::RegexVector(Regex* r1, Regex* r2) : rgxs_{RgxPtr(r1), RgxPtr(r2)} {}
 
 RegexVector::RegexVector(RegexVector* rVec, Regex* r)
     : rgxs_{move(rVec->rgxs_)}
 {
-  rgxs_.push_back(r);
+  rgxs_.push_back(RgxPtr(r));
 }
 
-RegexVector::RegexVector(vector<Regex*>&& vec) : rgxs_{move(vec)} {}
-
-RegexVector::~RegexVector() {
-  for_each(rgxs_.cbegin(), rgxs_.cend(), [](const Regex* rPtr) { delete rPtr; });
-}
+RegexVector::RegexVector(vector<RgxPtr>&& vec) : rgxs_{move(vec)} {}
 
 
 /*******
@@ -57,15 +53,15 @@ Alt::~Alt() { delete rVec_; }
 
 bool Alt::isNullable() const {
   return any_of(
-      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const Regex* rPtr) { return rPtr->isNullable(); });
+      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const RgxPtr rPtr) { return rPtr->isNullable(); });
 }
 
-Regex* Alt::getDeriv(char c) const {
-  vector<Regex*> derivs;
-  transform(rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), back_inserter(derivs), [c](const Regex* rPtr) {
+RgxPtr Alt::getDeriv(char c) const {
+  vector<RgxPtr> derivs;
+  transform(rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), back_inserter(derivs), [c](const RgxPtr rPtr) {
     return rPtr->getDeriv(c);
   });
-  return new Alt(new RegexVector(move(derivs)));
+  return make_shared<Alt>(new RegexVector(move(derivs)));
 }
 
 void Alt::toStream(ostream& out) const { out << "ALT " << rVec_->rgxs_; }
@@ -81,23 +77,25 @@ Concat::~Concat() { delete rVec_; }
 
 bool Concat::isNullable() const {
   return all_of(
-      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const Regex* rPtr) { return rPtr->isNullable(); });
+      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const RgxPtr rPtr) { return rPtr->isNullable(); });
 }
 
 // TODO: Make this better
-Regex* Concat::getDeriv(char c) const {
-  vector<Regex*>& rgxs = rVec_->rgxs_;
-  vector<Regex*> derivAndRest = {rgxs[0]->getDeriv(c)};
+RgxPtr Concat::getDeriv(char c) const {
+  vector<RgxPtr>& rgxs = rVec_->rgxs_;
+  vector<RgxPtr> derivAndRest = {rgxs[0]->getDeriv(c)};
   copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 
   if (rgxs[0]->isNullable()) {
-    vector<Regex*> rest(rgxs.cbegin() + 1, rgxs.cend());
-    return new Alt(new RegexVector(
-        Concat(new RegexVector(move(rest))).getDeriv(c),
-        new Concat(new RegexVector(move(derivAndRest)))));
+    vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
+    return make_shared<Alt>(new RegexVector(
+        {
+            Concat(new RegexVector(move(rest))).getDeriv(c),
+            make_shared<Concat>(new RegexVector(move(derivAndRest)))
+        }));
   }
 
-  return new Concat(new RegexVector(move(derivAndRest)));
+  return make_shared<Concat>(new RegexVector(move(derivAndRest)));
 }
 void Concat::toStream(ostream& out) const { out << "CONCAT " << rVec_->rgxs_; }
 
