@@ -136,6 +136,7 @@ private:
   const Node* root_;
   // Allows us to check whether a node with some value exists in the
   // DFA and grab a pointer to it.
+  // TODO: When P0919R3 is added to clang/gcc, use is_transparent
   std::unordered_map<V, const Node*> valueToNode_;
 };
 
