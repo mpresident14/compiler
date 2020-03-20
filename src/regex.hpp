@@ -14,16 +14,15 @@
 
 class Regex;
 // TODO: Switch to Regex* and define copy and move ctors
-using RgxPtr = std::shared_ptr<Regex>;
 
 class Regex {
 public:
   virtual ~Regex(){};
   virtual void toStream(std::ostream& out) const = 0;
-  virtual RgxPtr getDeriv(char) const = 0;
+  virtual Regex* getDeriv(char) const = 0;
   virtual bool isNullable() const = 0;
 
-  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
+  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
     rgx->toStream(out);
     return out;
   }
@@ -32,14 +31,14 @@ public:
 class EmptySet : public Regex {
 public:
   bool isNullable() const override;
-  RgxPtr getDeriv(char) const override;
+  Regex* getDeriv(char) const override;
   void toStream(std::ostream& out) const override;
 };
 
 class Epsilon : public Regex {
 public:
   bool isNullable() const override;
-  RgxPtr getDeriv(char) const override;
+  Regex* getDeriv(char) const override;
   void toStream(std::ostream& out) const override;
 };
 
@@ -47,65 +46,70 @@ class Character : public Regex {
 public:
   Character(char c);
   bool isNullable() const override;
-  RgxPtr getDeriv(char c) const override;
+  Regex* getDeriv(char c) const override;
   void toStream(std::ostream& out) const override;
 
 private:
   char c_;
 };
 
+struct RegexVector {
+public:
+  RegexVector(Regex* r1, Regex* r2);
+  RegexVector(RegexVector* rVec, Regex* r);
+  RegexVector(std::vector<Regex*>&& vec);
+  ~RegexVector();
+  std::vector<Regex*> rgxs_;
+};
+
 class Alt : public Regex {
 public:
-  Alt(std::vector<RgxPtr>&& rgxs);
-  // ~Alt() {
-  //   std::for_each(rgxs_.cbegin(), rgxs_.cend(), [](const RgxPtr rPtr) { delete rPtr; });
-  // }
+  Alt(RegexVector* rVec);
+  ~Alt();
   bool isNullable() const override;
-  RgxPtr getDeriv(char c) const override;
+  Regex* getDeriv(char c) const override;
   void toStream(std::ostream& out) const override;
 
 private:
-  std::vector<RgxPtr> rgxs_;
+ RegexVector* rVec_;
 };
 
-class Concat : public Regex {
-public:
-  Concat(std::vector<RgxPtr>&& rgxs);
-  // ~Concat() {
-  //   std::for_each(rgxs_.cbegin(), rgxs_.cend(), [](const RgxPtr rPtr) { delete rPtr; });
-  // }
-  bool isNullable() const override;
-  // TODO: Make this better
-  RgxPtr getDeriv(char c) const override;
-  void toStream(std::ostream& out) const override;
+// class Concat : public Regex {
+// public:
+//   Concat(RegexVector* rVec);
+//   ~Concat();
+//   bool isNullable() const override;
+//   // TODO: Make this better
+//   Regex* getDeriv(char c) const override;
+//   void toStream(std::ostream& out) const override;
 
-private:
-  std::vector<RgxPtr> rgxs_;
-};
+// private:
+//   RegexVector* rVec_;
+// };
 
-class Star : public Regex {
-public:
-  Star(RgxPtr rgx);
-  // ~Star() { delete rgx_; }
-  bool isNullable() const override;
-  // TODO: Sharing rgx_ pointer will cause problems
-  RgxPtr getDeriv(char c) const override;
-  void toStream(std::ostream& out) const override;
+// class Star : public Regex {
+// public:
+//   Star(Regex* rgx);
+//   // ~Star() { delete rgx_; }
+//   bool isNullable() const override;
+//   // TODO: Sharing rgx_ pointer will cause problems
+//   Regex* getDeriv(char c) const override;
+//   void toStream(std::ostream& out) const override;
 
-private:
-  RgxPtr rgx_;
-};
+// private:
+//   Regex* rgx_;
+// };
 
-class Not : public Regex {
-public:
-  Not(RgxPtr rgx);
-  // ~Not() { delete rgx_; }
-  bool isNullable() const override;
-  RgxPtr getDeriv(char c) const override;
-  void toStream(std::ostream& out) const override;
+// class Not : public Regex {
+// public:
+//   Not(Regex* rgx);
+//   // ~Not() { delete rgx_; }
+//   bool isNullable() const override;
+//   Regex* getDeriv(char c) const override;
+//   void toStream(std::ostream& out) const override;
 
-private:
-  RgxPtr rgx_;
-};
+// private:
+//   Regex* rgx_;
+// };
 
 #endif

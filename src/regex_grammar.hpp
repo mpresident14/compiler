@@ -1,5 +1,7 @@
-#ifndef LR1_GRAMMAR_HPP
-#define LR1_GRAMMAR_HPP
+#ifndef REGEX_GRAMMAR_HPP
+#define REGEX_GRAMMAR_HPP
+
+#include "regex.hpp"
 
 #include <bitset>
 #include <cstddef>
@@ -12,27 +14,46 @@
  * GRAMMAR *
  ***********/
 
+/* Regex {Regex}
+ * Regex := Alts  { Alt($0) }
+ *        | CHAR  { Character($0) }
+ *
+ * Alts {RegexVector}
+ * Alts := Regex BAR Regex { RegexVector($0, $2) }
+ *       | Alts BAR Regex  { RegexVector($0, $2) }
+ *
+ *
+ * */
+
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, EXPR, STARTTOKENS, PLUS, STAR, INT, EPSILON };
+enum class Symbol { S, REGEX, ALTS, STARTTOKENS, BAR, CHAR, EPSILON };
+/* The concrete types that symbols in the grammar can be */
+enum class Concrete { SCONC, RALT, RCHAR, AREGEX, AALT, NONE };
+enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
+/* 0 means unspecified precedence */
+constexpr size_t tokenPrecedence[] = {8, 0};
+constexpr Associativity tokenAssoc[] = {Associativity::LEFT, Associativity::UNSPECIFIED};
+constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS};
+
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
     case Symbol::S:
       out << "S";
       break;
-    case Symbol::EXPR:
-      out << "EXPR";
+    case Symbol::REGEX:
+      out << "REGEX";
+      break;
+    case Symbol::ALTS:
+      out << "ALTS";
       break;
     case Symbol::STARTTOKENS:
       out << "STARTTOKENS";
       break;
-    case Symbol::PLUS:
-      out << "PLUS";
+    case Symbol::BAR:
+      out << "BAR";
       break;
-    case Symbol::STAR:
-      out << "STAR";
-      break;
-    case Symbol::INT:
-      out << "INT";
+    case Symbol::CHAR:
+      out << "CHAR";
       break;
     case Symbol::EPSILON:
       out << "EPSILON";
@@ -41,21 +62,22 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   return out;
 }
 
-/* The concrete types that symbols in the grammar can be */
-enum class Concrete { SCONC, EINT, EPLUS, ETIMES, NONE };
 inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   switch (type) {
     case Concrete::SCONC:
       out << "SCONC";
       break;
-    case Concrete::EINT:
-      out << "EINT";
+    case Concrete::RALT:
+      out << "RALT";
       break;
-    case Concrete::EPLUS:
-      out << "EPLUS";
+    case Concrete::RCHAR:
+      out << "RCHAR";
       break;
-    case Concrete::ETIMES:
-      out << "ETIMES";
+    case Concrete::AREGEX:
+      out << "AREGEX";
+      break;
+    case Concrete::AALT:
+      out << "AALT";
       break;
     case Concrete::NONE:
       out << "NONE";
@@ -64,12 +86,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-
 /*********
  * UTILS *
  *********/
-
-constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -84,6 +103,8 @@ constexpr Symbol toTokenOffset(int i) {
 }
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
+constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
+constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
 
 constexpr size_t numVariables = toInt(Symbol::STARTTOKENS);
 constexpr size_t numTokens = toInt(Symbol::EPSILON) - toInt(Symbol::STARTTOKENS) - 1;
@@ -104,58 +125,14 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
   return v;
 }
 
-/********************************
- * ASSOCIATIVITY AND PRECEDENCE *
- ********************************/
-enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
-/* 0 means unspecified precedence */
-constexpr size_t tokenPrecedence[] = {1 /* PLUS */, 2 /* STAR */, 0 /* INT */};
-constexpr Associativity tokenAssoc[] = {Associativity::LEFT /* PLUS */, Associativity::LEFT /* STAR */, Associativity::UNSPECIFIED /* INT */};
-constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
-constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
 
 /***********
  * OBJECTS *
  ***********/
 
-// NOTE: getType() not required for parsing, but helpful for client
-// TODO: Perhaps pass an argument to the generator that uses existing
-// classes or creates them for you
 
-/* Expr */
-struct Expr {
-  virtual ~Expr(){};
-  virtual Concrete getType() const = 0;
-  virtual int eval() const = 0;
-};
-
-struct EInt : Expr {
-  EInt(int i) : i_(i) {}
-  Concrete getType() const override { return Concrete::EINT; }
-  int eval() const override { return i_; }
-  int i_;
-};
-
-struct EPlus : Expr {
-  EPlus(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~EPlus() { delete e1_; delete e2_; }
-  Concrete getType() const override { return Concrete::EPLUS; }
-  int eval() const override { return e1_->eval() + e2_->eval(); }
-  Expr* e1_;
-  Expr* e2_;
-};
-
-struct ETimes : Expr {
-  ETimes(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~ETimes() { delete e1_; delete e2_; }
-  Concrete getType() const override { return Concrete::EPLUS; }
-  int eval() const override { return e1_->eval() * e2_->eval(); }
-  Expr* e1_;
-  Expr* e2_;
-};
-
-const Symbol ROOT_SYM = Symbol::EXPR;
-using ROOT_TYPE = Expr;
+const Symbol ROOT_SYM = Symbol::REGEX;
+using ROOT_TYPE = Regex;
 
 
 /* S
@@ -186,11 +163,14 @@ struct StackObj {
 
 void StackObj::deleteObj() const noexcept {
   switch (symbol) {
-    case Symbol::INT:
-      delete (int*)obj;
+    case Symbol::REGEX:
+      delete (Regex*)obj;
       break;
-    case Symbol::EXPR:
-      delete (Expr*)obj;
+    case Symbol::ALTS:
+      delete (RegexVector*)obj;
+      break;
+    case Symbol::CHAR:
+      delete (char*)obj;
       break;
     default:
       return;
@@ -200,12 +180,14 @@ void StackObj::deleteObj() const noexcept {
 // TODO: Remove throw and make noexcept when done
 void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
-    case Concrete::EINT:
-      return new EInt(*(int*)args[0].obj);
-    case Concrete::EPLUS:
-      return new EPlus((Expr*)args[0].obj, (Expr*)args[2].obj);
-    case Concrete::ETIMES:
-      return new ETimes((Expr*)args[0].obj, (Expr*)args[2].obj);
+    case Concrete::RALT:
+      return new Alt((RegexVector*)args[0].obj);
+    case Concrete::RCHAR:
+      return new Character(*(char*)args[0].obj);
+    case Concrete::AREGEX:
+      return new RegexVector((Regex*)args[0].obj, (Regex*)args[2].obj);
+    case Concrete::AALT:
+      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*) args[0].obj);
     default:
@@ -214,7 +196,7 @@ void* constructObj(Concrete type, StackObj* args) {
 }
 
 StackObj construct(Concrete type, StackObj* args) {
-  return StackObj{ constructObj(type, args), toSymbol(type), type};
+  return StackObj{constructObj(type, args), toSymbol(type), type};
 }
 
 #include "rules.hpp"
@@ -225,12 +207,16 @@ const Grammar GRAMMAR = {
         {
             GrammarRule{Concrete::SCONC, {ROOT_SYM}}
         }},
-    {Symbol::EXPR,
+    {Symbol::REGEX,
         {
-            GrammarRule{Concrete::EINT, {Symbol::INT}},
-            GrammarRule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}},
-            GrammarRule{Concrete::ETIMES, {Symbol::EXPR, Symbol::STAR, Symbol::EXPR}},
-        },
-    }};
+            GrammarRule{Concrete::RALT, {Symbol::ALTS}},
+            GrammarRule{Concrete::RCHAR, {Symbol::CHAR}},
+        }},
+    {Symbol::ALTS,
+        {
+            GrammarRule{Concrete::AREGEX, {Symbol::REGEX, Symbol::BAR, Symbol::REGEX}},
+            GrammarRule{Concrete::AALT, {Symbol::ALTS, Symbol::BAR, Symbol::REGEX}},
+        }}
+};
 
 #endif
