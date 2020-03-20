@@ -71,15 +71,25 @@ namespace std {
         h2 += hasher(symbol);
       }
       size_t h3 = std::hash<size_t>()(rule.pos);
-      size_t h4 = std::hash<BitSetToks>()(rule.lookahead);
-      return h4 + h3 + h1 ^ (h2 << 1);
+      return h3 + h1 ^ (h2 << 1);
     }
   };
 }  // namespace std
 
 /* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
- * should be equal if they contain the same rules (in any order) */
-using RuleSet = std::unordered_set<DFARule>;
+ * should be equal if they contain the same rules (in any order).
+ * Individual rules in a RuleSet are not compared using the lookahead set
+ * since there should never be two rules differing only by their lookahead set
+ * in the same RuleSet. However, operator== in the DFARule class still compares
+ * lookahead sets because RuleSet equality compares the rules with this operator,
+ * and two RuleSets can differ based on the lookahead sets of the rules they contain.
+ * */
+struct DFARuleEq {
+  bool operator()(const DFARule& left, const DFARule& right) const {
+    return left.lhs == right.lhs && left.rhs == right.rhs && left.pos == right.pos;
+  }
+};
+using RuleSet = std::unordered_set<DFARule, std::hash<DFARule>, DFARuleEq>;
 
 namespace std {
   template <>

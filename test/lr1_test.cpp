@@ -16,6 +16,26 @@ using namespace prez;
 
 UnitTest TESTER = UnitTest::createTester();
 
+void testRuleEquality() {
+  const DFARule rule0 = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      0,
+      BitSetToks("001") /* {PLUS} */};
+
+  const DFARule rule1 = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  RuleSet ruleSet0 = {rule0};
+  RuleSet ruleSet1 = {rule1};
+
+  // See notes in rules.hpp for how and why this is a thing
+  TESTER.assertTrue(ruleSet0.contains(rule1));
+  TESTER.assertTrue(ruleSet1.contains(rule0));
+  TESTER.assertNotEqual(ruleSet0, ruleSet1);
+}
+
 void testAddRhses() {
   queue<DFARule> ruleQueue;
   const DFARule fromRule = {Concrete::ETIMES,
@@ -44,20 +64,34 @@ void testAddRhses() {
   ruleQueue.pop();
 }
 
-// void testEpsilonTransition() {
-//   const DFARule init1 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
-//   const DFARule init2 = {
-//       Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
-//   RuleSet ruleSet = {init1, init2};
-//   epsilonTransition(ruleSet);
+void testEpsilonTransition() {
+  const DFARule initRule = {Concrete::SCONC,
+      {Symbol::EXPR},
+      0,
+      BitSetToks() /* {} */};
+  RuleSet ruleSet = {initRule};
+  epsilonTransition(ruleSet);
 
-//   const DFARule expected = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+  const DFARule expected0 = {
+      Concrete::EINT, {Symbol::INT}, 0, BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule expected1 = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule expected2 = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
 
-//   TESTER.assertEquals(3, ruleSet.size());
-//   TESTER.assertTrue(ruleSet.contains(init1));
-//   TESTER.assertTrue(ruleSet.contains(init2));
-//   TESTER.assertTrue(ruleSet.contains(expected));
-// }
+  TESTER.assertEquals(4, ruleSet.size());
+  // Can't just use contains because we have defined equality within
+  // a RuleSet equality to ignore the lookahead
+  TESTER.assertEquals(initRule, *ruleSet.find(initRule));
+  TESTER.assertEquals(expected0, *ruleSet.find(expected0));
+  TESTER.assertEquals(expected1, *ruleSet.find(expected1));
+  TESTER.assertEquals(expected2, *ruleSet.find(expected2));
+}
+
 
 // void testInitDFA() {
 //   DFA_t initialNfa = initDFA();
@@ -148,8 +182,9 @@ void testAddRhses() {
 // }
 
 int main() {
+  testRuleEquality();
   testAddRhses();
-  // testEpsilonTransition();
+  testEpsilonTransition();
   // testInitDFA();
   // testCreateTransitions();
   // testCreateTransitionsEndRule();

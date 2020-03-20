@@ -66,44 +66,44 @@ void addRhses(std::queue<DFARule>& ruleQueue, const DFARule& fromRule) {
 }
 
 
-// /* Adds possible rules to node's state via epsilon transition in DFA.
-//  * Ex: S -> A.B, then add all rules B -> ??? */
-// void epsilonTransition(RuleSet& ruleSet) {
-//   using namespace std;
+/* Adds possible rules to node's state via epsilon transition in DFA.
+ * Ex: S -> A.B, then add all rules B -> ??? */
+void epsilonTransition(RuleSet& ruleSet) {
+  using namespace std;
 
-//   // Keep track of the symbols (variables only) whose rules we've already added to this rule list.
-//   bitset<toInt(Symbol::STARTTOKENS)> used;
-//   queue<DFARule> ruleQueue;
+  queue<DFARule> ruleQueue;
 
-//   // Expand variables (epsilon transition) in the initial rules.
-//   for (const DFARule& rule : ruleSet) {
-//     if (rule.atEnd()) {
-//       continue;
-//     }
+  // Expand variables (epsilon transition) in the initial set of rules.
+  for (const DFARule& rule : ruleSet) {
+      addRhses(ruleQueue, rule);
+  }
 
-//     Symbol nextSymbol = rule.nextSymbol();
-//     if (isVariable(nextSymbol) && !used[toInt(nextSymbol)]) {
-//       addRhses(ruleQueue, nextSymbol);
-//       used[toInt(nextSymbol)] = true;
-//     }
-//   }
+  // Keep expanding variables (epsilon transition) until we've determined all the
+  // possible rule positions we could be in.
+  while (!ruleQueue.empty()) {
+    DFARule& rule = ruleQueue.front();
+    auto iter = ruleSet.find(rule);
+    if (iter == ruleSet.end()) {
+      addRhses(ruleQueue, rule);
+      ruleSet.insert(move(rule));
+      ruleQueue.pop();
+      continue;
+    }
 
-//   // Keep expanding variables (epsilon transition) until we've determined all the
-//   // possible rule positions we could be in.
-//   while (!ruleQueue.empty()) {
-//     const DFARule& rule = *ruleSet.insert(move(ruleQueue.front())).first;
-//     ruleQueue.pop();
-//     if (rule.atEnd()) {
-//       continue;
-//     }
+    const DFARule& existingRule = *iter;
+    BitSetToks unionToks = rule.lookahead | existingRule.lookahead;
+    if (existingRule.lookahead != unionToks) {
+      rule.lookahead = move(unionToks);
+      ruleSet.erase(iter);
+      // Only add RHSes if we insert the rule into the set because everything in the
+      // set has already been expanded
+      addRhses(ruleQueue, rule);
+      ruleSet.insert(move(rule));
+    }
 
-//     Symbol nextSymbol = rule.nextSymbol();
-//     if (isVariable(nextSymbol) && !used[toInt(nextSymbol)]) {
-//       addRhses(ruleQueue, nextSymbol);
-//       used[toInt(nextSymbol)] = true;
-//     }
-//   }
-// }
+    ruleQueue.pop();
+  }
+}
 
 // /* For each rule of this node, construct the transitions to successors. */
 // std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
