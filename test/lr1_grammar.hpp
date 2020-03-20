@@ -7,6 +7,11 @@
 #include <string>
 #include <vector>
 
+
+/***********
+ * GRAMMAR *
+ ***********/
+
 /* Terminals and nonterminals in the grammar */
 enum class Symbol { S, EXPR, STARTTOKENS, PLUS, STAR, INT, EPSILON };
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
@@ -59,6 +64,11 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
+
+/*********
+ * UTILS *
+ *********/
+
 const Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
 
 constexpr Symbol toSymbol(Concrete concrete) {
@@ -93,6 +103,16 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
   }
   return v;
 }
+
+/********************************
+ * ASSOCIATIVITY AND PRECEDENCE *
+ ********************************/
+enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
+/* 0 means unspecified precedence */
+const size_t tokenPrecedence[] = {1 /* PLUS */, 2 /* STAR */, 0 /* INT */};
+const Associativity tokenAssoc[] = {Associativity::LEFT /* PLUS */, Associativity::LEFT /* STAR */, Associativity::NON /* INT */};
+constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
+constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
 
 /***********
  * OBJECTS *

@@ -139,59 +139,128 @@ DFA_t initDFA() {
   return dfa;
 }
 
-// // TODO: We shouldn't have to build the DFA every time someone calls parse().
-// // Instead, we should just hard code all the nodes after building the first time
-// DFA_t buildDFA() {
-//   using namespace std;
+// TODO: We shouldn't have to build the DFA every time someone calls parse().
+// Instead, we should just hard code all the nodes after building the first time
+DFA_t buildDFA() {
+  using namespace std;
 
-//   queue<const DFA_t::Node*> q;
-//   DFA_t dfa = initDFA();
-//   q.push(dfa.getRoot());
+  queue<const DFA_t::Node*> q;
+  DFA_t dfa = initDFA();
+  q.push(dfa.getRoot());
 
-//   while (!q.empty()) {
-//     const DFA_t::Node* node = q.front();
-//     q.pop();
-//     vector<const DFA_t::Node*> addedNodes = createTransitions(dfa, node);
-//     for (const DFA_t::Node* newNode : addedNodes) {
-//       q.push(newNode);
-//     }
-//   }
+  while (!q.empty()) {
+    const DFA_t::Node* node = q.front();
+    q.pop();
+    vector<const DFA_t::Node*> addedNodes = createTransitions(dfa, node);
+    for (const DFA_t::Node* newNode : addedNodes) {
+      q.push(newNode);
+    }
+  }
 
-//   return dfa;
-// }
+  return dfa;
+}
 
 // /**********************
 //  *   SHIFT-REDUCING   *
 //  **********************/
 
-// Concrete tryReduce(const DFA_t::Node* node, const std::vector<StackObj>& stk, size_t* reduceStart) {
-//   Concrete retType = Concrete::NONE;
-//   for (const DFARule& rule : node->getValue()) {
-//     // Make sure we have completed the rule
-//     if (!rule.atEnd()) {
-//       continue;
-//     }
+/* Rule precedence equals precedence of last token */
+Symbol getLastToken(const DFARule& rule) {
+  for (auto iter = rule.rhs.crbegin(); iter != rule.rhs.crend(); ++iter) {
+    Symbol symbol = *iter;
+    if (isToken(symbol)) {
+      return symbol;
+    }
+  }
+  return Symbol::EPSILON;
+}
 
-//     // Match the rule with the top of the stack
-//     size_t i = rule.rhs.size() - 1;
-//     size_t j = stk.size() - 1;
-//     while (j >= 0) {
-//       if (rule.rhs[i] != stk[j].symbol) {
-//         break;
-//       }
+void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
+  std::cerr << "WARNING: Shift reduce conflict with " << rule1 << " and " << rule2 << std::endl;
+}
 
-//       // TODO: For now, just always reduce
-//       if (i == 0) {
-//         *reduceStart = j;
-//         // retType = rule.lhs;
-//         return rule.lhs;
-//       }
-//       --i;
-//       --j;
-//     }
-//   }
-//   return retType;
-// }
+// TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.
+Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<StackObj>& stk, size_t* reduceStart) {
+  Concrete retType = Concrete::NONE;
+  const DFARule* shiftableRule = nullptr;
+  size_t shiftPrecedence = getPrecedence(nextToken);
+
+  // Check if shifting is an option
+  if (nextToken != Symbol::EPSILON) {
+    for (const DFARule& rule : node->getValue()) {
+      if (rule.nextSymbol() == nextToken) {
+        shiftableRule = &rule;
+        break;
+      }
+    }
+  }
+
+  // Check if we should reduce
+  for (const DFARule& rule : node->getValue()) {
+    // Make sure we have completed the rule and either
+    // the next token is in the lookahead set or there is no more input
+    if (!(rule.atEnd()
+        && (nextToken == Symbol::EPSILON || rule.lookahead[toIntTokenOffset(nextToken)]))) {
+      continue;
+    }
+
+    // Try to match the rule with the top of the stack
+    size_t i = rule.rhs.size() - 1;
+    size_t j = stk.size() - 1;
+    while (j >= 0) {
+      // If symbols don't match, move on
+      if (rule.rhs[i] != stk[j].symbol) {
+        break;
+      }
+
+      // Entire rule was matched
+      if (i == 0) {
+        // Potential shift-reduce conflict
+        if (shiftableRule) {
+          size_t rulePrecedence = 0;
+          Symbol rulesLastToken = getLastToken(rule);
+          if (rulesLastToken != Symbol::EPSILON) {
+            rulePrecedence = getPrecedence(rulesLastToken);
+          }
+          // Unspecified precedence -> conflict! (Resolve by shifting)
+          if (rulePrecedence == 0 || shiftPrecedence == 0) {
+            goto conflict;
+          }
+          // TODO: Handle nonassociativity
+          // Reduce if one of the following is true:
+          // - precedence of rule is higher than that of next token
+          // - precedence of rule is the same of that of next token and the rule's
+          //   last token is left-associative
+          if (rulePrecedence > shiftPrecedence) {
+            goto shouldReduce;
+          } else if (rulePrecedence == shiftPrecedence) {
+            Associativity assoc = getAssociativity(rulesLastToken);
+            if (assoc == Associativity::LEFT) {
+              goto shouldReduce;
+            } else if (assoc == Associativity::UNSPECIFIED) {
+              // Unspecified associativity -> conflict! (Resolve by shifting)
+              goto conflict;
+            }
+          } else {
+            // shift precedence is higher, so shift
+            return Concrete::NONE;
+          }
+        }
+
+    shouldReduce:
+        *reduceStart = j;
+        return rule.lhs;
+    conflict:
+        conflictWarning(*shiftableRule, rule);
+        return Concrete::NONE;
+      }
+
+      --i;
+      --j;
+    }
+  }
+  return retType;
+}
 
 // /* Clear from StackObj::obj starting at index i */
 // void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {

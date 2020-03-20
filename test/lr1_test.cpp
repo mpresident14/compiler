@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <prez/unit_test.hpp>
 
@@ -15,6 +16,8 @@ using namespace std;
 using namespace prez;
 
 UnitTest TESTER = UnitTest::createTester();
+
+stringstream errBuffer;
 
 void testRuleEquality() {
   const DFARule rule0 = {Concrete::ETIMES,
@@ -176,6 +179,168 @@ void testCreateTransitions() {
   TESTER.assertEquals(expectedBoth2, *ruleSetTimes.find(expectedBoth2));
 }
 
+void testTryReduce_noMatchStack() {
+  const DFARule rule0 = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      3,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({rule0});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+}
+
+
+void testTryReduce_notAtEnd() {
+  const DFARule rule0 = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      2,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({rule0});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+}
+
+void testTryReduce_notInLookahead() {
+  const DFARule rule0 = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      3,
+      BitSetToks("010") /* {STAR} */};
+
+  DFA_t dfa({rule0});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+}
+
+
+
+void testTryReduce_lowerRulePrecedence_hasShiftable() {
+  const DFARule reducible = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      3,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule shiftable = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      1,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({reducible, shiftable});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::STAR, stk, &reduceStart));
+}
+
+
+void testTryReduce_lowerRulePrecedence_noShiftable() {
+  const DFARule rule0 = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      3,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({rule0});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::EPLUS, tryReduce(dfa.getRoot(), Symbol::STAR, stk, &reduceStart));
+}
+
+
+void testTryReduce_higherRulePrecedence() {
+  const DFARule shiftable = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      1,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule reducible = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      3,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({shiftable, reducible});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::ETIMES, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+  TESTER.assertEquals(0, reduceStart);
+}
+
+
+void testTryReduce_unspecifiedPrecedence() {
+  const DFARule shiftable = {Concrete::EINT,
+      {Symbol::INT},
+      0,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule reducible = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::STAR, Symbol::EXPR},
+      3,
+      BitSetToks("111") /* {INT, STAR, PLUS} */};
+
+  DFA_t dfa({shiftable, reducible});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::STAR, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::NONE, tryReduce(dfa.getRoot(), Symbol::INT, stk, &reduceStart));
+  TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
+  errBuffer.str("");
+}
+
+
+void testTryReduce_equalPrecedence_leftAssoc() {
+  const DFARule shiftable = {Concrete::EPLUS,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      1,
+      BitSetToks("011") /* {STAR, PLUS} */};
+  const DFARule reducible = {Concrete::ETIMES,
+      {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR},
+      3,
+      BitSetToks("011") /* {STAR, PLUS} */};
+
+  DFA_t dfa({shiftable, reducible});
+  const std::vector<StackObj>& stk = {
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+    StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
+    StackObj{new EInt(1), Symbol::EXPR, Concrete::EINT},
+  };
+  size_t reduceStart;
+
+  TESTER.assertEquals(Concrete::ETIMES, tryReduce(dfa.getRoot(), Symbol::PLUS, stk, &reduceStart));
+  TESTER.assertEquals(0, reduceStart);
+}
 
 // void testShiftReduce() {
 //   DFA_t dfa = buildDFA();
@@ -219,11 +384,22 @@ void testCreateTransitions() {
 // }
 
 int main() {
+  // To test stderr output
+  cerr.rdbuf(errBuffer.rdbuf());
+
   testRuleEquality();
   testAddRhses();
   testEpsilonTransition();
   testInitDFA();
   testCreateTransitions();
+  testTryReduce_notAtEnd();
+  testTryReduce_notInLookahead();
+  testTryReduce_noMatchStack();
+  testTryReduce_lowerRulePrecedence_hasShiftable();
+  testTryReduce_lowerRulePrecedence_noShiftable();
+  testTryReduce_higherRulePrecedence();
+  testTryReduce_unspecifiedPrecedence();
+  testTryReduce_equalPrecedence_leftAssoc();
   // testShiftReduce();
 
   return 0;
