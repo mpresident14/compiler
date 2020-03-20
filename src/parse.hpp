@@ -21,15 +21,6 @@
  **********************/
 using DFA_t = DFA<RuleSet, Symbol>;
 
-// void addRhses(RuleSet& ruleSet, Symbol symbol) {
-//   using namespace std;
-
-//   const vector<GrammarRule>& rules = GRAMMAR.at(symbol);
-//   for (const GrammarRule& rule : rules) {
-//     ruleSet.insert(DFARule{rule.lhs, rule.rhs, 0, BitSetToks()});
-//   }
-// }
-
 /* Given a rule "A -> .BC", add all "B -> .<rhs>" rules to rule queue,
  * updating the lookahead set
  * */
@@ -107,37 +98,38 @@ void epsilonTransition(RuleSet& ruleSet) {
   }
 }
 
-/* For each rule of this node, construct the transitions to successors. */
-// std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
-//   using namespace std;
+/* For each rule of this node, construct the transitions to successors.
+ * Return the successors that were newly added */
+std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
+  using namespace std;
 
-//   // Get all the valid transition symbols and map each of them to a new set of rules
-//   RuleSet newTransitions[numSymbols];
+  // Get all the valid transition symbols and map each of them to a new set of rules
+  RuleSet newTransitions[numSymbols];
 
-//   for (const DFARule& rule : node->getValue()) {
-//     if (rule.atEnd()) {
-//       continue;
-//     }
-//     newTransitions[toInt(rule.nextSymbol())].insert(rule.nextStep());
-//   }
+  for (const DFARule& rule : node->getValue()) {
+    if (rule.atEnd()) {
+      continue;
+    }
+    newTransitions[toInt(rule.nextSymbol())].insert(rule.nextStep());
+  }
 
-//   // Apply epsilon transitions and create the transition
-//   vector<const DFA_t::Node*> addedNodes;
-//   for (size_t i = 0; i < numSymbols; ++i) {
-//     RuleSet& transitionRules = newTransitions[i];
-//     // No valid transition
-//     if (transitionRules.empty()) {
-//       continue;
-//     }
-//     epsilonTransition(transitionRules);
-//     const DFA_t::Node* newNode =
-//         dfa.addTransition(node, static_cast<Symbol>(i), move(transitionRules));
-//     if (newNode) {
-//       addedNodes.push_back(newNode);
-//     }
-//   }
-//   return addedNodes;
-// }
+  // Apply epsilon transitions and create the transition
+  vector<const DFA_t::Node*> addedNodes;
+  for (size_t i = 0; i < numSymbols; ++i) {
+    RuleSet& transitionRules = newTransitions[i];
+    // No valid transition
+    if (transitionRules.empty()) {
+      continue;
+    }
+    epsilonTransition(transitionRules);
+    const DFA_t::Node* newNode =
+        dfa.addTransition(node, static_cast<Symbol>(i), move(transitionRules));
+    if (newNode) {
+      addedNodes.push_back(newNode);
+    }
+  }
+  return addedNodes;
+}
 
 /* Constructs the starting node of the DFA */
 DFA_t initDFA() {
