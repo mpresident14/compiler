@@ -56,17 +56,6 @@ CMAKE_BINARY_DIR = /home/miles/CS/compiler
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target rebuild_cache
-rebuild_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
-.PHONY : rebuild_cache
-
-# Special rule for the target rebuild_cache
-rebuild_cache/fast: rebuild_cache
-
-.PHONY : rebuild_cache/fast
-
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
@@ -77,6 +66,17 @@ edit_cache:
 edit_cache/fast: edit_cache
 
 .PHONY : edit_cache/fast
+
+# Special rule for the target rebuild_cache
+rebuild_cache:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+.PHONY : rebuild_cache
+
+# Special rule for the target rebuild_cache
+rebuild_cache/fast: rebuild_cache
+
+.PHONY : rebuild_cache/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -111,30 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named null_first_test
+# Target rules for targets named lr1_test
 
 # Build rule for target.
-null_first_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 null_first_test
-.PHONY : null_first_test
+lr1_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 lr1_test
+.PHONY : lr1_test
 
 # fast build rule for target.
-null_first_test/fast:
-	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/build
-.PHONY : null_first_test/fast
-
-#=============================================================================
-# Target rules for targets named lr0_test
-
-# Build rule for target.
-lr0_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 lr0_test
-.PHONY : lr0_test
-
-# fast build rule for target.
-lr0_test/fast:
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/build
-.PHONY : lr0_test/fast
+lr1_test/fast:
+	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/build
+.PHONY : lr1_test/fast
 
 #=============================================================================
 # Target rules for targets named dfa_test
@@ -148,6 +135,19 @@ dfa_test: cmake_check_build_system
 dfa_test/fast:
 	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/build
 .PHONY : dfa_test/fast
+
+#=============================================================================
+# Target rules for targets named null_first_test
+
+# Build rule for target.
+null_first_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 null_first_test
+.PHONY : null_first_test
+
+# fast build rule for target.
+null_first_test/fast:
+	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/build
+.PHONY : null_first_test/fast
 
 test/dfa_test.o: test/dfa_test.cpp.o
 
@@ -176,32 +176,32 @@ test/dfa_test.cpp.s:
 	$(MAKE) -f CMakeFiles/dfa_test.dir/build.make CMakeFiles/dfa_test.dir/test/dfa_test.cpp.s
 .PHONY : test/dfa_test.cpp.s
 
-test/lr0_test.o: test/lr0_test.cpp.o
+test/lr1_test.o: test/lr1_test.cpp.o
 
-.PHONY : test/lr0_test.o
+.PHONY : test/lr1_test.o
 
 # target to build an object file
-test/lr0_test.cpp.o:
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/test/lr0_test.cpp.o
-.PHONY : test/lr0_test.cpp.o
+test/lr1_test.cpp.o:
+	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/test/lr1_test.cpp.o
+.PHONY : test/lr1_test.cpp.o
 
-test/lr0_test.i: test/lr0_test.cpp.i
+test/lr1_test.i: test/lr1_test.cpp.i
 
-.PHONY : test/lr0_test.i
+.PHONY : test/lr1_test.i
 
 # target to preprocess a source file
-test/lr0_test.cpp.i:
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/test/lr0_test.cpp.i
-.PHONY : test/lr0_test.cpp.i
+test/lr1_test.cpp.i:
+	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/test/lr1_test.cpp.i
+.PHONY : test/lr1_test.cpp.i
 
-test/lr0_test.s: test/lr0_test.cpp.s
+test/lr1_test.s: test/lr1_test.cpp.s
 
-.PHONY : test/lr0_test.s
+.PHONY : test/lr1_test.s
 
 # target to generate assembly for a file
-test/lr0_test.cpp.s:
-	$(MAKE) -f CMakeFiles/lr0_test.dir/build.make CMakeFiles/lr0_test.dir/test/lr0_test.cpp.s
-.PHONY : test/lr0_test.cpp.s
+test/lr1_test.cpp.s:
+	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/test/lr1_test.cpp.s
+.PHONY : test/lr1_test.cpp.s
 
 test/null_first_test.o: test/null_first_test.cpp.o
 
@@ -236,17 +236,17 @@ help:
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
-	@echo "... rebuild_cache"
-	@echo "... null_first_test"
-	@echo "... lr0_test"
+	@echo "... lr1_test"
 	@echo "... edit_cache"
 	@echo "... dfa_test"
+	@echo "... rebuild_cache"
+	@echo "... null_first_test"
 	@echo "... test/dfa_test.o"
 	@echo "... test/dfa_test.i"
 	@echo "... test/dfa_test.s"
-	@echo "... test/lr0_test.o"
-	@echo "... test/lr0_test.i"
-	@echo "... test/lr0_test.s"
+	@echo "... test/lr1_test.o"
+	@echo "... test/lr1_test.i"
+	@echo "... test/lr1_test.s"
 	@echo "... test/null_first_test.o"
 	@echo "... test/null_first_test.i"
 	@echo "... test/null_first_test.s"

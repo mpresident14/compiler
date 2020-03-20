@@ -21,9 +21,15 @@ struct DFARule {
   // TODO: Remove throw and make noexcept when done
   Symbol nextSymbol() const {
     if (pos == rhs.size()) {
-      throw std::invalid_argument("Out of bounds");
+      return Symbol::EPSILON;
     }
     return rhs[pos];
+  }
+  Symbol nextNextSymbol() const {
+    if (pos >= rhs.size() - 1) {
+      return Symbol::EPSILON;
+    }
+    return rhs[pos + 1];
   }
   /* Given a rule "S -> A.B", returns "S -> AB." */
   DFARule nextStep() const {
@@ -37,7 +43,7 @@ struct DFARule {
     return lhs == other.lhs && rhs == other.rhs && pos == other.pos && lookahead == other.lookahead;
   }
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
-    out << "( " << rule.lhs << " -> ";
+    out << rule.lhs << " -> ";
     size_t len = rule.rhs.size();
     for (size_t i = 0; i < len; ++i) {
       if (i == rule.pos) {
@@ -48,7 +54,7 @@ struct DFARule {
     if (rule.pos == len) {
       out << '.';
     }
-    out << ')';
+    out << " :: " << toVector(rule.lookahead);
     return out;
   }
 };
