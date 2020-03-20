@@ -69,7 +69,7 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
  * UTILS *
  *********/
 
-const Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
+constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -109,8 +109,8 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
  ********************************/
 enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
 /* 0 means unspecified precedence */
-const size_t tokenPrecedence[] = {1 /* PLUS */, 2 /* STAR */, 0 /* INT */};
-const Associativity tokenAssoc[] = {Associativity::LEFT /* PLUS */, Associativity::LEFT /* STAR */, Associativity::NON /* INT */};
+constexpr size_t tokenPrecedence[] = {1 /* PLUS */, 2 /* STAR */, 0 /* INT */};
+constexpr Associativity tokenAssoc[] = {Associativity::LEFT /* PLUS */, Associativity::LEFT /* STAR */, Associativity::NON /* INT */};
 constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
 constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
 
@@ -118,13 +118,7 @@ constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIn
  * OBJECTS *
  ***********/
 
-// TODO: Association enum and Predence for TokenObjs, just NONE for VariableObjs
-
-/* Tokens */
-struct Plus {};
-
-struct Star {};
-
+/* Tokens with data */
 struct Int {
   Int(const std::string& str) : i_(atoi(str.c_str())) {}
   operator int() const { return i_; }
@@ -195,29 +189,23 @@ struct StackObj {
   Symbol symbol;
   Concrete type;
 
-  void deleteObj() const;
+  void deleteObj() const noexcept;
 };
 
-// TODO: Remove throw and make noexcept
-void StackObj::deleteObj() const {
+void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::INT:
       delete (Int*)obj;
-      break;
-    case Symbol::PLUS:
-      delete (Plus*)obj;
-      break;
-    case Symbol::STAR:
-      delete (Star*)obj;
       break;
     case Symbol::EXPR:
       delete (Expr*)obj;
       break;
     default:
-      throw std::invalid_argument("Can't delete. Out of options.");
+      return;
   }
 }
 
+// TODO: Remove throw and make noexcept when done
 StackObj construct(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::EINT:
