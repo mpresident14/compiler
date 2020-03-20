@@ -4,6 +4,7 @@
 #include <bitset>
 #include <cstddef>
 #include <iostream>
+#include <vector>
 
 /* Terminals and nonterminals in the grammar */
 enum class Symbol { S, C, X, Y, STARTTOKENS, T, B, A, Z, EPSILON };
@@ -96,8 +97,12 @@ constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
 }
 constexpr int toInt(Symbol symbol) { return static_cast<int>(symbol); }
+constexpr Symbol toSymbol(int i) { return static_cast<Symbol>(i); }
 constexpr int toIntTokenOffset(Symbol symbol) {
   return toInt(symbol) - toInt(Symbol::STARTTOKENS) - 1;
+}
+constexpr Symbol toTokenOffset(int i) {
+  return static_cast<Symbol>(i + toInt(Symbol::STARTTOKENS) + 1);
 }
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
@@ -109,6 +114,17 @@ constexpr size_t numSymbols = toInt(Symbol::EPSILON);
 using BitSetVars = std::bitset<numVariables>;
 using BitSetToks = std::bitset<numTokens>;
 using BitRef = BitSetVars::reference;
+
+/* For printing only */
+std::vector<Symbol> toVector(BitSetToks tokSet) {
+  std::vector<Symbol> v;
+  for (size_t i = 0; i < numTokens; ++i) {
+    if (tokSet[i]) {
+      v.push_back(toTokenOffset(i));
+    }
+  }
+  return v;
+}
 
 #include "rules.hpp"
 
