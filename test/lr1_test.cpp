@@ -1,8 +1,8 @@
 // parse.hpp relies on a grammar, so we have to include lr1_grammar.hpp before.
 // This setup allows us to use arbitrary grammars for parse without getting
 // multiple definitions of Symbol, Concrete, etc.
-#include "parse.hpp"
 #include "test/lr1_grammar.hpp"
+#include "parse.hpp"
 
 #include <algorithm>
 #include <cstddef>

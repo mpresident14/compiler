@@ -97,15 +97,15 @@ RgxPtr Concat::getDeriv(char c) const {
 }
 void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_->rgxs_; }
 
-// Star::Star(Regex* rgx) : rgx_{move(rgx)} {}
-// // ~Star() { delete rgx_; }
-// bool Star::isNullable() const { return true; }
-// // TODO: Sharing rgx_ pointer will cause problems
-// Regex* Star::getDeriv(char c) const {
-//   return make_shared<Concat>(
-//       Concat(vector<Regex*>{rgx_->getDeriv(c), make_shared<Star>(Star(rgx_))}));
-// }
-// void Star::toStream(ostream& out) const { out << "STAR (" << rgx_ << ")"; }
+Star::Star(Regex* rgx) : rgx_(RgxPtr(rgx)) {}
+Star::Star(RgxPtr rgx) : rgx_(rgx) {}
+
+bool Star::isNullable() const { return true; }
+RgxPtr Star::getDeriv(char c) const {
+  return make_shared<Concat>(new RegexVector(
+      vector<RgxPtr>{rgx_->getDeriv(c), make_shared<Star>(rgx_)}));
+}
+void Star::toStream(ostream& out) const { out << "STAR (" << rgx_ << ")"; }
 
 // Not::Not(Regex* rgx) : rgx_{move(rgx)} {}
 // // ~Not() { delete rgx_; }

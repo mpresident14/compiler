@@ -15,9 +15,10 @@
  ***********/
 
 /* Regex {Regex}
- * Regex := Alts    { Alt($0) }
- *        | Concats { Concat($0) }
- *        | CHAR    { Character($0) }
+ * Regex := Alts        { Alt($0) }
+ *        | Concats     { Concat($0) }
+ *        | Regex STAR  { Star($0) }
+ *        | CHAR        { Character($0) }
  *
  * Alts {RegexVector}
  * Alts := Regex BAR Regex { RegexVector($0, $2) }
@@ -31,15 +32,16 @@
  * */
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, CHAR, EPSILON };
+enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, STAR, CHAR, EPSILON };
 /* The concrete types that symbols in the grammar can be */
-enum class Concrete { SCONC, RALT, RCONCAT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
+enum class Concrete { SCONC, RALT, RCONCAT, RSTAR, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
 enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
-constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 4, 4 };
-constexpr size_t tokenPrecedence[] = { 1, 4 };
+constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 4, 4 };
+constexpr size_t tokenPrecedence[] = { 1, 5, 4 };
 constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::UNSPECIFIED };
 constexpr Symbol concreteToSymbol[] = { Symbol::S,
+  Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
@@ -68,6 +70,9 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::BAR:
       out << "BAR";
       break;
+    case Symbol::STAR:
+      out << "STAR";
+      break;
     case Symbol::CHAR:
       out << "CHAR";
       break;
@@ -88,6 +93,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
       break;
     case Concrete::RCONCAT:
       out << "RCONCAT";
+      break;
+    case Concrete::RSTAR:
+      out << "RSTAR";
       break;
     case Concrete::RCHAR:
       out << "RCHAR";
@@ -221,6 +229,8 @@ void* constructObj(Concrete type, StackObj* args) {
       return new Alt((RegexVector*)args[0].obj);
     case Concrete::RCONCAT:
       return new Concat((RegexVector*)args[0].obj);
+    case Concrete::RSTAR:
+      return new Star((Regex*)args[0].obj);
     case Concrete::RCHAR:
       return new Character(*(char*)args[0].obj);
     case Concrete::AREGEX:
@@ -248,8 +258,9 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
   { Symbol::REGEX,
       {
           GrammarRule{ Concrete::RALT, { Symbol::ALTS } },
-          GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
           GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
+          GrammarRule{ Concrete::RSTAR, { Symbol::REGEX, Symbol::STAR } },
+          GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
       } },
   { Symbol::ALTS,
       {
