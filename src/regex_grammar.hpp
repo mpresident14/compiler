@@ -15,25 +15,30 @@
  ***********/
 
 /* Regex {Regex}
- * Regex := Alts  { Alt($0) }
- *        | CHAR  { Character($0) }
+ * Regex := Alts    { Alt($0) }
+ *        | Concats { Concat($0) }
+ *        | CHAR    { Character($0) }
  *
  * Alts {RegexVector}
  * Alts := Regex BAR Regex { RegexVector($0, $2) }
  *       | Alts BAR Regex  { RegexVector($0, $2) }
  *
+ * Concats {RegexVector}
+ * Concats := Regex EMPTY Regex   { RegexVector($0, $2) }
+ *          | Concats EMPTY Regex { RegexVector($0, $2) }
+ *
  *
  * */
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, REGEX, ALTS, STARTTOKENS, BAR, CHAR, EPSILON };
+enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, EMPTY, CHAR, EPSILON };
 /* The concrete types that symbols in the grammar can be */
-enum class Concrete { SCONC, RALT, RCHAR, AREGEX, AALT, NONE };
+enum class Concrete { SCONC, RALT, RCONCAT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
 enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
 /* 0 means unspecified precedence */
-constexpr size_t tokenPrecedence[] = {8, 0};
+constexpr size_t tokenPrecedence[] = {1, 4, 0};
 constexpr Associativity tokenAssoc[] = {Associativity::LEFT, Associativity::UNSPECIFIED};
-constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS};
+constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS, Symbol::CONCATS, Symbol::CONCATS};
 
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
@@ -46,11 +51,17 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::ALTS:
       out << "ALTS";
       break;
+    case Symbol::CONCATS:
+      out << "CONCATS";
+      break;
     case Symbol::STARTTOKENS:
       out << "STARTTOKENS";
       break;
     case Symbol::BAR:
       out << "BAR";
+      break;
+    case Symbol::EMPTY:
+      out << "EMPTY";
       break;
     case Symbol::CHAR:
       out << "CHAR";
@@ -70,6 +81,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
     case Concrete::RALT:
       out << "RALT";
       break;
+    case Concrete::RCONCAT:
+      out << "RCONCAT";
+      break;
     case Concrete::RCHAR:
       out << "RCHAR";
       break;
@@ -78,6 +92,12 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
       break;
     case Concrete::AALT:
       out << "AALT";
+      break;
+    case Concrete::CREGEX:
+      out << "CREGEX";
+      break;
+    case Concrete::CCONCAT:
+      out << "CCONCAT";
       break;
     case Concrete::NONE:
       out << "NONE";
@@ -169,6 +189,9 @@ void StackObj::deleteObj() const noexcept {
     case Symbol::ALTS:
       delete (RegexVector*)obj;
       break;
+    case Symbol::CONCATS:
+      delete (RegexVector*)obj;
+      break;
     case Symbol::CHAR:
       delete (char*)obj;
       break;
@@ -182,11 +205,17 @@ void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::RALT:
       return new Alt((RegexVector*)args[0].obj);
+    case Concrete::RCONCAT:
+      return new Concat((RegexVector*)args[0].obj);
     case Concrete::RCHAR:
       return new Character(*(char*)args[0].obj);
     case Concrete::AREGEX:
       return new RegexVector((Regex*)args[0].obj, (Regex*)args[2].obj);
     case Concrete::AALT:
+      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
+    case Concrete::CREGEX:
+      return new RegexVector((Regex*)args[0].obj, (Regex*)args[2].obj);
+    case Concrete::CCONCAT:
       return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*) args[0].obj);
@@ -211,11 +240,17 @@ const Grammar GRAMMAR = {
         {
             GrammarRule{Concrete::RALT, {Symbol::ALTS}},
             GrammarRule{Concrete::RCHAR, {Symbol::CHAR}},
+            GrammarRule{Concrete::RCONCAT, {Symbol::CONCATS}},
         }},
     {Symbol::ALTS,
         {
             GrammarRule{Concrete::AREGEX, {Symbol::REGEX, Symbol::BAR, Symbol::REGEX}},
             GrammarRule{Concrete::AALT, {Symbol::ALTS, Symbol::BAR, Symbol::REGEX}},
+        }},
+    {Symbol::CONCATS,
+        {
+            GrammarRule{Concrete::CREGEX, {Symbol::REGEX, Symbol::EMPTY, Symbol::REGEX}},
+            GrammarRule{Concrete::CCONCAT, {Symbol::CONCATS, Symbol::EMPTY, Symbol::REGEX}},
         }}
 };
 

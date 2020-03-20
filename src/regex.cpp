@@ -75,30 +75,31 @@ void Alt::toStream(ostream& out) const { out << "ALT " << rVec_->rgxs_; }
  * Concat *
  **********/
 
-// Concat::Concat(RegexVector* rVec) : rVec_(rVec) {}
+Concat::Concat(RegexVector* rVec) : rVec_(rVec) {}
 
-// Concat::~Concat() { delete rVec_; }
+Concat::~Concat() { delete rVec_; }
 
-// bool Concat::isNullable() const {
-//   return all_of(
-//       rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const Regex* rPtr) { return rPtr->isNullable(); });
-// }
+bool Concat::isNullable() const {
+  return all_of(
+      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const Regex* rPtr) { return rPtr->isNullable(); });
+}
 
-// // TODO: Make this better
-// Regex* Concat::getDeriv(char c) const {
-//   vector<Regex*> derivAndRest = {rgxs_[0]->getDeriv(c)};
-//   copy(rgxs_.cbegin() + 1, rgxs_.cend(), back_inserter(derivAndRest));
+// TODO: Make this better
+Regex* Concat::getDeriv(char c) const {
+  vector<Regex*>& rgxs = rVec_->rgxs_;
+  vector<Regex*> derivAndRest = {rgxs[0]->getDeriv(c)};
+  copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 
-//   if (rgxs_[0]->isNullable()) {
-//     vector<Regex*> rest1(rgxs_.cbegin() + 1, rgxs_.cend());
-//     vector<Regex*> rest2 = rest1;
-//     return make_shared<Alt>(Alt({Concat(move(rest1)).getDeriv(c),
-//         make_shared<Concat>(Concat(move(derivAndRest)))}));
-//   }
+  if (rgxs[0]->isNullable()) {
+    vector<Regex*> rest(rgxs.cbegin() + 1, rgxs.cend());
+    return new Alt(new RegexVector(
+        Concat(new RegexVector(move(rest))).getDeriv(c),
+        new Concat(new RegexVector(move(derivAndRest)))));
+  }
 
-//   return make_shared<Concat>(Concat(move(derivAndRest)));
-// }
-// void Concat::toStream(ostream& out) const { out << "CONCAT " << rVec->rgxs_; }
+  return new Concat(new RegexVector(move(derivAndRest)));
+}
+void Concat::toStream(ostream& out) const { out << "CONCAT " << rVec_->rgxs_; }
 
 // Star::Star(Regex* rgx) : rgx_{move(rgx)} {}
 // // ~Star() { delete rgx_; }

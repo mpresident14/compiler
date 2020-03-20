@@ -176,7 +176,7 @@ Symbol getLastToken(const DFARule& rule) {
 }
 
 void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
-  std::cerr << "WARNING: Shift reduce conflict with " << rule1 << " and " << rule2 << std::endl;
+  std::cerr << "WARNING: Shift reduce conflict with\n\t" << rule1 << "\n\t" << rule2 << std::endl;
 }
 
 // TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.

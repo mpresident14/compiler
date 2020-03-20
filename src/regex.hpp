@@ -74,18 +74,18 @@ private:
  RegexVector* rVec_;
 };
 
-// class Concat : public Regex {
-// public:
-//   Concat(RegexVector* rVec);
-//   ~Concat();
-//   bool isNullable() const override;
-//   // TODO: Make this better
-//   Regex* getDeriv(char c) const override;
-//   void toStream(std::ostream& out) const override;
+class Concat : public Regex {
+public:
+  Concat(RegexVector* rVec);
+  ~Concat();
+  bool isNullable() const override;
+  // TODO: Make this better
+  Regex* getDeriv(char c) const override;
+  void toStream(std::ostream& out) const override;
 
-// private:
-//   RegexVector* rVec_;
-// };
+private:
+  RegexVector* rVec_;
+};
 
 // class Star : public Regex {
 // public:
