@@ -1,8 +1,8 @@
 // parse.hpp relies on a grammar, so we have to include lr0_grammar.hpp before.
 // This setup allows us to use arbitrary grammars for parse without getting
 // multiple definitions of Symbol, Concrete, etc.
-#include "test/lr0_grammar.hpp"
 #include "parse.hpp"
+#include "test/lr0_grammar.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -32,9 +32,10 @@ void testAddRhses() {
   RuleSet ruleSet;
   addRhses(ruleSet, Symbol::EXPR);
 
-  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule expected0 = { Concrete::ETERM, { Symbol::TERM }, 0, BitSetToks() };
   const DFARule expected1 = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 0, BitSetToks()
+  };
 
   TESTER.assertEquals(2, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(expected0));
@@ -42,13 +43,14 @@ void testAddRhses() {
 }
 
 void testEpsilonTransition() {
-  const DFARule init1 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule init1 = { Concrete::ETERM, { Symbol::TERM }, 0, BitSetToks() };
   const DFARule init2 = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
-  RuleSet ruleSet = {init1, init2};
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 0, BitSetToks()
+  };
+  RuleSet ruleSet = { init1, init2 };
   epsilonTransition(ruleSet);
 
-  const DFARule expected = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+  const DFARule expected = { Concrete::TINT, { Symbol::INT }, 0, BitSetToks() };
 
   TESTER.assertEquals(3, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(init1));
@@ -60,10 +62,11 @@ void testInitDFA() {
   DFA_t initialNfa = initDFA();
   const RuleSet& ruleSet = initialNfa.getRoot()->getValue();
 
-  const DFARule expected0 = {Concrete::ETERM, {Symbol::TERM}, 0, BitSetToks()};
+  const DFARule expected0 = { Concrete::ETERM, { Symbol::TERM }, 0, BitSetToks() };
   const DFARule expected1 = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 0, BitSetToks()};
-  const DFARule expected2 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 0, BitSetToks()
+  };
+  const DFARule expected2 = { Concrete::TINT, { Symbol::INT }, 0, BitSetToks() };
 
   TESTER.assertEquals(3, ruleSet.size());
   TESTER.assertTrue(ruleSet.contains(expected0));
@@ -72,19 +75,21 @@ void testInitDFA() {
 }
 
 void testCreateTransitions() {
-  const DFARule rule0 = {Concrete::TINT, {Symbol::INT}, 0, BitSetToks()};
+  const DFARule rule0 = { Concrete::TINT, { Symbol::INT }, 0, BitSetToks() };
   const DFARule rule1 = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 2, BitSetToks()};
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 2, BitSetToks()
+  };
 
-  DFA_t dfa({rule0, rule1});
+  DFA_t dfa({ rule0, rule1 });
   createTransitions(dfa, dfa.getRoot());
   const auto& transitions = dfa.getRoot()->getTransitions();
   const RuleSet& ruleSet0 = transitions.at(Symbol::INT)->getValue();
   const RuleSet& ruleSet1 = transitions.at(Symbol::TERM)->getValue();
 
-  const DFARule expected0 = {Concrete::TINT, {Symbol::INT}, 1, BitSetToks()};
+  const DFARule expected0 = { Concrete::TINT, { Symbol::INT }, 1, BitSetToks() };
   const DFARule expected1 = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3, BitSetToks()};
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 3, BitSetToks()
+  };
 
   TESTER.assertEquals(2, transitions.size());
   TESTER.assertEquals(1, ruleSet0.size());
@@ -95,8 +100,9 @@ void testCreateTransitions() {
 
 void testCreateTransitionsEndRule() {
   const DFARule rule = {
-      Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}, 3, BitSetToks()};
-  DFA_t dfa({rule});
+    Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM }, 3, BitSetToks()
+  };
+  DFA_t dfa({ rule });
   createTransitions(dfa, dfa.getRoot());
   auto& transitions = dfa.getRoot()->getTransitions();
 
@@ -105,34 +111,34 @@ void testCreateTransitionsEndRule() {
 
 void testShiftReduce() {
   DFA_t dfa = buildDFA();
-  auto expr0 = parse(dfa, {StackObj{new Int("1"), Symbol::INT, Concrete::NONE}});
+  auto expr0 = parse(dfa, { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE } });
   auto expr1 = parse(dfa,
-      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+      { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("2"), Symbol::INT, Concrete::NONE } });
   auto expr2 = parse(dfa,
-      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+      { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("2"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("50"), Symbol::INT, Concrete::NONE } });
 
   auto noParse0 = parse(dfa,
-      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE}});
+      { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE } });
   auto noParse1 = parse(dfa,
-      {StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("2"), Symbol::INT, Concrete::NONE}});
+      { StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("2"), Symbol::INT, Concrete::NONE } });
   auto noParse2 = parse(dfa,
-      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-          StackObj{new Int("2"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+      { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Int("2"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("50"), Symbol::INT, Concrete::NONE } });
   auto noParse3 = parse(dfa,
-      {StackObj{new Int("1"), Symbol::INT, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Plus(), Symbol::PLUS, Concrete::NONE},
-          StackObj{new Int("50"), Symbol::INT, Concrete::NONE}});
+      { StackObj{ new Int("1"), Symbol::INT, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Plus(), Symbol::PLUS, Concrete::NONE },
+          StackObj{ new Int("50"), Symbol::INT, Concrete::NONE } });
 
   TESTER.assertEquals(1, eval(expr0.get()));
   TESTER.assertEquals(3, eval(expr1.get()));

@@ -22,13 +22,13 @@ void testAddAndRun() {
   // Duplicate transition, should ignore.
   const DFA<int, char>::Node* node7 = dfa.addTransition(node3, 'e', 2);
 
-  tester.assertEquals(node2, dfa.run({'a'}));
-  tester.assertEquals(node3, dfa.run({'b'}));
-  tester.assertEquals(node4, dfa.run({'a', 'c'}));
-  tester.assertEquals(node5, dfa.run({'a', 'd'}));
-  tester.assertEquals(nullptr, dfa.run({'c'}));
-  tester.assertEquals(nullptr, dfa.run({'a', 'b'}));
-  tester.assertEquals(node5, dfa.run({'b', 'e'}));
+  tester.assertEquals(node2, dfa.run({ 'a' }));
+  tester.assertEquals(node3, dfa.run({ 'b' }));
+  tester.assertEquals(node4, dfa.run({ 'a', 'c' }));
+  tester.assertEquals(node5, dfa.run({ 'a', 'd' }));
+  tester.assertEquals(nullptr, dfa.run({ 'c' }));
+  tester.assertEquals(nullptr, dfa.run({ 'a', 'b' }));
+  tester.assertEquals(node5, dfa.run({ 'b', 'e' }));
   tester.assertEquals(nullptr, node6);
   tester.assertEquals(nullptr, node7);
 }

@@ -75,7 +75,7 @@ public:
   void toStream(std::ostream& out) const override;
 
 private:
- RegexVector* rVec_;
+  RegexVector* rVec_;
 };
 
 class Concat : public Regex {

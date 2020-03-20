@@ -34,12 +34,19 @@
 enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, CHAR, EPSILON };
 /* The concrete types that symbols in the grammar can be */
 enum class Concrete { SCONC, RALT, RCONCAT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
-enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
+enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
-constexpr size_t overridePrecedence[] = {0,0,0,0,0,0,4,4};
-constexpr size_t tokenPrecedence[] = {1, 4};
-constexpr Associativity tokenAssoc[] = {Associativity::LEFT, Associativity::UNSPECIFIED};
-constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::REGEX, Symbol::REGEX, Symbol::REGEX, Symbol::ALTS, Symbol::ALTS, Symbol::CONCATS, Symbol::CONCATS};
+constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 4, 4 };
+constexpr size_t tokenPrecedence[] = { 1, 4 };
+constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::UNSPECIFIED };
+constexpr Symbol concreteToSymbol[] = { Symbol::S,
+  Symbol::REGEX,
+  Symbol::REGEX,
+  Symbol::REGEX,
+  Symbol::ALTS,
+  Symbol::ALTS,
+  Symbol::CONCATS,
+  Symbol::CONCATS };
 
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
@@ -123,7 +130,9 @@ constexpr Symbol toTokenOffset(int i) {
 constexpr bool isToken(Symbol symbol) { return toInt(symbol) > toInt(Symbol::STARTTOKENS); }
 constexpr bool isVariable(Symbol symbol) { return !isToken(symbol); }
 constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
-constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
+constexpr Associativity getAssociativity(Symbol symbol) {
+  return tokenAssoc[toIntTokenOffset(symbol)];
+}
 
 constexpr size_t numVariables = toInt(Symbol::STARTTOKENS);
 constexpr size_t numTokens = toInt(Symbol::EPSILON) - toInt(Symbol::STARTTOKENS) - 1;
@@ -146,7 +155,9 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
 
 #include "rules.hpp"
 
-constexpr size_t ruleOverridePrecedence(const DFARule& rule) { return overridePrecedence[static_cast<int>(rule.lhs)]; }
+constexpr size_t ruleOverridePrecedence(const DFARule& rule) {
+  return overridePrecedence[static_cast<int>(rule.lhs)];
+}
 
 
 /***********
@@ -221,39 +232,34 @@ void* constructObj(Concrete type, StackObj* args) {
     case Concrete::CCONCAT:
       return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[1].obj);
     case Concrete::SCONC:
-      return new Start((ROOT_TYPE*) args[0].obj);
+      return new Start((ROOT_TYPE*)args[0].obj);
     default:
       throw std::invalid_argument("Can't construct. Out of options.");
   }
 }
 
 StackObj construct(Concrete type, StackObj* args) {
-  return StackObj{constructObj(type, args), toSymbol(type), type};
+  return StackObj{ constructObj(type, args), toSymbol(type), type };
 }
 
 
 /* LR0 Grammar */
-const Grammar GRAMMAR = {
-    {Symbol::S,
-        {
-            GrammarRule{Concrete::SCONC, {ROOT_SYM}}
-        }},
-    {Symbol::REGEX,
-        {
-            GrammarRule{Concrete::RALT, {Symbol::ALTS}},
-            GrammarRule{Concrete::RCHAR, {Symbol::CHAR}},
-            GrammarRule{Concrete::RCONCAT, {Symbol::CONCATS}},
-        }},
-    {Symbol::ALTS,
-        {
-            GrammarRule{Concrete::AREGEX, {Symbol::REGEX, Symbol::BAR, Symbol::REGEX}},
-            GrammarRule{Concrete::AALT, {Symbol::ALTS, Symbol::BAR, Symbol::REGEX}},
-        }},
-    {Symbol::CONCATS,
-        {
-            GrammarRule{Concrete::CREGEX, {Symbol::REGEX, Symbol::REGEX}},
-            GrammarRule{Concrete::CCONCAT, {Symbol::CONCATS, Symbol::REGEX}},
-        }}
-};
+const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
+  { Symbol::REGEX,
+      {
+          GrammarRule{ Concrete::RALT, { Symbol::ALTS } },
+          GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
+          GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
+      } },
+  { Symbol::ALTS,
+      {
+          GrammarRule{ Concrete::AREGEX, { Symbol::REGEX, Symbol::BAR, Symbol::REGEX } },
+          GrammarRule{ Concrete::AALT, { Symbol::ALTS, Symbol::BAR, Symbol::REGEX } },
+      } },
+  { Symbol::CONCATS,
+      {
+          GrammarRule{ Concrete::CREGEX, { Symbol::REGEX, Symbol::REGEX } },
+          GrammarRule{ Concrete::CCONCAT, { Symbol::CONCATS, Symbol::REGEX } },
+      } } };
 
 #endif

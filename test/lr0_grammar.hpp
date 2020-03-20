@@ -52,7 +52,7 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-const Symbol concreteToSymbol[] = {Symbol::EXPR, Symbol::EXPR, Symbol::TERM};
+const Symbol concreteToSymbol[] = { Symbol::EXPR, Symbol::EXPR, Symbol::TERM };
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -134,16 +134,17 @@ using ROOT_TYPE = Expr;
 
 /* LR0 Grammar */
 const Grammar GRAMMAR = {
-    {ROOT_SYM,
-        {
-            GrammarRule{Concrete::ETERM, {Symbol::TERM}},
-            GrammarRule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::TERM}},
-        }},
-    {
-        Symbol::TERM,
-        {
-            GrammarRule{Concrete::TINT, {Symbol::INT}},
-        },
-    }};
+  { ROOT_SYM,
+      {
+          GrammarRule{ Concrete::ETERM, { Symbol::TERM } },
+          GrammarRule{ Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::TERM } },
+      } },
+  {
+      Symbol::TERM,
+      {
+          GrammarRule{ Concrete::TINT, { Symbol::INT } },
+      },
+  }
+};
 
 #endif

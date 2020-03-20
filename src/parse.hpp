@@ -8,9 +8,9 @@
 #include <cstddef>
 #include <memory>
 #include <queue>
+#include <stdexcept>
 #include <unordered_set>
 #include <vector>
-#include <stdexcept>
 
 #include <prez/print_stuff.hpp>
 
@@ -45,14 +45,14 @@ void addRhses(std::queue<DFARule>& ruleQueue, const DFARule& fromRule) {
     // FIRST() of a token is just the token
     if (isToken(nextNextSymbol)) {
       newLookahead[toIntTokenOffset(nextNextSymbol)] = true;
-    } else { // Union with the first of the nextNextSymbol
+    } else {  // Union with the first of the nextNextSymbol
       newLookahead |= firsts[toInt(nextNextSymbol)];
     }
   }
 
   const vector<GrammarRule>& rules = GRAMMAR.at(nextSymbol);
   for (const GrammarRule& rule : rules) {
-    ruleQueue.push(DFARule{rule.lhs, rule.rhs, 0, newLookahead});
+    ruleQueue.push(DFARule{ rule.lhs, rule.rhs, 0, newLookahead });
   }
 }
 
@@ -66,7 +66,7 @@ void epsilonTransition(RuleSet& ruleSet) {
 
   // Expand variables (epsilon transition) in the initial set of rules.
   for (const DFARule& rule : ruleSet) {
-      addRhses(ruleQueue, rule);
+    addRhses(ruleQueue, rule);
   }
 
   // Keep expanding variables (epsilon transition) until we've determined all the
@@ -133,7 +133,7 @@ std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node*
 
 /* Constructs the starting node of the DFA */
 DFA_t initDFA() {
-  RuleSet firstSet{ DFARule{Concrete::SCONC, {ROOT_SYM}, 0, BitSetToks()}};
+  RuleSet firstSet{ DFARule{ Concrete::SCONC, { ROOT_SYM }, 0, BitSetToks() } };
   epsilonTransition(firstSet);
   DFA_t dfa(firstSet);
   return dfa;
@@ -180,7 +180,10 @@ void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
 }
 
 // TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.
-Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<StackObj>& stk, size_t* reduceStart) {
+Concrete tryReduce(const DFA_t::Node* node,
+    Symbol nextToken,
+    const std::vector<StackObj>& stk,
+    size_t* reduceStart) {
   Concrete retType = Concrete::NONE;
   const DFARule* shiftableRule = nullptr;
   size_t shiftPrecedence = getPrecedence(nextToken);
@@ -199,8 +202,8 @@ Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<
   for (const DFARule& rule : node->getValue()) {
     // Make sure we have completed the rule and either
     // the next token is in the lookahead set or there is no more input
-    if (!(rule.atEnd()
-        && (nextToken == Symbol::EPSILON || rule.lookahead[toIntTokenOffset(nextToken)]))) {
+    if (!(rule.atEnd() &&
+            (nextToken == Symbol::EPSILON || rule.lookahead[toIntTokenOffset(nextToken)]))) {
       continue;
     }
 
@@ -249,10 +252,10 @@ Concrete tryReduce(const DFA_t::Node* node, Symbol nextToken, const std::vector<
           }
         }
 
-    shouldReduce:
+      shouldReduce:
         *reduceStart = j;
         return rule.lhs;
-    conflict:
+      conflict:
         conflictWarning(*shiftableRule, rule);
         return Concrete::NONE;
       }
@@ -276,7 +279,7 @@ std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& 
   using namespace std;
 
   StackObj firstToken = inputTokens[0];
-  vector<StackObj> stk = {firstToken};
+  vector<StackObj> stk = { firstToken };
   const DFA_t::Node* currentNode = dfa.step(dfa.getRoot(), firstToken.symbol);
   if (currentNode == nullptr) {
     cleanPtrsFrom(inputTokens, 0);
@@ -315,7 +318,7 @@ std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& 
         return stkObj.symbol;
       });
       currentNode = dfa.run(stkSymbols);
-    } else { // Shift
+    } else {  // Shift
       // No more tokens, didn't reduce to S
       if (i == inputSize) {
         cleanPtrsFrom(stk, 0);

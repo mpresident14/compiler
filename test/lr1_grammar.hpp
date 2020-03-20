@@ -69,8 +69,8 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
  * UTILS *
  *********/
 
-constexpr Symbol concreteToSymbol[] = {Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR};
-constexpr size_t overridePrecedence[] = {0,0,0,0};
+constexpr Symbol concreteToSymbol[] = { Symbol::S, Symbol::EXPR, Symbol::EXPR, Symbol::EXPR };
+constexpr size_t overridePrecedence[] = { 0, 0, 0, 0 };
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -108,12 +108,16 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
 /********************************
  * ASSOCIATIVITY AND PRECEDENCE *
  ********************************/
-enum class Associativity {LEFT, RIGHT, NON, UNSPECIFIED};
+enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
-constexpr size_t tokenPrecedence[] = {1 /* PLUS */, 2 /* STAR */, 0 /* INT */};
-constexpr Associativity tokenAssoc[] = {Associativity::LEFT /* PLUS */, Associativity::LEFT /* STAR */, Associativity::UNSPECIFIED /* INT */};
+constexpr size_t tokenPrecedence[] = { 1 /* PLUS */, 2 /* STAR */, 0 /* INT */ };
+constexpr Associativity tokenAssoc[] = { Associativity::LEFT /* PLUS */,
+  Associativity::LEFT /* STAR */,
+  Associativity::UNSPECIFIED /* INT */ };
 constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
-constexpr Associativity getAssociativity(Symbol symbol) { return tokenAssoc[toIntTokenOffset(symbol)]; }
+constexpr Associativity getAssociativity(Symbol symbol) {
+  return tokenAssoc[toIntTokenOffset(symbol)];
+}
 
 /***********
  * OBJECTS *
@@ -139,7 +143,10 @@ struct EInt : Expr {
 
 struct EPlus : Expr {
   EPlus(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~EPlus() { delete e1_; delete e2_; }
+  ~EPlus() {
+    delete e1_;
+    delete e2_;
+  }
   Concrete getType() const override { return Concrete::EPLUS; }
   int eval() const override { return e1_->eval() + e2_->eval(); }
   Expr* e1_;
@@ -148,7 +155,10 @@ struct EPlus : Expr {
 
 struct ETimes : Expr {
   ETimes(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~ETimes() { delete e1_; delete e2_; }
+  ~ETimes() {
+    delete e1_;
+    delete e2_;
+  }
   Concrete getType() const override { return Concrete::EPLUS; }
   int eval() const override { return e1_->eval() * e2_->eval(); }
   Expr* e1_;
@@ -208,32 +218,31 @@ void* constructObj(Concrete type, StackObj* args) {
     case Concrete::ETIMES:
       return new ETimes((Expr*)args[0].obj, (Expr*)args[2].obj);
     case Concrete::SCONC:
-      return new Start((ROOT_TYPE*) args[0].obj);
+      return new Start((ROOT_TYPE*)args[0].obj);
     default:
       throw std::invalid_argument("Can't construct. Out of options.");
   }
 }
 
 StackObj construct(Concrete type, StackObj* args) {
-  return StackObj{ constructObj(type, args), toSymbol(type), type};
+  return StackObj{ constructObj(type, args), toSymbol(type), type };
 }
 
 #include "rules.hpp"
 
-constexpr size_t ruleOverridePrecedence(const DFARule& rule) { return overridePrecedence[static_cast<int>(rule.lhs)]; }
+constexpr size_t ruleOverridePrecedence(const DFARule& rule) {
+  return overridePrecedence[static_cast<int>(rule.lhs)];
+}
 
 /* LR0 Grammar */
-const Grammar GRAMMAR = {
-    {Symbol::S,
-        {
-            GrammarRule{Concrete::SCONC, {ROOT_SYM}}
-        }},
-    {Symbol::EXPR,
-        {
-            GrammarRule{Concrete::EINT, {Symbol::INT}},
-            GrammarRule{Concrete::EPLUS, {Symbol::EXPR, Symbol::PLUS, Symbol::EXPR}},
-            GrammarRule{Concrete::ETIMES, {Symbol::EXPR, Symbol::STAR, Symbol::EXPR}},
-        },
-    }};
+const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
+  {
+      Symbol::EXPR,
+      {
+          GrammarRule{ Concrete::EINT, { Symbol::INT } },
+          GrammarRule{ Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR } },
+          GrammarRule{ Concrete::ETIMES, { Symbol::EXPR, Symbol::STAR, Symbol::EXPR } },
+      },
+  } };
 
 #endif

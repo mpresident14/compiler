@@ -40,13 +40,13 @@ public:
 
   friend struct Node;
 
-  DFA(V value) : root_(new Node(value)), valueToNode_{{std::move(value), root_}} {}
+  DFA(V value) : root_(new Node(value)), valueToNode_{ { std::move(value), root_ } } {}
 
   ~DFA() {
     // Delete via BFS
     std::queue<const Node*> q;
     q.push(root_);
-    std::unordered_set<const Node*> visited = {root_};
+    std::unordered_set<const Node*> visited = { root_ };
     while (!q.empty()) {
       const Node* node = q.front();
       q.pop();

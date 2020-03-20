@@ -38,7 +38,7 @@ struct DFARule {
     if (pos == rhs.size()) {
       throw std::invalid_argument("Out of bounds");
     }
-    return {lhs, rhs, pos + 1, lookahead};
+    return { lhs, rhs, pos + 1, lookahead };
   }
   // TODO: Make appropriate functions noexcept and const(expr)
   bool operator==(const DFARule& other) const {

@@ -31,7 +31,7 @@ private:
 
   template <typename Fn>
   struct FnContainer : FnContainerAbstract {
-    FnContainer(Fn&& f) : f_{std::forward<Fn>(f)} {}
+    FnContainer(Fn&& f) : f_{ std::forward<Fn>(f) } {}
     // Since we have a mutable lambdas (e.g. in createBasic() and combine()),
     // the () operator can change the variables in the closure (i.e. change f_),
     // so the () operator cannot be const.
@@ -158,8 +158,8 @@ namespace parsers {
   template <typename T>
   requires rvalue<T&&> Parser<T> createBasic(T&& obj) {
     // Lambda is mutable so we can move obj
-    return Parser<T>{
-        [obj = move(obj)](istream&, size_t*) mutable { return createReturnObject(move(obj)); }};
+    return Parser<T>{ [obj = move(obj)](
+                          istream&, size_t*) mutable { return createReturnObject(move(obj)); } };
   }
 
   /* fail() and lazy() are the same under the hood, but identifying them
