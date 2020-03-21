@@ -1,5 +1,5 @@
-// parse.hpp relies on a grammar, so we have to include lr1_grammar.hpp before.
-// This setup allows us to use arbitrary grammars for parse without getting
+// ExprPtr(parse.hpp relies on a grammar, so we have to include lr1_grammar.hpp before.
+// This setup allows us to use arbitrary grammars for ExprPtr(parse without getting
 // multiple definitions of Symbol, Concrete, etc.
 #include "test/lr1_grammar.hpp"
 #include "parse.hpp"
@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <memory>
 
 #include <prez/unit_test.hpp>
 
@@ -185,9 +186,9 @@ void testTryReduce_noMatchStack() {
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -204,9 +205,9 @@ void testTryReduce_notAtEnd() {
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -222,9 +223,9 @@ void testTryReduce_notInLookahead() {
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -245,9 +246,9 @@ void testTryReduce_lowerRulePrecedence_hasShiftable() {
 
   DFA_t dfa({ reducible, shiftable });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -264,9 +265,9 @@ void testTryReduce_lowerRulePrecedence_noShiftable() {
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -287,9 +288,9 @@ void testTryReduce_higherRulePrecedence() {
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -304,16 +305,14 @@ void testTryReduce_unspecifiedPrecedence() {
     { Symbol::INT },
     0,
     BitSetToks("011") /* {STAR, PLUS} */ };
-  const DFARule reducible = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    3,
+  const DFARule reducible = { Concrete::EINT,
+    { Symbol::INT },
+    1,
     BitSetToks("111") /* {INT, STAR, PLUS} */ };
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
-    StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new int(1), Symbol::INT, Concrete::NONE },
   };
   size_t reduceStart;
 
@@ -336,9 +335,9 @@ void testTryReduce_equalPrecedence_leftAssoc() {
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
     StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-    StackObj{ new EInt(1), Symbol::EXPR, Concrete::EINT },
+    StackObj{ new Expr*(new EInt(1)), Symbol::EXPR, Concrete::EINT },
   };
   size_t reduceStart;
 
@@ -348,62 +347,64 @@ void testTryReduce_equalPrecedence_leftAssoc() {
 }
 
 void testShiftReduce() {
+  using ExprPtr = unique_ptr<Expr>;
+
   DFA_t dfa = buildParserDFA();
-  auto expr0 = parse(dfa, { StackObj{ new int(1), Symbol::INT, Concrete::NONE } });
+  ExprPtr expr0 = ExprPtr(parse(dfa, { StackObj{ new int(1), Symbol::INT, Concrete::NONE } }));
   // 1 + 2
-  auto expr1 = parse(dfa,
+  ExprPtr expr1 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
   // 1 + 2 + 50
-  auto expr2 = parse(dfa,
+  ExprPtr expr2 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
           StackObj{ new int(2), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 + 2 * 50
-  auto expr3 = parse(dfa,
+  ExprPtr expr3 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
           StackObj{ new int(2), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 * 2 + 50
-  auto expr4 = parse(dfa,
+  ExprPtr expr4 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
           StackObj{ new int(2), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 * 2 * 50
-  auto expr5 = parse(dfa,
+  ExprPtr expr5 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
           StackObj{ new int(2), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
 
   // 1 +
-  auto noParse0 = parse(dfa,
+  ExprPtr noParse0 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE } });
+          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE } }));
   // + 2
-  auto noParse1 = parse(dfa,
+  ExprPtr noParse1 = ExprPtr(parse(dfa,
       { StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
   // 1 2 + 50
-  auto noParse2 = parse(dfa,
+  ExprPtr noParse2 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ new int(2), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 + + 50
-  auto noParse3 = parse(dfa,
+  ExprPtr noParse3 = ExprPtr(parse(dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
           StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } });
+          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
 
   TESTER.assertEquals(1, expr0->eval());
   TESTER.assertEquals(3, expr1->eval());

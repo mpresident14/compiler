@@ -166,7 +166,7 @@ struct ETimes : Expr {
 };
 
 const Symbol ROOT_SYM = Symbol::EXPR;
-using ROOT_TYPE = Expr;
+using ROOT_TYPE = Expr*;
 
 
 /* S
@@ -176,7 +176,7 @@ using ROOT_TYPE = Expr;
  * */
 struct Start {
   Start(ROOT_TYPE* r) : r_(r) {}
-  // No deleter since we return the encapsulated pointer
+  ~Start() { delete r_; }
   Concrete getType() const { return Concrete::SCONC; }
   ROOT_TYPE* r_;
 };
@@ -193,7 +193,11 @@ struct StackObj {
   Concrete type;
 
   void deleteObj() const noexcept;
+  void shallowDeleteObj() const noexcept;
 };
+
+template <typename T>
+inline void ptrDeleter(T* ptr) { delete ptr; }
 
 void StackObj::deleteObj() const noexcept {
   switch (symbol) {
@@ -201,7 +205,21 @@ void StackObj::deleteObj() const noexcept {
       delete (int*)obj;
       break;
     case Symbol::EXPR:
-      delete (Expr*)obj;
+      ptrDeleter(*(Expr**)obj);
+      delete (Expr**)obj;
+      break;
+    default:
+      return;
+  }
+}
+
+void StackObj::shallowDeleteObj() const noexcept {
+  switch (symbol) {
+    case Symbol::INT:
+      delete (int*)obj;
+      break;
+    case Symbol::EXPR:
+      delete (Expr**)obj;
       break;
     default:
       return;
@@ -212,11 +230,11 @@ void StackObj::deleteObj() const noexcept {
 void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::EINT:
-      return new EInt(*(int*)args[0].obj);
+      return new Expr*(new EInt(*(int*)args[0].obj));
     case Concrete::EPLUS:
-      return new EPlus((Expr*)args[0].obj, (Expr*)args[2].obj);
+      return new Expr*(new EPlus(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
     case Concrete::ETIMES:
-      return new ETimes((Expr*)args[0].obj, (Expr*)args[2].obj);
+      return new Expr*(new ETimes(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*)args[0].obj);
     default:

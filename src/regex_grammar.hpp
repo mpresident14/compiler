@@ -321,7 +321,6 @@ inline void StackObj::shallowDeleteObj() const noexcept {
       delete (char*)obj;
       break;
     default:
-      std::cout << symbol << std::endl;
       return;
   }
 }

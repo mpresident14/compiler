@@ -307,9 +307,7 @@ ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
       } else {
         size_t stkSize = stk.size();
         for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-          if (newObj.symbol != Symbol::S) {
-            stk.back().shallowDeleteObj();
-          }
+          stk.back().shallowDeleteObj();
           stk.pop_back();
         }
       }
