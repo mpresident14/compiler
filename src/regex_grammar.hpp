@@ -206,7 +206,7 @@ using BitSetToks = std::bitset<numTokens>;
 using BitRef = BitSetVars::reference;
 
 /* For printing only */
-std::vector<Symbol> toVector(BitSetToks tokSet) {
+inline std::vector<Symbol> toVector(BitSetToks tokSet) {
   std::vector<Symbol> v;
   for (size_t i = 0; i < numTokens; ++i) {
     if (tokSet[i]) {
@@ -258,7 +258,7 @@ struct StackObj {
   void deleteObj() const noexcept;
 };
 
-void StackObj::deleteObj() const noexcept {
+inline void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::REGEX:
       delete (Regex*)obj;
@@ -278,7 +278,7 @@ void StackObj::deleteObj() const noexcept {
 }
 
 // TODO: Remove throw and make noexcept when done
-void* constructObj(Concrete type, StackObj* args) {
+inline void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::RALT:
       return new Alt((RegexVector*)args[0].obj);
@@ -307,7 +307,7 @@ void* constructObj(Concrete type, StackObj* args) {
   }
 }
 
-StackObj construct(Concrete type, StackObj* args) {
+inline StackObj construct(Concrete type, StackObj* args) {
   return StackObj{ constructObj(type, args), toSymbol(type), type };
 }
 

@@ -24,7 +24,7 @@ include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src")
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp)
 add_executable(lr1_test test/lr1_test.cpp)
-add_executable(main src/main.cpp src/regex.cpp)
+add_executable(main src/main.cpp src/regex.cpp src/regex_lexer.cpp)
 
 
 #add_executable(lr0_test test/lr0_test.cpp)

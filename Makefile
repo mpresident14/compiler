@@ -216,6 +216,33 @@ src/regex.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.s
 .PHONY : src/regex.cpp.s
 
+src/regex_lexer.o: src/regex_lexer.cpp.o
+
+.PHONY : src/regex_lexer.o
+
+# target to build an object file
+src/regex_lexer.cpp.o:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.o
+.PHONY : src/regex_lexer.cpp.o
+
+src/regex_lexer.i: src/regex_lexer.cpp.i
+
+.PHONY : src/regex_lexer.i
+
+# target to preprocess a source file
+src/regex_lexer.cpp.i:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.i
+.PHONY : src/regex_lexer.cpp.i
+
+src/regex_lexer.s: src/regex_lexer.cpp.s
+
+.PHONY : src/regex_lexer.s
+
+# target to generate assembly for a file
+src/regex_lexer.cpp.s:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.s
+.PHONY : src/regex_lexer.cpp.s
+
 test/dfa_test.o: test/dfa_test.cpp.o
 
 .PHONY : test/dfa_test.o
@@ -315,6 +342,9 @@ help:
 	@echo "... src/regex.o"
 	@echo "... src/regex.i"
 	@echo "... src/regex.s"
+	@echo "... src/regex_lexer.o"
+	@echo "... src/regex_lexer.i"
+	@echo "... src/regex_lexer.s"
 	@echo "... test/dfa_test.o"
 	@echo "... test/dfa_test.i"
 	@echo "... test/dfa_test.s"

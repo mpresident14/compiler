@@ -1,5 +1,6 @@
 #include "regex_grammar.hpp"
 #include "regex.hpp"
+#include "regex_lexer.hpp"
 #include "parse.hpp"
 
 #include <cstddef>
@@ -14,33 +15,13 @@ using namespace prez;
 
 int main() {
   DFA_t dfa = buildDFA();
-  unique_ptr<Regex> r1 = parse(dfa,
-      { StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
-          StackObj{ new char('b'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new char('c'), Symbol::CHAR, Concrete::NONE } });
+  unique_ptr<Regex> r1 = parse(dfa, lex("a|b*c"));
   cout << r1.get() << endl;
 
-  unique_ptr<Regex> r2 = parse(dfa,
-      { StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ new char('b'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
-          StackObj{ new char('c'), Symbol::CHAR, Concrete::NONE } });
+  unique_ptr<Regex> r2 = parse(dfa, lex("ab*|c"));
   cout << r2.get() << endl;
 
-  unique_ptr<Regex> r3 = parse(dfa,
-      { StackObj{ nullptr, Symbol::CARET, Concrete::NONE },
-          StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ new char('b'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::LBRACKET, Concrete::NONE },
-          StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::DASH, Concrete::NONE },
-          StackObj{ new char('z'), Symbol::CHAR, Concrete::NONE },
-          StackObj{ nullptr, Symbol::RBRACKET, Concrete::NONE } });
+  unique_ptr<Regex> r3 = parse(dfa, lex("^ab*|[a-z]"));
   cout << r3.get() << endl;
   return 0;
 }
