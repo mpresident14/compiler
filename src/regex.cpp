@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <functional>
 
 using namespace std;
 
@@ -133,12 +134,14 @@ bool EmptySet::isNullable() const { return false; }
 RgxPtr EmptySet::getDeriv(char) const { return make_shared<EmptySet>(); }
 bool EmptySet::operator==(const Regex &other) const { return other.getType() == RgxType::EMPTYSET; }
 RgxType EmptySet::getType() const { return RgxType::EMPTYSET; }
+size_t EmptySet::hashFn() const { return 0; }
 void EmptySet::toStream(ostream &out) const { out << "EMPTYSET"; }
 
 bool Epsilon::isNullable() const { return true; }
 RgxPtr Epsilon::getDeriv(char) const { return make_shared<EmptySet>(); }
 bool Epsilon::operator==(const Regex &other) const { return other.getType() == RgxType::EPSILON; }
 RgxType Epsilon::getType() const { return RgxType::EPSILON; }
+size_t Epsilon::hashFn() const { return 0; }
 void Epsilon::toStream(ostream &out) const { out << "EPSILON"; }
 
 
@@ -162,6 +165,10 @@ bool Character::operator==(const Regex &other) const {
   return other.getType() == RgxType::CHARACTER && static_cast<const Character &>(other).c_ == c_;
 }
 
+size_t Character::hashFn() const {
+  return hash<char>()(c_);
+}
+
 void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 
 
@@ -183,6 +190,13 @@ bool RegexVector::operator==(const RegexVector &other) const {
 
 RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 
+size_t RegexVector::hashFn() const {
+  hash<RgxPtr> hasher;
+  return accumulate(rgxs_.cbegin() + 1, rgxs_.cend(), hasher(rgxs_[0]),
+      [&hasher](size_t hashSum, const RgxPtr& r2) {
+        return hashSum ^ (hasher(r2) << 1);
+      });
+}
 
 /*******
  * Alt *
@@ -208,6 +222,10 @@ RgxType Alt::getType() const { return RgxType::ALT; }
 
 bool Alt::operator==(const Regex &other) const {
   return other.getType() == RgxType::ALT && static_cast<const Alt &>(other).rVec_ == rVec_;
+}
+
+size_t Alt::hashFn() const {
+  return rVec_.hashFn();
 }
 
 void Alt::toStream(ostream &out) const { out << "ALT " << rVec_.rgxs_; }
@@ -247,6 +265,10 @@ bool Concat::operator==(const Regex &other) const {
   return other.getType() == RgxType::CONCAT && static_cast<const Concat &>(other).rVec_ == rVec_;
 }
 
+size_t Concat::hashFn() const {
+  return rVec_.hashFn();
+}
+
 void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_.rgxs_; }
 
 
@@ -267,6 +289,10 @@ bool Star::operator==(const Regex &other) const {
   return other.getType() == RgxType::STAR && *static_cast<const Star &>(other).rgx_ == *rgx_;
 }
 
+size_t Star::hashFn() const {
+  return rgx_->hashFn();
+}
+
 void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
 
 
@@ -281,6 +307,10 @@ RgxType Not::getType() const { return RgxType::NOT; }
 
 bool Not::operator==(const Regex &other) const {
   return other.getType() == RgxType::NOT && *static_cast<const Not &>(other).rgx_ == *rgx_;
+}
+
+size_t Not::hashFn() const {
+  return rgx_->hashFn();
 }
 
 void Not::toStream(ostream &out) const { out << "NOT (" << rgx_ << ')'; }
@@ -302,6 +332,11 @@ RgxType Range::getType() const { return RgxType::RANGE; }
 bool Range::operator==(const Regex &other) const {
   return other.getType() == RgxType::RANGE && static_cast<const Range &>(other).start_ == start_ &&
          static_cast<const Range &>(other).end_ == end_;
+}
+
+size_t Range::hashFn() const {
+  hash<char> hasher;
+  return hasher(start_) ^ (hasher(end_) << 1);
 }
 
 void Range::toStream(std::ostream &out) const { out << "RANGE (" << start_ << "-" << end_ << ')'; }

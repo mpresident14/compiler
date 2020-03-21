@@ -24,6 +24,8 @@ public:
   virtual bool isNullable() const = 0;
   virtual RgxType getType() const = 0;
   virtual bool operator==(const Regex& other) const = 0;
+  // TODO: Fix hash function
+  virtual size_t hashFn() const = 0;
 
   friend std::ostream& operator<<(std::ostream& out, const Regex& rgx) {
     rgx.toStream(out);
@@ -39,6 +41,15 @@ public:
   }
 };
 
+namespace std {
+  template<>
+  struct hash<RgxPtr> {
+    size_t operator()(const RgxPtr& rgx) const noexcept {
+      return static_cast<int>(rgx->getType()) ^ (rgx->hashFn() << 1);
+    }
+  };
+}
+
 class EmptySet : public Regex {
 public:
   bool isNullable() const override;
@@ -46,6 +57,7 @@ public:
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
+  size_t hashFn() const override;
 };
 
 class Epsilon : public Regex {
@@ -55,6 +67,7 @@ public:
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
+  size_t hashFn() const override;
 };
 
 class Character : public Regex {
@@ -65,8 +78,9 @@ public:
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
+  size_t hashFn() const override;
 
-
+private:
   char c_;
 };
 
@@ -76,6 +90,8 @@ public:
   RegexVector(RegexVector&& rVec, Regex* r);
   RegexVector(std::vector<RgxPtr>&& vec);
   bool operator==(const RegexVector& other) const;
+  size_t hashFn() const;
+
   std::vector<RgxPtr> rgxs_;
 };
 
@@ -86,9 +102,12 @@ public:
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
   void toStream(std::ostream& out) const override;
 
+  friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
+private:
   RegexVector rVec_;
 };
 
@@ -100,9 +119,12 @@ public:
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
   void toStream(std::ostream& out) const override;
 
+  friend RgxPtr makeConcat(RgxPtr r1, RgxPtr r2);
 
+private:
   RegexVector rVec_;
 };
 
@@ -114,9 +136,10 @@ public:
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
   void toStream(std::ostream& out) const override;
 
-
+private:
   RgxPtr rgx_;
 };
 
@@ -128,9 +151,13 @@ public:
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
   void toStream(std::ostream& out) const override;
 
+  friend RgxPtr makeNot(RgxPtr r);
+  friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
+private:
   RgxPtr rgx_;
 };
 
@@ -141,9 +168,10 @@ public:
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
   bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
   void toStream(std::ostream& out) const override;
 
-
+private:
   char start_;
   char end_;
 };

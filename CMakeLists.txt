@@ -19,7 +19,7 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I . -I ./src")
 
 # The following folder will be included
-include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test")
 
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp)
