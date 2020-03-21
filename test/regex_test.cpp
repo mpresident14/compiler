@@ -23,8 +23,6 @@ void testGetDeriv_character() {
 
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
-
-  delete r1;
 }
 
 void testGetDeriv_alt() {
@@ -49,9 +47,6 @@ void testGetDeriv_concat() {
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
   TESTER.assertEquals(*r2, *r2->getDeriv('a'));
   TESTER.assertEquals(Epsilon(), *r2->getDeriv('c'));
-
-  delete r1;
-  delete r2;
 }
 
 void testGetDeriv_star() {
@@ -59,8 +54,6 @@ void testGetDeriv_star() {
 
   TESTER.assertEquals(*r1, *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
-
-  delete r1;
 }
 
 void testGetDeriv_not() {
@@ -68,8 +61,6 @@ void testGetDeriv_not() {
 
   TESTER.assertEquals(Not(new Epsilon()), *r1->getDeriv('a'));
   TESTER.assertEquals(Not(new EmptySet()), *r1->getDeriv('b'));
-
-  delete r1;
 }
 
 void testGetDeriv_range() {
@@ -77,17 +68,15 @@ void testGetDeriv_range() {
 
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('a'));
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('7'));
-
-  delete r1;
 }
 
 int main(int, char**) {
   testGetDeriv_character();
-  // testGetDeriv_alt();
-  // testGetDeriv_concat();
-  // testGetDeriv_star();
-  // testGetDeriv_not();
-  // testGetDeriv_range();
+  testGetDeriv_alt();
+  testGetDeriv_concat();
+  testGetDeriv_star();
+  testGetDeriv_not();
+  testGetDeriv_range();
 
   return 0;
 }
