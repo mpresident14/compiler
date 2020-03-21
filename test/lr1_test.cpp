@@ -348,7 +348,7 @@ void testTryReduce_equalPrecedence_leftAssoc() {
 }
 
 void testShiftReduce() {
-  DFA_t dfa = buildDFA();
+  DFA_t dfa = buildParserDFA();
   auto expr0 = parse(dfa, { StackObj{ new int(1), Symbol::INT, Concrete::NONE } });
   // 1 + 2
   auto expr1 = parse(dfa,

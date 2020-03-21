@@ -14,7 +14,7 @@ using namespace prez;
 
 
 UnitTest TESTER = UnitTest::createTester();
-DFA_t dfa = buildDFA();
+DFA_t dfa = buildParserDFA();
 
 void testGetDeriv_character() {
   auto r1 = parse(dfa, lex("a"));

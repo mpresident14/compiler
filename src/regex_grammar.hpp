@@ -14,19 +14,20 @@
  * GRAMMAR *
  ***********/
 
-/* Regex {Regex}
+/* Regex { Regex }
  * Regex := Alts                             { Alt($0) }
  *        | Concats                          { Concat($0) }
  *        | Regex STAR                       { Star($0) }
- *        | CARET REGEX                      { Not($1) }
+ *        | CARET Regex                      { Not($1) }
  *        | LBRACKET CHAR DASH CHAR RBRACKET { Range($1, $3) }
+ *        | LPAREN Regex RPAREN              { $1 }
  *        | CHAR                             { Character($0) }
  *
- * Alts {RegexVector}
+ * Alts { RegexVector }
  * Alts := Regex BAR Regex { RegexVector($0, $2) }
  *       | Alts BAR Regex  { RegexVector($0, $2) }
  *
- * Concats {RegexVector}
+ * Concats { RegexVector }
  * Concats := Regex Regex   { RegexVector($0, $2) }
  *          | Concats Regex { RegexVector($0, $2) }
  *
@@ -45,6 +46,8 @@ enum class Symbol {
   CARET,
   LBRACKET,
   RBRACKET,
+  LPAREN,
+  RPAREN,
   DASH,
   CHAR,
   EPSILON
@@ -57,6 +60,7 @@ enum class Concrete {
   RSTAR,
   RNOT,
   RRANGE,
+  RGROUP,
   RCHAR,
   AREGEX,
   AALT,
@@ -66,16 +70,19 @@ enum class Concrete {
 };
 enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
-constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
-constexpr size_t tokenPrecedence[] = { 1, 5, 3, 7, 7, 0, 4 };
+constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
+constexpr size_t tokenPrecedence[] = { 1, 5, 3, 7, 7, 8, 8, 0, 4 };
 constexpr Associativity tokenAssoc[] = { Associativity::LEFT,
   Associativity::LEFT,
   Associativity::LEFT,
   Associativity::NON,
   Associativity::NON,
   Associativity::NON,
-  Associativity::UNSPECIFIED };
+  Associativity::NON,
+  Associativity::NON,
+  Associativity::LEFT };
 constexpr Symbol concreteToSymbol[] = { Symbol::S,
+  Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
@@ -119,6 +126,12 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::RBRACKET:
       out << "RBRACKET";
       break;
+    case Symbol::LPAREN:
+      out << "LPAREN";
+      break;
+    case Symbol::RPAREN:
+      out << "RPAREN";
+      break;
     case Symbol::DASH:
       out << "DASH";
       break;
@@ -151,6 +164,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
       break;
     case Concrete::RRANGE:
       out << "RRANGE";
+      break;
+    case Concrete::RGROUP:
+      out << "RGROUP";
       break;
     case Concrete::RCHAR:
       out << "RCHAR";
@@ -290,6 +306,8 @@ inline void* constructObj(Concrete type, StackObj* args) {
       return new Not((Regex*)args[1].obj);
     case Concrete::RRANGE:
       return new Range(*(char*)args[1].obj, *(char*)args[3].obj);
+    case Concrete::RGROUP:
+      return args[1].obj;
     case Concrete::RCHAR:
       return new Character(*(char*)args[0].obj);
     case Concrete::AREGEX:
@@ -322,6 +340,7 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
           GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
           GrammarRule{ Concrete::RRANGE,
               { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
+           GrammarRule{ Concrete::RGROUP, { Symbol::LPAREN, Symbol::REGEX, Symbol::RPAREN } },
           GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
       } },
   { Symbol::ALTS,

@@ -32,6 +32,12 @@ std::vector<StackObj> lex(const std::string& input) {
       case ']':
         tokens.push_back(datalessObj(Symbol::RBRACKET));
         break;
+      case '(':
+        tokens.push_back(datalessObj(Symbol::LPAREN));
+        break;
+      case ')':
+        tokens.push_back(datalessObj(Symbol::RPAREN));
+        break;
       case '-':
         tokens.push_back(datalessObj(Symbol::DASH));
         break;

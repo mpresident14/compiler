@@ -14,14 +14,8 @@ using namespace prez;
 // using namespace parsers;
 
 int main() {
-  DFA_t dfa = buildDFA();
-  unique_ptr<Regex> r1 = parse(dfa, lex("a|b*c"));
-  cout << r1.get() << endl;
-
-  unique_ptr<Regex> r2 = parse(dfa, lex("ab*|c"));
-  cout << r2.get() << endl;
-
-  unique_ptr<Regex> r3 = parse(dfa, lex("^ab*|[a-z]"));
-  cout << r3.get() << endl;
+  DFA_t dfa = buildParserDFA();
+  unique_ptr<Regex> r = parse(dfa, lex("^a(b|c)c\\*|[a-z]"));
+  cout << r.get() << endl;
   return 0;
 }

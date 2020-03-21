@@ -141,7 +141,7 @@ DFA_t initDFA() {
 
 // TODO: We shouldn't have to build the DFA every time someone calls parse().
 // Instead, we should just hard code all the nodes after building the first time
-DFA_t buildDFA() {
+DFA_t buildParserDFA() {
   using namespace std;
 
   queue<const DFA_t::Node*> q;
@@ -228,7 +228,7 @@ Concrete tryReduce(const DFA_t::Node* node,
             rulePrecedence = getPrecedence(rulesLastToken);
           }
           // Unspecified precedence -> conflict! (Resolve by shifting)
-          if (rulePrecedence == 0 || shiftPrecedence == 0) {
+          if (rulePrecedence == 0 && shiftPrecedence == 0) {
             goto conflict;
           }
           // TODO: Handle nonassociativity
