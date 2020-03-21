@@ -34,14 +34,47 @@
  * */
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, STAR, CARET, LBRACKET, RBRACKET, DASH, CHAR, EPSILON };
+enum class Symbol {
+  S,
+  REGEX,
+  ALTS,
+  CONCATS,
+  STARTTOKENS,
+  BAR,
+  STAR,
+  CARET,
+  LBRACKET,
+  RBRACKET,
+  DASH,
+  CHAR,
+  EPSILON
+};
 /* The concrete types that symbols in the grammar can be */
-enum class Concrete { SCONC, RALT, RCONCAT, RSTAR, RNOT, RRANGE, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
+enum class Concrete {
+  SCONC,
+  RALT,
+  RCONCAT,
+  RSTAR,
+  RNOT,
+  RRANGE,
+  RCHAR,
+  AREGEX,
+  AALT,
+  CREGEX,
+  CCONCAT,
+  NONE
+};
 enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
 constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
 constexpr size_t tokenPrecedence[] = { 1, 5, 3, 7, 7, 0, 4 };
-constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::LEFT, Associativity::LEFT, Associativity::NON, Associativity::NON, Associativity::NON, Associativity::UNSPECIFIED };
+constexpr Associativity tokenAssoc[] = { Associativity::LEFT,
+  Associativity::LEFT,
+  Associativity::LEFT,
+  Associativity::NON,
+  Associativity::NON,
+  Associativity::NON,
+  Associativity::UNSPECIFIED };
 constexpr Symbol concreteToSymbol[] = { Symbol::S,
   Symbol::REGEX,
   Symbol::REGEX,
@@ -287,7 +320,8 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
           GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
           GrammarRule{ Concrete::RSTAR, { Symbol::REGEX, Symbol::STAR } },
           GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
-          GrammarRule{ Concrete::RRANGE, { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
+          GrammarRule{ Concrete::RRANGE,
+              { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
           GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
       } },
   { Symbol::ALTS,

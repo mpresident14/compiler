@@ -101,25 +101,25 @@ void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_->rgxs_; }
 /********
  * Star *
  ********/
-Star::Star(Regex* rgx) : rgx_(RgxPtr(rgx)) {}
+Star::Star(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
 Star::Star(RgxPtr rgx) : rgx_(rgx) {}
 
 bool Star::isNullable() const { return true; }
 RgxPtr Star::getDeriv(char c) const {
-  return make_shared<Concat>(new RegexVector(
-      vector<RgxPtr>{rgx_->getDeriv(c), make_shared<Star>(rgx_)}));
+  return make_shared<Concat>(
+      new RegexVector(vector<RgxPtr>{ rgx_->getDeriv(c), make_shared<Star>(rgx_) }));
 }
-void Star::toStream(ostream& out) const { out << "STAR (" << rgx_ << ')'; }
+void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
 
 
 /*******
  * Not *
  *******/
-Not::Not(Regex* rgx) : rgx_(RgxPtr(rgx)) {}
+Not::Not(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
 Not::Not(RgxPtr rgx) : rgx_(rgx) {}
 bool Not::isNullable() const { return !rgx_->isNullable(); }
 RgxPtr Not::getDeriv(char c) const { return make_shared<Not>(rgx_->getDeriv(c)); }
-void Not::toStream(ostream& out) const { out << "NOT (" << rgx_ << ')'; }
+void Not::toStream(ostream &out) const { out << "NOT (" << rgx_ << ')'; }
 
 
 /*********
@@ -133,6 +133,4 @@ RgxPtr Range::getDeriv(char c) const {
   }
   return make_shared<EmptySet>();
 }
-void Range::toStream(std::ostream& out) const {
-  out << "RANGE (" << start_ << "-" << end_ << ')';
-}
+void Range::toStream(std::ostream &out) const { out << "RANGE (" << start_ << "-" << end_ << ')'; }
