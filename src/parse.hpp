@@ -75,6 +75,8 @@ void epsilonTransition(RuleSet& ruleSet) {
     DFARule& rule = ruleQueue.front();
     auto iter = ruleSet.find(rule);
     // If rule is not yet in the set, add it
+
+    // TODO: Should we check for duplicate rules in the queue as well (like use a set and just pop with set.begin())
     if (iter == ruleSet.end()) {
       addRhses(ruleQueue, rule);
       ruleSet.insert(move(rule));
@@ -275,7 +277,7 @@ void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
   }
 }
 
-std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
+ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
   using namespace std;
 
   StackObj firstToken = inputTokens[0];
@@ -339,9 +341,9 @@ std::unique_ptr<ROOT_TYPE> parse(const DFA_t& dfa, const std::vector<StackObj>& 
 
   // Remove the actual grammar root from the fake root we encapsulated it with
   Start* start = (Start*)(stk[0].obj);
-  unique_ptr<ROOT_TYPE> root(start->r_);
+  ROOT_TYPE* rootPtr = start->r_;
   delete start;
-  return root;
+  return *rootPtr;
 }
 
 #endif

@@ -14,22 +14,25 @@
  * GRAMMAR *
  ***********/
 
-/* Regex { Regex }
- * Regex := Alts                             { Alt($0) }
- *        | Concats                          { Concat($0) }
- *        | Regex STAR                       { Star($0) }
- *        | CARET Regex                      { Not($1) }
- *        | LBRACKET CHAR DASH CHAR RBRACKET { Range($1, $3) }
+/* CHAR { char -> str[0] }
+ *
+ *
+ * Regex { Regex* }
+ * Regex := Alts                             { new Alt($0) }
+ *        | Concats                          { new Concat($0) }
+ *        | Regex STAR                       { new Star($0) }
+ *        | CARET Regex                      { new Not($1) }
+ *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
  *        | LPAREN Regex RPAREN              { $1 }
- *        | CHAR                             { Character($0) }
+ *        | CHAR                             { new Character($0) }
  *
- * Alts { RegexVector }
- * Alts := Regex BAR Regex { RegexVector($0, $2) }
- *       | Alts BAR Regex  { RegexVector($0, $2) }
+ * Alts { RegexVector* }
+ * Alts := Regex BAR Regex { new RegexVector($0, $2) }
+ *       | Alts BAR Regex  { new RegexVector($0, $2) }
  *
- * Concats { RegexVector }
- * Concats := Regex Regex   { RegexVector($0, $2) }
- *          | Concats Regex { RegexVector($0, $2) }
+ * Concats { RegexVector* }
+ * Concats := Regex Regex   { new RegexVector($0, $1) }
+ *          | Concats Regex { new RegexVector($0, $1) }
  *
  *
  * */
@@ -245,7 +248,7 @@ constexpr size_t ruleOverridePrecedence(const DFARule& rule) {
 
 
 const Symbol ROOT_SYM = Symbol::REGEX;
-using ROOT_TYPE = Regex;
+using ROOT_TYPE = Regex*;
 
 
 /* S
@@ -277,13 +280,13 @@ struct StackObj {
 inline void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::REGEX:
-      delete (Regex*)obj;
+      delete (Regex**)obj;
       break;
     case Symbol::ALTS:
-      delete (RegexVector*)obj;
+      delete (RegexVector**)obj;
       break;
     case Symbol::CONCATS:
-      delete (RegexVector*)obj;
+      delete (RegexVector**)obj;
       break;
     case Symbol::CHAR:
       delete (char*)obj;
@@ -297,27 +300,27 @@ inline void StackObj::deleteObj() const noexcept {
 inline void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::RALT:
-      return new Alt((RegexVector*)args[0].obj);
+      return new Regex*(new Alt(*(RegexVector**)args[0].obj));
     case Concrete::RCONCAT:
-      return new Concat((RegexVector*)args[0].obj);
+      return new Regex*(new Concat(*(RegexVector**)args[0].obj));
     case Concrete::RSTAR:
-      return new Star((Regex*)args[0].obj);
+      return new Regex*(new Star(*(Regex**)args[0].obj));
     case Concrete::RNOT:
-      return new Not((Regex*)args[1].obj);
+      return new Regex*(new Not(*(Regex**)args[1].obj));
     case Concrete::RRANGE:
-      return new Range(*(char*)args[1].obj, *(char*)args[3].obj);
+      return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
     case Concrete::RGROUP:
-      return args[1].obj;
+      return new Regex*(*(Regex**)args[1].obj);
     case Concrete::RCHAR:
-      return new Character(*(char*)args[0].obj);
+      return new Regex*(new Character(*(char*)args[0].obj));
     case Concrete::AREGEX:
-      return new RegexVector((Regex*)args[0].obj, (Regex*)args[2].obj);
+      return new RegexVector*(new RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
     case Concrete::AALT:
-      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[2].obj);
+      return new RegexVector*(new RegexVector(*(RegexVector**)args[0].obj, *(Regex**)args[2].obj));
     case Concrete::CREGEX:
-      return new RegexVector((Regex*)args[0].obj, (Regex*)args[1].obj);
+      return new RegexVector*(new RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
     case Concrete::CCONCAT:
-      return new RegexVector((RegexVector*)args[0].obj, (Regex*)args[1].obj);
+      return new RegexVector*(new RegexVector(*(RegexVector**)args[0].obj, *(Regex**)args[1].obj));
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*)args[0].obj);
     default:

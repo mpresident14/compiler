@@ -15,7 +15,8 @@ using namespace prez;
 
 int main() {
   DFA_t dfa = buildParserDFA();
-  unique_ptr<Regex> r = parse(dfa, lex("^a(b|c)c\\*|[a-z]"));
-  cout << r.get() << endl;
+  Regex* r = parse(dfa, lex("a"));
+  cout << r << endl;
+  delete r;
   return 0;
 }
