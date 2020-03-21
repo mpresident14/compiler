@@ -124,6 +124,19 @@ null_first_test/fast:
 .PHONY : null_first_test/fast
 
 #=============================================================================
+# Target rules for targets named lr1_test
+
+# Build rule for target.
+lr1_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 lr1_test
+.PHONY : lr1_test
+
+# fast build rule for target.
+lr1_test/fast:
+	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/build
+.PHONY : lr1_test/fast
+
+#=============================================================================
 # Target rules for targets named dfa_test
 
 # Build rule for target.
@@ -150,17 +163,17 @@ main/fast:
 .PHONY : main/fast
 
 #=============================================================================
-# Target rules for targets named lr1_test
+# Target rules for targets named regex_test
 
 # Build rule for target.
-lr1_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 lr1_test
-.PHONY : lr1_test
+regex_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 regex_test
+.PHONY : regex_test
 
 # fast build rule for target.
-lr1_test/fast:
-	$(MAKE) -f CMakeFiles/lr1_test.dir/build.make CMakeFiles/lr1_test.dir/build
-.PHONY : lr1_test/fast
+regex_test/fast:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/build
+.PHONY : regex_test/fast
 
 src/main.o: src/main.cpp.o
 
@@ -196,6 +209,7 @@ src/regex.o: src/regex.cpp.o
 # target to build an object file
 src/regex.cpp.o:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.o
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex.cpp.o
 .PHONY : src/regex.cpp.o
 
 src/regex.i: src/regex.cpp.i
@@ -205,6 +219,7 @@ src/regex.i: src/regex.cpp.i
 # target to preprocess a source file
 src/regex.cpp.i:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.i
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex.cpp.i
 .PHONY : src/regex.cpp.i
 
 src/regex.s: src/regex.cpp.s
@@ -214,6 +229,7 @@ src/regex.s: src/regex.cpp.s
 # target to generate assembly for a file
 src/regex.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.s
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex.cpp.s
 .PHONY : src/regex.cpp.s
 
 src/regex_lexer.o: src/regex_lexer.cpp.o
@@ -223,6 +239,7 @@ src/regex_lexer.o: src/regex_lexer.cpp.o
 # target to build an object file
 src/regex_lexer.cpp.o:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.o
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_lexer.cpp.o
 .PHONY : src/regex_lexer.cpp.o
 
 src/regex_lexer.i: src/regex_lexer.cpp.i
@@ -232,6 +249,7 @@ src/regex_lexer.i: src/regex_lexer.cpp.i
 # target to preprocess a source file
 src/regex_lexer.cpp.i:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.i
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_lexer.cpp.i
 .PHONY : src/regex_lexer.cpp.i
 
 src/regex_lexer.s: src/regex_lexer.cpp.s
@@ -241,6 +259,7 @@ src/regex_lexer.s: src/regex_lexer.cpp.s
 # target to generate assembly for a file
 src/regex_lexer.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex_lexer.cpp.s
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_lexer.cpp.s
 .PHONY : src/regex_lexer.cpp.s
 
 test/dfa_test.o: test/dfa_test.cpp.o
@@ -324,6 +343,33 @@ test/null_first_test.cpp.s:
 	$(MAKE) -f CMakeFiles/null_first_test.dir/build.make CMakeFiles/null_first_test.dir/test/null_first_test.cpp.s
 .PHONY : test/null_first_test.cpp.s
 
+test/regex_test.o: test/regex_test.cpp.o
+
+.PHONY : test/regex_test.o
+
+# target to build an object file
+test/regex_test.cpp.o:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/test/regex_test.cpp.o
+.PHONY : test/regex_test.cpp.o
+
+test/regex_test.i: test/regex_test.cpp.i
+
+.PHONY : test/regex_test.i
+
+# target to preprocess a source file
+test/regex_test.cpp.i:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/test/regex_test.cpp.i
+.PHONY : test/regex_test.cpp.i
+
+test/regex_test.s: test/regex_test.cpp.s
+
+.PHONY : test/regex_test.s
+
+# target to generate assembly for a file
+test/regex_test.cpp.s:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/test/regex_test.cpp.s
+.PHONY : test/regex_test.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -331,11 +377,12 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
+	@echo "... edit_cache"
 	@echo "... null_first_test"
+	@echo "... lr1_test"
 	@echo "... dfa_test"
 	@echo "... main"
-	@echo "... edit_cache"
-	@echo "... lr1_test"
+	@echo "... regex_test"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
@@ -354,6 +401,9 @@ help:
 	@echo "... test/null_first_test.o"
 	@echo "... test/null_first_test.i"
 	@echo "... test/null_first_test.s"
+	@echo "... test/regex_test.o"
+	@echo "... test/regex_test.i"
+	@echo "... test/regex_test.s"
 .PHONY : help
 
 

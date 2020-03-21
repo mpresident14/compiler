@@ -1,8 +1,133 @@
 #include "regex.hpp"
 
+#include <algorithm>
+#include <numeric>
+
 using namespace std;
-// TODO: Implement derivative optimization (use enum and getType())
-//   (see https://github.com/hmc-cs132-spring2020/hw1-derivs-mpresident14/blob/develop/Deriv.hs)
+
+
+/***************************
+ * Derivative Optimization *
+ ***************************/
+
+RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
+  RgxType r1Type = r1->getType();
+  RgxType r2Type = r2->getType();
+  // ∅ r2 = ∅
+  // r1 ∅ = ∅
+  if (r1Type == RgxType::EMPTYSET || r2Type == RgxType::EMPTYSET) {
+    return make_shared<EmptySet>();
+  }
+  // ε r2 = r2
+  if (r1Type == RgxType::EPSILON) {
+    return r2;
+  }
+  // r1 ε = r1
+  if (r2Type == RgxType::EPSILON) {
+    return r1;
+  }
+
+  if (r1Type == RgxType::CONCAT) {
+    vector<RgxPtr>& r1Vec = static_cast<Concat*>(r1.get())->rVec_->rgxs_;
+    vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
+    // [r1s] [r2s] = [r1s + r2s]
+    if (r2Type == RgxType::CONCAT) {
+      vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_->rgxs_;
+      copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
+      return make_shared<Concat>(new RegexVector(move(newVec)));
+    }
+    // [r1s] r2 = [r1s + r2]
+    newVec.push_back(r2);
+    return make_shared<Concat>(new RegexVector(move(newVec)));
+  }
+  // r1 [r2s] = [r1 + r2s]
+  if (r2Type == RgxType::CONCAT) {
+    vector<RgxPtr> newVec = { r1 };
+    vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_->rgxs_;
+    copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
+    return make_shared<Concat>(new RegexVector(move(newVec)));
+  }
+
+  return make_shared<Concat>(new RegexVector({ r1, r2 }));
+}
+
+
+RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
+  RgxType r1Type = r1->getType();
+  RgxType r2Type = r2->getType();
+  // ^∅ | r2 = ^∅
+  // r1 | ^∅ = ^∅
+  if ( (r1Type == RgxType::NOT && static_cast<Not*>(r1.get())->rgx_->getType() == RgxType::EMPTYSET)
+        || (r2Type == RgxType::NOT && static_cast<Not*>(r2.get())->rgx_->getType() == RgxType::EMPTYSET) ) {
+    return make_shared<Not>(new EmptySet);
+  }
+  // ∅ | r2 = r2
+  if (r1Type == RgxType::EMPTYSET) {
+    return r2;
+  }
+  // r1 | ∅ = r1
+  if (r2Type == RgxType::EMPTYSET) {
+    return r1;
+  }
+
+  if (r1Type == RgxType::ALT) {
+    vector<RgxPtr>& r1Vec = static_cast<Alt*>(r1.get())->rVec_->rgxs_;
+    vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
+    // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
+    if (r2Type == RgxType::ALT) {
+      vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_->rgxs_;
+      copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
+      return make_shared<Alt>(new RegexVector(move(newVec)));
+    }
+    // Alt [r1s] | r2 = Alt [r1s + r2]
+    newVec.push_back(r2);
+    return make_shared<Alt>(new RegexVector(move(newVec)));
+  }
+  // r1 | Alt [r2s] = Alt [r1 + r2s]
+  if (r2Type == RgxType::ALT) {
+    vector<RgxPtr> newVec = { r1 };
+    vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_->rgxs_;
+    copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
+    return make_shared<Alt>(new RegexVector(move(newVec)));
+  }
+
+  // r | r = r
+  if (r1 == r2) {
+    return r1;
+  }
+
+  return make_shared<Alt>(new RegexVector({ r1, r2 }));
+}
+
+
+RgxPtr makeConcats(vector<RgxPtr>&& rs) {
+  return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
+}
+
+RgxPtr makeAlts(vector<RgxPtr>&& rs) {
+  return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeAlt);
+}
+
+RgxPtr makeStar(RgxPtr r) {
+  switch(r->getType()) {
+    case RgxType::STAR:
+      return r;
+    case RgxType::EPSILON:
+      return r;
+    case RgxType::EMPTYSET:
+      return make_shared<Epsilon>();
+    default:
+      return make_shared<Star>(r);
+  }
+}
+
+RgxPtr makeNot(RgxPtr r) {
+  if (r->getType() == RgxType::NOT) {
+      return static_cast<Not*>(r.get())->rgx_;
+  }
+  return make_shared<Not>(r);
+}
+
 
 bool EmptySet::isNullable() const { return false; }
 RgxPtr EmptySet::getDeriv(char) const { return make_shared<EmptySet>(); }
@@ -78,7 +203,7 @@ RgxPtr Alt::getDeriv(char c) const {
       rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), back_inserter(derivs), [c](const RgxPtr rPtr) {
         return rPtr->getDeriv(c);
       });
-  return make_shared<Alt>(new RegexVector(move(derivs)));
+  return makeAlts(move(derivs));
 }
 
 RgxType Alt::getType() const { return RgxType::ALT; }
@@ -112,11 +237,12 @@ RgxPtr Concat::getDeriv(char c) const {
 
   if (rgxs[0]->isNullable()) {
     vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
-    return make_shared<Alt>(new RegexVector({ Concat(new RegexVector(move(rest))).getDeriv(c),
-        make_shared<Concat>(new RegexVector(move(derivAndRest))) }));
+    return makeAlt(
+        Concat(new RegexVector(move(rest))).getDeriv(c),
+        makeConcats(move(derivAndRest)));
   }
 
-  return make_shared<Concat>(new RegexVector(move(derivAndRest)));
+  return makeConcats(move(derivAndRest));
 }
 
 RgxType Concat::getType() const { return RgxType::CONCAT; }
@@ -136,8 +262,7 @@ Star::Star(RgxPtr rgx) : rgx_(rgx) {}
 
 bool Star::isNullable() const { return true; }
 RgxPtr Star::getDeriv(char c) const {
-  return make_shared<Concat>(
-      new RegexVector(vector<RgxPtr>{ rgx_->getDeriv(c), make_shared<Star>(rgx_) }));
+  return makeConcat(rgx_->getDeriv(c), makeStar(rgx_));
 }
 
 RgxType Star::getType() const { return RgxType::STAR; }
@@ -155,7 +280,7 @@ void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
 Not::Not(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
 Not::Not(RgxPtr rgx) : rgx_(rgx) {}
 bool Not::isNullable() const { return !rgx_->isNullable(); }
-RgxPtr Not::getDeriv(char c) const { return make_shared<Not>(rgx_->getDeriv(c)); }
+RgxPtr Not::getDeriv(char c) const { return makeNot(rgx_->getDeriv(c)); }
 RgxType Not::getType() const { return RgxType::NOT; }
 
 bool Not::operator==(const Regex &other) const {

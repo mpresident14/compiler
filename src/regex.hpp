@@ -9,8 +9,7 @@
 
 #include <prez/print_stuff.hpp>
 
-// TODO: Implement derivative optimization (use enum and getType())
-//   (see https://github.com/hmc-cs132-spring2020/hw1-derivs-mpresident14/blob/develop/Deriv.hs)
+// TODO: add AND operator
 
 enum class RgxType { EMPTYSET, EPSILON, CHARACTER, ALT, CONCAT, STAR, NOT, RANGE };
 
@@ -26,13 +25,17 @@ public:
   virtual RgxType getType() const = 0;
   virtual bool operator==(const Regex& other) const = 0;
 
-  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
-    rgx->toStream(out);
+  friend std::ostream& operator<<(std::ostream& out, const Regex& rgx) {
+    rgx.toStream(out);
     return out;
   }
 
+  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
+    return out << *rgx;
+  }
+
   friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
-    return out << rgx.get();
+    return out << *rgx;
   }
 };
 
@@ -63,7 +66,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   char c_;
 };
 
@@ -86,7 +89,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   RegexVector* rVec_;
 };
 
@@ -101,7 +104,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   RegexVector* rVec_;
 };
 
@@ -115,7 +118,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   RgxPtr rgx_;
 };
 
@@ -129,7 +132,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   RgxPtr rgx_;
 };
 
@@ -142,7 +145,7 @@ public:
   bool operator==(const Regex& other) const override;
   void toStream(std::ostream& out) const override;
 
-private:
+
   char start_;
   char end_;
 };
