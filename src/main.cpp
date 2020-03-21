@@ -29,5 +29,14 @@ int main() {
           StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
           StackObj{ new char('c'), Symbol::CHAR, Concrete::NONE } });
   cout << r2.get() << endl;
+
+  unique_ptr<Regex> r3 = parse(dfa,
+      { StackObj{ nullptr, Symbol::CARET, Concrete::NONE },
+          StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
+          StackObj{ new char('b'), Symbol::CHAR, Concrete::NONE },
+          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
+          StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
+          StackObj{ new char('c'), Symbol::CHAR, Concrete::NONE } });
+  cout << r3.get() << endl;
   return 0;
 }

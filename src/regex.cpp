@@ -97,6 +97,10 @@ RgxPtr Concat::getDeriv(char c) const {
 }
 void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_->rgxs_; }
 
+
+/********
+ * Star *
+ ********/
 Star::Star(Regex* rgx) : rgx_(RgxPtr(rgx)) {}
 Star::Star(RgxPtr rgx) : rgx_(rgx) {}
 
@@ -107,8 +111,12 @@ RgxPtr Star::getDeriv(char c) const {
 }
 void Star::toStream(ostream& out) const { out << "STAR (" << rgx_ << ")"; }
 
-// Not::Not(Regex* rgx) : rgx_{move(rgx)} {}
-// // ~Not() { delete rgx_; }
-// bool Not::isNullable() const { return !rgx_->isNullable(); }
-// Regex* Not::getDeriv(char c) const { return make_shared<Not>(Not(rgx_->getDeriv(c))); }
-// void Not::toStream(ostream& out) const { out << "NOT (" << rgx_ << ")"; }
+
+/*******
+ * Not *
+ *******/
+Not::Not(Regex* rgx) : rgx_(RgxPtr(rgx)) {}
+Not::Not(RgxPtr rgx) : rgx_(rgx) {}
+bool Not::isNullable() const { return !rgx_->isNullable(); }
+RgxPtr Not::getDeriv(char c) const { return make_shared<Not>(rgx_->getDeriv(c)); }
+void Not::toStream(ostream& out) const { out << "NOT (" << rgx_ << ")"; }

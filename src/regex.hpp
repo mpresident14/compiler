@@ -103,16 +103,16 @@ private:
   RgxPtr rgx_;
 };
 
-// class Not : public Regex {
-// public:
-//   Not(Regex* rgx);
-//   // ~Not() { delete rgx_; }
-//   bool isNullable() const override;
-//   Regex* getDeriv(char c) const override;
-//   void toStream(std::ostream& out) const override;
+class Not : public Regex {
+public:
+  Not(Regex* rgx);
+  Not(RgxPtr rgx);
+  bool isNullable() const override;
+  RgxPtr getDeriv(char c) const override;
+  void toStream(std::ostream& out) const override;
 
-// private:
-//   Regex* rgx_;
-// };
+private:
+  RgxPtr rgx_;
+};
 
 #endif
