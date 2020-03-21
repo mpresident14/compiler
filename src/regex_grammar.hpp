@@ -15,11 +15,12 @@
  ***********/
 
 /* Regex {Regex}
- * Regex := Alts        { Alt($0) }
- *        | Concats     { Concat($0) }
- *        | Regex STAR  { Star($0) }
- *        | CARET REGEX { Not($1) }
- *        | CHAR        { Character($0) }
+ * Regex := Alts                             { Alt($0) }
+ *        | Concats                          { Concat($0) }
+ *        | Regex STAR                       { Star($0) }
+ *        | CARET REGEX                      { Not($1) }
+ *        | LBRACKET CHAR DASH CHAR RBRACKET { Range($1, $3) }
+ *        | CHAR                             { Character($0) }
  *
  * Alts {RegexVector}
  * Alts := Regex BAR Regex { RegexVector($0, $2) }
@@ -33,15 +34,16 @@
  * */
 
 /* Terminals and nonterminals in the grammar */
-enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, STAR, CARET, CHAR, EPSILON };
+enum class Symbol { S, REGEX, ALTS, CONCATS, STARTTOKENS, BAR, STAR, CARET, LBRACKET, RBRACKET, DASH, CHAR, EPSILON };
 /* The concrete types that symbols in the grammar can be */
-enum class Concrete { SCONC, RALT, RCONCAT, RSTAR, RNOT, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
+enum class Concrete { SCONC, RALT, RCONCAT, RSTAR, RNOT, RRANGE, RCHAR, AREGEX, AALT, CREGEX, CCONCAT, NONE };
 enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
-constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
-constexpr size_t tokenPrecedence[] = { 1, 5, 3, 4 };
-constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::LEFT, Associativity::LEFT, Associativity::UNSPECIFIED };
+constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
+constexpr size_t tokenPrecedence[] = { 1, 5, 3, 7, 7, 0, 4 };
+constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::LEFT, Associativity::LEFT, Associativity::NON, Associativity::NON, Associativity::NON, Associativity::UNSPECIFIED };
 constexpr Symbol concreteToSymbol[] = { Symbol::S,
+  Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
   Symbol::REGEX,
@@ -78,6 +80,15 @@ inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
     case Symbol::CARET:
       out << "CARET";
       break;
+    case Symbol::LBRACKET:
+      out << "LBRACKET";
+      break;
+    case Symbol::RBRACKET:
+      out << "RBRACKET";
+      break;
+    case Symbol::DASH:
+      out << "DASH";
+      break;
     case Symbol::CHAR:
       out << "CHAR";
       break;
@@ -104,6 +115,9 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
       break;
     case Concrete::RNOT:
       out << "RNOT";
+      break;
+    case Concrete::RRANGE:
+      out << "RRANGE";
       break;
     case Concrete::RCHAR:
       out << "RCHAR";
@@ -241,6 +255,8 @@ void* constructObj(Concrete type, StackObj* args) {
       return new Star((Regex*)args[0].obj);
     case Concrete::RNOT:
       return new Not((Regex*)args[1].obj);
+    case Concrete::RRANGE:
+      return new Range(*(char*)args[1].obj, *(char*)args[3].obj);
     case Concrete::RCHAR:
       return new Character(*(char*)args[0].obj);
     case Concrete::AREGEX:
@@ -271,6 +287,7 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
           GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
           GrammarRule{ Concrete::RSTAR, { Symbol::REGEX, Symbol::STAR } },
           GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
+          GrammarRule{ Concrete::RRANGE, { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
           GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
       } },
   { Symbol::ALTS,

@@ -115,4 +115,16 @@ private:
   RgxPtr rgx_;
 };
 
+class Range : public Regex {
+public:
+  Range(char start, char end);
+  bool isNullable() const override;
+  RgxPtr getDeriv(char c) const override;
+  void toStream(std::ostream& out) const override;
+
+private:
+  char start_;
+  char end_;
+};
+
 #endif

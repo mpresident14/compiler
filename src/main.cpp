@@ -36,7 +36,11 @@ int main() {
           StackObj{ new char('b'), Symbol::CHAR, Concrete::NONE },
           StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
           StackObj{ nullptr, Symbol::BAR, Concrete::NONE },
-          StackObj{ new char('c'), Symbol::CHAR, Concrete::NONE } });
+          StackObj{ nullptr, Symbol::LBRACKET, Concrete::NONE },
+          StackObj{ new char('a'), Symbol::CHAR, Concrete::NONE },
+          StackObj{ nullptr, Symbol::DASH, Concrete::NONE },
+          StackObj{ new char('z'), Symbol::CHAR, Concrete::NONE },
+          StackObj{ nullptr, Symbol::RBRACKET, Concrete::NONE } });
   cout << r3.get() << endl;
   return 0;
 }
