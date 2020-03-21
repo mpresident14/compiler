@@ -306,9 +306,9 @@ ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
       for (size_t j = 0; j < stkSize - reduceStart; ++j) {
         // Tokens are not encapsulated within the underlying object, so the
         // pointers need to be deleted
-        if (isToken(stk.back().symbol)) {
-          stk.back().deleteObj();
-        }
+        // if (isToken(stk.back().symbol)) {
+        //   stk.back().deleteObj();
+        // }
         stk.pop_back();
       }
       stk.push_back(newObj);
@@ -341,9 +341,9 @@ ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
 
   // Remove the actual grammar root from the fake root we encapsulated it with
   Start* start = (Start*)(stk[0].obj);
-  ROOT_TYPE* rootPtr = start->r_;
+  ROOT_TYPE root = *start->r_;
   delete start;
-  return *rootPtr;
+  return root;
 }
 
 #endif

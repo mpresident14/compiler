@@ -73,7 +73,7 @@ public:
 struct RegexVector {
 public:
   RegexVector(Regex* r1, Regex* r2);
-  RegexVector(RegexVector* rVec, Regex* r);
+  RegexVector(RegexVector&& rVec, Regex* r);
   RegexVector(std::vector<RgxPtr>&& vec);
   bool operator==(const RegexVector& other) const;
   std::vector<RgxPtr> rgxs_;
@@ -81,8 +81,7 @@ public:
 
 class Alt : public Regex {
 public:
-  Alt(RegexVector* rVec);
-  ~Alt();
+  Alt(RegexVector&& rVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
@@ -90,13 +89,12 @@ public:
   void toStream(std::ostream& out) const override;
 
 
-  RegexVector* rVec_;
+  RegexVector rVec_;
 };
 
 class Concat : public Regex {
 public:
-  Concat(RegexVector* rVec);
-  ~Concat();
+  Concat(RegexVector&& rVec);
   bool isNullable() const override;
   // TODO: Make this better
   RgxPtr getDeriv(char c) const override;
@@ -105,7 +103,7 @@ public:
   void toStream(std::ostream& out) const override;
 
 
-  RegexVector* rVec_;
+  RegexVector rVec_;
 };
 
 class Star : public Regex {

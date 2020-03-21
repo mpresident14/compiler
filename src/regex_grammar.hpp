@@ -14,25 +14,25 @@
  * GRAMMAR *
  ***********/
 
-/* CHAR { char -> str[0] }
+/* CHAR { char :: str[0] } <DELETER OPTIONAL>
  *
  *
- * Regex { Regex* }
- * Regex := Alts                             { new Alt($0) }
- *        | Concats                          { new Concat($0) }
+ * Regex { Regex* } { delete $; }
+ * Regex := Alts                             { new Alt(std::move($0)) }
+ *        | Concats                          { new Concat(std::move($0)) }
  *        | Regex STAR                       { new Star($0) }
  *        | CARET Regex                      { new Not($1) }
  *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
  *        | LPAREN Regex RPAREN              { $1 }
  *        | CHAR                             { new Character($0) }
  *
- * Alts { RegexVector* }
- * Alts := Regex BAR Regex { new RegexVector($0, $2) }
- *       | Alts BAR Regex  { new RegexVector($0, $2) }
+ * Alts { RegexVector }
+ * Alts := Regex BAR Regex { RegexVector($0, $2) }
+ *       | Alts BAR Regex  { RegexVector(std::move($0), $2) }
  *
  * Concats { RegexVector* }
- * Concats := Regex Regex   { new RegexVector($0, $1) }
- *          | Concats Regex { new RegexVector($0, $1) }
+ * Concats := Regex Regex   { RegexVector($0, $1) }
+ *          | Concats Regex { RegexVector(std::move($0), $1) }
  *
  *
  * */
@@ -258,7 +258,7 @@ using ROOT_TYPE = Regex*;
  * */
 struct Start {
   Start(ROOT_TYPE* r) : r_(r) {}
-  // No deleter since we return the encapsulated pointer
+  ~Start() { delete r_; }
   Concrete getType() const { return Concrete::SCONC; }
   ROOT_TYPE* r_;
 };
@@ -269,7 +269,7 @@ struct Start {
  *****************************/
 
 struct StackObj {
-  // No deleter since pointers will be passed to the client
+  // Can't delete from here since it is a void*, see constructObj
   void* obj;
   Symbol symbol;
   Concrete type;
@@ -277,16 +277,25 @@ struct StackObj {
   void deleteObj() const noexcept;
 };
 
+
+/* Apply this automatically if the type to which the symbol refers to is a raw pointer
+ * since it is such a common thing to want
+ * */
+template <typename T>
+inline void ptrDeleter(T* ptr) { delete ptr; }
+
+
 inline void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::REGEX:
+      ptrDeleter(*(Regex**)obj);
       delete (Regex**)obj;
       break;
     case Symbol::ALTS:
-      delete (RegexVector**)obj;
+      delete (RegexVector*)obj;
       break;
     case Symbol::CONCATS:
-      delete (RegexVector**)obj;
+      delete (RegexVector*)obj;
       break;
     case Symbol::CHAR:
       delete (char*)obj;
@@ -298,29 +307,57 @@ inline void StackObj::deleteObj() const noexcept {
 
 // TODO: Remove throw and make noexcept when done
 inline void* constructObj(Concrete type, StackObj* args) {
+  void *p;
   switch (type) {
     case Concrete::RALT:
-      return new Regex*(new Alt(*(RegexVector**)args[0].obj));
+      p = new Regex*(new Alt(std::move(*(RegexVector*)args[0].obj)));
+      delete (RegexVector*)args[0].obj;
+      return p;
     case Concrete::RCONCAT:
-      return new Regex*(new Concat(*(RegexVector**)args[0].obj));
+      p = new Regex*(new Concat(std::move(*(RegexVector*)args[0].obj)));
+      delete (RegexVector*)args[0].obj;
+      return p;
     case Concrete::RSTAR:
-      return new Regex*(new Star(*(Regex**)args[0].obj));
+      p = new Regex*(new Star(*(Regex**)args[0].obj));
+      ptrDeleter((Regex**)args[0].obj);
+      return p;
     case Concrete::RNOT:
-      return new Regex*(new Not(*(Regex**)args[1].obj));
+      p = new Regex*(new Not(*(Regex**)args[1].obj));
+      ptrDeleter((Regex**)args[1].obj);
+      return p;
     case Concrete::RRANGE:
-      return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
+      p = new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
+      delete (char*)args[1].obj;
+      delete (char*)args[3].obj;
+      return p;
     case Concrete::RGROUP:
-      return new Regex*(*(Regex**)args[1].obj);
+      p = new Regex*(*(Regex**)args[1].obj);
+      ptrDeleter((Regex**)args[1].obj);
+      return p;
     case Concrete::RCHAR:
-      return new Regex*(new Character(*(char*)args[0].obj));
+      p = new Regex*(new Character(*(char*)args[0].obj));
+      delete (char*)args[0].obj;
+      return p;
     case Concrete::AREGEX:
-      return new RegexVector*(new RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
+      p = new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
+      ptrDeleter((Regex**)args[0].obj);
+      ptrDeleter((Regex**)args[2].obj);
+      return p;
     case Concrete::AALT:
-      return new RegexVector*(new RegexVector(*(RegexVector**)args[0].obj, *(Regex**)args[2].obj));
+      p = new RegexVector(RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
+      delete (RegexVector*)args[0].obj;
+      ptrDeleter((Regex**)args[2].obj);
+      return p;
     case Concrete::CREGEX:
-      return new RegexVector*(new RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
+      p = new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
+      ptrDeleter((Regex**)args[0].obj);
+      ptrDeleter((Regex**)args[1].obj);
+      return p;
     case Concrete::CCONCAT:
-      return new RegexVector*(new RegexVector(*(RegexVector**)args[0].obj, *(Regex**)args[1].obj));
+      p = new RegexVector(RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
+      delete (RegexVector*)args[0].obj;
+      ptrDeleter((Regex**)args[1].obj);
+      return p;
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*)args[0].obj);
     default:

@@ -28,27 +28,27 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::CONCAT) {
-    vector<RgxPtr>& r1Vec = static_cast<Concat*>(r1.get())->rVec_->rgxs_;
+    vector<RgxPtr>& r1Vec = static_cast<Concat*>(r1.get())->rVec_.rgxs_;
     vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // [r1s] [r2s] = [r1s + r2s]
     if (r2Type == RgxType::CONCAT) {
-      vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_->rgxs_;
+      vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-      return make_shared<Concat>(new RegexVector(move(newVec)));
+      return make_shared<Concat>(RegexVector(move(newVec)));
     }
     // [r1s] r2 = [r1s + r2]
     newVec.push_back(r2);
-    return make_shared<Concat>(new RegexVector(move(newVec)));
+    return make_shared<Concat>(RegexVector(move(newVec)));
   }
   // r1 [r2s] = [r1 + r2s]
   if (r2Type == RgxType::CONCAT) {
     vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_->rgxs_;
+    vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-    return make_shared<Concat>(new RegexVector(move(newVec)));
+    return make_shared<Concat>(RegexVector(move(newVec)));
   }
 
-  return make_shared<Concat>(new RegexVector({ r1, r2 }));
+  return make_shared<Concat>(RegexVector({ r1, r2 }));
 }
 
 
@@ -71,24 +71,24 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::ALT) {
-    vector<RgxPtr>& r1Vec = static_cast<Alt*>(r1.get())->rVec_->rgxs_;
+    vector<RgxPtr>& r1Vec = static_cast<Alt*>(r1.get())->rVec_.rgxs_;
     vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
     if (r2Type == RgxType::ALT) {
-      vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_->rgxs_;
+      vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-      return make_shared<Alt>(new RegexVector(move(newVec)));
+      return make_shared<Alt>(RegexVector(move(newVec)));
     }
     // Alt [r1s] | r2 = Alt [r1s + r2]
     newVec.push_back(r2);
-    return make_shared<Alt>(new RegexVector(move(newVec)));
+    return make_shared<Alt>(RegexVector(move(newVec)));
   }
   // r1 | Alt [r2s] = Alt [r1 + r2s]
   if (r2Type == RgxType::ALT) {
     vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_->rgxs_;
+    vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-    return make_shared<Alt>(new RegexVector(move(newVec)));
+    return make_shared<Alt>(RegexVector(move(newVec)));
   }
 
   // r | r = r
@@ -96,7 +96,7 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
     return r1;
   }
 
-  return make_shared<Alt>(new RegexVector({ r1, r2 }));
+  return make_shared<Alt>(RegexVector({ r1, r2 }));
 }
 
 
@@ -170,7 +170,7 @@ void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
  ***************/
 RegexVector::RegexVector(Regex *r1, Regex *r2) : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
 
-RegexVector::RegexVector(RegexVector *rVec, Regex *r) : rgxs_{ move(rVec->rgxs_) } {
+RegexVector::RegexVector(RegexVector&& rVec, Regex *r) : rgxs_{ move(rVec.rgxs_) } {
   rgxs_.push_back(RgxPtr(r));
 }
 
@@ -187,12 +187,10 @@ RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 /*******
  * Alt *
  *******/
-Alt::Alt(RegexVector *rVec) : rVec_(rVec) {}
-
-Alt::~Alt() { delete rVec_; }
+Alt::Alt(RegexVector&& rVec) : rVec_(move(rVec)) {}
 
 bool Alt::isNullable() const {
-  return any_of(rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const RgxPtr rPtr) {
+  return any_of(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
     return rPtr->isNullable();
   });
 }
@@ -200,7 +198,7 @@ bool Alt::isNullable() const {
 RgxPtr Alt::getDeriv(char c) const {
   vector<RgxPtr> derivs;
   transform(
-      rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), back_inserter(derivs), [c](const RgxPtr rPtr) {
+      rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), back_inserter(derivs), [c](const RgxPtr rPtr) {
         return rPtr->getDeriv(c);
       });
   return makeAlts(move(derivs));
@@ -209,36 +207,34 @@ RgxPtr Alt::getDeriv(char c) const {
 RgxType Alt::getType() const { return RgxType::ALT; }
 
 bool Alt::operator==(const Regex &other) const {
-  return other.getType() == RgxType::ALT && *static_cast<const Alt &>(other).rVec_ == *rVec_;
+  return other.getType() == RgxType::ALT && static_cast<const Alt &>(other).rVec_ == rVec_;
 }
 
-void Alt::toStream(ostream &out) const { out << "ALT " << rVec_->rgxs_; }
+void Alt::toStream(ostream &out) const { out << "ALT " << rVec_.rgxs_; }
 
 
 /**********
  * Concat *
  **********/
 
-Concat::Concat(RegexVector *rVec) : rVec_(rVec) {}
-
-Concat::~Concat() { delete rVec_; }
+Concat::Concat(RegexVector&& rVec) : rVec_(move(rVec)) {}
 
 bool Concat::isNullable() const {
-  return all_of(rVec_->rgxs_.cbegin(), rVec_->rgxs_.cend(), [](const RgxPtr rPtr) {
+  return all_of(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
     return rPtr->isNullable();
   });
 }
 
 // TODO: Make this better
 RgxPtr Concat::getDeriv(char c) const {
-  vector<RgxPtr> &rgxs = rVec_->rgxs_;
+  const vector<RgxPtr> &rgxs = rVec_.rgxs_;
   vector<RgxPtr> derivAndRest = { rgxs[0]->getDeriv(c) };
   copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 
   if (rgxs[0]->isNullable()) {
     vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
     return makeAlt(
-        Concat(new RegexVector(move(rest))).getDeriv(c),
+        Concat(RegexVector(move(rest))).getDeriv(c),
         makeConcats(move(derivAndRest)));
   }
 
@@ -248,10 +244,10 @@ RgxPtr Concat::getDeriv(char c) const {
 RgxType Concat::getType() const { return RgxType::CONCAT; }
 
 bool Concat::operator==(const Regex &other) const {
-  return other.getType() == RgxType::CONCAT && *static_cast<const Concat &>(other).rVec_ == *rVec_;
+  return other.getType() == RgxType::CONCAT && static_cast<const Concat &>(other).rVec_ == rVec_;
 }
 
-void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_->rgxs_; }
+void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_.rgxs_; }
 
 
 /********
