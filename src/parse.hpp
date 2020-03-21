@@ -341,9 +341,9 @@ ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
 
   // Remove the actual grammar root from the fake root we encapsulated it with
   Start* start = (Start*)(stk[0].obj);
-  ROOT_TYPE* rootPtr = start->r_;
+  ROOT_TYPE root = *start->r_;
   delete start;
-  return *rootPtr;
+  return root;
 }
 
 #endif

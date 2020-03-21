@@ -258,7 +258,7 @@ using ROOT_TYPE = Regex*;
  * */
 struct Start {
   Start(ROOT_TYPE* r) : r_(r) {}
-  // No deleter since we return the encapsulated pointer
+  ~Start() { delete r_; }
   Concrete getType() const { return Concrete::SCONC; }
   ROOT_TYPE* r_;
 };
@@ -277,15 +277,26 @@ struct StackObj {
   void deleteObj() const noexcept;
 };
 
+inline void regexDeleter(Regex* r) {
+  delete r;
+}
+
+inline void regexVectorDeleter(RegexVector* rVec) {
+  delete rVec;
+}
+
 inline void StackObj::deleteObj() const noexcept {
   switch (symbol) {
     case Symbol::REGEX:
+      regexDeleter(*(Regex**)obj);
       delete (Regex**)obj;
       break;
     case Symbol::ALTS:
+      regexVectorDeleter(*(RegexVector**)obj);
       delete (RegexVector**)obj;
       break;
     case Symbol::CONCATS:
+      regexVectorDeleter(*(RegexVector**)obj);
       delete (RegexVector**)obj;
       break;
     case Symbol::CHAR:
