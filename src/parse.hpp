@@ -302,15 +302,18 @@ ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
       // Construct the new object, pop the arguments off the stack,
       // and push the new object onto it.
       StackObj newObj = construct(type, &stk.data()[reduceStart]);
-      size_t stkSize = stk.size();
-      for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-        // Tokens are not encapsulated within the underlying object, so the
-        // pointers need to be deleted
-        // if (isToken(stk.back().symbol)) {
-        //   stk.back().deleteObj();
-        // }
+      if (newObj.symbol == Symbol::S) {
         stk.pop_back();
+      } else {
+        size_t stkSize = stk.size();
+        for (size_t j = 0; j < stkSize - reduceStart; ++j) {
+          if (newObj.symbol != Symbol::S) {
+            stk.back().shallowDeleteObj();
+          }
+          stk.pop_back();
+        }
       }
+
       stk.push_back(newObj);
 
       // Restart the DFA.
