@@ -32,27 +32,21 @@ public:
     return out;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
-    return out << *rgx;
-  }
+  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) { return out << *rgx; }
 
-  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
-    return out << *rgx;
-  }
+  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) { return out << *rgx; }
 };
 
 namespace std {
-  template<>
+  template <>
   struct hash<RgxPtr> {
     size_t operator()(const RgxPtr& rgx) const noexcept {
       return static_cast<int>(rgx->getType()) ^ (rgx->hashFn() << 1);
     }
   };
-}
+}  // namespace std
 
-inline bool operator==(const RgxPtr& r1, const RgxPtr& r2) {
-  return *r1 == *r2;
-}
+inline bool operator==(const RgxPtr& r1, const RgxPtr& r2) { return *r1 == *r2; }
 
 class EmptySet : public Regex {
 public:

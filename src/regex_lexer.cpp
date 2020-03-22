@@ -1,8 +1,6 @@
 #include "regex_lexer.hpp"
 
-inline StackObj datalessObj(Symbol symbol) {
-  return StackObj{ nullptr, symbol, Concrete::NONE };
-}
+inline StackObj datalessObj(Symbol symbol) { return StackObj{ nullptr, symbol, Concrete::NONE }; }
 
 std::vector<StackObj> lex(const std::string& input) {
   std::vector<StackObj> tokens;

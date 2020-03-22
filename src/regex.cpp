@@ -29,11 +29,11 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::CONCAT) {
-    vector<RgxPtr>& r1Vec = static_cast<Concat*>(r1.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r1Vec = static_cast<Concat *>(r1.get())->rVec_.rgxs_;
     vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // [r1s] [r2s] = [r1s + r2s]
     if (r2Type == RgxType::CONCAT) {
-      vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_.rgxs_;
+      vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
       return make_shared<Concat>(RegexVector(move(newVec)));
     }
@@ -44,7 +44,7 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   // r1 [r2s] = [r1 + r2s]
   if (r2Type == RgxType::CONCAT) {
     vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr>& r2Vec = static_cast<Concat*>(r2.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
     return make_shared<Concat>(RegexVector(move(newVec)));
   }
@@ -58,8 +58,10 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   RgxType r2Type = r2->getType();
   // ^∅ | r2 = ^∅
   // r1 | ^∅ = ^∅
-  if ( (r1Type == RgxType::NOT && static_cast<Not*>(r1.get())->rgx_->getType() == RgxType::EMPTYSET)
-        || (r2Type == RgxType::NOT && static_cast<Not*>(r2.get())->rgx_->getType() == RgxType::EMPTYSET) ) {
+  if ((r1Type == RgxType::NOT &&
+          static_cast<Not *>(r1.get())->rgx_->getType() == RgxType::EMPTYSET) ||
+      (r2Type == RgxType::NOT &&
+          static_cast<Not *>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
     return make_shared<Not>(new EmptySet);
   }
   // ∅ | r2 = r2
@@ -72,11 +74,11 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::ALT) {
-    vector<RgxPtr>& r1Vec = static_cast<Alt*>(r1.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r1Vec = static_cast<Alt *>(r1.get())->rVec_.rgxs_;
     vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
     if (r2Type == RgxType::ALT) {
-      vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_.rgxs_;
+      vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
       return make_shared<Alt>(RegexVector(move(newVec)));
     }
@@ -87,7 +89,7 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   // r1 | Alt [r2s] = Alt [r1 + r2s]
   if (r2Type == RgxType::ALT) {
     vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr>& r2Vec = static_cast<Alt*>(r2.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
     return make_shared<Alt>(RegexVector(move(newVec)));
   }
@@ -101,16 +103,16 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
 }
 
 
-RgxPtr makeConcats(vector<RgxPtr>&& rs) {
+RgxPtr makeConcats(vector<RgxPtr> &&rs) {
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
 }
 
-RgxPtr makeAlts(vector<RgxPtr>&& rs) {
+RgxPtr makeAlts(vector<RgxPtr> &&rs) {
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeAlt);
 }
 
 RgxPtr makeStar(RgxPtr r) {
-  switch(r->getType()) {
+  switch (r->getType()) {
     case RgxType::STAR:
       return r;
     case RgxType::EPSILON:
@@ -124,7 +126,7 @@ RgxPtr makeStar(RgxPtr r) {
 
 RgxPtr makeNot(RgxPtr r) {
   if (r->getType() == RgxType::NOT) {
-      return static_cast<Not*>(r.get())->rgx_;
+    return static_cast<Not *>(r.get())->rgx_;
   }
   return make_shared<Not>(r);
 }
@@ -165,9 +167,7 @@ bool Character::operator==(const Regex &other) const {
   return other.getType() == RgxType::CHARACTER && static_cast<const Character &>(other).c_ == c_;
 }
 
-size_t Character::hashFn() const {
-  return hash<char>()(c_);
-}
+size_t Character::hashFn() const { return hash<char>()(c_); }
 
 void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 
@@ -177,7 +177,7 @@ void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
  ***************/
 RegexVector::RegexVector(Regex *r1, Regex *r2) : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
 
-RegexVector::RegexVector(RegexVector&& rVec, Regex *r) : rgxs_{ move(rVec.rgxs_) } {
+RegexVector::RegexVector(RegexVector &&rVec, Regex *r) : rgxs_{ move(rVec.rgxs_) } {
   rgxs_.push_back(RgxPtr(r));
 }
 
@@ -192,16 +192,16 @@ RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 
 size_t RegexVector::hashFn() const {
   hash<RgxPtr> hasher;
-  return accumulate(rgxs_.cbegin() + 1, rgxs_.cend(), hasher(rgxs_[0]),
-      [&hasher](size_t hashSum, const RgxPtr& r2) {
-        return hashSum ^ (hasher(r2) << 1);
-      });
+  return accumulate(rgxs_.cbegin() + 1,
+      rgxs_.cend(),
+      hasher(rgxs_[0]),
+      [&hasher](size_t hashSum, const RgxPtr &r2) { return hashSum ^ (hasher(r2) << 1); });
 }
 
 /*******
  * Alt *
  *******/
-Alt::Alt(RegexVector&& rVec) : rVec_(move(rVec)) {}
+Alt::Alt(RegexVector &&rVec) : rVec_(move(rVec)) {}
 
 bool Alt::isNullable() const {
   return any_of(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
@@ -224,9 +224,7 @@ bool Alt::operator==(const Regex &other) const {
   return other.getType() == RgxType::ALT && static_cast<const Alt &>(other).rVec_ == rVec_;
 }
 
-size_t Alt::hashFn() const {
-  return rVec_.hashFn();
-}
+size_t Alt::hashFn() const { return rVec_.hashFn(); }
 
 void Alt::toStream(ostream &out) const { out << "ALT " << rVec_.rgxs_; }
 
@@ -235,7 +233,7 @@ void Alt::toStream(ostream &out) const { out << "ALT " << rVec_.rgxs_; }
  * Concat *
  **********/
 
-Concat::Concat(RegexVector&& rVec) : rVec_(move(rVec)) {}
+Concat::Concat(RegexVector &&rVec) : rVec_(move(rVec)) {}
 
 bool Concat::isNullable() const {
   return all_of(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
@@ -251,9 +249,7 @@ RgxPtr Concat::getDeriv(char c) const {
 
   if (rgxs[0]->isNullable()) {
     vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
-    return makeAlt(
-        Concat(RegexVector(move(rest))).getDeriv(c),
-        makeConcats(move(derivAndRest)));
+    return makeAlt(Concat(RegexVector(move(rest))).getDeriv(c), makeConcats(move(derivAndRest)));
   }
 
   return makeConcats(move(derivAndRest));
@@ -265,9 +261,7 @@ bool Concat::operator==(const Regex &other) const {
   return other.getType() == RgxType::CONCAT && static_cast<const Concat &>(other).rVec_ == rVec_;
 }
 
-size_t Concat::hashFn() const {
-  return rVec_.hashFn();
-}
+size_t Concat::hashFn() const { return rVec_.hashFn(); }
 
 void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_.rgxs_; }
 
@@ -279,9 +273,7 @@ Star::Star(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
 Star::Star(RgxPtr rgx) : rgx_(rgx) {}
 
 bool Star::isNullable() const { return true; }
-RgxPtr Star::getDeriv(char c) const {
-  return makeConcat(rgx_->getDeriv(c), makeStar(rgx_));
-}
+RgxPtr Star::getDeriv(char c) const { return makeConcat(rgx_->getDeriv(c), makeStar(rgx_)); }
 
 RgxType Star::getType() const { return RgxType::STAR; }
 
@@ -289,9 +281,7 @@ bool Star::operator==(const Regex &other) const {
   return other.getType() == RgxType::STAR && *static_cast<const Star &>(other).rgx_ == *rgx_;
 }
 
-size_t Star::hashFn() const {
-  return rgx_->hashFn();
-}
+size_t Star::hashFn() const { return rgx_->hashFn(); }
 
 void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
 
@@ -309,9 +299,7 @@ bool Not::operator==(const Regex &other) const {
   return other.getType() == RgxType::NOT && *static_cast<const Not &>(other).rgx_ == *rgx_;
 }
 
-size_t Not::hashFn() const {
-  return rgx_->hashFn();
-}
+size_t Not::hashFn() const { return rgx_->hashFn(); }
 
 void Not::toStream(ostream &out) const { out << "NOT (" << rgx_ << ')'; }
 

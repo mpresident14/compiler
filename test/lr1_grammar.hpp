@@ -197,7 +197,9 @@ struct StackObj {
 };
 
 template <typename T>
-inline void ptrDeleter(T* ptr) { delete ptr; }
+inline void ptrDeleter(T* ptr) {
+  delete ptr;
+}
 
 void StackObj::deleteObj() const noexcept {
   switch (symbol) {

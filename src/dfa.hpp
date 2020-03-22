@@ -124,9 +124,7 @@ public:
     return newNode;
   }
 
-  size_t size() const noexcept {
-    return valueToNode_.size();
-  }
+  size_t size() const noexcept { return valueToNode_.size(); }
 
   friend std::ostream& operator<<(std::ostream& out, const DFA& dfa) {
     std::unordered_set<const Node*> visited;

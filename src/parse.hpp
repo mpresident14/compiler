@@ -78,7 +78,8 @@ inline void epsilonTransition(RuleSet& ruleSet) {
     auto iter = ruleSet.find(rule);
     // If rule is not yet in the set, add it
 
-    // TODO: Should we check for duplicate rules in the queue as well (like use a set and just pop with set.begin())
+    // TODO: Should we check for duplicate rules in the queue as well (like use a set and just pop
+    // with set.begin())
     if (iter == ruleSet.end()) {
       addRhses(ruleQueue, rule);
       ruleSet.insert(move(rule));

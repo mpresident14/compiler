@@ -109,9 +109,7 @@ void testMatches() {
 
 void testTokenize_withConflictingPatterns() {
   vector<TokenPattern> patterns = {
-    {".", Symbol::CHAR},
-    {"[1-9][0-9]*", Symbol::DASH},
-    {"for", Symbol::BAR}
+    { ".", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
   };
 
   vector<StackObj> actual = tokenize("123fora0", patterns);
@@ -123,10 +121,10 @@ void testTokenize_withConflictingPatterns() {
   TESTER.assertEquals(Symbol::CHAR, actual[2].symbol);
   TESTER.assertEquals(Symbol::CHAR, actual[3].symbol);
 
-  TESTER.assertEquals(123, *(int*) actual[0].obj);
+  TESTER.assertEquals(123, *(int*)actual[0].obj);
   TESTER.assertEquals(nullptr, actual[1].obj);
-  TESTER.assertEquals('a', *(char*) actual[2].obj);
-  TESTER.assertEquals('0', *(char*) actual[3].obj);
+  TESTER.assertEquals('a', *(char*)actual[2].obj);
+  TESTER.assertEquals('0', *(char*)actual[3].obj);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
   errBuffer.str("");
@@ -135,24 +133,20 @@ void testTokenize_withConflictingPatterns() {
 
 void testTokenize_withInvalidRegex() {
   vector<TokenPattern> patterns = {
-    {".", Symbol::CHAR},
-    {"1-9][0-9]*", Symbol::DASH},
-    {"for", Symbol::BAR}
+    { ".", Symbol::CHAR }, { "1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
   };
 
   // NOTE: note the parentheses because of the comma in the macro
-  // See https://stackoverflow.com/questions/33016521/c-macro-with-lambda-argument-using-2-captured-elements-generates-error
-  TESTER.assertThrows( ([&patterns](){ tokenize("123fora0", patterns); }) );
+  // See
+  // https://stackoverflow.com/questions/33016521/c-macro-with-lambda-argument-using-2-captured-elements-generates-error
+  TESTER.assertThrows(([&patterns]() { tokenize("123fora0", patterns); }));
 }
 
 
 void testTokenize_withInvalidInput() {
-  vector<TokenPattern> patterns = {
-    {"[1-9][0-9]*", Symbol::DASH},
-    {"for", Symbol::BAR}
-  };
+  vector<TokenPattern> patterns = { { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR } };
 
-  TESTER.assertThrows( ([&patterns](){ tokenize("fo123", patterns); }) );
+  TESTER.assertThrows(([&patterns]() { tokenize("fo123", patterns); }));
 }
 
 int main(int, char**) {

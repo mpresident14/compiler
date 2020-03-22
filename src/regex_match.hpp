@@ -21,6 +21,7 @@
 using TokenPattern = std::pair<std::string, Symbol>;
 
 bool matches(const std::string& pattern, const std::string& input);
-std::vector<StackObj> tokenize(const std::string& input, const std::vector<TokenPattern>& tokenPatterns);
+std::vector<StackObj> tokenize(const std::string& input,
+    const std::vector<TokenPattern>& tokenPatterns);
 
 #endif

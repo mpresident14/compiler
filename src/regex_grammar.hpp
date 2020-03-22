@@ -285,7 +285,9 @@ struct StackObj {
  * since it is such a common thing to want
  * */
 template <typename T>
-inline void ptrDeleter(T* ptr) { delete ptr; }
+inline void ptrDeleter(T* ptr) {
+  delete ptr;
+}
 
 
 inline void StackObj::deleteObj() const noexcept {
@@ -348,11 +350,13 @@ inline void* constructObj(Concrete type, StackObj* args) {
     case Concrete::AREGEX:
       return new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
     case Concrete::AALT:
-      return new RegexVector(RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
+      return new RegexVector(
+          RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
     case Concrete::CREGEX:
       return new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
     case Concrete::CCONCAT:
-      return new RegexVector(RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
+      return new RegexVector(
+          RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
     case Concrete::SCONC:
       return new Start((ROOT_TYPE*)args[0].obj);
     default:
@@ -366,7 +370,7 @@ inline StackObj construct(Concrete type, StackObj* args) {
 
 /* NOT REAL, JUST FOR TESTING. ACTUAL LEXING IS DONE BY regex_lexer.hpp */
 inline StackObj constructTokenObj(Symbol token, const std::string_view& str) {
-  switch(token) {
+  switch (token) {
     case Symbol::CHAR:
       return { new char(str[0]), token, Concrete::NONE };
     case Symbol::DASH:
@@ -390,7 +394,7 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
           GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
           GrammarRule{ Concrete::RRANGE,
               { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
-           GrammarRule{ Concrete::RGROUP, { Symbol::LPAREN, Symbol::REGEX, Symbol::RPAREN } },
+          GrammarRule{ Concrete::RGROUP, { Symbol::LPAREN, Symbol::REGEX, Symbol::RPAREN } },
           GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
       } },
   { Symbol::ALTS,

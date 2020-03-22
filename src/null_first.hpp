@@ -9,7 +9,8 @@
 
 namespace {
   /* Iterate to find the least fixed point */
-  void computeNullabilities(BitSetVars& nullabilities, std::vector<std::vector<BitRef>>* equations) {
+  void computeNullabilities(BitSetVars& nullabilities,
+      std::vector<std::vector<BitRef>>* equations) {
     using namespace std;
 
     bool changed = true;
@@ -35,7 +36,7 @@ namespace {
       }
     }
   }
-}
+}  // namespace
 
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
@@ -101,7 +102,7 @@ namespace {
       }
     }
   }
-}
+}  // namespace
 
 inline std::vector<BitSetToks> getFirsts() {
   using namespace std;
