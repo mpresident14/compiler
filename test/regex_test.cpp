@@ -1,11 +1,14 @@
-#include "regex_grammar.hpp"
+#include "regex_eval.hpp"
 #include "regex.hpp"
 #include "regex_lexer.hpp"
+#include "regex_grammar.hpp"
 #include "parse.hpp"
+#include "dfa.hpp"
 
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 
 #include <prez/unit_test.hpp>
 
@@ -70,6 +73,34 @@ void testGetDeriv_range() {
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('7'));
 }
 
+void testHashFn() {
+  RgxPtr r1 = RgxPtr(parse(dfa, lex("a")));
+  unordered_set<RgxPtr> rgxs = { r1->getDeriv('b') };
+
+  TESTER.assertTrue(rgxs.contains(r1->getDeriv('c')));
+}
+
+void testMatches() {
+  TESTER.assertTrue(matches("a", "a"));
+  TESTER.assertFalse(matches("a", "b"));
+
+  TESTER.assertTrue(matches("ab*", "abbbb"));
+  TESTER.assertFalse(matches("ab*", "ac"));
+
+  TESTER.assertTrue(matches("[1-9][0-9]*", "1234"));
+  TESTER.assertFalse(matches("[1-9][0-9]*", "01234"));
+
+  TESTER.assertTrue(matches("^a*c", "ab"));
+  TESTER.assertFalse(matches("^a*c", "c"));
+
+  TESTER.assertTrue(matches("a*|[0-9]", ""));
+  TESTER.assertTrue(matches("a*|[0-9]", "5"));
+  TESTER.assertFalse(matches("a*|[0-9]", "c"));
+
+  TESTER.assertTrue(matches("(a|b)[0-9]", "a5"));
+  TESTER.assertFalse(matches("(a|b)[0-9]", "a"));
+}
+
 int main(int, char**) {
   testGetDeriv_character();
   testGetDeriv_alt();
@@ -77,6 +108,8 @@ int main(int, char**) {
   testGetDeriv_star();
   testGetDeriv_not();
   testGetDeriv_range();
+  testHashFn();
+  testMatches();
 
   return 0;
 }

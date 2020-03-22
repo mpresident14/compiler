@@ -15,6 +15,8 @@
 #include <prez/print_stuff.hpp>
 
 // NOTE: Starting point of the grammar is always Symbol::S
+// TODO: Fix all this inline mess, really should just make a copy of this header for
+// each grammar and separate impl into a cpp file.
 
 /**********************
  *  DFA CONSTRUCTION  *
@@ -25,9 +27,9 @@ using DFA_t = DFA<RuleSet, Symbol>;
  * updating the lookahead set
  * */
 
-std::vector<BitSetToks> firsts = getFirsts();
+static std::vector<BitSetToks> firsts = getFirsts();
 
-void addRhses(std::queue<DFARule>& ruleQueue, const DFARule& fromRule) {
+inline void addRhses(std::queue<DFARule>& ruleQueue, const DFARule& fromRule) {
   using namespace std;
 
   // Nothing to expand if we are at the end of the rule or if the next symbol
@@ -59,7 +61,7 @@ void addRhses(std::queue<DFARule>& ruleQueue, const DFARule& fromRule) {
 
 /* Adds possible rules to node's state via epsilon transition in DFA.
  * Ex: S -> A.B, then add all rules B -> ??? */
-void epsilonTransition(RuleSet& ruleSet) {
+inline void epsilonTransition(RuleSet& ruleSet) {
   using namespace std;
 
   queue<DFARule> ruleQueue;
@@ -102,7 +104,7 @@ void epsilonTransition(RuleSet& ruleSet) {
 
 /* For each rule of this node, construct the transitions to successors.
  * Return the successors that were newly added */
-std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
+inline std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node) {
   using namespace std;
 
   // Get all the valid transition symbols and map each of them to a new set of rules
@@ -134,7 +136,7 @@ std::vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node*
 }
 
 /* Constructs the starting node of the DFA */
-DFA_t initDFA() {
+inline DFA_t initDFA() {
   RuleSet firstSet{ DFARule{ Concrete::SCONC, { ROOT_SYM }, 0, BitSetToks() } };
   epsilonTransition(firstSet);
   DFA_t dfa(firstSet);
@@ -143,7 +145,7 @@ DFA_t initDFA() {
 
 // TODO: We shouldn't have to build the DFA every time someone calls parse().
 // Instead, we should just hard code all the nodes after building the first time
-DFA_t buildParserDFA() {
+inline DFA_t buildParserDFA() {
   using namespace std;
 
   queue<const DFA_t::Node*> q;
@@ -167,7 +169,7 @@ DFA_t buildParserDFA() {
 //  **********************/
 
 /* Rule precedence equals precedence of last token */
-Symbol getLastToken(const DFARule& rule) {
+inline Symbol getLastToken(const DFARule& rule) {
   for (auto iter = rule.rhs.crbegin(); iter != rule.rhs.crend(); ++iter) {
     Symbol symbol = *iter;
     if (isToken(symbol)) {
@@ -177,12 +179,12 @@ Symbol getLastToken(const DFARule& rule) {
   return Symbol::EPSILON;
 }
 
-void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
+inline void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
   std::cerr << "WARNING: Shift reduce conflict with\n\t" << rule1 << "\n\t" << rule2 << std::endl;
 }
 
 // TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.
-Concrete tryReduce(const DFA_t::Node* node,
+inline Concrete tryReduce(const DFA_t::Node* node,
     Symbol nextToken,
     const std::vector<StackObj>& stk,
     size_t* reduceStart) {
@@ -270,14 +272,14 @@ Concrete tryReduce(const DFA_t::Node* node,
 }
 
 /* Clear from StackObj::obj starting at index i */
-void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
+inline void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
   size_t size = stackObjs.size();
   for (; i < size; ++i) {
     stackObjs[i].deleteObj();
   }
 }
 
-ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
+inline ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
   using namespace std;
 
   StackObj firstToken = inputTokens[0];

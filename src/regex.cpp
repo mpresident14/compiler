@@ -322,7 +322,7 @@ void Not::toStream(ostream &out) const { out << "NOT (" << rgx_ << ')'; }
 Range::Range(char start, char end) : start_(start), end_(end) {}
 bool Range::isNullable() const { return false; }
 RgxPtr Range::getDeriv(char c) const {
-  if (start_ < c && c < end_) {
+  if (start_ <= c && c <= end_) {
     return make_shared<Epsilon>();
   }
   return make_shared<EmptySet>();

@@ -50,6 +50,10 @@ namespace std {
   };
 }
 
+inline bool operator==(const RgxPtr& r1, const RgxPtr& r2) {
+  return *r1 == *r2;
+}
+
 class EmptySet : public Regex {
 public:
   bool isNullable() const override;

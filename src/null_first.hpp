@@ -7,29 +7,31 @@
 #include <iostream>
 #include <string>
 
-/* Iterate to find the least fixed point */
-void computeNullabilities(BitSetVars& nullabilities, std::vector<std::vector<BitRef>>* equations) {
-  using namespace std;
+namespace {
+  /* Iterate to find the least fixed point */
+  void computeNullabilities(BitSetVars& nullabilities, std::vector<std::vector<BitRef>>* equations) {
+    using namespace std;
 
-  bool changed = true;
-  while (changed) {
-    changed = false;
-    for (size_t i = 0; i < numVariables; ++i) {
-      // If the nullability for this symbol is already true, no need to evaluate it again
-      if (nullabilities[i]) {
-        continue;
-      }
+    bool changed = true;
+    while (changed) {
+      changed = false;
+      for (size_t i = 0; i < numVariables; ++i) {
+        // If the nullability for this symbol is already true, no need to evaluate it again
+        if (nullabilities[i]) {
+          continue;
+        }
 
-      const vector<vector<BitRef>>& disjunctions = equations[i];
-      // Nullable if any of the conjunctions evaluate to true
-      bool newValue =
-          std::any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
-            return std::all_of(
-                conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
-          });
-      if (newValue != nullabilities[i]) {
-        nullabilities[i] = move(newValue);
-        changed = true;
+        const vector<vector<BitRef>>& disjunctions = equations[i];
+        // Nullable if any of the conjunctions evaluate to true
+        bool newValue =
+            std::any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
+              return std::all_of(
+                  conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
+            });
+        if (newValue != nullabilities[i]) {
+          nullabilities[i] = move(newValue);
+          changed = true;
+        }
       }
     }
   }
@@ -38,7 +40,7 @@ void computeNullabilities(BitSetVars& nullabilities, std::vector<std::vector<Bit
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitRef> */
-BitSetVars getNullabilities() {
+inline BitSetVars getNullabilities() {
   using namespace std;
 
   BitSetVars nullabilities;
@@ -72,34 +74,36 @@ BitSetVars getNullabilities() {
   return nullabilities;
 }
 
-struct UnionEquation {
-  BitSetToks tokenSet;
-  std::vector<BitSetToks*> setRefs;
-};
+namespace {
+  struct UnionEquation {
+    BitSetToks tokenSet;
+    std::vector<BitSetToks*> setRefs;
+  };
 
-/* Iterate to find the least fixed point */
-void computeFirsts(std::vector<BitSetToks>& firsts, UnionEquation* equations) {
-  using namespace std;
+  /* Iterate to find the least fixed point */
+  void computeFirsts(std::vector<BitSetToks>& firsts, UnionEquation* equations) {
+    using namespace std;
 
-  bool changed = true;
-  while (changed) {
-    changed = false;
-    for (size_t i = 0; i < numVariables; ++i) {
-      const UnionEquation& unionEq = equations[i];
-      // Take union of all the bitsets
-      BitSetToks newValue = unionEq.tokenSet;
-      for (const BitSetToks* bitset : unionEq.setRefs) {
-        newValue |= *bitset;
-      }
-      if (newValue != firsts[i]) {
-        firsts[i] = move(newValue);
-        changed = true;
+    bool changed = true;
+    while (changed) {
+      changed = false;
+      for (size_t i = 0; i < numVariables; ++i) {
+        const UnionEquation& unionEq = equations[i];
+        // Take union of all the bitsets
+        BitSetToks newValue = unionEq.tokenSet;
+        for (const BitSetToks* bitset : unionEq.setRefs) {
+          newValue |= *bitset;
+        }
+        if (newValue != firsts[i]) {
+          firsts[i] = move(newValue);
+          changed = true;
+        }
       }
     }
   }
 }
 
-std::vector<BitSetToks> getFirsts() {
+inline std::vector<BitSetToks> getFirsts() {
   using namespace std;
 
   vector<BitSetToks> firsts(numVariables);
