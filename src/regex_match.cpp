@@ -70,9 +70,9 @@ using MergedRgxDFA = DFA<MergeData, char>;
 
 MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   DFA_t parserDfa = buildParserDFA();
-  // We need the regex DFAs to be live long enough to create the merged DFA.
-  // Afterwards, all the pointers inside the merged DFA will be deleted,
-  // but we will no longer need them.
+  // We need the regex DFAs to be live long enough to create the merged DFA,
+  // so we store them in this vector. Afterwards, all the pointers inside the
+  // merged DFA will be deleted, but we will no longer need them.
   vector<RgxDFA> rgxDfas;
   rgxDfas.reserve(tokenPatterns.size());
 
@@ -82,9 +82,12 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   Symbol initialToken = Symbol::EPSILON;
   for (const TokenPattern& tokenPattern : tokenPatterns) {
     RgxPtr rgx = RgxPtr(parse(parserDfa, lex(tokenPattern.first)));
+    // Invalid regex
+    if (!rgx) {
+      throw runtime_error("Invalid regex + " + tokenPattern.first);
+    }
     RgxDFA rgxDfa = buildRegexDFA(move(rgx));
     initialStates.push_back({ rgxDfa.getRoot(), tokenPattern.second });
-    rgxDfas.push_back(move(rgxDfa));
     if (rgxDfa.getRoot()->getValue()->isNullable()) {
       // Multiple regex DFAs accept the empty string
       if (initialToken != Symbol::EPSILON) {
@@ -93,12 +96,15 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
       }
       initialToken = tokenPattern.second;
     }
+    rgxDfas.push_back(move(rgxDfa));
   }
 
   MergedRgxDFA mergedDfa({ move(initialStates), initialToken });
 
   // BFS to build the merged DFA
   queue<const MergedRgxDFA::Node*> q;
+  q.push(mergedDfa.getRoot());
+
   while (!q.empty()) {
     const MergedRgxDFA::Node* mergedNode = q.front();
     q.pop();

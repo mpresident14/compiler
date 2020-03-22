@@ -368,12 +368,12 @@ inline StackObj construct(Concrete type, StackObj* args) {
 inline StackObj constructTokenObj(Symbol token, const std::string_view& str) {
   switch(token) {
     case Symbol::CHAR:
-      return { new char(str[0]), Symbol::CHAR, Concrete::NONE };
+      return { new char(str[0]), token, Concrete::NONE };
     case Symbol::DASH:
       // NOTE: Generally a bad idea to pass string_view::data because it
       // it might not be null-terminated, but since we always consume from
       // left to right, we always have null-termination
-      return { new int(atoi(str.data())), Symbol::CHAR, Concrete::NONE };
+      return { new int(atoi(str.data())), token, Concrete::NONE };
     default:
       return { nullptr, token, Concrete::NONE };
   }

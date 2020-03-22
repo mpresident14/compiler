@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_set>
+#include <sstream>
 
 #include <prez/unit_test.hpp>
 
@@ -17,8 +18,9 @@ using namespace prez;
 
 
 UnitTest TESTER = UnitTest::createTester();
-DFA_t dfa = buildParserDFA();
 
+DFA_t dfa = buildParserDFA();
+stringstream errBuffer;
 using UniqPtr = unique_ptr<Regex>;
 
 void testGetDeriv_character() {
@@ -104,7 +106,59 @@ void testMatches() {
   TESTER.assertTrue(matches("a.c", "arc"));
 }
 
+
+void testTokenize_withConflictingPatterns() {
+  vector<TokenPattern> patterns = {
+    {".", Symbol::CHAR},
+    {"[1-9][0-9]*", Symbol::DASH},
+    {"for", Symbol::BAR}
+  };
+
+  vector<StackObj> actual = tokenize("123fora0", patterns);
+
+  TESTER.assertEquals(4, actual.size());
+
+  TESTER.assertEquals(Symbol::DASH, actual[0].symbol);
+  TESTER.assertEquals(Symbol::BAR, actual[1].symbol);
+  TESTER.assertEquals(Symbol::CHAR, actual[2].symbol);
+  TESTER.assertEquals(Symbol::CHAR, actual[3].symbol);
+
+  TESTER.assertEquals(123, *(int*) actual[0].obj);
+  TESTER.assertEquals(nullptr, actual[1].obj);
+  TESTER.assertEquals('a', *(char*) actual[2].obj);
+  TESTER.assertEquals('0', *(char*) actual[3].obj);
+
+  TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
+  errBuffer.str("");
+}
+
+
+void testTokenize_withInvalidRegex() {
+  vector<TokenPattern> patterns = {
+    {".", Symbol::CHAR},
+    {"1-9][0-9]*", Symbol::DASH},
+    {"for", Symbol::BAR}
+  };
+
+  // NOTE: note the parentheses because of the comma in the macro
+  // See https://stackoverflow.com/questions/33016521/c-macro-with-lambda-argument-using-2-captured-elements-generates-error
+  TESTER.assertThrows( ([&patterns](){ tokenize("123fora0", patterns); }) );
+}
+
+
+void testTokenize_withInvalidInput() {
+  vector<TokenPattern> patterns = {
+    {"[1-9][0-9]*", Symbol::DASH},
+    {"for", Symbol::BAR}
+  };
+
+  TESTER.assertThrows( ([&patterns](){ tokenize("fo123", patterns); }) );
+}
+
 int main(int, char**) {
+  // To test stderr output
+  cerr.rdbuf(errBuffer.rdbuf());
+
   testGetDeriv_character();
   testGetDeriv_alt();
   testGetDeriv_concat();
@@ -113,6 +167,9 @@ int main(int, char**) {
   testGetDeriv_range();
   testHashFn();
   testMatches();
+  testTokenize_withConflictingPatterns();
+  testTokenize_withInvalidRegex();
+  testTokenize_withInvalidInput();
 
   return 0;
 }
