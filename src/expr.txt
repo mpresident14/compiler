@@ -7,11 +7,6 @@
   INT  "[1-9][0-9]*" -> int { atoi(str.c_str()); }
 }
 
-%generate{
-  Expr
-  Term
-}
-
 %grammar{
 
   Term -> Term

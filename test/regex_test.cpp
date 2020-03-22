@@ -99,6 +99,9 @@ void testMatches() {
 
   TESTER.assertTrue(matches("(a|b)[0-9]", "a5"));
   TESTER.assertFalse(matches("(a|b)[0-9]", "a"));
+
+  TESTER.assertTrue(matches("a.c", "abc"));
+  TESTER.assertTrue(matches("a.c", "arc"));
 }
 
 int main(int, char**) {

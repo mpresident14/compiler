@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <string_view>
+#include <cstdlib>
 
 
 /***********
@@ -326,6 +328,7 @@ inline void StackObj::shallowDeleteObj() const noexcept {
 }
 
 // TODO: Remove throw and make noexcept when done
+/* Construct a concrete object */
 inline void* constructObj(Concrete type, StackObj* args) {
   switch (type) {
     case Concrete::RALT:
@@ -359,6 +362,21 @@ inline void* constructObj(Concrete type, StackObj* args) {
 
 inline StackObj construct(Concrete type, StackObj* args) {
   return StackObj{ constructObj(type, args), toSymbol(type), type };
+}
+
+/* NOT REAL, JUST FOR TESTING. ACTUAL LEXING IS DONE BY regex_lexer.hpp */
+inline StackObj constructTokenObj(Symbol token, const std::string_view& str) {
+  switch(token) {
+    case Symbol::CHAR:
+      return { new char(str[0]), Symbol::CHAR, Concrete::NONE };
+    case Symbol::DASH:
+      // NOTE: Generally a bad idea to pass string_view::data because it
+      // it might not be null-terminated, but since we always consume from
+      // left to right, we always have null-termination
+      return { new int(atoi(str.data())), Symbol::CHAR, Concrete::NONE };
+    default:
+      return { nullptr, token, Concrete::NONE };
+  }
 }
 
 

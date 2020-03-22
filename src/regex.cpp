@@ -153,7 +153,7 @@ Character::Character(char c) : c_{ c } {}
 bool Character::isNullable() const { return false; }
 
 RgxPtr Character::getDeriv(char c) const {
-  if (c == c_) {
+  if (c_ == '.' || c == c_) {
     return make_shared<Epsilon>();
   }
   return make_shared<EmptySet>();

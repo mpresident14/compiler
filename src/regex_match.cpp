@@ -5,7 +5,8 @@ using namespace std;
 
 using RgxDFA = DFA<RgxPtr, char>;
 
-static constexpr char alphabet[] = R"( !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~)";
+static constexpr char alphabet[] =
+    R"( !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~)";
 
 /* BFS with regex derivative expansion */
 RgxDFA buildRegexDFA(const RgxPtr rgx) {
@@ -13,7 +14,7 @@ RgxDFA buildRegexDFA(const RgxPtr rgx) {
   queue<const RgxDFA::Node*> q;
   q.push(dfa.getRoot());
 
-  while(!q.empty()) {
+  while (!q.empty()) {
     const RgxDFA::Node* node = q.front();
     RgxPtr rgx = node->getValue();
     q.pop();
@@ -45,17 +46,20 @@ struct MergeData {
 
 
 namespace std {
-  template<>
+  template <>
   struct hash<MergeData> {
     size_t operator()(const MergeData& mergeData) const noexcept {
       const vector<pair<const RgxDFA::Node*, Symbol>>& states = mergeData.states;
       // mergeData will not be empty
-      return (size_t) accumulate(states.cbegin() + 1, states.cend(), (uintptr_t) states[0].first,
-        [](uintptr_t n, pair<const RgxDFA::Node*, Symbol> node) { return n ^ (uintptr_t) node.first; }
-      );
+      return (size_t)accumulate(states.cbegin() + 1,
+          states.cend(),
+          (uintptr_t)states[0].first,
+          [](uintptr_t n, pair<const RgxDFA::Node*, Symbol> node) {
+            return n ^ (uintptr_t)node.first;
+          });
     }
   };
-}
+}  // namespace std
 
 bool operator==(const MergeData& md1, const MergeData& md2) noexcept {
   return md1.states == md2.states;
@@ -63,9 +67,6 @@ bool operator==(const MergeData& md1, const MergeData& md2) noexcept {
 
 
 using MergedRgxDFA = DFA<MergeData, char>;
-using TokenPattern = pair<string, Symbol>;
-
-
 
 MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   DFA_t parserDfa = buildParserDFA();
@@ -87,7 +88,8 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
     if (rgxDfa.getRoot()->getValue()->isNullable()) {
       // Multiple regex DFAs accept the empty string
       if (initialToken != Symbol::EPSILON) {
-        cerr << "WARNING: Overlapping regexes for tokens " << initialToken << " and " << tokenPattern.second << endl;
+        cerr << "WARNING: Overlapping regexes for tokens " << initialToken << " and "
+             << tokenPattern.second << endl;
       }
       initialToken = tokenPattern.second;
     }
@@ -112,7 +114,8 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
           if (successor->getValue()->isNullable()) {
             // Multiple regex DFAs accept the same string
             if (newToken != Symbol::EPSILON) {
-              cerr << "WARNING: Overlapping regexes for tokens " << newToken << " and " << token << endl;
+              cerr << "WARNING: Overlapping regexes for tokens " << newToken << " and " << token
+                   << endl;
             }
             newToken = token;
           }
@@ -120,7 +123,8 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
       }
       // Add transition to the merged node and add it to the queue if it did not already
       // exist in the merged DFA
-      const MergedRgxDFA::Node* mergedSuccessor = mergedDfa.addTransition(mergedNode, c, { newStates, newToken });
+      const MergedRgxDFA::Node* mergedSuccessor =
+          mergedDfa.addTransition(mergedNode, c, { newStates, newToken });
       if (mergedSuccessor) {
         q.push(mergedSuccessor);
       }
@@ -128,4 +132,69 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   }
 
   return mergedDfa;
+}
+
+/* Step through the merged regex DFA and return the token corresponding
+ * to the longest matching prefix */
+optional<StackObj> getToken(string_view& input, const MergedRgxDFA& dfa) {
+  size_t i = 0;
+  const size_t len = input.size();
+  size_t lastAcceptingPos;
+  Symbol lastAcceptingToken = Symbol::EPSILON;
+  const MergedRgxDFA::Node* currentNode = dfa.getRoot();
+
+  while (currentNode) {
+    // Check if this is an accepting state, and if so,
+    // record the token type and the position in the input
+    Symbol token = currentNode->getValue().token;
+    if (token != Symbol::EPSILON) {
+      lastAcceptingToken = token;
+      lastAcceptingPos = i;
+    }
+
+    // No more input
+    if (i == len) {
+      break;
+    }
+    // Advance to the next state
+    currentNode = MergedRgxDFA::step(currentNode, input[i++]);
+  }
+
+  // Never reached an accepting state
+  if (lastAcceptingToken == Symbol::EPSILON) {
+    return {};
+  }
+
+  // Grab matching prefix
+  StackObj stackObj = constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
+  // Discard matching prefix so we can reuse this string_view for the next token
+  input = input.substr(lastAcceptingPos);
+  return { move(stackObj) };
+}
+
+
+vector<StackObj> tokenize(const string& input, const vector<TokenPattern>& tokenPatterns) {
+  const MergedRgxDFA dfa = buildMergedRgxDFA(tokenPatterns);
+  vector<StackObj> tokens;
+  string_view inputView = input;
+
+  while (!inputView.empty()) {
+    optional<StackObj> optionalObj = getToken(inputView, dfa);
+    if (optionalObj.has_value()) {
+      tokens.push_back(*optionalObj);
+    } else {
+      stringstream error;
+      vector<Symbol> prevTokens;
+      auto startIter = tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
+      transform(
+          move(startIter), tokens.cend(), back_inserter(prevTokens), [](const StackObj& stackObj) {
+            return stackObj.symbol;
+          });
+      error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
+            << "Previous tokens were: " << prevTokens;
+      throw runtime_error(error.str());
+    }
+  }
+
+  return tokens;
 }
