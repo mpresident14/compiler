@@ -43,6 +43,11 @@ public:
   DFA(V value) : root_(new Node(value)), valueToNode_{ { std::move(value), root_ } } {}
 
   ~DFA() {
+    // If invalidated via move construction/assignment
+    if (!root_) {
+      return;
+    }
+
     // Delete via BFS
     std::queue<const Node*> q;
     q.push(root_);
@@ -62,9 +67,15 @@ public:
   };
 
   DFA(const DFA& other) = delete;
-  DFA(DFA&& other) = default;
+  DFA(DFA&& other) : root_(other.root_), valueToNode_(move(other.valueToNode_)) {
+    other.root_ = nullptr;
+  }
   DFA& operator=(const DFA& other) = delete;
-  DFA& operator=(DFA&& other) = default;
+  DFA& operator=(DFA&& other) {
+    root_ = other.root_;
+    valueToNode_ = move(other.valueToNode_);
+    other.root_ = nullptr;
+  }
 
   const Node* getRoot() const { return root_; }
 
@@ -80,7 +91,7 @@ public:
   }
 
   /* Step from node with transition inputToken */
-  const Node* step(const Node* node, const T& inputToken) const {
+  static const Node* step(const Node* node, const T& inputToken) {
     auto iter = node->transitions_.find(inputToken);
     if (iter == node->transitions_.end()) {
       return nullptr;
@@ -111,6 +122,10 @@ public:
     node->transitions_.emplace(std::move(transition), newNode);
     valueToNode_.emplace(newNodeValue, newNode);
     return newNode;
+  }
+
+  size_t size() const noexcept {
+    return valueToNode_.size();
   }
 
   friend std::ostream& operator<<(std::ostream& out, const DFA& dfa) {

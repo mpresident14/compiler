@@ -331,7 +331,7 @@ inline ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputToken
       }
       StackObj token = inputTokens[i];
       stk.push_back(token);
-      currentNode = dfa.step(currentNode, token.symbol);
+      currentNode = DFA_t::step(currentNode, token.symbol);
       // No transition for this token
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);

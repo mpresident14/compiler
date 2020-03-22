@@ -11,6 +11,8 @@
 #include <cstddef>
 #include <string>
 #include <queue>
+#include <numeric>
+#include <functional>
 
 
 bool matches(const std::string& pattern, const std::string& input);
