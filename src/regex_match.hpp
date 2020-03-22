@@ -1,5 +1,5 @@
-#ifndef REGEX_EVAL_HPP
-#define REGEX_EVAL_HPP
+#ifndef REGEX_MATCH_HPP
+#define REGEX_MATCH_HPP
 
 #include "regex.hpp"
 #include "regex_lexer.hpp"
