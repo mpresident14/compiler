@@ -78,6 +78,17 @@ edit_cache/fast: edit_cache
 
 .PHONY : edit_cache/fast
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+
+.PHONY : test/fast
+
 # The main all target
 all: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/miles/CS/compiler/CMakeFiles /home/miles/CS/compiler/CMakeFiles/progress.marks
@@ -109,6 +120,19 @@ preinstall/fast:
 depend:
 	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
+
+#=============================================================================
+# Target rules for targets named check
+
+# Build rule for target.
+check: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 check
+.PHONY : check
+
+# fast build rule for target.
+check/fast:
+	$(MAKE) -f CMakeFiles/check.dir/build.make CMakeFiles/check.dir/build
+.PHONY : check/fast
 
 #=============================================================================
 # Target rules for targets named null_first_test
@@ -231,6 +255,33 @@ src/regex.cpp.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/regex.cpp.s
 	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex.cpp.s
 .PHONY : src/regex.cpp.s
+
+src/regex_eval.o: src/regex_eval.cpp.o
+
+.PHONY : src/regex_eval.o
+
+# target to build an object file
+src/regex_eval.cpp.o:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_eval.cpp.o
+.PHONY : src/regex_eval.cpp.o
+
+src/regex_eval.i: src/regex_eval.cpp.i
+
+.PHONY : src/regex_eval.i
+
+# target to preprocess a source file
+src/regex_eval.cpp.i:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_eval.cpp.i
+.PHONY : src/regex_eval.cpp.i
+
+src/regex_eval.s: src/regex_eval.cpp.s
+
+.PHONY : src/regex_eval.s
+
+# target to generate assembly for a file
+src/regex_eval.cpp.s:
+	$(MAKE) -f CMakeFiles/regex_test.dir/build.make CMakeFiles/regex_test.dir/src/regex_eval.cpp.s
+.PHONY : src/regex_eval.cpp.s
 
 src/regex_lexer.o: src/regex_lexer.cpp.o
 
@@ -378,6 +429,8 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
+	@echo "... test"
+	@echo "... check"
 	@echo "... null_first_test"
 	@echo "... lr1_test"
 	@echo "... dfa_test"
@@ -389,6 +442,9 @@ help:
 	@echo "... src/regex.o"
 	@echo "... src/regex.i"
 	@echo "... src/regex.s"
+	@echo "... src/regex_eval.o"
+	@echo "... src/regex_eval.i"
+	@echo "... src/regex_eval.s"
 	@echo "... src/regex_lexer.o"
 	@echo "... src/regex_lexer.i"
 	@echo "... src/regex_lexer.s"
