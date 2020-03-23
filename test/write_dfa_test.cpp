@@ -5,7 +5,7 @@
 #include "parse.hpp"
 #include "dfa.hpp"
 
-// WARNING: Depends on writeDFA() in regex_test.cpp
+// WARNING: Depends on write_dfa.cpp
 #include "gen_regex_dfa.hpp"
 
 #include <cstddef>

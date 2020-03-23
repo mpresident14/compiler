@@ -182,6 +182,7 @@ vector<StackObj> templateTokenize(const string& input, const typename DFAType::N
   return tokens;
 }
 
+/* Explicitly instantiate these so that the lexer*/
 template vector<StackObj> templateTokenize<MergedRgxDFA>(const string& input, const MergedRgxDFA::Node* dfaRoot);
 template vector<StackObj> templateTokenize<DFA<Symbol, char>>(const string& input, const DFA<Symbol, char>::Node* dfaRoot);
 
