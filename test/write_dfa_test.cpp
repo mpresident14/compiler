@@ -20,7 +20,7 @@ using namespace prez;
 UnitTest TESTER = UnitTest::createTester();
 
 void testGeneratedRgxDFA() {
-  vector<StackObj> actual = tokenize("123fora", getRoot());
+  vector<StackObj> actual = tokenize("123fora", getRoot().get());
 
   TESTER.assertEquals(3, actual.size());
 

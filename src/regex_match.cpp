@@ -112,19 +112,24 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   return mergedDfa;
 }
 
+/* So we can reuse the next two functions for the MergedRgxDFA and condensed generated one */
+Symbol getNodeToken(const MergedRgxDFA::Node* node) { return node->getValue().token; }
+Symbol getNodeToken(const DFA<Symbol, char>::Node* node) { return node->getValue(); }
+
 /* Step through the merged regex DFA and return the token corresponding
  * to the longest matching prefix */
-optional<StackObj> getToken(string_view& input, const MergedRgxDFA::Node* dfaRoot) {
+template <typename DFAType>
+optional<StackObj> getToken(string_view& input, const typename DFAType::Node* dfaRoot) {
   size_t i = 0;
   const size_t len = input.size();
   size_t lastAcceptingPos;
   Symbol lastAcceptingToken = Symbol::EPSILON;
-  const MergedRgxDFA::Node* currentNode = dfaRoot;
+  const typename DFAType::Node* currentNode = dfaRoot;
 
   while (currentNode) {
     // Check if this is an accepting state, and if so,
     // record the token type and the position in the input
-    Symbol token = currentNode->getValue().token;
+    Symbol token = getNodeToken(currentNode);
     if (token != Symbol::EPSILON) {
       lastAcceptingToken = token;
       lastAcceptingPos = i;
@@ -135,7 +140,7 @@ optional<StackObj> getToken(string_view& input, const MergedRgxDFA::Node* dfaRoo
       break;
     }
     // Advance to the next state
-    currentNode = MergedRgxDFA::step(currentNode, input[i++]);
+    currentNode = DFAType::step(currentNode, input[i++]);
   }
 
   // Never reached an accepting state
@@ -151,12 +156,13 @@ optional<StackObj> getToken(string_view& input, const MergedRgxDFA::Node* dfaRoo
 }
 
 
-vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot) {
+template <typename DFAType>
+vector<StackObj> templateTokenize(const string& input, const typename DFAType::Node* dfaRoot) {
   vector<StackObj> tokens;
   string_view inputView = input;
 
   while (!inputView.empty()) {
-    optional<StackObj> optionalObj = getToken(inputView, dfaRoot);
+    optional<StackObj> optionalObj = getToken<DFAType>(inputView, dfaRoot);
     if (optionalObj.has_value()) {
       tokens.push_back(*optionalObj);
     } else {
@@ -175,6 +181,17 @@ vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot
 
   return tokens;
 }
+
+template vector<StackObj> templateTokenize<MergedRgxDFA>(const string& input, const MergedRgxDFA::Node* dfaRoot);
+template vector<StackObj> templateTokenize<DFA<Symbol, char>>(const string& input, const DFA<Symbol, char>::Node* dfaRoot);
+
+vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot) {
+  return templateTokenize<MergedRgxDFA>(input, dfaRoot);
+}
+vector<StackObj> tokenize(const string& input, const DFA<Symbol, char>::Node* dfaRoot) {
+  return templateTokenize<DFA<Symbol, char>>(input, dfaRoot);
+}
+
 
 
 /* Value conversion function: V1 -> V2 */

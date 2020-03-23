@@ -167,7 +167,7 @@ public:
       tranStmts << "});\n";
     }
 
-    tranStmts << "return std::move(" << root_ << ");\n}";
+    tranStmts << "return std::move(n" << root_ << ");\n}";
 
     // Write declarations and statements to the file
     std::ofstream outFile;

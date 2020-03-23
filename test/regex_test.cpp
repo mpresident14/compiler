@@ -150,12 +150,12 @@ void testTokenize_withInvalidInput() {
   TESTER.assertThrows(([&dfa](){ tokenize("fo123", dfa.getRoot()); }));
 }
 
-// void writeDFA() {
-//   vector<TokenPattern> patterns = {
-//     { "a", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
-//   };
-//   writeRegexDFA(patterns, "test/gen_regex_dfa.hpp");
-// }
+void writeDFA() {
+  vector<TokenPattern> patterns = {
+    { "a", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
+  };
+  writeRegexDFA(patterns, "test/gen_regex_dfa.hpp");
+}
 
 int main(int, char**) {
   // To test stderr output
@@ -172,7 +172,7 @@ int main(int, char**) {
   testTokenize_withConflictingPatterns();
   testTokenize_withInvalidRegex();
   testTokenize_withInvalidInput();
-  // writeDFA();
+  writeDFA();
 
   return 0;
 }

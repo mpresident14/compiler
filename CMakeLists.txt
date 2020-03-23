@@ -25,6 +25,7 @@ add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp)
 add_executable(lr1_test test/lr1_test.cpp)
 add_executable(regex_test test/regex_test.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
+add_executable(write_dfa_test test/write_dfa_test.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 add_executable(main src/main.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 add_executable(lexer src/lexer.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 
@@ -34,8 +35,8 @@ add_executable(lexer src/lexer.cpp src/regex.cpp src/regex_lexer.cpp src/regex_m
 enable_testing()
 add_test(DFA dfa_test)
 add_test(NULL_FIRST null_first_test)
-add_test(LR1 lr1_test lr1_test)
-add_test(REGEX regex_test regex_test)
+add_test(LR1 lr1_test)
+add_test(REGEX regex_test && write_dfa_test)
 
 set_tests_properties(
     DFA NULL_FIRST LR1 REGEX
