@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <fstream>
 
 #include <prez/print_stuff.hpp>
 
@@ -20,6 +21,8 @@ public:
   public:
     friend class DFA;
 
+    Node(V value) : value_(std::move(value)) {}
+
     bool operator==(const Node& other) const { return value_ == other.value_; }
 
     friend std::ostream& operator<<(std::ostream& out, const Node& node) {
@@ -27,11 +30,13 @@ public:
     }
 
     const V& getValue() const { return value_; }
+
+    /* FOR GENERATED DFA ONLY. DO NOT CALL THIS FUNCTION */
+    void setTransitions(std::unordered_map<T, const Node*>&& tranMap) { transitions_ = move(tranMap); }
+
     const std::unordered_map<T, const Node*>& getTransitions() const { return transitions_; }
 
   private:
-    Node(V value) : value_(std::move(value)) {}
-
     V value_;
     // "mutable" allows us to modify the map even when a node is const
     mutable std::unordered_map<T, const Node*> transitions_;
@@ -123,6 +128,55 @@ public:
     valueToNode_.emplace(newNodeValue, newNode);
     return newNode;
   }
+
+
+  template <typename F1, typename F2, typename F3>
+  void writeToFile(const std::string& filename,
+      const std::string& includes,
+      const std::string& valueType,
+      const std::string& tranType,
+      const F1& convertValue,
+      const F2& valueToStr,
+      const F3& tranToStr) {
+    std::ostringstream nodeDecls;
+    std::ostringstream tranStmts;
+    nodeDecls << "#include \"dfa.hpp\"\n" << "#include <utility>\n" << "using Node=" << "DFA<" << valueType << ',' << tranType << ">::Node;\n";
+    tranStmts << "auto getRoot(){\n";
+
+    std::unordered_set<const Node*> visited = { root_ };
+    std::queue<const Node*> q;
+    q.push(root_);
+
+    while (!q.empty()) {
+      const Node* currentNode = q.front();
+      q.pop();
+
+      // Add node declaration
+      nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>(" << valueToStr(convertValue(currentNode->value_)) << ");\n";
+
+      // Add the transitions
+      tranStmts << 'n' << currentNode << "->setTransitions({\n";
+      for (const auto& tranAndNode : currentNode->transitions_) {
+        const Node* successor = tranAndNode.second;
+        tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n' << successor << ".get()},\n";
+        if (!visited.contains(successor)) {
+          visited.insert(successor);
+          q.push(successor);
+        }
+      }
+      tranStmts << "});\n";
+    }
+
+    tranStmts << "return std::move(" << root_ << ");\n}";
+
+    // Write declarations and statements to the file
+    std::ofstream outFile;
+    outFile.open(filename);
+    // TODO: Change to .view() when implemented
+    outFile << includes << '\n' << nodeDecls.str() << tranStmts.str();
+    outFile.close();
+  }
+
 
   size_t size() const noexcept { return valueToNode_.size(); }
 

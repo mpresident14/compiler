@@ -25,7 +25,9 @@ add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp)
 add_executable(lr1_test test/lr1_test.cpp)
 add_executable(regex_test test/regex_test.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
-add_executable(main src/main.cpp src/regex.cpp src/regex_lexer.cpp)
+add_executable(main src/main.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
+add_executable(lexer src/lexer.cpp src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
+
 
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
 # https://gitlab.kitware.com/cmake/community/-/wikis/doc/ctest/Testing-With-CTest
@@ -34,6 +36,10 @@ add_test(DFA dfa_test)
 add_test(NULL_FIRST null_first_test)
 add_test(LR1 lr1_test lr1_test)
 add_test(REGEX regex_test regex_test)
+
+set_tests_properties(
+    DFA NULL_FIRST LR1 REGEX
+    PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(

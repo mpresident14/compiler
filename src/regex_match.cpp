@@ -2,11 +2,8 @@
 
 using namespace std;
 
-
-using RgxDFA = DFA<RgxPtr, char>;
-
 static constexpr char alphabet[] =
-    R"( !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~)";
+    " !\"#$%&\'()*+,-./\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
 /* BFS with regex derivative expansion */
 RgxDFA buildRegexDFA(const RgxPtr rgx) {
@@ -18,7 +15,9 @@ RgxDFA buildRegexDFA(const RgxPtr rgx) {
     const RgxDFA::Node* node = q.front();
     RgxPtr rgx = node->getValue();
     q.pop();
-    for (const char c : alphabet) {
+
+    char c;
+    for (size_t i = 0; (c = alphabet[i]) != '\0'; ++i) {
       const RgxDFA::Node* successor = dfa.addTransition(node, c, rgx->getDeriv(c));
       if (successor) {
         q.push(successor);
@@ -39,35 +38,6 @@ bool matches(const string& pattern, const string& input) {
 }
 
 
-struct MergeData {
-  vector<pair<const RgxDFA::Node*, Symbol>> states;
-  Symbol token;
-};
-
-
-namespace std {
-  template <>
-  struct hash<MergeData> {
-    size_t operator()(const MergeData& mergeData) const noexcept {
-      const vector<pair<const RgxDFA::Node*, Symbol>>& states = mergeData.states;
-      // mergeData will not be empty
-      return (size_t)accumulate(states.cbegin() + 1,
-          states.cend(),
-          (uintptr_t)states[0].first,
-          [](uintptr_t n, pair<const RgxDFA::Node*, Symbol> node) {
-            return n ^ (uintptr_t)node.first;
-          });
-    }
-  };
-}  // namespace std
-
-bool operator==(const MergeData& md1, const MergeData& md2) noexcept {
-  return md1.states == md2.states;
-}
-
-
-using MergedRgxDFA = DFA<MergeData, char>;
-
 MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   DFA_t parserDfa = buildParserDFA();
   // We need the regex DFAs to be live long enough to create the merged DFA,
@@ -84,7 +54,7 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
     RgxPtr rgx = RgxPtr(parse(parserDfa, lex(tokenPattern.first)));
     // Invalid regex
     if (!rgx) {
-      throw runtime_error("Invalid regex + " + tokenPattern.first);
+      throw runtime_error("Invalid regex " + tokenPattern.first);
     }
     RgxDFA rgxDfa = buildRegexDFA(move(rgx));
     initialStates.push_back({ rgxDfa.getRoot(), tokenPattern.second });
@@ -108,7 +78,8 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
   while (!q.empty()) {
     const MergedRgxDFA::Node* mergedNode = q.front();
     q.pop();
-    for (const char c : alphabet) {
+    char c;
+    for (size_t i = 0; (c = alphabet[i]) != '\0'; ++i) {
       vector<pair<const RgxDFA::Node*, Symbol>> newStates;
       Symbol newToken = Symbol::EPSILON;
       for (const auto& nodeAndSymbol : mergedNode->getValue().states) {
@@ -127,6 +98,7 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
           }
         }
       }
+      // If there are no transition sta
       // Add transition to the merged node and add it to the queue if it did not already
       // exist in the merged DFA
       const MergedRgxDFA::Node* mergedSuccessor =
@@ -142,12 +114,12 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
 
 /* Step through the merged regex DFA and return the token corresponding
  * to the longest matching prefix */
-optional<StackObj> getToken(string_view& input, const MergedRgxDFA& dfa) {
+optional<StackObj> getToken(string_view& input, const MergedRgxDFA::Node* dfaRoot) {
   size_t i = 0;
   const size_t len = input.size();
   size_t lastAcceptingPos;
   Symbol lastAcceptingToken = Symbol::EPSILON;
-  const MergedRgxDFA::Node* currentNode = dfa.getRoot();
+  const MergedRgxDFA::Node* currentNode = dfaRoot;
 
   while (currentNode) {
     // Check if this is an accepting state, and if so,
@@ -179,17 +151,16 @@ optional<StackObj> getToken(string_view& input, const MergedRgxDFA& dfa) {
 }
 
 
-vector<StackObj> tokenize(const string& input, const vector<TokenPattern>& tokenPatterns) {
-  const MergedRgxDFA dfa = buildMergedRgxDFA(tokenPatterns);
+vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot) {
   vector<StackObj> tokens;
   string_view inputView = input;
 
   while (!inputView.empty()) {
-    optional<StackObj> optionalObj = getToken(inputView, dfa);
+    optional<StackObj> optionalObj = getToken(inputView, dfaRoot);
     if (optionalObj.has_value()) {
       tokens.push_back(*optionalObj);
     } else {
-      stringstream error;
+      ostringstream error;
       vector<Symbol> prevTokens;
       auto startIter = tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
       transform(
@@ -203,4 +174,40 @@ vector<StackObj> tokenize(const string& input, const vector<TokenPattern>& token
   }
 
   return tokens;
+}
+
+
+/* Value conversion function: V1 -> V2 */
+Symbol mergedDataToToken(const MergeData& mergedData) {
+  return mergedData.token;
+}
+
+/* Value string representation */
+string tokenToString(Symbol token) {
+  ostringstream out;
+  out << "Symbol::" << token;
+  return out.str();
+}
+
+/* Value string representation */
+string charToString(char c) {
+  string str(1, '\'');
+  str.reserve(4);
+  if (c == '\\' || c == '\'') {
+    str.append(1, '\\');
+  }
+  str.append(1, c);
+  str.append(1, '\'');
+  return str;
+}
+
+
+void writeRegexDFA(const vector<TokenPattern> patterns, const string& filename) {
+  buildMergedRgxDFA(patterns).writeToFile(filename,
+      "#include \"regex_grammar.hpp\"",
+      "Symbol",
+      "char",
+      mergedDataToToken,
+      tokenToString,
+      charToString);
 }
