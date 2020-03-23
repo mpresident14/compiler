@@ -3,8 +3,7 @@
 # Then build executables with "make -j <threads>"
 
 # Specify the minimum version for CMake
-
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.17.0)
 
 # Project's name
 project(compiler)
@@ -14,11 +13,10 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-
 # Set compilation flags
 set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I . -I ./src")
 
-# The following folder will be included
+# The following folders will be included
 include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test")
 
 # So regex sources don't have to be rebuilt for each executable
@@ -64,4 +62,4 @@ add_custom_target(
     DEPENDS dfa_test null_first_test lr1_test regex_test write_dfa_test)
 
 # Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES test/gen_regex_dfa.hpp)
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_regex_dfa.hpp)
