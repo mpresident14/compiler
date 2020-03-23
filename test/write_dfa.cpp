@@ -1,9 +1,4 @@
 #include "regex_match.hpp"
-#include "regex.hpp"
-#include "regex_lexer.hpp"
-#include "regex_grammar.hpp"
-#include "parse.hpp"
-#include "dfa.hpp"
 
 #include <iostream>
 #include <cstddef>

@@ -132,6 +132,7 @@ public:
   }
 
 
+  // TODO: Separate into hpp and cpp files
   template <typename F1, typename F2, typename F3>
   void writeToFile(const std::string& filename,
       const std::string& includes,

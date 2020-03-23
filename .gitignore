@@ -44,3 +44,6 @@ CMakeFiles/
 *.cmake
 Testing/
 bin/
+
+# My generated files
+test/gen_regex_dfa.hpp
