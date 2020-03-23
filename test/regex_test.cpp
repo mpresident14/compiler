@@ -137,7 +137,7 @@ void testTokenize_withInvalidRegex() {
     { ".", Symbol::CHAR }, { "1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
   };
 
-  TESTER.assertThrows([&patterns](){ buildMergedRgxDFA(patterns); });
+  TESTER.assertThrows([&patterns]() { buildMergedRgxDFA(patterns); });
 }
 
 
@@ -147,7 +147,7 @@ void testTokenize_withInvalidInput() {
   MergedRgxDFA dfa = buildMergedRgxDFA(patterns);
   // NOTE: note the parentheses because of the comma in the macro. See
   // https://stackoverflow.com/questions/33016521/c-macro-with-lambda-argument-using-2-captured-elements-generates-error
-  TESTER.assertThrows(([&dfa](){ tokenize("fo123", dfa.getRoot()); }));
+  TESTER.assertThrows(([&dfa]() { tokenize("fo123", dfa.getRoot()); }));
 }
 
 

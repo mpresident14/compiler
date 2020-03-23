@@ -57,5 +57,6 @@ MergedRgxDFA buildMergedRgxDFA(const std::vector<TokenPattern>& tokenPatterns);
 std::vector<StackObj> tokenize(const std::string& input, const MergedRgxDFA::Node* dfaRoot);
 std::vector<StackObj> tokenize(const std::string& input, const DFA<Symbol, char>::Node* dfaRoot);
 
-void writeRegexDFA(const std::vector<TokenPattern> patterns, const std::string& filename = "regex_dfa.hpp");
+void writeRegexDFA(const std::vector<TokenPattern> patterns,
+    const std::string& filename = "regex_dfa.hpp");
 #endif

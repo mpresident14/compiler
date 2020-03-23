@@ -32,7 +32,9 @@ public:
     const V& getValue() const { return value_; }
 
     /* FOR GENERATED DFA ONLY. DO NOT CALL THIS FUNCTION */
-    void setTransitions(std::unordered_map<T, const Node*>&& tranMap) { transitions_ = move(tranMap); }
+    void setTransitions(std::unordered_map<T, const Node*>&& tranMap) {
+      transitions_ = move(tranMap);
+    }
 
     const std::unordered_map<T, const Node*>& getTransitions() const { return transitions_; }
 
@@ -140,7 +142,10 @@ public:
       const F3& tranToStr) {
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
-    nodeDecls << "#include \"dfa.hpp\"\n" << "#include <utility>\n" << "using Node=" << "DFA<" << valueType << ',' << tranType << ">::Node;\n";
+    nodeDecls << "#include \"dfa.hpp\"\n"
+              << "#include <utility>\n"
+              << "using Node="
+              << "DFA<" << valueType << ',' << tranType << ">::Node;\n";
     tranStmts << "auto getRoot(){\n";
 
     std::unordered_set<const Node*> visited = { root_ };
@@ -152,7 +157,8 @@ public:
       q.pop();
 
       // Add node declaration
-      nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>(" << valueToStr(convertValue(currentNode->value_)) << ");\n";
+      nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>("
+                << valueToStr(convertValue(currentNode->value_)) << ");\n";
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->setTransitions({\n";

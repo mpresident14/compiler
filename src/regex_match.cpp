@@ -3,7 +3,8 @@
 using namespace std;
 
 static constexpr char alphabet[] =
-    " !\"#$%&\'()*+,-./\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    " !\"#$%&\'()*+,-./"
+    "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
 /* BFS with regex derivative expansion */
 RgxDFA buildRegexDFA(const RgxPtr rgx) {
@@ -183,8 +184,10 @@ vector<StackObj> templateTokenize(const string& input, const typename DFAType::N
 }
 
 /* Explicitly instantiate these so that the lexer*/
-template vector<StackObj> templateTokenize<MergedRgxDFA>(const string& input, const MergedRgxDFA::Node* dfaRoot);
-template vector<StackObj> templateTokenize<DFA<Symbol, char>>(const string& input, const DFA<Symbol, char>::Node* dfaRoot);
+template vector<StackObj> templateTokenize<MergedRgxDFA>(const string& input,
+    const MergedRgxDFA::Node* dfaRoot);
+template vector<StackObj> templateTokenize<DFA<Symbol, char>>(const string& input,
+    const DFA<Symbol, char>::Node* dfaRoot);
 
 vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot) {
   return templateTokenize<MergedRgxDFA>(input, dfaRoot);
@@ -194,11 +197,8 @@ vector<StackObj> tokenize(const string& input, const DFA<Symbol, char>::Node* df
 }
 
 
-
 /* Value conversion function: V1 -> V2 */
-Symbol mergedDataToToken(const MergeData& mergedData) {
-  return mergedData.token;
-}
+Symbol mergedDataToToken(const MergeData& mergedData) { return mergedData.token; }
 
 /* Value string representation */
 string tokenToString(Symbol token) {
