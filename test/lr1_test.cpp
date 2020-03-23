@@ -23,14 +23,14 @@ stringstream errBuffer;
 
 void testRuleEquality() {
   const DFARule rule0 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("001") /* {PLUS} */ };
+                          { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                          0,
+                          BitSetToks("001") /* {PLUS} */ };
 
   const DFARule rule1 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                          0,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
 
   RuleSet ruleSet0 = { rule0 };
   RuleSet ruleSet1 = { rule1 };
@@ -44,23 +44,23 @@ void testRuleEquality() {
 void testAddRhses() {
   queue<DFARule> ruleQueue;
   const DFARule fromRule = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("001") /* {PLUS} */ };
+                             { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                             0,
+                             BitSetToks("001") /* {PLUS} */ };
   addRhses(ruleQueue, fromRule);
 
   const DFARule expected0 = { Concrete::EINT,
-    { Symbol::INT },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::INT },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected1 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected2 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   TESTER.assertEquals(3, ruleQueue.size());
   TESTER.assertEquals(expected0, ruleQueue.front());
@@ -77,17 +77,17 @@ void testEpsilonTransition() {
   epsilonTransition(ruleSet);
 
   const DFARule expected0 = { Concrete::EINT,
-    { Symbol::INT },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::INT },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected1 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected2 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   TESTER.assertEquals(4, ruleSet.size());
   // Can't just use contains because we have defined equality within
@@ -105,17 +105,17 @@ void testInitDFA() {
 
   const DFARule initRule = { Concrete::SCONC, { Symbol::EXPR }, 0, BitSetToks() /* {} */ };
   const DFARule expected0 = { Concrete::EINT,
-    { Symbol::INT },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::INT },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected1 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expected2 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   TESTER.assertEquals(4, ruleSet.size());
   TESTER.assertEquals(initRule, *ruleSet.find(initRule));
@@ -127,13 +127,13 @@ void testInitDFA() {
 void testCreateTransitions() {
   const DFARule rule0 = { Concrete::SCONC, { Symbol::EXPR }, 1, BitSetToks() /* {} */ };
   const DFARule rule1 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    1,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                          1,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule rule2 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    1,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                          1,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ rule0, rule1, rule2 });
   createTransitions(dfa, dfa.getRoot());
@@ -143,25 +143,25 @@ void testCreateTransitions() {
 
 
   const DFARule expectedPlus = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    2,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                                 { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                                 2,
+                                 BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expectedTimes = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    2,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                                  { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                                  2,
+                                  BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expectedBoth0 = { Concrete::EINT,
-    { Symbol::INT },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                                  { Symbol::INT },
+                                  0,
+                                  BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expectedBoth1 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                                  { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                                  0,
+                                  BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule expectedBoth2 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                                  { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                                  0,
+                                  BitSetToks("011") /* {STAR, PLUS} */ };
 
   TESTER.assertEquals(2, transitions.size());
 
@@ -180,9 +180,9 @@ void testCreateTransitions() {
 
 void testTryReduce_noMatchStack() {
   const DFARule rule0 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    3,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                          3,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
@@ -199,9 +199,9 @@ void testTryReduce_noMatchStack() {
 
 void testTryReduce_notAtEnd() {
   const DFARule rule0 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    2,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                          2,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
@@ -217,9 +217,9 @@ void testTryReduce_notAtEnd() {
 
 void testTryReduce_notInLookahead() {
   const DFARule rule0 = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    3,
-    BitSetToks("010") /* {STAR} */ };
+                          { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                          3,
+                          BitSetToks("010") /* {STAR} */ };
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
@@ -236,13 +236,13 @@ void testTryReduce_notInLookahead() {
 
 void testTryReduce_lowerRulePrecedence_hasShiftable() {
   const DFARule reducible = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    3,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              3,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule shiftable = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    1,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                              1,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ reducible, shiftable });
   const std::vector<StackObj>& stk = {
@@ -259,9 +259,9 @@ void testTryReduce_lowerRulePrecedence_hasShiftable() {
 
 void testTryReduce_lowerRulePrecedence_noShiftable() {
   const DFARule rule0 = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    3,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                          { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                          3,
+                          BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ rule0 });
   const std::vector<StackObj>& stk = {
@@ -278,13 +278,13 @@ void testTryReduce_lowerRulePrecedence_noShiftable() {
 
 void testTryReduce_higherRulePrecedence() {
   const DFARule shiftable = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    1,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              1,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule reducible = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
-    3,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::STAR, Symbol::EXPR },
+                              3,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
@@ -302,13 +302,13 @@ void testTryReduce_higherRulePrecedence() {
 
 void testTryReduce_unspecifiedPrecedence() {
   const DFARule shiftable = { Concrete::EINT,
-    { Symbol::INT },
-    0,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::INT },
+                              0,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule reducible = { Concrete::EINT,
-    { Symbol::INT },
-    1,
-    BitSetToks("111") /* {INT, STAR, PLUS} */ };
+                              { Symbol::INT },
+                              1,
+                              BitSetToks("111") /* {INT, STAR, PLUS} */ };
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
@@ -325,13 +325,13 @@ void testTryReduce_unspecifiedPrecedence() {
 
 void testTryReduce_equalPrecedence_leftAssoc() {
   const DFARule shiftable = { Concrete::EPLUS,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    1,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              1,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
   const DFARule reducible = { Concrete::ETIMES,
-    { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
-    3,
-    BitSetToks("011") /* {STAR, PLUS} */ };
+                              { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR },
+                              3,
+                              BitSetToks("011") /* {STAR, PLUS} */ };
 
   DFA_t dfa({ shiftable, reducible });
   const std::vector<StackObj>& stk = {
@@ -352,59 +352,68 @@ void testShiftReduce() {
   DFA_t dfa = buildParserDFA();
   ExprPtr expr0 = ExprPtr(parse(dfa, { StackObj{ new int(1), Symbol::INT, Concrete::NONE } }));
   // 1 + 2
-  ExprPtr expr1 = ExprPtr(parse(dfa,
+  ExprPtr expr1 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
   // 1 + 2 + 50
-  ExprPtr expr2 = ExprPtr(parse(dfa,
+  ExprPtr expr2 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE },
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 + 2 * 50
-  ExprPtr expr3 = ExprPtr(parse(dfa,
+  ExprPtr expr3 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE },
+        StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 * 2 + 50
-  ExprPtr expr4 = ExprPtr(parse(dfa,
+  ExprPtr expr4 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE },
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 * 2 * 50
-  ExprPtr expr5 = ExprPtr(parse(dfa,
+  ExprPtr expr5 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE },
+        StackObj{ nullptr, Symbol::STAR, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
 
   // 1 +
-  ExprPtr noParse0 = ExprPtr(parse(dfa,
+  ExprPtr noParse0 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE } }));
   // + 2
-  ExprPtr noParse1 = ExprPtr(parse(dfa,
+  ExprPtr noParse1 = ExprPtr(parse(
+      dfa,
       { StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE } }));
   // 1 2 + 50
-  ExprPtr noParse2 = ExprPtr(parse(dfa,
+  ExprPtr noParse2 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ new int(2), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ new int(2), Symbol::INT, Concrete::NONE },
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
   // 1 + + 50
-  ExprPtr noParse3 = ExprPtr(parse(dfa,
+  ExprPtr noParse3 = ExprPtr(parse(
+      dfa,
       { StackObj{ new int(1), Symbol::INT, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
-          StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ nullptr, Symbol::PLUS, Concrete::NONE },
+        StackObj{ new int(50), Symbol::INT, Concrete::NONE } }));
 
   TESTER.assertEquals(1, expr0->eval());
   TESTER.assertEquals(3, expr1->eval());

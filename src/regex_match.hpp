@@ -34,7 +34,8 @@ namespace std {
     size_t operator()(const MergeData& mergeData) const noexcept {
       const vector<pair<const RgxDFA::Node*, Symbol>>& states = mergeData.states;
       // mergeData will not be empty
-      return (size_t)accumulate(states.cbegin() + 1,
+      return (size_t)accumulate(
+          states.cbegin() + 1,
           states.cend(),
           (uintptr_t)states[0].first,
           [](uintptr_t n, pair<const RgxDFA::Node*, Symbol> node) {
@@ -57,6 +58,7 @@ MergedRgxDFA buildMergedRgxDFA(const std::vector<TokenPattern>& tokenPatterns);
 std::vector<StackObj> tokenize(const std::string& input, const MergedRgxDFA::Node* dfaRoot);
 std::vector<StackObj> tokenize(const std::string& input, const DFA<Symbol, char>::Node* dfaRoot);
 
-void writeRegexDFA(const std::vector<TokenPattern> patterns,
+void writeRegexDFA(
+    const std::vector<TokenPattern> patterns,
     const std::string& filename = "regex_dfa.hpp");
 #endif

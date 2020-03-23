@@ -185,7 +185,8 @@ inline void conflictWarning(const DFARule& rule1, const DFARule& rule2) {
 }
 
 // TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.
-inline Concrete tryReduce(const DFA_t::Node* node,
+inline Concrete tryReduce(
+    const DFA_t::Node* node,
     Symbol nextToken,
     const std::vector<StackObj>& stk,
     size_t* reduceStart) {
@@ -208,7 +209,7 @@ inline Concrete tryReduce(const DFA_t::Node* node,
     // Make sure we have completed the rule and either
     // the next token is in the lookahead set or there is no more input
     if (!(rule.atEnd() &&
-            (nextToken == Symbol::EPSILON || rule.lookahead[toIntTokenOffset(nextToken)]))) {
+          (nextToken == Symbol::EPSILON || rule.lookahead[toIntTokenOffset(nextToken)]))) {
       continue;
     }
 

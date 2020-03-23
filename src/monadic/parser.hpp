@@ -52,8 +52,10 @@ public:
   // The "invoke_result" part ensures that the parameter is a function
   // (implements operator()). This ensures that this constructor doesn't
   // interfere with the move and copy constructors.
-  template <typename Fn,
-      typename = std::enable_if_t<std::is_convertible_v<std::optional<T>,
+  template <
+      typename Fn,
+      typename = std::enable_if_t<std::is_convertible_v<
+          std::optional<T>,
           std::invoke_result_t<Fn, std::istream&, size_t*>>>>
   Parser(Fn&& f);
   ~Parser();
@@ -84,7 +86,8 @@ public:
   template <typename A, typename B, typename C>
   Parser<std::tuple<T, A, B, C>> combine(Parser<A> p1, Parser<B> p2, Parser<C> p3) const;
 
-  template <typename Fn,
+  template <
+      typename Fn,
       typename = std::enable_if_t<std::is_same_v<bool, std::invoke_result_t<Fn, T>>>>
   Parser<T> verify(Fn&& boolFn) const;
 
@@ -158,8 +161,9 @@ namespace parsers {
   template <typename T>
   requires rvalue<T&&> Parser<T> createBasic(T&& obj) {
     // Lambda is mutable so we can move obj
-    return Parser<T>{ [obj = move(obj)](
-                          istream&, size_t*) mutable { return createReturnObject(move(obj)); } };
+    return Parser<T>{ [obj = move(obj)](istream&, size_t*) mutable {
+      return createReturnObject(move(obj));
+    } };
   }
 
   /* fail() and lazy() are the same under the hood, but identifying them

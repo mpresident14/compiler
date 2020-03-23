@@ -16,9 +16,9 @@ using namespace prez;
 // using namespace parsers;
 
 int main() {
-  vector<TokenPattern> patterns = {
-    { "a", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
-  };
+  vector<TokenPattern> patterns = { { "a", Symbol::CHAR },
+                                    { "[1-9][0-9]*", Symbol::DASH },
+                                    { "for", Symbol::BAR } };
 
 
   writeRegexDFA(patterns);

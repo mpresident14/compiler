@@ -7,9 +7,9 @@
 using namespace std;
 
 void generateRgxDFA() {
-  vector<TokenPattern> patterns = {
-    { "a", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
-  };
+  vector<TokenPattern> patterns = { { "a", Symbol::CHAR },
+                                    { "[1-9][0-9]*", Symbol::DASH },
+                                    { "for", Symbol::BAR } };
   writeRegexDFA(patterns, "test/gen_regex_dfa.hpp");
 }
 

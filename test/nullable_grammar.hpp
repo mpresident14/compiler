@@ -82,16 +82,8 @@ inline std::ostream& operator<<(std::ostream& out, const Concrete& type) {
   return out;
 }
 
-const Symbol concreteToSymbol[] = { Symbol::S,
-  Symbol::S,
-  Symbol::C,
-  Symbol::C,
-  Symbol::C,
-  Symbol::X,
-  Symbol::X,
-  Symbol::Y,
-  Symbol::Y,
-  Symbol::Y };
+const Symbol concreteToSymbol[] = { Symbol::S, Symbol::S, Symbol::C, Symbol::C, Symbol::C,
+                                    Symbol::X, Symbol::X, Symbol::Y, Symbol::Y, Symbol::Y };
 
 constexpr Symbol toSymbol(Concrete concrete) {
   return concreteToSymbol[static_cast<int>(concrete)];
@@ -131,26 +123,26 @@ std::vector<Symbol> toVector(BitSetToks tokSet) {
 constexpr Symbol ROOT_SYM = Symbol::S;
 
 const Grammar GRAMMAR = { { Symbol::S,
-                              {
-                                  GrammarRule{ Concrete::S1, { Symbol::T, Symbol::Y } },
-                                  GrammarRule{ Concrete::S2, { Symbol::Y, Symbol::C, Symbol::X } },
-                              } },
-  { Symbol::C,
-      {
-          GrammarRule{ Concrete::C1, { Symbol::C, Symbol::X } },
-          GrammarRule{ Concrete::C2, { Symbol::Y } },
-          GrammarRule{ Concrete::C3, { Symbol::B } },
-      } },
-  { Symbol::X,
-      {
-          GrammarRule{ Concrete::X1, { Symbol::X, Symbol::X } },
-          GrammarRule{ Concrete::X2, { Symbol::A } },
-      } },
-  { Symbol::Y,
-      {
-          GrammarRule{ Concrete::Y1, { Symbol::EPSILON } },
-          GrammarRule{ Concrete::Y2, { Symbol::B } },
-          GrammarRule{ Concrete::Y3, { Symbol::Y, Symbol::Z } },
-      } } };
+                            {
+                                GrammarRule{ Concrete::S1, { Symbol::T, Symbol::Y } },
+                                GrammarRule{ Concrete::S2, { Symbol::Y, Symbol::C, Symbol::X } },
+                            } },
+                          { Symbol::C,
+                            {
+                                GrammarRule{ Concrete::C1, { Symbol::C, Symbol::X } },
+                                GrammarRule{ Concrete::C2, { Symbol::Y } },
+                                GrammarRule{ Concrete::C3, { Symbol::B } },
+                            } },
+                          { Symbol::X,
+                            {
+                                GrammarRule{ Concrete::X1, { Symbol::X, Symbol::X } },
+                                GrammarRule{ Concrete::X2, { Symbol::A } },
+                            } },
+                          { Symbol::Y,
+                            {
+                                GrammarRule{ Concrete::Y1, { Symbol::EPSILON } },
+                                GrammarRule{ Concrete::Y2, { Symbol::B } },
+                                GrammarRule{ Concrete::Y3, { Symbol::Y, Symbol::Z } },
+                            } } };
 
 #endif

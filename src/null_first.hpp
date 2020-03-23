@@ -9,7 +9,8 @@
 
 namespace {
   /* Iterate to find the least fixed point */
-  void computeNullabilities(BitSetVars& nullabilities,
+  void computeNullabilities(
+      BitSetVars& nullabilities,
       std::vector<std::vector<BitRef>>* equations) {
     using namespace std;
 

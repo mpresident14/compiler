@@ -78,31 +78,31 @@ P Parser<T>::andThen(Fn&& pGenFn) const {
   using namespace std;
 
   return { // This must be mutable to call pGenFn's non-const () operator
-    [parseFn = isThisRValue() ? move(parseFn_) : parseFn_, pGenFn = forward<Fn>(pGenFn)](
-        std::istream& input, size_t* errPos) mutable -> optional<parsers::ptype_t<P>> {
-      // Always reset to original position if either parser fails
-      size_t origPos = input.tellg();
+           [parseFn = isThisRValue() ? move(parseFn_) : parseFn_, pGenFn = forward<Fn>(pGenFn)](
+               std::istream& input, size_t* errPos) mutable -> optional<parsers::ptype_t<P>> {
+             // Always reset to original position if either parser fails
+             size_t origPos = input.tellg();
 
-      // Run first parser
-      std::optional<T> optResult1 = (**parseFn)(input, errPos);
-      // If first parser fails, reset the stream and fail entire thing
-      if (!optResult1.has_value()) {
-        input.seekg(origPos);
-        *errPos = max(*errPos, origPos);
-        return {};
-      }
+             // Run first parser
+             std::optional<T> optResult1 = (**parseFn)(input, errPos);
+             // If first parser fails, reset the stream and fail entire thing
+             if (!optResult1.has_value()) {
+               input.seekg(origPos);
+               *errPos = max(*errPos, origPos);
+               return {};
+             }
 
-      // Run the next parser on the rest of the string
-      auto nextParser = pGenFn(move(optResult1.value()));
-      auto optResult2 = (**nextParser.parseFn_)(input, errPos);
-      if (optResult2.has_value()) {
-        return optResult2;
-      }
+             // Run the next parser on the rest of the string
+             auto nextParser = pGenFn(move(optResult1.value()));
+             auto optResult2 = (**nextParser.parseFn_)(input, errPos);
+             if (optResult2.has_value()) {
+               return optResult2;
+             }
 
-      *errPos = max(*errPos, origPos);
-      input.seekg(origPos);
-      return optResult2;
-    }
+             *errPos = max(*errPos, origPos);
+             input.seekg(origPos);
+             return optResult2;
+           }
   };
 }
 
@@ -111,7 +111,7 @@ Parser<T> Parser<T>::alt(Parser<T> nextParser) const {
   using namespace std;
 
   return { [parseFn = isThisRValue() ? move(parseFn_) : parseFn_,
-               parseFn2 = move(nextParser.parseFn_)](std::istream& input, size_t* errPos) {
+            parseFn2 = move(nextParser.parseFn_)](std::istream& input, size_t* errPos) {
     // Run first parser
     std::optional<T> optResult1 = (**parseFn)(input, errPos);
     // If first parser succeeds, return the result
@@ -134,8 +134,9 @@ Parser<R> Parser<T>::transform(Fn&& mapFn) const {
   using namespace std;
 
   // Safe to move obj because andThen() will not need it again.
-  return andThen([mapFn = forward<Fn>(mapFn)](
-                     T&& obj) mutable { return parsers::createBasic(mapFn(move(obj))); });
+  return andThen([mapFn = forward<Fn>(mapFn)](T&& obj) mutable {
+    return parsers::createBasic(mapFn(move(obj)));
+  });
 }
 
 // Pass nextParser by value since we have to copy it into the lambda anyways.
@@ -149,8 +150,9 @@ Parser<std::pair<T, R>> Parser<T>::combine(Parser<R> nextParser) const {
         // In order to move obj1, the lambda must be mutable
         // Safe to move obj1 and obj2 because of andThen() does not need their
         // values anymore.
-        [obj1 = move(obj1)](
-            R&& obj2) mutable { return parsers::createBasic(make_pair(move(obj1), move(obj2))); });
+        [obj1 = move(obj1)](R&& obj2) mutable {
+          return parsers::createBasic(make_pair(move(obj1), move(obj2)));
+        });
   });
 }
 

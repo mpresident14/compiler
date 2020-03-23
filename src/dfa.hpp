@@ -134,7 +134,8 @@ public:
 
   // TODO: Separate into hpp and cpp files
   template <typename F1, typename F2, typename F3>
-  void writeToFile(const std::string& filename,
+  void writeToFile(
+      const std::string& filename,
       const std::string& includes,
       const std::string& valueType,
       const std::string& tranType,
@@ -193,7 +194,8 @@ public:
   }
 
 private:
-  std::ostream& doStream(std::ostream& out,
+  std::ostream& doStream(
+      std::ostream& out,
       const Node* node,
       size_t depth,
       std::unordered_set<const Node*>& visited) const {

@@ -108,9 +108,9 @@ void testMatches() {
 
 
 void testTokenize_withConflictingPatterns() {
-  vector<TokenPattern> patterns = {
-    { ".", Symbol::CHAR }, { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
-  };
+  vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
+                                    { "[1-9][0-9]*", Symbol::DASH },
+                                    { "for", Symbol::BAR } };
 
   MergedRgxDFA dfa = buildMergedRgxDFA(patterns);
   vector<StackObj> actual = tokenize("123fora0", dfa.getRoot());
@@ -133,9 +133,9 @@ void testTokenize_withConflictingPatterns() {
 
 
 void testTokenize_withInvalidRegex() {
-  vector<TokenPattern> patterns = {
-    { ".", Symbol::CHAR }, { "1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR }
-  };
+  vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
+                                    { "1-9][0-9]*", Symbol::DASH },
+                                    { "for", Symbol::BAR } };
 
   TESTER.assertThrows([&patterns]() { buildMergedRgxDFA(patterns); });
 }

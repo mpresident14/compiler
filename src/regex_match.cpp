@@ -184,9 +184,11 @@ vector<StackObj> templateTokenize(const string& input, const typename DFAType::N
 }
 
 /* Explicitly instantiate these so that the lexer*/
-template vector<StackObj> templateTokenize<MergedRgxDFA>(const string& input,
+template vector<StackObj> templateTokenize<MergedRgxDFA>(
+    const string& input,
     const MergedRgxDFA::Node* dfaRoot);
-template vector<StackObj> templateTokenize<DFA<Symbol, char>>(const string& input,
+template vector<StackObj> templateTokenize<DFA<Symbol, char>>(
+    const string& input,
     const DFA<Symbol, char>::Node* dfaRoot);
 
 vector<StackObj> tokenize(const string& input, const MergedRgxDFA::Node* dfaRoot) {
@@ -221,7 +223,8 @@ string charToString(char c) {
 
 
 void writeRegexDFA(const vector<TokenPattern> patterns, const string& filename) {
-  buildMergedRgxDFA(patterns).writeToFile(filename,
+  buildMergedRgxDFA(patterns).writeToFile(
+      filename,
       "#include \"regex_grammar.hpp\"",
       "Symbol",
       "char",

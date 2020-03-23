@@ -59,9 +59,9 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   // ^∅ | r2 = ^∅
   // r1 | ^∅ = ^∅
   if ((r1Type == RgxType::NOT &&
-          static_cast<Not *>(r1.get())->rgx_->getType() == RgxType::EMPTYSET) ||
+       static_cast<Not *>(r1.get())->rgx_->getType() == RgxType::EMPTYSET) ||
       (r2Type == RgxType::NOT &&
-          static_cast<Not *>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
+       static_cast<Not *>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
     return make_shared<Not>(new EmptySet);
   }
   // ∅ | r2 = r2
@@ -182,7 +182,8 @@ RegexVector::RegexVector(RegexVector &&rVec, Regex *r) : rgxs_{ move(rVec.rgxs_)
 }
 
 bool RegexVector::operator==(const RegexVector &other) const {
-  return equal(rgxs_.cbegin(),
+  return equal(
+      rgxs_.cbegin(),
       rgxs_.cend(),
       other.rgxs_.cbegin(),
       [](const RgxPtr &rPtr1, const RgxPtr &rPtr2) { return *rPtr1 == *rPtr2; });
@@ -192,7 +193,8 @@ RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 
 size_t RegexVector::hashFn() const {
   hash<RgxPtr> hasher;
-  return accumulate(rgxs_.cbegin() + 1,
+  return accumulate(
+      rgxs_.cbegin() + 1,
       rgxs_.cend(),
       hasher(rgxs_[0]),
       [&hasher](size_t hashSum, const RgxPtr &r2) { return hashSum ^ (hasher(r2) << 1); });

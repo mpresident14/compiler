@@ -77,27 +77,15 @@ enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
 constexpr size_t overridePrecedence[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4 };
 constexpr size_t tokenPrecedence[] = { 1, 5, 3, 7, 7, 8, 8, 0, 4 };
-constexpr Associativity tokenAssoc[] = { Associativity::LEFT,
-  Associativity::LEFT,
-  Associativity::LEFT,
-  Associativity::NON,
-  Associativity::NON,
-  Associativity::NON,
-  Associativity::NON,
-  Associativity::NON,
-  Associativity::LEFT };
-constexpr Symbol concreteToSymbol[] = { Symbol::S,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::REGEX,
-  Symbol::ALTS,
-  Symbol::ALTS,
-  Symbol::CONCATS,
-  Symbol::CONCATS };
+constexpr Associativity tokenAssoc[] = { Associativity::LEFT, Associativity::LEFT,
+                                         Associativity::LEFT, Associativity::NON,
+                                         Associativity::NON,  Associativity::NON,
+                                         Associativity::NON,  Associativity::NON,
+                                         Associativity::LEFT };
+constexpr Symbol concreteToSymbol[] = { Symbol::S,     Symbol::REGEX,   Symbol::REGEX,
+                                        Symbol::REGEX, Symbol::REGEX,   Symbol::REGEX,
+                                        Symbol::REGEX, Symbol::REGEX,   Symbol::ALTS,
+                                        Symbol::ALTS,  Symbol::CONCATS, Symbol::CONCATS };
 
 inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
   switch (sym) {
@@ -385,27 +373,30 @@ inline StackObj constructTokenObj(Symbol token, const std::string_view& str) {
 
 
 /* LR0 Grammar */
-const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
+const Grammar GRAMMAR = {
+  { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
   { Symbol::REGEX,
-      {
-          GrammarRule{ Concrete::RALT, { Symbol::ALTS } },
-          GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
-          GrammarRule{ Concrete::RSTAR, { Symbol::REGEX, Symbol::STAR } },
-          GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
-          GrammarRule{ Concrete::RRANGE,
-              { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
-          GrammarRule{ Concrete::RGROUP, { Symbol::LPAREN, Symbol::REGEX, Symbol::RPAREN } },
-          GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
-      } },
+    {
+        GrammarRule{ Concrete::RALT, { Symbol::ALTS } },
+        GrammarRule{ Concrete::RCONCAT, { Symbol::CONCATS } },
+        GrammarRule{ Concrete::RSTAR, { Symbol::REGEX, Symbol::STAR } },
+        GrammarRule{ Concrete::RNOT, { Symbol::CARET, Symbol::REGEX } },
+        GrammarRule{
+            Concrete::RRANGE,
+            { Symbol::LBRACKET, Symbol::CHAR, Symbol::DASH, Symbol::CHAR, Symbol::RBRACKET } },
+        GrammarRule{ Concrete::RGROUP, { Symbol::LPAREN, Symbol::REGEX, Symbol::RPAREN } },
+        GrammarRule{ Concrete::RCHAR, { Symbol::CHAR } },
+    } },
   { Symbol::ALTS,
-      {
-          GrammarRule{ Concrete::AREGEX, { Symbol::REGEX, Symbol::BAR, Symbol::REGEX } },
-          GrammarRule{ Concrete::AALT, { Symbol::ALTS, Symbol::BAR, Symbol::REGEX } },
-      } },
+    {
+        GrammarRule{ Concrete::AREGEX, { Symbol::REGEX, Symbol::BAR, Symbol::REGEX } },
+        GrammarRule{ Concrete::AALT, { Symbol::ALTS, Symbol::BAR, Symbol::REGEX } },
+    } },
   { Symbol::CONCATS,
-      {
-          GrammarRule{ Concrete::CREGEX, { Symbol::REGEX, Symbol::REGEX } },
-          GrammarRule{ Concrete::CCONCAT, { Symbol::CONCATS, Symbol::REGEX } },
-      } } };
+    {
+        GrammarRule{ Concrete::CREGEX, { Symbol::REGEX, Symbol::REGEX } },
+        GrammarRule{ Concrete::CCONCAT, { Symbol::CONCATS, Symbol::REGEX } },
+    } }
+};
 
 #endif

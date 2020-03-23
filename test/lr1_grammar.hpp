@@ -112,8 +112,8 @@ enum class Associativity { LEFT, RIGHT, NON, UNSPECIFIED };
 /* 0 means unspecified precedence */
 constexpr size_t tokenPrecedence[] = { 1 /* PLUS */, 2 /* STAR */, 0 /* INT */ };
 constexpr Associativity tokenAssoc[] = { Associativity::LEFT /* PLUS */,
-  Associativity::LEFT /* STAR */,
-  Associativity::UNSPECIFIED /* INT */ };
+                                         Associativity::LEFT /* STAR */,
+                                         Associativity::UNSPECIFIED /* INT */ };
 constexpr size_t getPrecedence(Symbol symbol) { return tokenPrecedence[toIntTokenOffset(symbol)]; }
 constexpr Associativity getAssociativity(Symbol symbol) {
   return tokenAssoc[toIntTokenOffset(symbol)];
@@ -255,7 +255,8 @@ constexpr size_t ruleOverridePrecedence(const DFARule& rule) {
 }
 
 /* LR0 Grammar */
-const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
+const Grammar GRAMMAR = {
+  { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SYM } } } },
   {
       Symbol::EXPR,
       {
@@ -263,6 +264,7 @@ const Grammar GRAMMAR = { { Symbol::S, { GrammarRule{ Concrete::SCONC, { ROOT_SY
           GrammarRule{ Concrete::EPLUS, { Symbol::EXPR, Symbol::PLUS, Symbol::EXPR } },
           GrammarRule{ Concrete::ETIMES, { Symbol::EXPR, Symbol::STAR, Symbol::EXPR } },
       },
-  } };
+  }
+};
 
 #endif
