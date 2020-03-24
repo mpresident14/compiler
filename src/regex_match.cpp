@@ -86,22 +86,23 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
       for (const auto& nodeAndSymbol : mergedNode->getValue().states) {
         const RgxDFA::Node* node = nodeAndSymbol.first;
         const Symbol token = nodeAndSymbol.second;
-        const RgxDFA::Node* successor = RgxDFA::step(node, c);
-        if (successor) {
-          newStates.push_back({ successor, token });
-          if (successor->getValue()->isNullable()) {
-            // Multiple regex DFAs accept the same string
-            if (newToken != Symbol::EPSILON) {
-              cerr << "WARNING: Overlapping regexes for tokens " << newToken << " and " << token
-                   << endl;
-            }
-            newToken = token;
+	// Since Regex DFAs are actual DFAs (they have a transition for every symbol
+        // in the alphabet), each node always has a successor for every transition.
+	const RgxDFA::Node* successor = RgxDFA::step(node, c);
+	newStates.push_back({ successor, token });
+	if (successor->getValue()->isNullable()) {
+          // Multiple regex DFAs accept the same string
+          if (newToken != Symbol::EPSILON) {
+            cerr << "WARNING: Overlapping regexes for tokens " << newToken << " and " << token
+                 << endl;
           }
+          newToken = token;
         }
       }
-      // If there are no transition sta
       // Add transition to the merged node and add it to the queue if it did not already
-      // exist in the merged DFA
+      // exist in the merged DFA.
+      // Again, since Regex DFAs are actual DFAs, we are guaranteed to have a valid 
+      // state in newStates for each Regex DFA.
       const MergedRgxDFA::Node* mergedSuccessor =
           mergedDfa.addTransition(mergedNode, c, { newStates, newToken });
       if (mergedSuccessor) {
