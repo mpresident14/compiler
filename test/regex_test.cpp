@@ -142,6 +142,8 @@ void testTokenize() {
   TESTER.assertEquals(123, *(int*)actual[0].obj);
   TESTER.assertEquals(nullptr, actual[1].obj);
   TESTER.assertEquals('a', *(char*)actual[2].obj);
+
+  for_each(actual.cbegin(), actual.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 

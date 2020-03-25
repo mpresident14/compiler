@@ -17,7 +17,7 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I . -I ./src")
 
 # The following folders will be included
-include_directories("${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test")
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test)
 
 # So regex sources don't have to be rebuilt for each executable
 add_library(regex_lib STATIC src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
