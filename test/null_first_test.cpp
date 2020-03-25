@@ -1,15 +1,17 @@
-// null_first.hpp relies on a grammar, so we have to include nullable_grammar.hpp before.
-// This setup allows us to use arbitrary grammars for null_first without getting
-// multiple definitions of Symbol, Concrete, etc.
-#include "test/nullable_grammar.hpp"
 #include "null_first.hpp"
+#include "test/nullable_grammar.hpp"
+
+#include <bitset>
 
 #include <prez/unit_test.hpp>
 
 using namespace std;
 using namespace prez;
 
-UnitTest tester = UnitTest::createTester();
+using BitSetVars = bitset<4>;
+using BitSetToks = bitset<4>;
+
+UnitTest TESTER = UnitTest::createTester();
 
 void testGetNullabilities() {
   // NULLABLE(Y) = true
@@ -18,7 +20,7 @@ void testGetNullabilities() {
   // NULLABLE(S) = false
   // (bit positions decrease from left to right)
   BitSetVars expected("1010");
-  tester.assertEquals(expected, getNullabilities());
+  TESTER.assertEquals(expected, getNullabilities<4>(GRAMMAR));
 }
 
 void testGetFirsts() {
@@ -31,11 +33,11 @@ void testGetFirsts() {
   BitSetToks expectedX("0100");
   BitSetToks expectedY("1010");
 
-  vector<BitSetToks> actual = getFirsts();
-  tester.assertEquals(expectedS, actual[toInt(Symbol::S)]);
-  tester.assertEquals(expectedC, actual[toInt(Symbol::C)]);
-  tester.assertEquals(expectedX, actual[toInt(Symbol::X)]);
-  tester.assertEquals(expectedY, actual[toInt(Symbol::Y)]);
+  vector<BitSetToks> actual = getFirsts<4, 4>(GRAMMAR);
+  TESTER.assertEquals(expectedS, actual[S]);
+  TESTER.assertEquals(expectedC, actual[C]);
+  TESTER.assertEquals(expectedX, actual[X]);
+  TESTER.assertEquals(expectedY, actual[Y]);
 }
 
 int main() {
