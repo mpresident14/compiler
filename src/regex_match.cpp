@@ -7,6 +7,7 @@ using namespace std;
  * Regex DFA *
  *************/
 
+static int NONE = 0;
 static constexpr char alphabet[] =
     " !\"#$%&\'()*+,-./"
     "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -58,8 +59,8 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
 
   // Initialize the root of the merged DFA by creating DFAs for each regex
   // and mapping their roots to the appropriate token value
-  vector<pair<const RgxDFA::Node*, Symbol>> initialStates;
-  Symbol initialToken = Symbol::EPSILON;
+  vector<pair<const RgxDFA::Node*, int>> initialStates;
+  int initialToken = NONE;
   for (const TokenPattern& tokenPattern : tokenPatterns) {
     RgxPtr rgx = RgxPtr(parse(parserDfa, lex(tokenPattern.first)));
     // Invalid regex
@@ -69,12 +70,12 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
     RgxDFA rgxDfa = buildRegexDFA(move(rgx));
     initialStates.push_back({ rgxDfa.getRoot(), tokenPattern.second });
     if (rgxDfa.getRoot()->getValue()->isNullable()) {
-      // Multiple regex DFAs accept the empty string
-      if (initialToken != Symbol::EPSILON) {
-        cerr << "WARNING: Overlapping regexes for tokens " << initialToken << " and "
-             << tokenPattern.second << endl;
+      // Accepting the empty string will likely result in an infinite loop
+      cerr << "WARNING: The regex \"" << tokenPattern.first << "\" accepts the empty string" << endl;
+      // Multiple regex DFAs accept the empty string. We pick the regex that was listed first.
+      if (initialToken == NONE) {
+        initialToken = tokenPattern.second;
       }
-      initialToken = tokenPattern.second;
     }
     rgxDfas.push_back(move(rgxDfa));
   }
@@ -90,22 +91,20 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
     q.pop();
     char c;
     for (size_t i = 0; (c = alphabet[i]) != '\0'; ++i) {
-      vector<pair<const RgxDFA::Node*, Symbol>> newStates;
-      Symbol newToken = Symbol::EPSILON;
-      for (const auto& nodeAndSymbol : mergedNode->getValue().states) {
-        const RgxDFA::Node* node = nodeAndSymbol.first;
-        const Symbol token = nodeAndSymbol.second;
-	// Since Regex DFAs are actual DFAs (they have a transition for every symbol
-        // in the alphabet), each node always has a successor for every transition.
-	const RgxDFA::Node* successor = RgxDFA::step(node, c);
-	newStates.push_back({ successor, token });
-	if (successor->getValue()->isNullable()) {
-          // Multiple regex DFAs accept the same string
-          if (newToken != Symbol::EPSILON) {
-            cerr << "WARNING: Overlapping regexes for tokens " << newToken << " and " << token
-                 << endl;
+      vector<pair<const RgxDFA::Node*, int>> newStates;
+      int newToken = NONE;
+      for (const auto& nodeAndToken : mergedNode->getValue().states) {
+        const RgxDFA::Node* node = nodeAndToken.first;
+        int token = nodeAndToken.second;
+        // Since Regex DFAs are actual DFAs (they have a transition for every symbol
+              // in the alphabet), each node always has a successor for every transition.
+        const RgxDFA::Node* successor = RgxDFA::step(node, c);
+        newStates.push_back({ successor, token });
+        if (successor->getValue()->isNullable()) {
+          // Multiple regex DFAs accept the same string. We pick the regex that was listed first.
+          if (newToken == NONE) {
+            newToken = token;
           }
-          newToken = token;
         }
       }
       // Add transition to the merged node and add it to the queue if it did not already
@@ -129,14 +128,14 @@ MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
  **********************************/
 
 /* Value conversion function: V1 -> V2 */
-Symbol mergedDataToToken(const MergeData& mergedData) { return mergedData.token; }
+int mergedDataToToken(const MergeData& mergedData) { return mergedData.token; }
 
 /* Value string representation */
-string tokenToString(Symbol token) {
-  ostringstream out;
-  out << "Symbol::" << token;
-  return out.str();
-}
+// string tokenToString(int token) {
+//   ostringstream out;
+//   out << token;
+//   return out.str();
+// }
 
 /* Value string representation */
 string charToString(char c) {
@@ -151,14 +150,14 @@ string charToString(char c) {
 }
 
 
-void writeRegexDFA(const vector<TokenPattern> patterns, const string& filename, const string& namespaceName) {
+void writeRegexDFA(const vector<TokenPattern> patterns, const string& grammarFile, const string& outFile, const string& namespaceName) {
   buildMergedRgxDFA(patterns).writeToFile(
-      filename,
+      outFile,
       namespaceName,
-      "#include \"regex_grammar.hpp\"",
-      "Symbol",
+      "#include \"" + grammarFile + "\"",
+      "int",
       "char",
       mergedDataToToken,
-      tokenToString,
+      [](int n) { return to_string(n); },
       charToString);
 }

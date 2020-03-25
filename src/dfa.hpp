@@ -156,7 +156,7 @@ public:
     init << "#ifndef " << headerGuard << '\n'
          << "#define " << headerGuard << '\n'
          << "#include <unordered_map>\n"
-         << "#include <utility>\n"
+         << "#include <memory>\n"
          << includes << '\n'
          << "namespace " << namespaceName << " {\n"
          << "struct " << "Node {\n"

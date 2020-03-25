@@ -20,25 +20,26 @@
 
 #include <prez/print_stuff.hpp>
 
-using TokenPattern = std::pair<std::string, Symbol>;
+/* Maps regex string to token enum type (Symbol::NONE defined to be 0) */
+using TokenPattern = std::pair<std::string, int>;
 using RgxDFA = DFA<RgxPtr, char>;
 
 struct MergeData {
-  std::vector<std::pair<const RgxDFA::Node*, Symbol>> states;
-  Symbol token;
+  std::vector<std::pair<const RgxDFA::Node*, int>> states;
+  int token;
 };
 
 namespace std {
   template <>
   struct hash<MergeData> {
     size_t operator()(const MergeData& mergeData) const noexcept {
-      const vector<pair<const RgxDFA::Node*, Symbol>>& states = mergeData.states;
+      const vector<pair<const RgxDFA::Node*, int>>& states = mergeData.states;
       // mergeData will not be empty
       return (size_t)accumulate(
           states.cbegin() + 1,
           states.cend(),
           (uintptr_t)states[0].first,
-          [](uintptr_t n, pair<const RgxDFA::Node*, Symbol> node) {
+          [](uintptr_t n, pair<const RgxDFA::Node*, int> node) {
             return n ^ (uintptr_t)node.first;
           });
     }
@@ -59,6 +60,7 @@ std::vector<StackObj> tokenize(const std::string& input, const MergedRgxDFA::Nod
 
 void writeRegexDFA(
     const std::vector<TokenPattern> patterns,
-    const std::string& filename = "regex_dfa.hpp",
+    const std::string& grammarFile,
+    const std::string& outFile = "regex_dfa.hpp",
     const std::string& namespaceName = "regex_dfa");
 #endif

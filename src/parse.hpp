@@ -281,6 +281,8 @@ inline void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
   }
 }
 
+
+// TODO: inputTokens should be its own type vector<TokenObj>
 inline ROOT_TYPE parse(const DFA_t& dfa, const std::vector<StackObj>& inputTokens) {
   using namespace std;
 

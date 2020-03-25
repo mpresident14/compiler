@@ -4,16 +4,42 @@
 #include <string>
 #include <string_view>
 #include <cstdlib>
-
+#include <ostream>
 
 enum class Symbol {
+  NONE,
   CHAR,
+  FOR,
+  WHILE,
   INT,
   IDENTIFIER,
-  DATALESS
 };
 
 enum class Concrete { NONE };
+
+inline std::ostream& operator<<(std::ostream& out, const Symbol& sym) {
+  switch (sym) {
+    case Symbol::NONE:
+      out << "NONE";
+      break;
+    case Symbol::FOR:
+      out << "FOR";
+      break;
+    case Symbol::WHILE:
+      out << "WHILE";
+      break;
+    case Symbol::CHAR:
+      out << "CHAR";
+      break;
+    case Symbol::INT:
+      out << "INT";
+      break;
+    case Symbol::IDENTIFIER:
+      out << "IDENTIFIER";
+      break;
+  }
+  return out;
+}
 
 /*****************************
  *   CONSTRUCTION/DELETION   *

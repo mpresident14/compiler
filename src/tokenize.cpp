@@ -3,20 +3,28 @@
 
 using namespace std;
 
+static void consumeWhiteSpace(string_view& input) {
+  size_t i = 0;
+  while (isspace(input[i])){
+    ++i;
+  }
+  input = input.substr(i);
+}
+
 /* Step through the merged regex DFA and return the token corresponding
  * to the longest matching prefix */
-optional<StackObj> getToken(string_view& input, const regex_dfa::Node* dfaRoot) {
+static optional<StackObj> getToken(string_view& input, const regex_dfa::Node* dfaRoot) {
   size_t i = 0;
   const size_t len = input.size();
   size_t lastAcceptingPos;
-  Symbol lastAcceptingToken = Symbol::EPSILON;
+  Symbol lastAcceptingToken = Symbol::NONE;
   const regex_dfa::Node* currentNode = dfaRoot;
 
   while (currentNode) {
     // Check if this is an accepting state, and if so,
     // record the token type and the position in the input
-    Symbol token = currentNode->v_;
-    if (token != Symbol::EPSILON) {
+    Symbol token = static_cast<Symbol>(currentNode->v_);
+    if (token != Symbol::NONE) {
       lastAcceptingToken = token;
       lastAcceptingPos = i;
     }
@@ -30,11 +38,11 @@ optional<StackObj> getToken(string_view& input, const regex_dfa::Node* dfaRoot) 
   }
 
   // Never reached an accepting state
-  if (lastAcceptingToken == Symbol::EPSILON) {
+  if (lastAcceptingToken == Symbol::NONE) {
     return {};
   }
 
-  // Grab matching prefix
+  // Construct object from the matching prefix
   StackObj stackObj = constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
   // Discard matching prefix so we can reuse this string_view for the next token
   input = input.substr(lastAcceptingPos);
@@ -44,14 +52,20 @@ optional<StackObj> getToken(string_view& input, const regex_dfa::Node* dfaRoot) 
 
 
 vector<StackObj> tokenize(const string& input) {
+  if (input.empty()) {
+    return {};
+  }
+
   vector<StackObj> tokens;
   string_view inputView = input;
 
   const regex_dfa::Node* dfaRoot = regex_dfa::root.get();
+
+  consumeWhiteSpace(inputView);
   while (!inputView.empty()) {
     optional<StackObj> optionalObj = getToken(inputView, dfaRoot);
     if (optionalObj.has_value()) {
-      tokens.push_back(*optionalObj);
+      tokens.push_back(move(*optionalObj));
     } else {
       ostringstream error;
       vector<Symbol> prevTokens;
@@ -65,6 +79,8 @@ vector<StackObj> tokenize(const string& input) {
       for_each(tokens.cbegin(), tokens.cend(), mem_fun_ref(&StackObj::deleteObj));
       throw runtime_error(error.str());
     }
+
+    consumeWhiteSpace(inputView);
   }
 
   return tokens;

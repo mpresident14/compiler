@@ -4,7 +4,6 @@
 #include "regex_grammar.hpp"
 #include "parse.hpp"
 #include "dfa.hpp"
-#include "tokenize.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -108,10 +107,10 @@ void testMatches() {
 }
 
 
-void testBuildMergedRgxDFA_withConflictingPatterns() {
-  vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
-                                    { "[1-9][0-9]*", Symbol::DASH },
-                                    { "for", Symbol::BAR } };
+void testBuildMergedRgxDFA_withNullableRegex() {
+  vector<TokenPattern> patterns = { { "a*", 1 },
+                                    { "[1-9][0-9]*", 2 },
+                                    { "for", 3 } };
   buildMergedRgxDFA(patterns);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
@@ -120,35 +119,11 @@ void testBuildMergedRgxDFA_withConflictingPatterns() {
 
 
 void testBuildMergedRgxDFA_withInvalidRegex() {
-  vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
-                                    { "1-9][0-9]*", Symbol::DASH },
-                                    { "for", Symbol::BAR } };
+  vector<TokenPattern> patterns = { { ".", 1 },
+                                    { "1-9][0-9]*", 2 },
+                                    { "for", 3 } };
 
   TESTER.assertThrows([&patterns]() { buildMergedRgxDFA(patterns); });
-}
-
-/* NOTE: The tokenize() tests below use a merged regex dfa written to a file.
- * See write_dfa.cpp for the patterns */
-
-
-// TODO: THESE LEAK BECAUSE THE DELETEOBJ FUNCTION DOESN'T HANDLE DASH
-void testTokenize() {
-  vector<StackObj> actual = tokenize("123fora");
-
-  TESTER.assertEquals(3, actual.size());
-
-  TESTER.assertEquals(Symbol::DASH, actual[0].symbol);
-  TESTER.assertEquals(Symbol::BAR, actual[1].symbol);
-  TESTER.assertEquals(Symbol::CHAR, actual[2].symbol);
-
-  TESTER.assertEquals(123, *(int*)actual[0].obj);
-  TESTER.assertEquals(nullptr, actual[1].obj);
-  TESTER.assertEquals('a', *(char*)actual[2].obj);
-}
-
-
-void testTokenize_withInvalidInput() {
-  TESTER.assertThrows([](){ tokenize("123foa"); });
 }
 
 
@@ -164,10 +139,8 @@ int main(int, char**) {
   testGetDeriv_range();
   testHashFn();
   testMatches();
-  testBuildMergedRgxDFA_withConflictingPatterns();
+  testBuildMergedRgxDFA_withNullableRegex();
   testBuildMergedRgxDFA_withInvalidRegex();
-  testTokenize();
-  testTokenize_withInvalidInput();
 
   return 0;
 }
