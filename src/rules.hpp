@@ -9,21 +9,17 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <bitset>
 
 #include <prez/print_stuff.hpp>
 
 
-template <size_t NumTokens>
 struct DFARule {
-  using BitSetToks = std::bitset<NumTokens>;
-
   int concrete;
   std::vector<int> symbols;
   size_t pos;
   // Allows us to change lookahead while it is inside of a RuleSet, which is ok b/c
   // lookahead is not involved in the hash function or equality for RuleSets
-  mutable BitSetToks lookahead;
+  mutable std::vector<bool> lookahead;
 
   bool atEnd() const { return pos == symbols.size(); }
   /* Given a rule "S -> A.B", returns B */
@@ -63,9 +59,8 @@ struct DFARule {
 
 // TODO: Fix these hash functions
 /* Does not use lookahead set. See comment below */
-template <size_t NumTokens>
 struct DFARuleHash {
-  size_t operator()(const DFARule<NumTokens>& rule) const noexcept {
+  size_t operator()(const DFARule& rule) const noexcept {
     std::hash<int> IntHasher;
     size_t h1 = IntHasher(rule.concrete);
     size_t h2 = 0;
@@ -85,22 +80,21 @@ struct DFARuleHash {
  * lookahead sets because RuleSet equality compares the rules with this operator,
  * and two RuleSets can differ based on the lookahead sets of the rules they contain.
  * */
-template <size_t NumTokens>
 struct DFARuleEq {
-  bool operator()(const DFARule<NumTokens>& left, const DFARule<NumTokens>& right) const {
+  bool operator()(const DFARule& left, const DFARule& right) const {
     return left.concrete == right.concrete && left.symbols == right.symbols && left.pos == right.pos;
   }
 };
-template <size_t NumTokens>
-using DFARuleSet = std::unordered_set<DFARule<NumTokens>, DFARuleHash<NumTokens>, DFARuleEq<NumTokens>>;
+
+using DFARuleSet = std::unordered_set<DFARule, DFARuleHash, DFARuleEq>;
 
 namespace std {
-  template <size_t NumTokens>
-  struct hash<DFARuleSet<NumTokens>> {
-    size_t operator()(const DFARuleSet<NumTokens>& ruleSet) const noexcept {
-      DFARuleHash<NumTokens> hasher;
+  template <>
+  struct hash<DFARuleSet> {
+    size_t operator()(const DFARuleSet& ruleSet) const noexcept {
+      DFARuleHash hasher;
       size_t h = 0;
-      for (const DFARule<NumTokens>& rule : ruleSet) {
+      for (const DFARule& rule : ruleSet) {
         h += hasher(rule);
       }
       return h;

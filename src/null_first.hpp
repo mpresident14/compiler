@@ -13,28 +13,28 @@
 
 namespace {
   using namespace std;
-
-  template <size_t NumVars>
-  using BitVarRef = typename bitset<NumVars>::reference;
+  using BitSetVars = vector<bool>;
+  using BitSetToks = vector<bool>;
+  using BitRef = typename vector<bool>::reference;
 
   /* Iterate to find the least fixed point */
-  template <size_t NumVars>
-  void computeNullabilities(bitset<NumVars>& nullabilities, vector<vector<BitVarRef<NumVars>>>* equations) {
+  void computeNullabilities(BitSetVars& nullabilities, const vector<vector<vector<BitRef>>>& equations) {
     bool changed = true;
+    size_t numVars = nullabilities.size();
     while (changed) {
       changed = false;
-      for (size_t i = 0; i < NumVars; ++i) {
+      for (size_t i = 0; i < numVars; ++i) {
         // If the nullability for this symbol is already true, no need to evaluate it again
         if (nullabilities[i]) {
           continue;
         }
 
-        const vector<vector<BitVarRef<NumVars>>>& disjunctions = equations[i];
+        const vector<vector<BitRef>>& disjunctions = equations[i];
         // Nullable if any of the conjunctions evaluate to true
         bool newValue =
-            any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitVarRef<NumVars>>& conj) {
+            any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
               return all_of(
-                  conj.cbegin(), conj.cend(), [](const BitVarRef<NumVars>& bitref) { return bitref; });
+                  conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
             });
         if (newValue != nullabilities[i]) {
           nullabilities[i] = move(newValue);
@@ -44,25 +44,24 @@ namespace {
     }
   }
 
-  template <size_t NumTokens>
   struct UnionEquation {
-    bitset<NumTokens> tokenSet;
-    vector<bitset<NumTokens>*> setRefs;
+    UnionEquation(size_t numTokens) : tokenSet(numTokens) {}
+    BitSetToks tokenSet;
+    vector<BitSetToks*> bitSetTokRefs;
   };
 
   /* Iterate to find the least fixed point */
-  template <size_t NumTokens>
-  void computeFirsts(vector<bitset<NumTokens>>& firsts, vector<UnionEquation<NumTokens>> equations) {
+  void computeFirsts(vector<BitSetToks>& firsts, const vector<UnionEquation>& equations) {
     bool changed = true;
     while (changed) {
       changed = false;
       size_t numVariables = equations.size();
       for (size_t i = 0; i < numVariables; ++i) {
-        const UnionEquation<NumTokens>& unionEq = equations[i];
+        const UnionEquation& unionEq = equations[i];
         // Take union of all the bitsets
-        bitset<NumTokens> newValue = unionEq.tokenSet;
-        for (const bitset<NumTokens>* bitset : unionEq.setRefs) {
-          newValue |= *bitset;
+        BitSetToks newValue = unionEq.tokenSet;
+        for (const BitSetToks* bitset : unionEq.bitSetTokRefs) {
+          bitOr(newValue, *bitset);
         }
         if (newValue != firsts[i]) {
           firsts[i] = move(newValue);
@@ -76,15 +75,16 @@ namespace {
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitVarRef> */
-template <size_t NumVars>
-std::bitset<NumVars> getNullabilities(const Grammar& grammar) {
+std::vector<bool> getNullabilities(const Grammar& grammar) {
   using namespace std;
-  using BitVarRef = typename bitset<NumVars>::reference;
+  using BitSetVars = vector<bool>;
+  using BitRef = typename vector<bool>::reference;
 
-  bitset<NumVars> nullabilities;
-  vector<vector<BitVarRef>> equations[NumVars];
+  size_t numVars = grammar.size();
+  BitSetVars nullabilities(numVars);
+  vector<vector<vector<BitRef>>> equations(numVars);
 
-  for (size_t var = 0; var < NumVars; ++var) {
+  for (size_t var = 0; var < numVars; ++var) {
     for (const GrammarRule& rule : grammar[var]) {
       // Epsilon is always nullable, so this symbol is nullable
       // NOTE: EPSILON is a special symbol we include when
@@ -95,11 +95,11 @@ std::bitset<NumVars> getNullabilities(const Grammar& grammar) {
         break;
       }
       // Tokens are never nullable, so stop considering this rule
-      if (std::any_of(rule.symbols.cbegin(), rule.symbols.cend(), &isToken<NumVars>)) {
+      if (std::any_of(rule.symbols.cbegin(), rule.symbols.cend(), [numVars](int sym) { return isToken(sym, numVars); })) {
         continue;
       }
       // Otherwise build the conjunction bitset
-      vector<BitVarRef> conjunctions;
+      vector<BitRef> conjunctions;
       for (int rhsSymbol : rule.symbols) {
         conjunctions.push_back(nullabilities[rhsSymbol]);
       }
@@ -107,20 +107,33 @@ std::bitset<NumVars> getNullabilities(const Grammar& grammar) {
     }
   }
 
-  computeNullabilities<NumVars>(nullabilities, equations);
+  computeNullabilities(nullabilities, equations);
   return nullabilities;
 }
 
-template <size_t NumTokens, size_t NumVars>
-std::vector<std::bitset<NumTokens>> getFirsts(const Grammar& grammar) {
+std::vector<std::vector<bool>> getFirsts(const Grammar& grammar, size_t numTokens) {
   using namespace std;
+  using BitSetVars = vector<bool>;
+  using BitSetToks = vector<bool>;
 
-  vector<bitset<NumTokens>> firsts(NumVars);
-  vector<UnionEquation<NumTokens>> equations(NumVars);
-  auto nullabilities = getNullabilities<NumVars>(grammar);
+  size_t numVars = grammar.size();
 
-  for (size_t var = 0; var < NumVars; ++var) {
-    UnionEquation<NumTokens>& unionEq = equations[var];
+  vector<BitSetToks> firsts;
+  firsts.reserve(numVars);
+  for (size_t i = 0; i < numVars; ++i) {
+    firsts.push_back(BitSetToks(numTokens));
+  }
+
+  vector<UnionEquation> equations;
+  equations.reserve(numVars);
+  for (size_t i = 0; i < numVars; ++i) {
+    equations.push_back(UnionEquation(numTokens));
+  }
+
+  BitSetVars nullabilities = getNullabilities(grammar);
+
+  for (size_t var = 0; var < numVars; ++var) {
+    UnionEquation& unionEq = equations[var];
     for (const GrammarRule& rule : grammar[var]) {
       for (int rhsSymbol : rule.symbols) {
         // If rule is empty, there is no first, so skip it
@@ -128,14 +141,14 @@ std::vector<std::bitset<NumTokens>> getFirsts(const Grammar& grammar) {
           break;
         }
         // Tokens are never nullable, so first can only be the token
-        if (isToken<NumVars>(rhsSymbol)) {
-          unionEq.tokenSet[offsetToken<NumVars>(rhsSymbol)] = true;
+        if (isToken(rhsSymbol, numVars)) {
+          unionEq.tokenSet[offsetToken(rhsSymbol, numVars)] = true;
           break;
         }
 
         // Add first of this variable to the equation. If the variable is nullable
         // also add the next symbol, and so forth
-        unionEq.setRefs.push_back(&firsts[rhsSymbol]);
+        unionEq.bitSetTokRefs.push_back(&firsts[rhsSymbol]);
         if (!nullabilities[rhsSymbol]) {
           break;
         }
@@ -143,7 +156,7 @@ std::vector<std::bitset<NumTokens>> getFirsts(const Grammar& grammar) {
     }
   }
 
-  computeFirsts<NumTokens>(firsts, equations);
+  computeFirsts(firsts, equations);
   return firsts;
 }
 

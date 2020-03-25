@@ -3,37 +3,36 @@
 
 #include <bitset>
 
+#include <prez/print_stuff.hpp>
 #include <prez/unit_test.hpp>
 
 using namespace std;
 using namespace prez;
 
-using BitSetVars = bitset<4>;
-using BitSetToks = bitset<4>;
 
 UnitTest TESTER = UnitTest::createTester();
 
 void testGetNullabilities() {
-  // NULLABLE(Y) = true
-  // NULLABLE(X) = false
-  // NULLABLE(C) = true
   // NULLABLE(S) = false
-  // (bit positions decrease from left to right)
-  BitSetVars expected("1010");
-  TESTER.assertEquals(expected, getNullabilities<4>(GRAMMAR));
+  // NULLABLE(C) = true
+  // NULLABLE(X) = false
+  // NULLABLE(Y) = true
+  vector<bool> expected = {false, true, false, true};
+
+  TESTER.assertEquals(expected, getNullabilities(GRAMMAR));
 }
 
 void testGetFirsts() {
-  // FIRST(S) = {Z, A, B, T}
-  // FIRST(C) = {Z, A, B}
-  // FIRST(X) = {A}
-  // FIRST(Y) = {Z, B}
-  BitSetToks expectedS("1111");
-  BitSetToks expectedC("1110");
-  BitSetToks expectedX("0100");
-  BitSetToks expectedY("1010");
+  // FIRST(S) = {t, b, a, z}
+  // FIRST(C) = {b, a, z}
+  // FIRST(X) = {a}
+  // FIRST(Y) = {b, z}
+  BitSetToks expectedS = {true, true, true, true};
+  BitSetToks expectedC = {false, true, true, true};
+  BitSetToks expectedX = {false, false, true, false};
+  BitSetToks expectedY = {false, true, false, true};
 
-  vector<BitSetToks> actual = getFirsts<4, 4>(GRAMMAR);
+  vector<BitSetToks> actual = getFirsts(GRAMMAR, 4);
   TESTER.assertEquals(expectedS, actual[S]);
   TESTER.assertEquals(expectedC, actual[C]);
   TESTER.assertEquals(expectedX, actual[X]);

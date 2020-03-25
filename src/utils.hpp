@@ -9,18 +9,21 @@
 static constexpr int NONE = -2;
 static constexpr int EPSILON = -1;
 
-template <size_t NumVars>
-inline bool isToken(int symbol) { return symbol >= (int) NumVars; }
-
-template <size_t NumVars>
-inline int offsetToken(int token) { return token - NumVars; }
+inline bool isToken(int symbol, size_t numVars) { return symbol >= (int) numVars; }
+inline int offsetToken(int token, size_t numVars) { return token - numVars; }
 
 
 struct GrammarRule {
   const int concrete;
   const std::vector<int> symbols;
 };
-
 using Grammar = std::vector<std::vector<GrammarRule>>;
+
+inline void bitOr(std::vector<bool>& bits, const std::vector<bool>& other) {
+  size_t len = bits.size();
+  for (size_t i = 0; i < len; ++i) {
+    bits[i] = bits[i] | other[i];
+  }
+}
 
 #endif
