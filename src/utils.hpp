@@ -9,7 +9,7 @@
 static constexpr int NONE = -2;
 static constexpr int EPSILON = -1;
 
-inline bool isToken(int symbol, size_t numVars) { return symbol >= (int) numVars; }
+inline bool isToken(int symbol, size_t numVars) { return symbol >= (int)numVars; }
 inline int offsetToken(int token, size_t numVars) { return token - numVars; }
 
 

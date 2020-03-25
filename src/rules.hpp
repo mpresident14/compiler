@@ -37,7 +37,8 @@ struct DFARule {
 
   // TODO: Make appropriate functions noexcept and const(expr)
   bool operator==(const DFARule& other) const {
-    return concrete == other.concrete && symbols == other.symbols && pos == other.pos && lookahead == other.lookahead;
+    return concrete == other.concrete && symbols == other.symbols && pos == other.pos &&
+           lookahead == other.lookahead;
   }
 
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
@@ -82,7 +83,8 @@ struct DFARuleHash {
  * */
 struct DFARuleEq {
   bool operator()(const DFARule& left, const DFARule& right) const {
-    return left.concrete == right.concrete && left.symbols == right.symbols && left.pos == right.pos;
+    return left.concrete == right.concrete && left.symbols == right.symbols &&
+           left.pos == right.pos;
   }
 };
 
@@ -101,7 +103,6 @@ namespace std {
     }
   };
 }  // namespace std
-
 
 
 #endif

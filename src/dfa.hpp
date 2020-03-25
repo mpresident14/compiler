@@ -151,7 +151,10 @@ public:
     std::string headerGuard = filename;
     std::replace(headerGuard.begin(), headerGuard.end(), '/', '_');
     std::replace(headerGuard.begin(), headerGuard.end(), '.', '_');
-    std::transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), [](unsigned char c){ return std::toupper(c); });
+    std::transform(
+        headerGuard.begin(), headerGuard.end(), headerGuard.begin(), [](unsigned char c) {
+          return std::toupper(c);
+        });
 
     init << "#ifndef " << headerGuard << '\n'
          << "#define " << headerGuard << '\n'
@@ -159,9 +162,11 @@ public:
          << "#include <memory>\n"
          << includes << '\n'
          << "namespace " << namespaceName << " {\n"
-         << "struct " << "Node {\n"
+         << "struct "
+         << "Node {\n"
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n"
-         << "const " << "Node* step(const " << tranType << "& t) const {\n"
+         << "const "
+         << "Node* step(const " << tranType << "& t) const {\n"
          << "auto iter = ts_.find(t);\n"
             "if (iter == ts_.end()) {\n"
             "return nullptr;\n"

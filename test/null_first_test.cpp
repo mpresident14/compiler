@@ -17,7 +17,7 @@ void testGetNullabilities() {
   // NULLABLE(C) = true
   // NULLABLE(X) = false
   // NULLABLE(Y) = true
-  vector<bool> expected = {false, true, false, true};
+  vector<bool> expected = { false, true, false, true };
 
   TESTER.assertEquals(expected, getNullabilities(GRAMMAR));
 }
@@ -27,12 +27,12 @@ void testGetFirsts() {
   // FIRST(C) = {b, a, z}
   // FIRST(X) = {a}
   // FIRST(Y) = {b, z}
-  BitSetToks expectedS = {true, true, true, true};
-  BitSetToks expectedC = {false, true, true, true};
-  BitSetToks expectedX = {false, false, true, false};
-  BitSetToks expectedY = {false, true, false, true};
+  vector<bool> expectedS = { true, true, true, true };
+  vector<bool> expectedC = { false, true, true, true };
+  vector<bool> expectedX = { false, false, true, false };
+  vector<bool> expectedY = { false, true, false, true };
 
-  vector<BitSetToks> actual = getFirsts(GRAMMAR, 4);
+  vector<vector<bool>> actual = getFirsts(GRAMMAR, 4);
   TESTER.assertEquals(expectedS, actual[S]);
   TESTER.assertEquals(expectedC, actual[C]);
   TESTER.assertEquals(expectedX, actual[X]);

@@ -18,7 +18,7 @@
 
 
 /* Variables */
-static constexpr int S = 0; // Fixed
+static constexpr int S = 0;  // Fixed
 static constexpr int C = 1;
 static constexpr int X = 2;
 static constexpr int Y = 3;
@@ -32,14 +32,22 @@ static constexpr int z = 7;
 
 inline std::string symbolToString(int symbol) {
   switch (symbol) {
-    case S: return "S";
-    case Y: return "Y";
-    case C: return "C";
-    case X: return "X";
-    case t: return "t";
-    case b: return "b";
-    case a: return "a";
-    case z: return "z";
+    case S:
+      return "S";
+    case Y:
+      return "Y";
+    case C:
+      return "C";
+    case X:
+      return "X";
+    case t:
+      return "t";
+    case b:
+      return "b";
+    case a:
+      return "a";
+    case z:
+      return "z";
   }
   return "";
 }
