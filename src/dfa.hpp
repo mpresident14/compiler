@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 #include <fstream>
+#include <algorithm>
+#include <cctype>
 
 #include <prez/print_stuff.hpp>
 
@@ -132,23 +134,44 @@ public:
   }
 
 
-  // TODO: Separate into hpp and cpp files
   template <typename F1, typename F2, typename F3>
   void writeToFile(
       const std::string& filename,
+      const std::string& namespaceName,
       const std::string& includes,
       const std::string& valueType,
       const std::string& tranType,
       const F1& convertValue,
       const F2& valueToStr,
       const F3& tranToStr) {
+    std::ostringstream init;
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
-    nodeDecls << "#include \"dfa.hpp\"\n"
-              << "#include <utility>\n"
-              << "using Node="
-              << "DFA<" << valueType << ',' << tranType << ">::Node;\n";
-    tranStmts << "auto getRoot(){\n";
+
+    std::string headerGuard = filename;
+    std::replace(headerGuard.begin(), headerGuard.end(), '/', '_');
+    std::replace(headerGuard.begin(), headerGuard.end(), '.', '_');
+    std::transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), [](unsigned char c){ return std::toupper(c); });
+
+    init << "#ifndef " << headerGuard << '\n'
+         << "#define " << headerGuard << '\n'
+         << "#include <unordered_map>\n"
+         << "#include <utility>\n"
+         << includes << '\n'
+         << "namespace " << namespaceName << " {\n"
+         << "struct " << "Node {\n"
+         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n"
+         << "const " << "Node* step(const " << tranType << "& t) const {\n"
+         << "auto iter = ts_.find(t);\n"
+            "if (iter == ts_.end()) {\n"
+            "return nullptr;\n"
+            "}\n"
+            "return iter->second;\n"
+            "}\n"
+         << valueType << " v_;\n"
+         << "std::unordered_map<" << tranType << ", const Node*> ts_;};\n";
+
+    tranStmts << "auto makeDFA(){\n";
 
     std::unordered_set<const Node*> visited = { root_ };
     std::queue<const Node*> q;
@@ -163,7 +186,7 @@ public:
                 << valueToStr(convertValue(currentNode->value_)) << ");\n";
 
       // Add the transitions
-      tranStmts << 'n' << currentNode << "->setTransitions({\n";
+      tranStmts << 'n' << currentNode << "->ts_={\n";
       for (const auto& tranAndNode : currentNode->transitions_) {
         const Node* successor = tranAndNode.second;
         tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n' << successor << ".get()},\n";
@@ -172,16 +195,16 @@ public:
           q.push(successor);
         }
       }
-      tranStmts << "});\n";
+      tranStmts << "};\n";
     }
 
-    tranStmts << "return std::move(n" << root_ << ");\n}";
+    tranStmts << "return std::move(n" << root_ << ");\n}\nauto root=makeDFA();";
 
     // Write declarations and statements to the file
     std::ofstream outFile;
     outFile.open(filename);
     // TODO: Change to .view() when implemented
-    outFile << includes << '\n' << nodeDecls.str() << tranStmts.str();
+    outFile << init.str() << '\n' << nodeDecls.str() << tranStmts.str() << "}\n#endif\n";
     outFile.close();
   }
 

@@ -4,6 +4,7 @@
 #include "regex_grammar.hpp"
 #include "parse.hpp"
 #include "dfa.hpp"
+#include "tokenize.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -107,32 +108,18 @@ void testMatches() {
 }
 
 
-void testTokenize_withConflictingPatterns() {
+void testBuildMergedRgxDFA_withConflictingPatterns() {
   vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
                                     { "[1-9][0-9]*", Symbol::DASH },
                                     { "for", Symbol::BAR } };
-
-  MergedRgxDFA dfa = buildMergedRgxDFA(patterns);
-  vector<StackObj> actual = tokenize("123fora0", dfa.getRoot());
-
-  TESTER.assertEquals(4, actual.size());
-
-  TESTER.assertEquals(Symbol::DASH, actual[0].symbol);
-  TESTER.assertEquals(Symbol::BAR, actual[1].symbol);
-  TESTER.assertEquals(Symbol::CHAR, actual[2].symbol);
-  TESTER.assertEquals(Symbol::CHAR, actual[3].symbol);
-
-  TESTER.assertEquals(123, *(int*)actual[0].obj);
-  TESTER.assertEquals(nullptr, actual[1].obj);
-  TESTER.assertEquals('a', *(char*)actual[2].obj);
-  TESTER.assertEquals('0', *(char*)actual[3].obj);
+  buildMergedRgxDFA(patterns);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
   errBuffer.str("");
 }
 
 
-void testTokenize_withInvalidRegex() {
+void testBuildMergedRgxDFA_withInvalidRegex() {
   vector<TokenPattern> patterns = { { ".", Symbol::CHAR },
                                     { "1-9][0-9]*", Symbol::DASH },
                                     { "for", Symbol::BAR } };
@@ -140,14 +127,26 @@ void testTokenize_withInvalidRegex() {
   TESTER.assertThrows([&patterns]() { buildMergedRgxDFA(patterns); });
 }
 
+/* NOTE: The tokenize() tests below use a merged regex dfa written to a file.
+ * See write_dfa.cpp for the patterns */
+
+void testTokenize() {
+  vector<StackObj> actual = tokenize("123fora");
+
+  TESTER.assertEquals(3, actual.size());
+
+  TESTER.assertEquals(Symbol::DASH, actual[0].symbol);
+  TESTER.assertEquals(Symbol::BAR, actual[1].symbol);
+  TESTER.assertEquals(Symbol::CHAR, actual[2].symbol);
+
+  TESTER.assertEquals(123, *(int*)actual[0].obj);
+  TESTER.assertEquals(nullptr, actual[1].obj);
+  TESTER.assertEquals('a', *(char*)actual[2].obj);
+}
+
 
 void testTokenize_withInvalidInput() {
-  vector<TokenPattern> patterns = { { "[1-9][0-9]*", Symbol::DASH }, { "for", Symbol::BAR } };
-
-  MergedRgxDFA dfa = buildMergedRgxDFA(patterns);
-  // NOTE: note the parentheses because of the comma in the macro. See
-  // https://stackoverflow.com/questions/33016521/c-macro-with-lambda-argument-using-2-captured-elements-generates-error
-  TESTER.assertThrows(([&dfa]() { tokenize("fo123", dfa.getRoot()); }));
+  TESTER.assertThrows([](){ tokenize("123foa"); });
 }
 
 
@@ -163,8 +162,9 @@ int main(int, char**) {
   testGetDeriv_range();
   testHashFn();
   testMatches();
-  testTokenize_withConflictingPatterns();
-  testTokenize_withInvalidRegex();
+  testBuildMergedRgxDFA_withConflictingPatterns();
+  testBuildMergedRgxDFA_withInvalidRegex();
+  testTokenize();
   testTokenize_withInvalidInput();
 
   return 0;

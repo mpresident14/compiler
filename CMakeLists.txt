@@ -26,10 +26,8 @@ add_library(regex_lib STATIC src/regex.cpp src/regex_lexer.cpp src/regex_match.c
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp)
 add_executable(lr1_test test/lr1_test.cpp)
-add_executable(regex_test test/regex_test.cpp)
+add_executable(regex_test test/regex_test.cpp src/tokenize.cpp)
 target_link_libraries(regex_test regex_lib)
-add_executable(write_dfa_test test/write_dfa_test.cpp)
-target_link_libraries(write_dfa_test regex_lib)
 
 # Other executables
 add_executable(main src/main.cpp)
@@ -37,9 +35,9 @@ target_link_libraries(main regex_lib)
 add_executable(write_dfa test/write_dfa.cpp)
 target_link_libraries(write_dfa regex_lib)
 
-# Ensure that we write the regex DFA before building this test
+# Ensure that we write the regex DFA before building the corresponding test
 add_custom_target(run_write_dfa COMMAND write_dfa)
-add_dependencies(write_dfa_test run_write_dfa)
+add_dependencies(regex_test run_write_dfa)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -49,17 +47,16 @@ add_test(dfa dfa_test)
 add_test(null_first null_first_test)
 add_test(lr1 lr1_test)
 add_test(regex regex_test)
-add_test(write_dfa write_dfa_test)
 
 set_tests_properties(
-    dfa null_first lr1 regex write_dfa
+    dfa null_first lr1 regex
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(
     check
     COMMAND ${CMAKE_CTEST_COMMAND}
-    DEPENDS dfa_test null_first_test lr1_test regex_test write_dfa_test)
+    DEPENDS dfa_test null_first_test lr1_test regex_test)
 
 # Remove generated files on make clean
 set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_regex_dfa.hpp)
