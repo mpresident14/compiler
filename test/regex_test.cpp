@@ -130,6 +130,8 @@ void testBuildMergedRgxDFA_withInvalidRegex() {
 /* NOTE: The tokenize() tests below use a merged regex dfa written to a file.
  * See write_dfa.cpp for the patterns */
 
+
+// TODO: THESE LEAK BECAUSE THE DELETEOBJ FUNCTION DOESN'T HANDLE DASH
 void testTokenize() {
   vector<StackObj> actual = tokenize("123fora");
 
@@ -142,8 +144,6 @@ void testTokenize() {
   TESTER.assertEquals(123, *(int*)actual[0].obj);
   TESTER.assertEquals(nullptr, actual[1].obj);
   TESTER.assertEquals('a', *(char*)actual[2].obj);
-
-  for_each(actual.cbegin(), actual.cend(), mem_fun_ref(&StackObj::deleteObj));
 }
 
 

@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstddef>
+#include <functional>
+#include <algorithm>
 
 
 std::vector<StackObj> tokenize(const std::string& input);

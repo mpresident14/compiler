@@ -62,6 +62,7 @@ vector<StackObj> tokenize(const string& input) {
           });
       error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
             << "Previous tokens were: " << prevTokens;
+      for_each(tokens.cbegin(), tokens.cend(), mem_fun_ref(&StackObj::deleteObj));
       throw runtime_error(error.str());
     }
   }
