@@ -138,6 +138,34 @@ public:
   }
 
 
+  template <typename NewValue, typename F>
+  DFA<NewValue, T> convert(const F& valueConversion) {
+    using namespace std;
+    using OldNode = const typename DFA::Node*;
+    using NewNode = const typename DFA<NewValue, T>::Node*;
+
+    DFA<NewValue, T> newDfa(valueConversion(root_->value_));
+
+    queue<pair<OldNode, NewNode>> q;
+    q.push(make_pair(root_, newDfa.getRoot()));
+    while (!q.empty()) {
+      OldNode oldNode = q.front().first;
+      NewNode newNode = q.front().second;
+      q.pop();
+      for (const auto& tran : oldNode->transitions_) {
+        OldNode oldSuccessor = tran.second;
+        NewNode newSuccessor = newDfa.addTransition(
+            newNode, tran.first, valueConversion(oldSuccessor->getValue()));
+        if (newSuccessor) {
+          q.push(make_pair(oldSuccessor, newSuccessor));
+        }
+      }
+    }
+
+    return newDfa;
+  }
+
+
   template <typename F1, typename F2, typename F3>
   void writeToFile(
       const std::string& filename,
