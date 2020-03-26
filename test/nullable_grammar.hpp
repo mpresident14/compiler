@@ -1,7 +1,6 @@
-#ifndef GRAMMAR1_HPP
-#define GRAMMAR1_HPP
+#ifndef NULLABLE_GRAMMAR_HPP
+#define NULLABLE_GRAMMAR_HPP
 
-// FOR TESTING ONLY
 #include "utils.hpp"
 
 #include <cstddef>
@@ -17,17 +16,16 @@
  */
 
 
-/* Variables */
-static constexpr int S = 0;  // Fixed
+/* Variables are positive */
 static constexpr int C = 1;
 static constexpr int X = 2;
 static constexpr int Y = 3;
 
-/* Tokens */
-static constexpr int t = 4;
-static constexpr int b = 5;
-static constexpr int a = 6;
-static constexpr int z = 7;
+/* Tokens are negative */
+static constexpr int t = -1;
+static constexpr int b = -2;
+static constexpr int a = -3;
+static constexpr int z = -4;
 
 
 inline std::string symbolToString(int symbol) {
@@ -53,7 +51,6 @@ inline std::string symbolToString(int symbol) {
 }
 
 /* Concrete classes of Symbols */
-// static constexpr int NONE = 0;
 static constexpr int S1 = 1;
 static constexpr int S2 = 2;
 static constexpr int C1 = 3;
@@ -66,10 +63,6 @@ static constexpr int Y2 = 9;
 static constexpr int Y3 = 10;
 
 
-static constexpr int concreteToSymbol[] = { S, S, C, C, C, X, X, Y, Y, Y };
-constexpr int toSymbol(int concrete) { return concreteToSymbol[concrete]; }
-
-// FOR TESTING ONLY
 const Grammar GRAMMAR = { {
                               GrammarRule{ S1, { t, Y } },
                               GrammarRule{ S2, { Y, C, X } },

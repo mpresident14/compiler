@@ -52,7 +52,7 @@ namespace {
         // Take union of all the bitsets
         BitSetToks newValue = unionEq.tokenSet;
         for (const BitSetToks* bitset : unionEq.bitSetTokRefs) {
-          bitOr(newValue, *bitset);
+          bitOrEquals(newValue, *bitset);
         }
         if (newValue != firsts[i]) {
           firsts[i] = move(newValue);
@@ -87,9 +87,7 @@ std::vector<bool> getNullabilities(const Grammar& grammar) {
         break;
       }
       // Tokens are never nullable, so stop considering this rule
-      if (std::any_of(rule.symbols.cbegin(), rule.symbols.cend(), [numVars](int sym) {
-            return isToken(sym, numVars);
-          })) {
+      if (std::any_of(rule.symbols.cbegin(), rule.symbols.cend(), isToken)) {
         continue;
       }
       // Otherwise build the conjunction bitset
@@ -137,8 +135,8 @@ std::vector<std::vector<bool>> getFirsts(const Grammar& grammar, size_t numToken
           break;
         }
         // Tokens are never nullable, so first can only be the token
-        if (isToken(rhsSymbol, numVars)) {
-          unionEq.tokenSet[offsetToken(rhsSymbol, numVars)] = true;
+        if (isToken(rhsSymbol)) {
+          unionEq.tokenSet[tokensIndex(rhsSymbol)] = true;
           break;
         }
 
