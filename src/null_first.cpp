@@ -15,17 +15,22 @@ namespace {
     while (changed) {
       changed = false;
       for (size_t i = 0; i < numVars; ++i) {
-        // If the nullability for this symbol is already true, no need to evaluate it again
+        // If the nullability for this symbol is already true, no need to
+        // evaluate it again
         if (nullabilities[i]) {
           continue;
         }
 
         const vector<vector<BitRef>>& disjunctions = equations[i];
         // Nullable if any of the conjunctions evaluate to true
-        bool newValue =
-            any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
+        bool newValue = any_of(
+            disjunctions.cbegin(),
+            disjunctions.cend(),
+            [](const vector<BitRef>& conj) {
               return all_of(
-                  conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
+                  conj.cbegin(), conj.cend(), [](const BitRef& bitref) {
+                    return bitref;
+                  });
             });
         if (newValue != nullabilities[i]) {
           nullabilities[i] = move(newValue);
@@ -42,7 +47,9 @@ namespace {
   };
 
   /* Iterate to find the least fixed point */
-  void computeFirsts(vector<BitSetToks>& firsts, const vector<UnionEquation>& equations) {
+  void computeFirsts(
+      vector<BitSetToks>& firsts,
+      const vector<UnionEquation>& equations) {
     bool changed = true;
     while (changed) {
       changed = false;
@@ -103,7 +110,9 @@ std::vector<bool> getNullabilities(const Grammar& grammar) {
   return nullabilities;
 }
 
-std::vector<std::vector<bool>> getFirsts(const Grammar& grammar, size_t numTokens) {
+std::vector<std::vector<bool>> getFirsts(
+    const Grammar& grammar,
+    size_t numTokens) {
   using namespace std;
   using BitSetVars = vector<bool>;
   using BitSetToks = vector<bool>;
@@ -140,8 +149,8 @@ std::vector<std::vector<bool>> getFirsts(const Grammar& grammar, size_t numToken
           break;
         }
 
-        // Add first of this variable to the equation. If the variable is nullable
-        // also add the next symbol, and so forth
+        // Add first of this variable to the equation. If the variable is
+        // nullable also add the next symbol, and so forth
         unionEq.bitSetTokRefs.push_back(&firsts[rhsSymbol]);
         if (!nullabilities[rhsSymbol]) {
           break;

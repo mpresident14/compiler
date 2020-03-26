@@ -18,7 +18,8 @@ void testAddAndRun() {
   const DFAIntChar::Node* node3 = dfa.addTransition(dfa.getRoot(), 'b', 3);
   const DFAIntChar::Node* node4 = dfa.addTransition(node2, 'c', 4);
   const DFAIntChar::Node* node5 = dfa.addTransition(node2, 'd', 5);
-  // Node value already present, should add transition, but not create a new node
+  // Node value already present, should add transition, but not create a new
+  // node
   const DFAIntChar::Node* node6 = dfa.addTransition(node3, 'e', 5);
   // Duplicate transition, should ignore.
   const DFAIntChar::Node* node7 = dfa.addTransition(node3, 'e', 2);

@@ -14,8 +14,8 @@
 
 #include <prez/print_stuff.hpp>
 
-// TODO: If we specialize DFA for when T is an enum, we can use arrays for node transitions
-// instead of a hashmap
+// TODO: If we specialize DFA for when T is an enum, we can use arrays for node
+// transitions instead of a hashmap
 template <typename V, typename T>
 class DFA {
 public:
@@ -38,7 +38,9 @@ public:
       transitions_ = move(tranMap);
     }
 
-    const std::unordered_map<T, const Node*>& getTransitions() const { return transitions_; }
+    const std::unordered_map<T, const Node*>& getTransitions() const {
+      return transitions_;
+    }
 
   private:
     V value_;
@@ -49,7 +51,8 @@ public:
 
   friend struct Node;
 
-  DFA(V value) : root_(new Node(value)), valueToNode_{ { std::move(value), root_ } } {}
+  DFA(V value)
+      : root_(new Node(value)), valueToNode_{ { std::move(value), root_ } } {}
 
   ~DFA() {
     // If invalidated via move construction/assignment
@@ -76,7 +79,8 @@ public:
   };
 
   DFA(const DFA& other) = delete;
-  DFA(DFA&& other) : root_(other.root_), valueToNode_(move(other.valueToNode_)) {
+  DFA(DFA&& other)
+      : root_(other.root_), valueToNode_(move(other.valueToNode_)) {
     other.root_ = nullptr;
   }
   DFA& operator=(const DFA& other) = delete;
@@ -124,9 +128,9 @@ public:
     }
 
     // Otherwise, create a new node
-    // TODO: If we make valueToNode_ hold V*s and insert the address of newNode.value,
-    // we can avoid expensive copies. Would have to define equality and hash of V* to be
-    // that of V
+    // TODO: If we make valueToNode_ hold V*s and insert the address of
+    // newNode.value, we can avoid expensive copies. Would have to define
+    // equality and hash of V* to be that of V
     const Node* newNode = new Node(newNodeValue);
     node->transitions_.emplace(std::move(transition), newNode);
     valueToNode_.emplace(newNodeValue, newNode);
@@ -152,9 +156,10 @@ public:
     std::replace(headerGuard.begin(), headerGuard.end(), '/', '_');
     std::replace(headerGuard.begin(), headerGuard.end(), '.', '_');
     std::transform(
-        headerGuard.begin(), headerGuard.end(), headerGuard.begin(), [](unsigned char c) {
-          return std::toupper(c);
-        });
+        headerGuard.begin(),
+        headerGuard.end(),
+        headerGuard.begin(),
+        [](unsigned char c) { return std::toupper(c); });
 
     init << "#ifndef " << headerGuard << '\n'
          << "#define " << headerGuard << '\n'
@@ -194,7 +199,8 @@ public:
       tranStmts << 'n' << currentNode << "->ts_={\n";
       for (const auto& tranAndNode : currentNode->transitions_) {
         const Node* successor = tranAndNode.second;
-        tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n' << successor << ".get()},\n";
+        tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n'
+                  << successor << ".get()},\n";
         if (!visited.contains(successor)) {
           visited.insert(successor);
           q.push(successor);
@@ -209,7 +215,8 @@ public:
     std::ofstream outFile;
     outFile.open(filename);
     // TODO: Change to .view() when implemented
-    outFile << init.str() << '\n' << nodeDecls.str() << tranStmts.str() << "}\n#endif\n";
+    outFile << init.str() << '\n'
+            << nodeDecls.str() << tranStmts.str() << "}\n#endif\n";
     outFile.close();
   }
 

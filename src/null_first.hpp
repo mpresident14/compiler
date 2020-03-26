@@ -11,6 +11,8 @@
 #include <bitset>
 
 std::vector<bool> getNullabilities(const Grammar& grammar);
-std::vector<std::vector<bool>> getFirsts(const Grammar& grammar, size_t numTokens);
+std::vector<std::vector<bool>> getFirsts(
+    const Grammar& grammar,
+    size_t numTokens);
 
 #endif

@@ -42,8 +42,10 @@ namespace {
 
   /* Adds possible rules to node's state via epsilon transition in DFA.
    * Ex: S -> A.B, then add all rules B -> ??? */
-  void
-  epsilonTransition(DFARuleSet& ruleSet, const Grammar& grammar, const vector<BitSetToks>& firsts) {
+  void epsilonTransition(
+      DFARuleSet& ruleSet,
+      const Grammar& grammar,
+      const vector<BitSetToks>& firsts) {
     queue<DFARule> ruleQueue;
 
     // Expand variables (epsilon transition) in the initial set of rules.
@@ -51,15 +53,15 @@ namespace {
       addRhses(ruleQueue, rule, grammar, firsts);
     }
 
-    // Keep expanding variables (epsilon transition) until we've determined all the
-    // possible rule positions we could be in.
+    // Keep expanding variables (epsilon transition) until we've determined all
+    // the possible rule positions we could be in.
     while (!ruleQueue.empty()) {
       DFARule& rule = ruleQueue.front();
       auto iter = ruleSet.find(rule);
       // If rule is not yet in the set, add it
 
-      // TODO: Should we check for duplicate rules in the queue as well (like use a set and just pop
-      // with set.begin())
+      // TODO: Should we check for duplicate rules in the queue as well (like
+      // use a set and just pop with set.begin())
       if (iter == ruleSet.end()) {
         addRhses(ruleQueue, rule, grammar, firsts);
         ruleSet.insert(move(rule));
@@ -74,8 +76,8 @@ namespace {
       if (existingRule.lookahead != unionToks) {
         // TODO: Might be faster to just do operator|= again
         existingRule.lookahead = move(unionToks);
-        // Only add RHSes if we insert the rule into the set because everything in the
-        // set has already been expanded
+        // Only add RHSes if we insert the rule into the set because everything
+        // in the set has already been expanded
         addRhses(ruleQueue, rule, grammar, firsts);
       }
 
@@ -92,7 +94,8 @@ namespace {
       const Grammar& grammar,
       const vector<BitSetToks>& firsts,
       size_t numSymbols) {
-    // Get all the valid transition symbols and map each of them to a new set of rules
+    // Get all the valid transition symbols and map each of them to a new set of
+    // rules
     vector<DFARuleSet> newTransitions(numSymbols);
     size_t numVars = grammar.size();
 
@@ -100,7 +103,8 @@ namespace {
       if (rule.atEnd()) {
         continue;
       }
-      newTransitions[symbolIndex(rule.nextSymbol(), numVars)].insert(rule.nextStep());
+      newTransitions[symbolIndex(rule.nextSymbol(), numVars)].insert(
+          rule.nextStep());
     }
 
     // Apply epsilon transitions and create the transition
@@ -112,8 +116,8 @@ namespace {
         continue;
       }
       epsilonTransition(transitionRules, grammar, firsts);
-      const DFA_t::Node* newNode =
-          dfa.addTransition(node, indexToSymbol(i, numVars), move(transitionRules));
+      const DFA_t::Node* newNode = dfa.addTransition(
+          node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
         addedNodes.push_back(newNode);
       }
@@ -123,8 +127,12 @@ namespace {
 
 
   /* Constructs the starting node of the DFA */
-  DFA_t initDFA(const Grammar& grammar, const vector<BitSetToks>& firsts, size_t numTokens) {
-    DFARuleSet firstSet = { DFARule{ SCONC, { ROOT_SYMBOL }, 0, BitSetToks(numTokens) } };
+  DFA_t initDFA(
+      const Grammar& grammar,
+      const vector<BitSetToks>& firsts,
+      size_t numTokens) {
+    DFARuleSet firstSet = { DFARule{
+        SCONC, { ROOT_SYMBOL }, 0, BitSetToks(numTokens) } };
     epsilonTransition(firstSet, grammar, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;

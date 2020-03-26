@@ -17,15 +17,17 @@ struct DFARule {
   int concrete;
   std::vector<int> symbols;
   size_t pos;
-  // Allows us to change lookahead while it is inside of a RuleSet, which is ok b/c
-  // lookahead is not involved in the hash function or equality for RuleSets
+  // Allows us to change lookahead while it is inside of a RuleSet, which is ok
+  // b/c lookahead is not involved in the hash function or equality for RuleSets
   mutable std::vector<bool> lookahead;
 
   bool atEnd() const { return pos == symbols.size(); }
   /* Given a rule "S -> A.B", returns B */
   // TODO: Remove throw and make noexcept when done
   int nextSymbol() const { return pos == symbols.size() ? NONE : symbols[pos]; }
-  int nextNextSymbol() const { return pos >= symbols.size() - 1 ? NONE : symbols[pos + 1]; }
+  int nextNextSymbol() const {
+    return pos >= symbols.size() - 1 ? NONE : symbols[pos + 1];
+  }
 
   /* Given a rule "S -> A.B", returns "S -> AB." */
   DFARule nextStep() const {
@@ -37,8 +39,8 @@ struct DFARule {
 
   // TODO: Make appropriate functions noexcept and const(expr)
   bool operator==(const DFARule& other) const {
-    return concrete == other.concrete && symbols == other.symbols && pos == other.pos &&
-           lookahead == other.lookahead;
+    return concrete == other.concrete && symbols == other.symbols &&
+           pos == other.pos && lookahead == other.lookahead;
   }
 
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
@@ -78,8 +80,9 @@ struct DFARuleHash {
  * Individual rules in a RuleSet are not compared using the lookahead set
  * since there should never be two rules differing only by their lookahead set
  * in the same RuleSet. However, operator== in the DFARule class still compares
- * lookahead sets because RuleSet equality compares the rules with this operator,
- * and two RuleSets can differ based on the lookahead sets of the rules they contain.
+ * lookahead sets because RuleSet equality compares the rules with this
+ * operator, and two RuleSets can differ based on the lookahead sets of the
+ * rules they contain.
  * */
 struct DFARuleEq {
   bool operator()(const DFARule& left, const DFARule& right) const {

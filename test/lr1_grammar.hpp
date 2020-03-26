@@ -158,7 +158,9 @@ void* constructObj(int concrete, StackObj* args) {
 }
 
 StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym) {
-  return StackObj{ constructObj(concrete, args), concToSym[concrete], concrete };
+  return StackObj{ constructObj(concrete, args),
+                   concToSym[concrete],
+                   concrete };
 }
 
 
