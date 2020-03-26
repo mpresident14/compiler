@@ -13,7 +13,6 @@ namespace {
       const DFARule& fromRule,
       const Grammar& grammar,
       const vector<BitSetToks>& firsts) {
-
     // Nothing to expand if we are at the end of the rule or if the next symbol
     // is a token
     int nextSymbol = fromRule.nextSymbol();
@@ -43,7 +42,8 @@ namespace {
 
   /* Adds possible rules to node's state via epsilon transition in DFA.
    * Ex: S -> A.B, then add all rules B -> ??? */
-  void epsilonTransition(DFARuleSet& ruleSet, const Grammar& grammar, const vector<BitSetToks>& firsts) {
+  void
+  epsilonTransition(DFARuleSet& ruleSet, const Grammar& grammar, const vector<BitSetToks>& firsts) {
     queue<DFARule> ruleQueue;
 
     // Expand variables (epsilon transition) in the initial set of rules.
@@ -86,7 +86,12 @@ namespace {
 
   /* For each rule of this node, construct the transitions to successors.
    * Return the successors that were newly added */
-  vector<const DFA_t::Node*> createTransitions(DFA_t& dfa, const DFA_t::Node* node, const Grammar& grammar, const vector<BitSetToks>& firsts, size_t numSymbols) {
+  vector<const DFA_t::Node*> createTransitions(
+      DFA_t& dfa,
+      const DFA_t::Node* node,
+      const Grammar& grammar,
+      const vector<BitSetToks>& firsts,
+      size_t numSymbols) {
     // Get all the valid transition symbols and map each of them to a new set of rules
     vector<DFARuleSet> newTransitions(numSymbols);
     size_t numVars = grammar.size();
@@ -107,7 +112,8 @@ namespace {
         continue;
       }
       epsilonTransition(transitionRules, grammar, firsts);
-      const DFA_t::Node* newNode = dfa.addTransition(node, indexToSymbol(i, numVars), move(transitionRules));
+      const DFA_t::Node* newNode =
+          dfa.addTransition(node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
         addedNodes.push_back(newNode);
       }
@@ -123,7 +129,7 @@ namespace {
     DFA_t dfa(move(firstSet));
     return dfa;
   }
-}
+}  // namespace
 
 
 /* Build the DFA */
@@ -137,7 +143,8 @@ DFA_t buildParserDFA(const Grammar& grammar, size_t numSymbols) {
   while (!q.empty()) {
     const DFA_t::Node* node = q.front();
     q.pop();
-    vector<const DFA_t::Node*> addedNodes = createTransitions(dfa, node, grammar, firsts, numSymbols);
+    vector<const DFA_t::Node*> addedNodes =
+        createTransitions(dfa, node, grammar, firsts, numSymbols);
     for (const DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }

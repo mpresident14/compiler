@@ -31,7 +31,6 @@ static constexpr int STAR = -2;
 static constexpr int INT = -3;
 
 
-
 /***********
  * OBJECTS *
  ***********/

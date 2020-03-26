@@ -18,9 +18,7 @@ inline int tokensIndex(int token) { return -token - 1; }
 inline int symbolIndex(int symbol, size_t numVars) {
   return isToken(symbol) ? tokensIndex(symbol) + numVars : symbol;
 }
-inline int indexToSymbol(size_t i, size_t numVars) {
-  return i >= numVars ? numVars - i - 1 : i;
-}
+inline int indexToSymbol(size_t i, size_t numVars) { return i >= numVars ? numVars - i - 1 : i; }
 
 
 struct GrammarRule {
