@@ -20,15 +20,16 @@
 /* Variables are positive */
 static constexpr int EXPR = 1;
 
+/* ExprType classes of Symbols */
+static constexpr int EINT = 1;
+static constexpr int EPLUS = 2;
+static constexpr int ETIMES = 3;
+
 /* Tokens are negative */
 static constexpr int PLUS = -1;
 static constexpr int STAR = -2;
 static constexpr int INT = -3;
 
-/* ExprType classes of Symbols */
-static constexpr int EINT = 1;
-static constexpr int EPLUS = 2;
-static constexpr int ETIMES = 3;
 
 
 /***********
@@ -163,7 +164,7 @@ StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym) {
 
 
 /* LR0 Grammar */
-const Grammar GRAMMAR = { { { GrammarRule{ 0 /* SCONC */, { 0 /* S */ } } } },
+const Grammar GRAMMAR = { { { GrammarRule{ 0 /* SCONC */, { EXPR } } } },
                           {
                               {
                                   GrammarRule{ EINT, { INT } },

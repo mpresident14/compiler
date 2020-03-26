@@ -4,7 +4,7 @@ using namespace std;
 using DFA_t = DFA<DFARuleSet, int>;
 using BitSetToks = vector<bool>;
 
-namespace vis_for_test {
+namespace {
 
   /* Given a rule "A -> .BC", add all "B -> .<rhs>" rules to rule queue,
    * updating the lookahead set */
@@ -17,7 +17,7 @@ namespace vis_for_test {
     // Nothing to expand if we are at the end of the rule or if the next symbol
     // is a token
     int nextSymbol = fromRule.nextSymbol();
-    if (nextSymbol == EPSILON || isToken(nextSymbol)) {
+    if (nextSymbol == NONE || isToken(nextSymbol)) {
       return;
     }
 
@@ -25,7 +25,7 @@ namespace vis_for_test {
     // the rule from which we are expanding
     BitSetToks newLookahead = fromRule.lookahead;
     int nextNextSymbol = fromRule.nextNextSymbol();
-    if (nextNextSymbol != EPSILON) {
+    if (nextNextSymbol != NONE) {
       // FIRST() of a token is just the token
       if (isToken(nextNextSymbol)) {
         newLookahead[tokensIndex(nextNextSymbol)] = true;
@@ -107,7 +107,7 @@ namespace vis_for_test {
         continue;
       }
       epsilonTransition(transitionRules, grammar, firsts);
-      const DFA_t::Node* newNode = dfa.addTransition(node, i, move(transitionRules));
+      const DFA_t::Node* newNode = dfa.addTransition(node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
         addedNodes.push_back(newNode);
       }
@@ -117,8 +117,8 @@ namespace vis_for_test {
 
 
   /* Constructs the starting node of the DFA */
-  DFA_t initDFA(const Grammar& grammar, const vector<BitSetToks>& firsts) {
-    DFARuleSet firstSet = { DFARule{ SCONC, { S }, 0, BitSetToks() } };
+  DFA_t initDFA(const Grammar& grammar, const vector<BitSetToks>& firsts, size_t numTokens) {
+    DFARuleSet firstSet = { DFARule{ SCONC, { ROOT_SYMBOL }, 0, BitSetToks(numTokens) } };
     epsilonTransition(firstSet, grammar, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;
@@ -128,15 +128,16 @@ namespace vis_for_test {
 
 /* Build the DFA */
 DFA_t buildParserDFA(const Grammar& grammar, size_t numSymbols) {
-  vector<BitSetToks> firsts = getFirsts(grammar, numSymbols - grammar.size() /* numTokens */);
-  DFA_t dfa = vis_for_test::initDFA(grammar, firsts);
+  size_t numTokens = numSymbols - grammar.size();
+  vector<BitSetToks> firsts = getFirsts(grammar, numTokens);
+  DFA_t dfa = initDFA(grammar, firsts, numTokens);
   queue<const DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
   while (!q.empty()) {
     const DFA_t::Node* node = q.front();
     q.pop();
-    vector<const DFA_t::Node*> addedNodes = vis_for_test::createTransitions(dfa, node, grammar, firsts, numSymbols);
+    vector<const DFA_t::Node*> addedNodes = createTransitions(dfa, node, grammar, firsts, numSymbols);
     for (const DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }

@@ -11,12 +11,15 @@ static constexpr int NONE = INT_MAX;
 static constexpr int EPSILON = INT_MAX - 1;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
-static constexpr ROOT_SYMBOL = 1;
+static constexpr int ROOT_SYMBOL = 1;
 
 inline bool isToken(int symbol) { return symbol < 0; }
 inline int tokensIndex(int token) { return -token - 1; }
 inline int symbolIndex(int symbol, size_t numVars) {
-  return isToken(symbol) ? tokensIndex(symbol) + numVars: symbol;
+  return isToken(symbol) ? tokensIndex(symbol) + numVars : symbol;
+}
+inline int indexToSymbol(size_t i, size_t numVars) {
+  return i >= numVars ? numVars - i - 1 : i;
 }
 
 
