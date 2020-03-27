@@ -88,9 +88,9 @@ namespace {
 
   /* For each rule of this node, construct the transitions to successors.
    * Return the successors that were newly added */
-  vector<const DFA_t::Node*> createTransitions(
+  vector<DFA_t::Node*> createTransitions(
       DFA_t& dfa,
-      const DFA_t::Node* node,
+      DFA_t::Node* node,
       const Grammar& grammar,
       const vector<BitSetToks>& firsts,
       size_t numSymbols) {
@@ -108,7 +108,7 @@ namespace {
     }
 
     // Apply epsilon transitions and create the transition
-    vector<const DFA_t::Node*> addedNodes;
+    vector<DFA_t::Node*> addedNodes;
     for (size_t i = 0; i < numSymbols; ++i) {
       DFARuleSet& transitionRules = newTransitions[i];
       // No valid transition
@@ -116,7 +116,7 @@ namespace {
         continue;
       }
       epsilonTransition(transitionRules, grammar, firsts);
-      const DFA_t::Node* newNode = dfa.addTransition(
+      DFA_t::Node* newNode = dfa.addTransition(
           node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
         addedNodes.push_back(newNode);
@@ -145,15 +145,15 @@ DFA_t buildParserDFA(const Grammar& grammar, size_t numTokens) {
   size_t numSymbols = numTokens + grammar.size();
   vector<BitSetToks> firsts = getFirsts(grammar, numTokens);
   DFA_t dfa = initDFA(grammar, firsts, numTokens);
-  queue<const DFA_t::Node*> q;
+  queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
   while (!q.empty()) {
-    const DFA_t::Node* node = q.front();
+    DFA_t::Node* node = q.front();
     q.pop();
-    vector<const DFA_t::Node*> addedNodes =
+    vector<DFA_t::Node*> addedNodes =
         createTransitions(dfa, node, grammar, firsts, numSymbols);
-    for (const DFA_t::Node* newNode : addedNodes) {
+    for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
   }

@@ -3,9 +3,11 @@
 using namespace std;
 
 
-// TODO: Allow passing in of an symbolToString function for better error messages
+// TODO: Allow passing in of an symbolToString function for better error
+// messages
 
 namespace {
+
   struct RuleData {
     optional<DFARule> reducibleRule;
     int precedence;
@@ -15,6 +17,13 @@ namespace {
   inline bool operator==(const RuleData& lhs, const RuleData rhs) noexcept {
     return lhs.reducibleRule == rhs.reducibleRule;
   }
+
+  // inline ostream& operator<<(ostream& out, const RuleData& ruleData) {
+  //   if (!ruleData.reducibleRule.has_value()) {
+  //     return out << "{}";
+  //   }
+  //   return out << *ruleData.reducibleRule;
+  // }
 }
 
 // TODO: Fix these hash functions
@@ -40,8 +49,8 @@ namespace {
    *
    *
    * Regex { Regex* } { delete $; }
-   * Regex := Alts                             { new Alt(std::move($0)) }
-   *        | Concats                          { new Concat(std::move($0)) }
+   * Regex := Alts                             { new Alt(move($0)) }
+   *        | Concats                          { new Concat(move($0)) }
    *        | Regex STAR                       { new Star($0) }
    *        | CARET Regex                      { new Not($1) }
    *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
@@ -50,11 +59,11 @@ namespace {
    *
    * Alts { RegexVector }
    * Alts := Regex BAR Regex { RegexVector($0, $2) }
-   *       | Alts BAR Regex  { RegexVector(std::move($0), $2) }
+   *       | Regex BAR Alts  { RegexVector($0, move($2)) }
    *
    * Concats { RegexVector* }
    * Concats := Regex Regex   { RegexVector($0, $1) }
-   *          | Concats Regex { RegexVector(std::move($0), $1) }
+   *          | Regex Concats { RegexVector($0, move($1)) }
    *
    *
    * */
@@ -89,45 +98,45 @@ namespace {
   constexpr int CCONCAT = 11;
 
   struct GrammarData {
-    std::vector<int> concToSymb;    // Indexed by Concrete
-    std::vector<int> overridePrecs; // Indexed by Concrete
-    std::vector<int> tokenPrecs;    // Indexed by Token
-    std::vector<Assoc> tokenAssoc;  // Indexed by Token
+    vector<int> concToSymb;     // Indexed by Concrete
+    vector<int> overridePrecs;  // Indexed by Concrete
+    vector<int> tokenPrecs;     // Indexed by Token
+    vector<Assoc> tokenAssoc;   // Indexed by Token
   };
   GrammarData GRAMMAR_DATA = { { S,
-                                REGEX,
-                                REGEX,
-                                REGEX,
-                                REGEX,
-                                REGEX,
-                                REGEX,
-                                REGEX,
-                                ALTS,
-                                ALTS,
-                                CONCATS,
-                                CONCATS },
-                              { NONE /* SCONC */,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                NONE,
-                                4,
-                                4 },
-                              { 1, 6, 3, 7, 7, 8, 8, NONE, 5 },
-                              { Assoc::LEFT,
-                                Assoc::LEFT,
-                                Assoc::RIGHT,
-                                Assoc::NONE,
-                                Assoc::NONE,
-                                Assoc::NONE,
-                                Assoc::NONE,
-                                Assoc::NONE,
-                                Assoc::LEFT } };
+                                 REGEX,
+                                 REGEX,
+                                 REGEX,
+                                 REGEX,
+                                 REGEX,
+                                 REGEX,
+                                 REGEX,
+                                 ALTS,
+                                 ALTS,
+                                 CONCATS,
+                                 CONCATS },
+                               { NONE /* SCONC */,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 NONE,
+                                 4,
+                                 4 },
+                               { 1, 6, 3, NONE, NONE, NONE, NONE, NONE, 5 },
+                               { Assoc::LEFT,
+                                 Assoc::LEFT,
+                                 Assoc::RIGHT,
+                                 Assoc::NONE,
+                                 Assoc::NONE,
+                                 Assoc::NONE,
+                                 Assoc::NONE,
+                                 Assoc::NONE,
+                                 Assoc::LEFT } };
 
 
   const Grammar GRAMMAR = {
@@ -145,12 +154,12 @@ namespace {
     /* ALTS */
     {
         GrammarRule{ AREGEX, { REGEX, BAR, REGEX } },
-        GrammarRule{ AALT, { ALTS, BAR, REGEX } },
+        GrammarRule{ AALT, { REGEX, BAR, ALTS } },
     },
     /* CONCATS */
     {
         GrammarRule{ CREGEX, { REGEX, REGEX } },
-        GrammarRule{ CCONCAT, { CONCATS, REGEX } },
+        GrammarRule{ CCONCAT, { REGEX, CONCATS } },
     }
   };
 
@@ -170,8 +179,8 @@ namespace {
 
   StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
 
-  std::vector<StackObj> lex(const std::string& input) {
-    std::vector<StackObj> tokens;
+  vector<StackObj> lex(const string& input) {
+    vector<StackObj> tokens;
     bool escaped = false;
     tokens.reserve(input.size());
 
@@ -223,7 +232,8 @@ namespace {
    **********/
 
   RuleData condenseRuleSet(const DFARuleSet& ruleSet) {
-    auto setIter = find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
+    auto setIter =
+        find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
     // No reducible rules
     if (setIter == ruleSet.cend()) {
       return RuleData{ {}, NONE, Assoc::NONE };
@@ -232,7 +242,8 @@ namespace {
     const DFARule& rule = *setIter;
     int rulePrecedence = GRAMMAR_DATA.overridePrecs[rule.concrete];
 
-    auto ruleIter = find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
+    auto ruleIter =
+        find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
     // Reducible rule contains no tokens
     if (ruleIter == rule.symbols.crend()) {
       return RuleData{ optional(rule), rulePrecedence, Assoc::NONE };
@@ -248,45 +259,22 @@ namespace {
     if (rulePrecedence == NONE) {
       return RuleData{ optional(rule), NONE, Assoc::NONE };
     } else {
-      return RuleData{ optional(rule), rulePrecedence, GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)] };
+      return RuleData{ optional(rule),
+                       rulePrecedence,
+                       GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)]};
     }
   }
 
   using CondensedDFA = DFA<RuleData, int>;
   using CondensedNode = CondensedDFA::Node;
 
-  CondensedDFA buildRegexParser() {
-    return buildParserDFA(GRAMMAR, 9).convert<RuleData>(
-      [](const DFARuleSet& ruleSet) { return condenseRuleSet(ruleSet); }
-    );
-  }
+  const CondensedDFA PARSER_DFA = buildParserDFA(GRAMMAR, 9).convert<RuleData>(condenseRuleSet);
 
   struct Start {
     Start(Regex** r) : r_(r) {}
     ~Start() { delete r_; }
     Regex** r_;
   };
-
-
-  void StackObj::deleteObj() const noexcept {
-    switch (symbol) {
-      case REGEX:
-        delete (*(Regex**)obj);
-        delete (Regex**)obj;
-        break;
-      case ALTS:
-        delete (RegexVector*)obj;
-        break;
-      case CONCATS:
-        delete (RegexVector*)obj;
-        break;
-      case CHAR:
-        delete (char*)obj;
-        break;
-      default:
-        return;
-    }
-  }
 
   void StackObj::deleteObjPtr() const noexcept {
     switch (symbol) {
@@ -307,14 +295,22 @@ namespace {
     }
   }
 
+
+  void StackObj::deleteObj() const noexcept {
+    if (symbol == REGEX) {
+      delete (*(Regex**)obj);
+    }
+    deleteObjPtr();
+  }
+
   // TODO: Remove throw and make noexcept when done
   /* Construct a concrete object */
   void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {
       case RALT:
-        return new Regex*(new Alt(std::move(*(RegexVector*)args[0].obj)));
+        return new Regex*(new Alt(move(*(RegexVector*)args[0].obj)));
       case RCONCAT:
-        return new Regex*(new Concat(std::move(*(RegexVector*)args[0].obj)));
+        return new Regex*(new Concat(move(*(RegexVector*)args[0].obj)));
       case RSTAR:
         return new Regex*(new Star(*(Regex**)args[0].obj));
       case RNOT:
@@ -326,39 +322,42 @@ namespace {
       case RCHAR:
         return new Regex*(new Character(*(char*)args[0].obj));
       case AREGEX:
-        return new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
+        return new RegexVector(
+            RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
       case AALT:
         return new RegexVector(
-            RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
+          RegexVector(*(Regex**)args[0].obj, move(*(RegexVector*)args[2].obj)));
       case CREGEX:
-        return new RegexVector(RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
+        return new RegexVector(
+            RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
       case CCONCAT:
         return new RegexVector(
-            RegexVector(std::move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
+          RegexVector(*(Regex**)args[0].obj, move(*(RegexVector*)args[1].obj)));
       case SCONC:
         return new Start((Regex**)args[0].obj);
       default:
-        throw std::invalid_argument("Can't construct. Out of options.");
+        throw invalid_argument("Can't construct. Out of options.");
     }
   }
 
-  StackObj construct(int concrete, StackObj* args, const vector<int>& concToSym) {
+  StackObj
+  construct(int concrete, StackObj* args, const vector<int>& concToSym) {
     return StackObj{ constructObj(concrete, args), concToSym[concrete] };
   }
 
   void conflictWarning(const DFARule& rule, int nextToken) {
-    cerr << "WARNING: Shift reduce conflict for rule\n\t"
-        << rule << "\n\tNext token: " << nextToken << endl;
+    cerr << "WARNING: Shift reduce conflict for rule\n\t" << rule
+         << "\n\tNext token: " << nextToken << endl;
   }
 
 
-  // TODO: Is it possible to have more than one rule able to be reduced? If so, handle it.
+  // TODO: Is it possible to have more than one rule able to be reduced? If so,
+  // handle it.
   int tryReduce(
       const CondensedNode* node,
       int nextToken,
-      const std::vector<StackObj>& stk,
+      const vector<StackObj>& stk,
       const vector<int> tokenPrecs) {
-
     const RuleData& ruleData = node->getValue();
 
     // No reducible rule, so try shifting
@@ -377,11 +376,16 @@ namespace {
     auto eqlLambda = [](int symbol, const StackObj& stkObj) {
       return stkObj.symbol == symbol;
     };
-    if (!equal(rule.symbols.crbegin(), rule.symbols.crend(), stk.crbegin(), move(eqlLambda))) {
+    if (!equal(
+            rule.symbols.crbegin(),
+            rule.symbols.crend(),
+            stk.crbegin(),
+            move(eqlLambda))) {
       return NONE;
     }
 
-    // Can't shift, so reduce
+    // Can't shift, so reduce. After this point, nextToken
+    // is guaranteed to not be NONE
     if (!node->getTransitions().contains(nextToken)) {
       return ruleData.reducibleRule->concrete;
     }
@@ -416,17 +420,34 @@ namespace {
   }
 
 
-  const CondensedDFA PARSER_DFA = buildRegexParser();
-
-
   /* Deep delete StackObj::obj starting at index i */
-  void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
+  void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
     size_t size = stackObjs.size();
     for (; i < size; ++i) {
       stackObjs[i].deleteObj();
     }
   }
 
+
+  void parseError(const vector<StackObj>& stk, const vector<StackObj>& inputTokens, size_t i) {
+    ostringstream errMsg;
+    vector<int> stkSymbols;
+    vector<int> remainingTokens;
+    auto stkObjToSymbol = [](StackObj stkObj) { return stkObj.symbol; };
+    transform(
+        stk.begin(),
+        stk.end(),
+        back_inserter(stkSymbols),
+        stkObjToSymbol);
+    transform(
+        inputTokens.begin() + i,
+        inputTokens.end(),
+        back_inserter(remainingTokens),
+        stkObjToSymbol);
+
+    errMsg << "No parse:\n\tStack: " << stkSymbols << "\n\tRemaining tokens: " << remainingTokens;
+    throw invalid_argument(errMsg.str());
+  }
 
 
   Regex* shiftReduce(vector<StackObj>& inputTokens) {
@@ -441,31 +462,33 @@ namespace {
       // Run the DFA.
       // TODO: Only backtrack as far as the reduction (store path)
       vector<int> stkSymbols;
-      transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
-        return stkObj.symbol;
-      });
-      const CondensedNode* currentNode = PARSER_DFA.run(stkSymbols);
+      transform(
+          stk.begin(),
+          stk.end(),
+          back_inserter(stkSymbols),
+          [](StackObj stkObj) { return stkObj.symbol; });
+      CondensedNode* currentNode = PARSER_DFA.run(stkSymbols);
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);
         cleanPtrsFrom(inputTokens, i + 1);
-        return nullptr;
+        parseError(stk, inputTokens, i + 1);
       }
 
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
-      int concrete = tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokenPrecs);
+      int concrete =
+          tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokenPrecs);
       // Reduce
       if (concrete != NONE) {
         // Construct the new object, pop the arguments off the stack,
         // and push the new object onto it.
-        size_t reduceStart = stk.size() - currentNode->getValue().reducibleRule->symbols.size();
+        size_t reduceStart =
+            stk.size() - currentNode->getValue().reducibleRule->symbols.size();
         StackObj newObj = construct(
-            concrete,
-            &stk.data()[reduceStart],
-            GRAMMAR_DATA.concToSymb);
+            concrete, &stk.data()[reduceStart], GRAMMAR_DATA.concToSymb);
 
-        // We always add the rule S -> <root_type>, so there is only one thing on
-        // the stack if we reduced to S, and we don't want to delete the pointer
-        // because this is the object we are returning to the caller
+        // We always add the rule S -> <root_type>, so there is only one thing
+        // on the stack if we reduced to S, and we don't want to delete the
+        // pointer because this is the object we are returning to the caller
         if (newObj.symbol == S) {
           stk.pop_back();
         } else {
@@ -482,7 +505,7 @@ namespace {
         // No more tokens, didn't reduce to S
         if (i == inputSize) {
           cleanPtrsFrom(stk, 0);
-          return nullptr;
+          parseError(stk, inputTokens, i);
         }
         StackObj token = inputTokens[i];
         currentNode = CondensedDFA::step(currentNode, token.symbol);
@@ -491,7 +514,7 @@ namespace {
         if (currentNode == nullptr) {
           cleanPtrsFrom(stk, 0);
           cleanPtrsFrom(inputTokens, i + 1);
-          return nullptr;
+          parseError(stk, inputTokens, i + 1);
         }
         ++i;
       }
@@ -502,11 +525,12 @@ namespace {
     Regex* root = *start->r_;
     delete start;
     return root;
+
   }
-}
+}  // namespace
 
 
-RgxPtr parse(const std::string& pattern) {
+RgxPtr parse(const string& pattern) {
   vector<StackObj> stackObjs = lex(pattern);
   return RgxPtr(shiftReduce(stackObjs));
 }

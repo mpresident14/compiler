@@ -7,6 +7,19 @@
 using namespace std;
 
 
+ostream& operator<<(ostream& out, RgxType type) {
+  switch(type) {
+    case RgxType::EMPTYSET: return out << "EMPTYSET";
+    case RgxType::EPSILON: return out << "EPSILON";
+    case RgxType::CHARACTER: return out << "CHARACTER";
+    case RgxType::ALT: return out << "ALT";
+    case RgxType::CONCAT: return out << "CONCAT";
+    case RgxType::STAR: return out << "STAR";
+    case RgxType::NOT: return out << "NOT";
+    case RgxType::RANGE: return out << "RANGE";
+  }
+}
+
 /***************************
  * Derivative Optimization *
  ***************************/
@@ -29,11 +42,11 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::CONCAT) {
-    vector<RgxPtr> &r1Vec = static_cast<Concat *>(r1.get())->rVec_.rgxs_;
-    vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
+    deque<RgxPtr> &r1Vec = static_cast<Concat *>(r1.get())->rVec_.rgxs_;
+    deque<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // [r1s] [r2s] = [r1s + r2s]
     if (r2Type == RgxType::CONCAT) {
-      vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
+      deque<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
       return make_shared<Concat>(RegexVector(move(newVec)));
     }
@@ -43,8 +56,8 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   }
   // r1 [r2s] = [r1 + r2s]
   if (r2Type == RgxType::CONCAT) {
-    vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
+    deque<RgxPtr> newVec = { r1 };
+    deque<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
     return make_shared<Concat>(RegexVector(move(newVec)));
   }
@@ -74,11 +87,11 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::ALT) {
-    vector<RgxPtr> &r1Vec = static_cast<Alt *>(r1.get())->rVec_.rgxs_;
-    vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
+    deque<RgxPtr> &r1Vec = static_cast<Alt *>(r1.get())->rVec_.rgxs_;
+    deque<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
     if (r2Type == RgxType::ALT) {
-      vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
+      deque<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
       return make_shared<Alt>(RegexVector(move(newVec)));
     }
@@ -88,8 +101,8 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
   // r1 | Alt [r2s] = Alt [r1 + r2s]
   if (r2Type == RgxType::ALT) {
-    vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
+    deque<RgxPtr> newVec = { r1 };
+    deque<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
     return make_shared<Alt>(RegexVector(move(newVec)));
   }
@@ -103,11 +116,11 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
 }
 
 
-RgxPtr makeConcats(vector<RgxPtr> &&rs) {
+RgxPtr makeConcats(deque<RgxPtr> &&rs) {
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
 }
 
-RgxPtr makeAlts(vector<RgxPtr> &&rs) {
+RgxPtr makeAlts(deque<RgxPtr> &&rs) {
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeAlt);
 }
 
@@ -183,9 +196,9 @@ void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 RegexVector::RegexVector(Regex *r1, Regex *r2)
     : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
 
-RegexVector::RegexVector(RegexVector &&rVec, Regex *r)
+RegexVector::RegexVector(Regex *r, RegexVector &&rVec)
     : rgxs_{ move(rVec.rgxs_) } {
-  rgxs_.push_back(RgxPtr(r));
+  rgxs_.push_front(RgxPtr(r));
 }
 
 bool RegexVector::operator==(const RegexVector &other) const {
@@ -198,7 +211,7 @@ bool RegexVector::operator==(const RegexVector &other) const {
       });
 }
 
-RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
+RegexVector::RegexVector(deque<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 
 size_t RegexVector::hashFn() const {
   hash<RgxPtr> hasher;
@@ -224,7 +237,7 @@ bool Alt::isNullable() const {
 }
 
 RgxPtr Alt::getDeriv(char c) const {
-  vector<RgxPtr> derivs;
+  deque<RgxPtr> derivs;
   transform(
       rVec_.rgxs_.cbegin(),
       rVec_.rgxs_.cend(),
@@ -260,12 +273,12 @@ bool Concat::isNullable() const {
 
 // TODO: Make this better
 RgxPtr Concat::getDeriv(char c) const {
-  const vector<RgxPtr> &rgxs = rVec_.rgxs_;
-  vector<RgxPtr> derivAndRest = { rgxs[0]->getDeriv(c) };
+  const deque<RgxPtr> &rgxs = rVec_.rgxs_;
+  deque<RgxPtr> derivAndRest = { rgxs[0]->getDeriv(c) };
   copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 
   if (rgxs[0]->isNullable()) {
-    vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
+    deque<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
     return makeAlt(
         Concat(RegexVector(move(rest))).getDeriv(c),
         makeConcats(move(derivAndRest)));

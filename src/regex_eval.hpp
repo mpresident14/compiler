@@ -13,7 +13,8 @@
 #include <algorithm>
 #include <functional>
 #include <optional>
-
+#include <stdexcept>
+#include <sstream>
 
 RgxPtr parse(const std::string& pattern);
 

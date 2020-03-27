@@ -19,6 +19,9 @@
 template <typename V, typename T>
 class DFA {
 public:
+  template <typename V2, typename T2>
+  friend class DFA;
+
   struct Node {
   public:
     friend class DFA;
@@ -33,19 +36,20 @@ public:
 
     const V& getValue() const { return value_; }
 
-    /* FOR GENERATED DFA ONLY. DO NOT CALL THIS FUNCTION */
-    void setTransitions(std::unordered_map<T, const Node*>&& tranMap) {
-      transitions_ = move(tranMap);
+    const std::unordered_map<T, Node*>& getTransitions() const {
+      return transitions_;
     }
 
-    const std::unordered_map<T, const Node*>& getTransitions() const {
-      return transitions_;
+    /* FOR GENERATED DFA ONLY. DO NOT CALL THIS FUNCTION */
+    void setTransitions(std::unordered_map<T, Node*>&& tranMap) {
+      transitions_ = move(tranMap);
     }
 
   private:
     V value_;
-    // "mutable" allows us to modify the map even when a node is const
-    mutable std::unordered_map<T, const Node*> transitions_;
+    // "mutable" allows us to modify the map even when a node is const (e.g., when
+    // retrieving it from a map)
+    std::unordered_map<T, Node*> transitions_;
     bool deleterCalled_ = false;
   };
 
@@ -91,10 +95,10 @@ public:
     other.root_ = nullptr;
   }
 
-  const Node* getRoot() const { return root_; }
+  Node* getRoot() const { return root_; }
 
-  const Node* run(const std::vector<T>& input) const {
-    const Node* currentNode = root_;
+  Node* run(const std::vector<T>& input) const {
+    Node* currentNode = root_;
     for (const T& inputToken : input) {
       currentNode = step(currentNode, inputToken);
       if (currentNode == nullptr) {
@@ -105,7 +109,7 @@ public:
   }
 
   /* Step from node with transition inputToken */
-  static const Node* step(const Node* node, const T& inputToken) {
+  static Node* step(Node* node, const T& inputToken) {
     auto iter = node->transitions_.find(inputToken);
     if (iter == node->transitions_.end()) {
       return nullptr;
@@ -114,7 +118,7 @@ public:
   }
 
   // TODO: Make newNodeValue a universal reference so that we can forward it
-  const Node* addTransition(const Node* node, T transition, V newNodeValue) {
+  Node* addTransition(Node* node, T transition, V newNodeValue) {
     // No duplicate or updated transitions
     if (node->transitions_.contains(transition)) {
       return nullptr;
@@ -123,7 +127,7 @@ public:
     // If a node with this value already exists, just add a transition to the
     // existing node
     if (valueToNode_.contains(newNodeValue)) {
-      const Node* successor = valueToNode_.at(newNodeValue);
+      Node* successor = valueToNode_.at(newNodeValue);
       node->transitions_.emplace(std::move(transition), successor);
       return nullptr;
     }
@@ -132,7 +136,7 @@ public:
     // TODO: If we make valueToNode_ hold V*s and insert the address of
     // newNode.value, we can avoid expensive copies. Would have to define
     // equality and hash of V* to be that of V
-    const Node* newNode = new Node(newNodeValue);
+    Node* newNode = new Node(newNodeValue);
     node->transitions_.emplace(std::move(transition), newNode);
     valueToNode_.emplace(newNodeValue, newNode);
     ++size_;
@@ -140,45 +144,39 @@ public:
   }
 
 
-  // TODO: Universal ref params
-  const Node* addTransitionNoCheck(const Node* node, T transition, V newNodeValue) {
-    const Node* newNode = new Node(newNodeValue);
-    node->transitions_.emplace(std::move(transition), newNode);
-    valueToNode_.emplace(newNodeValue, newNode);
-    ++size_;
-    return newNode;
-  }
-
-
-  // Requires v1 == v2 -> f(v1) == f(v2)
   template <typename NewValue, typename F>
   DFA<NewValue, T> convert(const F& valueConversion) const {
     using namespace std;
-    using OldNode = const typename DFA::Node*;
-    using NewNode = const typename DFA<NewValue, T>::Node*;
+    using OldNode = typename DFA::Node;
+    using NewNode = typename DFA<NewValue, T>::Node;
 
     DFA<NewValue, T> newDfa(valueConversion(root_->value_));
-
-    unordered_set<OldNode> visited = { root_ };
-    queue<pair<OldNode, NewNode>> q;
-    q.push(make_pair(root_, newDfa.getRoot()));
+    unordered_map<const OldNode*, NewNode*> visited = { {root_, newDfa.root_} };
+    queue<pair<const OldNode*, NewNode*>> q;
+    q.push(pair(root_, newDfa.root_));
 
     while (!q.empty()) {
-      OldNode oldNode = q.front().first;
-      NewNode newNode = q.front().second;
+      const OldNode* oldNode = q.front().first;
+      NewNode* newNode = q.front().second;
       q.pop();
       for (const auto& tran : oldNode->transitions_) {
-        OldNode oldSuccessor = tran.second;
-        if (!visited.contains(oldSuccessor)) {
-          visited.insert(oldSuccessor);
+        const OldNode* oldSuccessor = tran.second;
+        NewNode* newSuccessor;
+        auto iter = visited.find(oldSuccessor);
+        if (iter == visited.end()) {
+
           // We don't use addTransition because it is possible that the value conversion will create
           // nodes with duplicate values that were not duplicates before the conversion. We want these
           // to remain separate.
-          NewNode newSuccessor = newDfa.addTransitionNoCheck(newNode, tran.first, valueConversion(oldSuccessor->getValue()));
-          q.push(make_pair(oldSuccessor, newSuccessor));
+          newSuccessor = new NewNode(valueConversion(oldSuccessor->getValue()));
+          newDfa.addDirectTransition(newNode, tran.first, newSuccessor);
+          ++newDfa.size_;
+          q.push(pair(oldSuccessor, newSuccessor));
+          visited.emplace(oldSuccessor, newSuccessor);
         } else {
           // If we have already visited this node in the old DFA, then don't create a new node
-          newDfa.addTransition(newNode, tran.first, valueConversion(oldSuccessor->getValue()));
+          newSuccessor = iter->second;
+          newDfa.addDirectTransition(newNode, tran.first, newSuccessor);
         }
       }
     }
@@ -273,32 +271,36 @@ public:
   size_t size() const noexcept { return size_; }
 
   friend std::ostream& operator<<(std::ostream& out, const DFA& dfa) {
-    std::unordered_set<const Node*> visited;
-    return dfa.doStream(out, dfa.getRoot(), 0, visited);
-  }
-
-private:
-  std::ostream& doStream(
-      std::ostream& out,
-      const Node* node,
-      size_t depth,
-      std::unordered_set<const Node*>& visited) const {
-    out << std::string(depth, '\t') << *node << '\n';
-    visited.insert(node);
-    for (auto& transSuccs : node->transitions_) {
-      if (!visited.contains(transSuccs.second)) {
-        doStream(out, transSuccs.second, depth + 1, visited);
+    std::queue<const Node*> q;
+    q.push(dfa.root_);
+    std::unordered_set<const Node*> visited = { dfa.root_ };
+    while (!q.empty()) {
+      const Node* node = q.front();
+      out << node->value_ << '\n';
+      q.pop();
+      for (auto& keyVal : node->getTransitions()) {
+        const Node* successor = keyVal.second;
+        out << "\t[" << keyVal.first << "] -> " << node->getValue() << '\n';
+        if (!visited.contains(successor)) {
+          q.push(successor);
+          visited.insert(successor);
+        }
       }
     }
     return out;
   }
 
+private:
 
-  const Node* root_;
+  void addDirectTransition(Node* fromNode, T transition, Node* toNode) {
+    fromNode->transitions_.emplace(std::move(transition), toNode);
+  }
+
+  Node* root_;
   // Allows us to check whether a node with some value exists in the
   // DFA and grab a pointer to it.
   // TODO: When P0919R3 is added to clang/gcc, use is_transparent
-  std::unordered_map<V, const Node*> valueToNode_;
+  std::unordered_map<V, Node*> valueToNode_;
   // We don't use valueToNode_.size() because of the comment in convert.
   size_t size_;
 };

@@ -5,7 +5,7 @@
 #include <memory>
 #include <ostream>
 #include <utility>
-#include <vector>
+#include <deque>
 
 #include <prez/print_stuff.hpp>
 
@@ -21,6 +21,8 @@ enum class RgxType {
   NOT,
   RANGE
 };
+
+std::ostream& operator<<(std::ostream& out, RgxType type);
 
 class Regex;
 using RgxPtr = std::shared_ptr<Regex>;
@@ -100,12 +102,12 @@ private:
 struct RegexVector {
 public:
   RegexVector(Regex* r1, Regex* r2);
-  RegexVector(RegexVector&& rVec, Regex* r);
-  RegexVector(std::vector<RgxPtr>&& vec);
+  RegexVector(Regex* r, RegexVector&& rVec);
+  RegexVector(std::deque<RgxPtr>&& vec);
   bool operator==(const RegexVector& other) const;
   size_t hashFn() const;
 
-  std::vector<RgxPtr> rgxs_;
+  std::deque<RgxPtr> rgxs_;
 };
 
 class Alt : public Regex {
