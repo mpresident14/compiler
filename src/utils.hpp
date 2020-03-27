@@ -8,11 +8,10 @@
 
 /* Fixed for all grammars */
 enum class Assoc { LEFT, RIGHT, NOT, NONE };
-static constexpr int NONE = INT_MAX;
-static constexpr int EPSILON = INT_MAX - 1;
+static constexpr int NONE = INT_MIN;
+static constexpr int EPSILON = INT_MAX;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
-static constexpr int ROOT_SYMBOL = 1;
 
 inline bool isToken(int symbol) { return symbol < 0; }
 inline int tokensIndex(int token) { return -token - 1; }

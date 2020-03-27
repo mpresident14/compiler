@@ -19,6 +19,13 @@ UnitTest TESTER = UnitTest::createTester();
 
 stringstream errBuffer;
 
+
+void testParse() {
+  RgxPtr r = parse("a|b");
+
+  TESTER.assertEquals(RgxType::ALT, r->getType());
+}
+
 // void testGetDeriv_character() {
 //   UniqPtr r1 = UniqPtr(parse(dfa, lex("a")));
 
@@ -126,6 +133,8 @@ stringstream errBuffer;
 int main(int, char**) {
   // To test stderr output
   cerr.rdbuf(errBuffer.rdbuf());
+
+  testParse();
 
   // testGetDeriv_character();
   // testGetDeriv_alt();

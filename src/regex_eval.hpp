@@ -15,12 +15,6 @@
 #include <optional>
 
 
-struct GrammarData {
-  std::vector<int> concToSymb;    // Indexed by Concrete
-  std::vector<int> overridePrecs; // Indexed by Concrete
-  std::vector<int> tokenPrecs;    // Indexed by Token
-  std::vector<Assoc> tokenAssoc;  // Indexed by Token
-};
-
+RgxPtr parse(const std::string& pattern);
 
 #endif

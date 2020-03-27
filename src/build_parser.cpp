@@ -29,7 +29,7 @@ namespace {
       if (isToken(nextNextSymbol)) {
         newLookahead[tokensIndex(nextNextSymbol)] = true;
       } else {  // Union with the first of the nextNextSymbol
-        bitOrEquals(newLookahead, firsts[tokensIndex(nextNextSymbol)]);
+        bitOrEquals(newLookahead, firsts[nextNextSymbol]);
       }
     }
 
@@ -132,7 +132,7 @@ namespace {
       const vector<BitSetToks>& firsts,
       size_t numTokens) {
     DFARuleSet firstSet = { DFARule{
-        SCONC, { ROOT_SYMBOL }, 0, BitSetToks(numTokens) } };
+        SCONC, { grammar[S][0].symbols[0] }, 0, BitSetToks(numTokens) } };
     epsilonTransition(firstSet, grammar, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;

@@ -16,6 +16,7 @@ namespace {
     return lhs.reducibleRule == rhs.reducibleRule;
   }
 }
+
 // TODO: Fix these hash functions
 namespace std {
   template<>
@@ -31,36 +32,6 @@ namespace std {
 
 
 namespace {
-  RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarData) {
-    auto setIter = find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
-    // No reducible rules
-    if (setIter == ruleSet.cend()) {
-      return RuleData{ {}, NONE, Assoc::NONE };
-    }
-
-    const DFARule& rule = *setIter;
-    int rulePrecedence = grammarData.overridePrecs[rule.concrete];
-
-    auto ruleIter = find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
-    // Reducible rule contains no tokens
-    if (ruleIter == rule.symbols.crend()) {
-      return RuleData{ optional(rule), rulePrecedence, Assoc::NONE };
-    }
-
-    int lastToken = *ruleIter;
-    // If no override precedence, check precedence of token
-    if (rulePrecedence == NONE) {
-      rulePrecedence = grammarData.tokenPrecs[tokensIndex(lastToken)];
-    }
-
-    // If there is rule precedence, get associativity
-    if (rulePrecedence == NONE) {
-      return RuleData{ optional(rule), NONE, Assoc::NONE };
-    } else {
-      return RuleData{ optional(rule), rulePrecedence, grammarData.tokenAssoc[tokensIndex(lastToken)] };
-    }
-  }
-
   /***********
    * GRAMMAR *
    ***********/
@@ -117,7 +88,12 @@ namespace {
   constexpr int CREGEX = 10;
   constexpr int CCONCAT = 11;
 
-
+  struct GrammarData {
+    std::vector<int> concToSymb;    // Indexed by Concrete
+    std::vector<int> overridePrecs; // Indexed by Concrete
+    std::vector<int> tokenPrecs;    // Indexed by Token
+    std::vector<Assoc> tokenAssoc;  // Indexed by Token
+  };
   GrammarData GRAMMAR_DATA = { { S,
                                 REGEX,
                                 REGEX,
@@ -178,20 +154,10 @@ namespace {
     }
   };
 
-  using CondensedDFA = DFA<RuleData, int>;
-  using CondensedNode = CondensedDFA::Node;
 
-  CondensedDFA buildRegexParser() {
-    return buildParserDFA(GRAMMAR, 9).convert<RuleData>(
-      [](const DFARuleSet& ruleSet) { return condenseRuleSet(ruleSet, GRAMMAR_DATA); }
-    );
-  }
-
-  struct Start {
-    Start(Regex** r) : r_(r) {}
-    ~Start() { delete r_; }
-    Regex** r_;
-  };
+  /*********
+   * LEXER *
+   *********/
 
   struct StackObj {
     // Can't delete from here since it is a void*, see constructObj
@@ -200,6 +166,105 @@ namespace {
 
     void deleteObj() const noexcept;
     void deleteObjPtr() const noexcept;
+  };
+
+  StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
+
+  std::vector<StackObj> lex(const std::string& input) {
+    std::vector<StackObj> tokens;
+    bool escaped = false;
+    tokens.reserve(input.size());
+
+    for (char c : input) {
+      if (escaped) {
+        tokens.push_back({ new char(c), CHAR });
+        escaped = false;
+        continue;
+      }
+
+      switch (c) {
+        case '|':
+          tokens.push_back(datalessObj(BAR));
+          break;
+        case '*':
+          tokens.push_back(datalessObj(STAR));
+          break;
+        case '^':
+          tokens.push_back(datalessObj(CARET));
+          break;
+        case '[':
+          tokens.push_back(datalessObj(LBRACKET));
+          break;
+        case ']':
+          tokens.push_back(datalessObj(RBRACKET));
+          break;
+        case '(':
+          tokens.push_back(datalessObj(LPAREN));
+          break;
+        case ')':
+          tokens.push_back(datalessObj(RPAREN));
+          break;
+        case '-':
+          tokens.push_back(datalessObj(DASH));
+          break;
+        case '\\':
+          escaped = true;
+          break;
+        default:
+          tokens.push_back({ new char(c), CHAR });
+      }
+    }
+
+    return tokens;
+  }
+
+  /**********
+   * PARSER *
+   **********/
+
+  RuleData condenseRuleSet(const DFARuleSet& ruleSet) {
+    auto setIter = find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
+    // No reducible rules
+    if (setIter == ruleSet.cend()) {
+      return RuleData{ {}, NONE, Assoc::NONE };
+    }
+
+    const DFARule& rule = *setIter;
+    int rulePrecedence = GRAMMAR_DATA.overridePrecs[rule.concrete];
+
+    auto ruleIter = find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
+    // Reducible rule contains no tokens
+    if (ruleIter == rule.symbols.crend()) {
+      return RuleData{ optional(rule), rulePrecedence, Assoc::NONE };
+    }
+
+    int lastToken = *ruleIter;
+    // If no override precedence, check precedence of token
+    if (rulePrecedence == NONE) {
+      rulePrecedence = GRAMMAR_DATA.tokenPrecs[tokensIndex(lastToken)];
+    }
+
+    // If there is rule precedence, get associativity
+    if (rulePrecedence == NONE) {
+      return RuleData{ optional(rule), NONE, Assoc::NONE };
+    } else {
+      return RuleData{ optional(rule), rulePrecedence, GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)] };
+    }
+  }
+
+  using CondensedDFA = DFA<RuleData, int>;
+  using CondensedNode = CondensedDFA::Node;
+
+  CondensedDFA buildRegexParser() {
+    return buildParserDFA(GRAMMAR, 9).convert<RuleData>(
+      [](const DFARuleSet& ruleSet) { return condenseRuleSet(ruleSet); }
+    );
+  }
+
+  struct Start {
+    Start(Regex** r) : r_(r) {}
+    ~Start() { delete r_; }
+    Regex** r_;
   };
 
 
@@ -306,7 +371,7 @@ namespace {
     auto eqlLambda = [](int symbol, const StackObj& stkObj) {
       return stkObj.symbol == symbol;
     };
-    if (!equal(rule.symbols.cbegin(), rule.symbols.cend(), stk.cbegin(), move(eqlLambda))) {
+    if (!equal(rule.symbols.crbegin(), rule.symbols.crend(), stk.crbegin(), move(eqlLambda))) {
       return NONE;
     }
 
@@ -345,6 +410,9 @@ namespace {
   }
 
 
+  const CondensedDFA PARSER_DFA = buildRegexParser();
+
+
   /* Deep delete StackObj::obj starting at index i */
   void cleanPtrsFrom(const std::vector<StackObj>& stackObjs, size_t i) {
     size_t size = stackObjs.size();
@@ -353,15 +421,11 @@ namespace {
     }
   }
 
-  Regex* parse(
-      const CondensedDFA& dfa,
-      std::vector<StackObj>& inputTokens,
-      const GrammarData& grammarData) {
 
-    using namespace std;
 
+  Regex* shiftReduce(vector<StackObj>& inputTokens) {
     StackObj& firstToken = inputTokens[0];
-    const CondensedNode* currentNode = dfa.step(dfa.getRoot(), firstToken.symbol);
+    const CondensedNode* currentNode = PARSER_DFA.step(PARSER_DFA.getRoot(), firstToken.symbol);
     if (currentNode == nullptr) {
       cleanPtrsFrom(inputTokens, 0);
       return nullptr;
@@ -375,7 +439,7 @@ namespace {
     // is the only thing on the stack
     while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
-      int concrete = tryReduce(currentNode, nextInputToken, stk, grammarData.tokenPrecs);
+      int concrete = tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokenPrecs);
       // Reduce
       if (concrete != NONE) {
         // Construct the new object, pop the arguments off the stack,
@@ -384,7 +448,7 @@ namespace {
         StackObj newObj = construct(
             concrete,
             &stk.data()[reduceStart],
-            grammarData.concToSymb);
+            GRAMMAR_DATA.concToSymb);
 
         // We always add the rule S -> <root_type>, so there is only one thing on
         // the stack if we reduced to S, and we don't want to delete the pointer
@@ -407,7 +471,7 @@ namespace {
         transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
           return stkObj.symbol;
         });
-        currentNode = dfa.run(stkSymbols);
+        currentNode = PARSER_DFA.run(stkSymbols);
 
 
       } else {  // Shift
@@ -435,4 +499,10 @@ namespace {
     delete start;
     return root;
   }
+}
+
+
+RgxPtr parse(const std::string& pattern) {
+  vector<StackObj> stackObjs = lex(pattern);
+  return RgxPtr(shiftReduce(stackObjs));
 }
