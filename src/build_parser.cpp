@@ -141,8 +141,8 @@ namespace {
 
 
 /* Build the DFA */
-DFA_t buildParserDFA(const Grammar& grammar, size_t numSymbols) {
-  size_t numTokens = numSymbols - grammar.size();
+DFA_t buildParserDFA(const Grammar& grammar, size_t numTokens) {
+  size_t numSymbols = numTokens + grammar.size();
   vector<BitSetToks> firsts = getFirsts(grammar, numTokens);
   DFA_t dfa = initDFA(grammar, firsts, numTokens);
   queue<const DFA_t::Node*> q;

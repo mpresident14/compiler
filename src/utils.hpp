@@ -7,6 +7,7 @@
 #include <climits>
 
 /* Fixed for all grammars */
+enum class Assoc { LEFT, RIGHT, NOT, NONE };
 static constexpr int NONE = INT_MAX;
 static constexpr int EPSILON = INT_MAX - 1;
 static constexpr int S = 0;

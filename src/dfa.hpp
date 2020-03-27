@@ -152,7 +152,7 @@ public:
 
   // Requires v1 == v2 -> f(v1) == f(v2)
   template <typename NewValue, typename F>
-  DFA<NewValue, T> convert(const F& valueConversion) {
+  DFA<NewValue, T> convert(const F& valueConversion) const {
     using namespace std;
     using OldNode = const typename DFA::Node*;
     using NewNode = const typename DFA<NewValue, T>::Node*;

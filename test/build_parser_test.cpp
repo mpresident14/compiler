@@ -63,7 +63,7 @@ void testTransition(const DFA<DFARuleSet, int>& dfa) {
 
 
 int main() {
-  auto dfa = buildParserDFA(GRAMMAR, 5);
+  auto dfa = buildParserDFA(GRAMMAR, 3);
 
   testNumStates(dfa);
   testInitState(dfa);

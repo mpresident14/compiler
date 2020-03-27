@@ -17,7 +17,7 @@
 
 #include <prez/print_stuff.hpp>
 
-DFA<DFARuleSet, int> buildParserDFA(const Grammar& grammar, size_t numSymbols);
+DFA<DFARuleSet, int> buildParserDFA(const Grammar& grammar, size_t numTokens);
 
 
 #endif

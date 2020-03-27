@@ -64,11 +64,11 @@ struct DFARule {
 /* Does not use lookahead set. See comment below */
 struct DFARuleHash {
   size_t operator()(const DFARule& rule) const noexcept {
-    std::hash<int> IntHasher;
-    size_t h1 = IntHasher(rule.concrete);
+    std::hash<int> intHasher;
+    size_t h1 = intHasher(rule.concrete);
     size_t h2 = 0;
     for (int symbol : rule.symbols) {
-      h2 += IntHasher(symbol);
+      h2 += intHasher(symbol);
     }
     size_t h3 = std::hash<size_t>()(rule.pos);
     return h3 + h1 ^ (h2 << 1);

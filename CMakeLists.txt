@@ -26,6 +26,7 @@ include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SO
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
 add_executable(build_parser_test test/build_parser_test.cpp src/build_parser.cpp src/null_first.cpp)
+add_executable(regex_test test/regex_test.cpp src/build_parser.cpp src/null_first.cpp src/regex_eval.cpp)
 # add_executable(regex_test test/regex_test.cpp)
 # target_link_libraries(regex_test regex_lib)
 # add_executable(tokenize_test test/tokenize_test.cpp src/tokenize.cpp)
@@ -48,18 +49,18 @@ enable_testing()
 add_test(dfa dfa_test)
 add_test(null_first null_first_test)
 add_test(build_parser build_parser_test)
-# add_test(regex regex_test)
+add_test(regex regex_test)
 # add_test(tokenize tokenize_test)
 
 set_tests_properties(
-    dfa null_first build_parser
+    dfa null_first build_parser regex
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(
     check
     COMMAND ${CMAKE_CTEST_COMMAND}
-    DEPENDS dfa_test null_first_test build_parser_test)
+    DEPENDS dfa_test null_first_test build_parser_test regex_test)
 
 # Remove generated files on make clean
 # set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_regex_dfa.hpp)
