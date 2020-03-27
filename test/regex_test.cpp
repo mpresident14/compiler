@@ -21,9 +21,45 @@ stringstream errBuffer;
 
 
 void testParse() {
-  RgxPtr r = parse("a|b");
+  RgxPtr r1 = parse("a");
+  RgxPtr r2 = parse("^a|b");
+  // RgxPtr r3 = parse("^a");
+  // RgxPtr r3 = parse("^(a|b)");
+  RgxPtr r4 = parse("abcd");
+  RgxPtr r5 = parse("a|b|cd");
+  RgxPtr r6 = parse("[1-9]");
+  RgxPtr r7 = parse("[1-9]*");
 
-  TESTER.assertEquals(RgxType::ALT, r->getType());
+  // RgxPtr t0 = parse("(a|b)");
+  // RgxPtr t1 = parse("cd(a|b)");
+  // RgxPtr t2 = parse("c*(a|b)");
+  // RgxPtr t3 = parse("^k(a|b)");
+  // RgxPtr t4 = parse("[1-3](a|b)");
+  // RgxPtr t5 = parse("c|(a|b)");
+  RgxPtr t0 = parse("(ab)");
+  RgxPtr t1 = parse("c(ab)");
+  RgxPtr t2 = parse("c(^b)");
+  RgxPtr t3 = parse("^k(a*)");
+  RgxPtr t4 = parse("k(a)");
+
+  cout << r1 << endl;
+
+
+  cout << (void*)t0.get() << endl;
+  cout << (void*)t1.get() << endl;
+  cout << (void*)t2.get() << endl;
+  cout << (void*)t3.get() << endl;
+  cout << (void*)t4.get() << endl;
+  // cout << (void*)t4.get() << endl;
+  // cout << (void*)t5.get() << endl;
+
+  TESTER.assertEquals(RgxType::CHARACTER, r1->getType());
+  TESTER.assertEquals(RgxType::ALT, r2->getType());
+  // TESTER.assertEquals(RgxType::NOT, r3->getType());
+  TESTER.assertEquals(RgxType::CONCAT, r4->getType());
+  TESTER.assertEquals(RgxType::ALT, r5->getType());
+  TESTER.assertEquals(RgxType::RANGE, r6->getType());
+  TESTER.assertEquals(RgxType::STAR, r7->getType());
 }
 
 // void testGetDeriv_character() {
@@ -132,7 +168,7 @@ void testParse() {
 
 int main(int, char**) {
   // To test stderr output
-  cerr.rdbuf(errBuffer.rdbuf());
+  // cerr.rdbuf(errBuffer.rdbuf());
 
   testParse();
 

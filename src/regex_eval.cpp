@@ -118,10 +118,10 @@ namespace {
                                 NONE,
                                 4,
                                 4 },
-                              { 1, 5, 3, 7, 7, 8, 8, NONE, 4 },
+                              { 1, 6, 3, 7, 7, 8, 8, NONE, 5 },
                               { Assoc::LEFT,
                                 Assoc::LEFT,
-                                Assoc::NOT,
+                                Assoc::RIGHT,
                                 Assoc::NONE,
                                 Assoc::NONE,
                                 Assoc::NONE,
@@ -346,8 +346,9 @@ namespace {
     return StackObj{ constructObj(concrete, args), concToSym[concrete] };
   }
 
-  void conflictWarning(const DFARule& rule) {
-    cerr << "WARNING: Shift reduce conflict for\n\t" << rule << endl;
+  void conflictWarning(const DFARule& rule, int nextToken) {
+    cerr << "WARNING: Shift reduce conflict for rule\n\t"
+        << rule << "\n\tNext token: " << nextToken << endl;
   }
 
 
@@ -366,6 +367,11 @@ namespace {
     }
 
     const DFARule& rule = *ruleData.reducibleRule;
+
+    // Check if next token is in the lookahead set
+    if (nextToken != NONE && !rule.lookahead[tokensIndex(nextToken)]) {
+      return NONE;
+    }
 
     // Check if rule matches the stack
     auto eqlLambda = [](int symbol, const StackObj& stkObj) {
@@ -388,8 +394,8 @@ namespace {
     int shiftPrecedence = tokenPrecs[tokensIndex(nextToken)];
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
-    if (ruleData.precedence == 0 && shiftPrecedence == 0) {
-      conflictWarning(*ruleData.reducibleRule);
+    if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
+      conflictWarning(*ruleData.reducibleRule, nextToken);
       return NONE;
     }
 
@@ -400,7 +406,7 @@ namespace {
         return ruleData.reducibleRule->concrete;
       } else if (ruleData.assoc == Assoc::NONE) {
         // Unspecified associativity -> conflict! (Resolve by shifting)
-        conflictWarning(*ruleData.reducibleRule);
+        conflictWarning(*ruleData.reducibleRule, nextToken);
         return NONE;
       }
     }
@@ -424,20 +430,27 @@ namespace {
 
 
   Regex* shiftReduce(vector<StackObj>& inputTokens) {
-    StackObj& firstToken = inputTokens[0];
-    const CondensedNode* currentNode = PARSER_DFA.step(PARSER_DFA.getRoot(), firstToken.symbol);
-    if (currentNode == nullptr) {
-      cleanPtrsFrom(inputTokens, 0);
-      return nullptr;
-    }
-
-    vector<StackObj> stk = { move(firstToken) };
+    // TODO: Check for empty input
+    vector<StackObj> stk = { move(inputTokens[0]) };
     size_t i = 1;
     size_t inputSize = inputTokens.size();
 
     // Stop when we have consumed all the input and the root of grammar
     // is the only thing on the stack
     while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
+      // Run the DFA.
+      // TODO: Only backtrack as far as the reduction (store path)
+      vector<int> stkSymbols;
+      transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
+        return stkObj.symbol;
+      });
+      const CondensedNode* currentNode = PARSER_DFA.run(stkSymbols);
+      if (currentNode == nullptr) {
+        cleanPtrsFrom(stk, 0);
+        cleanPtrsFrom(inputTokens, i + 1);
+        return nullptr;
+      }
+
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
       int concrete = tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokenPrecs);
       // Reduce
@@ -464,15 +477,6 @@ namespace {
         }
 
         stk.push_back(newObj);
-
-        // Restart the DFA.
-        // TODO: Only backtrack as far as the reduction (store path)
-        vector<int> stkSymbols;
-        transform(stk.begin(), stk.end(), back_inserter(stkSymbols), [](StackObj stkObj) {
-          return stkObj.symbol;
-        });
-        currentNode = PARSER_DFA.run(stkSymbols);
-
 
       } else {  // Shift
         // No more tokens, didn't reduce to S
