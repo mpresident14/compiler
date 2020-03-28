@@ -23,7 +23,7 @@ include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SO
 # add_library(regex_lib STATIC src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 
 set(PARSER_SRCS src/build_parser.cpp src/null_first.cpp)
-set(REGEX_SRCS src/regex.cpp src/regex_eval.cpp)
+set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp)
 
 # Test executables
 add_executable(dfa_test test/dfa_test.cpp)

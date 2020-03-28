@@ -1,4 +1,4 @@
-#include "regex_eval.hpp"
+#include "regex_parse.hpp"
 
 using namespace std;
 
@@ -340,8 +340,7 @@ namespace {
     }
   }
 
-  StackObj
-  construct(int concrete, StackObj* args, const vector<int>& concToSym) {
+  StackObj construct(int concrete, StackObj* args, const vector<int>& concToSym) {
     return StackObj{ constructObj(concrete, args), concToSym[concrete] };
   }
 
