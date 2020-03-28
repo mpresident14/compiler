@@ -24,11 +24,11 @@ namespace {
   //   }
   //   return out << *ruleData.reducibleRule;
   // }
-}
+}  // namespace
 
 // TODO: Fix these hash functions
 namespace std {
-  template<>
+  template <>
   struct hash<RuleData> {
     size_t operator()(const RuleData& ruleData) const noexcept {
       if (!ruleData.reducibleRule.has_value()) {
@@ -37,7 +37,7 @@ namespace std {
       return DFARuleHash()(*ruleData.reducibleRule);
     }
   };
-}
+}  // namespace std
 
 
 namespace {
@@ -261,14 +261,15 @@ namespace {
     } else {
       return RuleData{ optional(rule),
                        rulePrecedence,
-                       GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)]};
+                       GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)] };
     }
   }
 
   using CondensedDFA = DFA<RuleData, int>;
   using CondensedNode = CondensedDFA::Node;
 
-  const CondensedDFA PARSER_DFA = buildParserDFA(GRAMMAR, 9).convert<RuleData>(condenseRuleSet);
+  const CondensedDFA PARSER_DFA =
+      buildParserDFA(GRAMMAR, 9).convert<RuleData>(condenseRuleSet);
 
   struct Start {
     Start(Regex** r) : r_(r) {}
@@ -325,14 +326,14 @@ namespace {
         return new RegexVector(
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
       case AALT:
-        return new RegexVector(
-          RegexVector(*(Regex**)args[0].obj, move(*(RegexVector*)args[2].obj)));
+        return new RegexVector(RegexVector(
+            *(Regex**)args[0].obj, move(*(RegexVector*)args[2].obj)));
       case CREGEX:
         return new RegexVector(
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
       case CCONCAT:
-        return new RegexVector(
-          RegexVector(*(Regex**)args[0].obj, move(*(RegexVector*)args[1].obj)));
+        return new RegexVector(RegexVector(
+            *(Regex**)args[0].obj, move(*(RegexVector*)args[1].obj)));
       case SCONC:
         return new Start((Regex**)args[0].obj);
       default:
@@ -428,23 +429,24 @@ namespace {
   }
 
 
-  void parseError(const vector<StackObj>& stk, const vector<StackObj>& inputTokens, size_t i) {
+  void parseError(
+      const vector<StackObj>& stk,
+      const vector<StackObj>& inputTokens,
+      size_t i) {
     ostringstream errMsg;
     vector<int> stkSymbols;
     vector<int> remainingTokens;
     auto stkObjToSymbol = [](StackObj stkObj) { return stkObj.symbol; };
     transform(
-        stk.begin(),
-        stk.end(),
-        back_inserter(stkSymbols),
-        stkObjToSymbol);
+        stk.begin(), stk.end(), back_inserter(stkSymbols), stkObjToSymbol);
     transform(
         inputTokens.begin() + i,
         inputTokens.end(),
         back_inserter(remainingTokens),
         stkObjToSymbol);
 
-    errMsg << "No parse:\n\tStack: " << stkSymbols << "\n\tRemaining tokens: " << remainingTokens;
+    errMsg << "No parse:\n\tStack: " << stkSymbols
+           << "\n\tRemaining tokens: " << remainingTokens;
     throw invalid_argument(errMsg.str());
   }
 
@@ -524,7 +526,6 @@ namespace {
     Regex* root = *start->r_;
     delete start;
     return root;
-
   }
 }  // namespace
 

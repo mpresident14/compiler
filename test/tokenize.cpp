@@ -23,20 +23,20 @@ void deleteObj(const StackObj& stackObj) noexcept {
 StackObj constructTokenObj(int token, const std::string_view& str) {
   switch (token) {
     case INT:
-      return { new int(atoi(str.data())), token};
+      return { new int(atoi(str.data())), token };
       break;
     case CHAR:
-      return { new char(str[0]), token};
+      return { new char(str[0]), token };
     case IDENTIFIER:
-      return { new std::string(str), token};
+      return { new std::string(str), token };
     default:
-      return { nullptr, token};
+      return { nullptr, token };
   }
 }
 
 static void consumeWhiteSpace(string_view& input) {
   size_t i = 0;
-  while (isspace(input[i])){
+  while (isspace(input[i])) {
     ++i;
   }
   input = input.substr(i);
@@ -74,12 +74,12 @@ static optional<StackObj> getToken(string_view& input, Node* dfaRoot) {
   }
 
   // Construct object from the matching prefix
-  StackObj stackObj = constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
+  StackObj stackObj =
+      constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
   // Discard matching prefix so we can reuse this string_view for the next token
   input = input.substr(lastAcceptingPos);
   return { move(stackObj) };
 }
-
 
 
 vector<StackObj> tokenize(const string& input) {
@@ -100,11 +100,13 @@ vector<StackObj> tokenize(const string& input) {
     } else {
       ostringstream error;
       vector<int> prevTokens;
-      auto startIter = tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
+      auto startIter =
+          tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
       transform(
-          move(startIter), tokens.cend(), back_inserter(prevTokens), [](const StackObj& stackObj) {
-            return stackObj.symbol;
-          });
+          move(startIter),
+          tokens.cend(),
+          back_inserter(prevTokens),
+          [](const StackObj& stackObj) { return stackObj.symbol; });
       error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
             << "Previous tokens were: " << prevTokens;
       for_each(tokens.cbegin(), tokens.cend(), deleteObj);

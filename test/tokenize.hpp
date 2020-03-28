@@ -30,10 +30,8 @@ struct StackObj {
 };
 
 
-
 std::vector<StackObj> tokenize(const std::string& input);
 void deleteObj(const StackObj& stackObj) noexcept;
-
 
 
 #endif

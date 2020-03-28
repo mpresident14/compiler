@@ -19,10 +19,10 @@ void testTokenize() {
   TESTER.assertEquals(IDENTIFIER, actual[3].symbol);
   TESTER.assertEquals(WHILE, actual[4].symbol);
 
-  TESTER.assertEquals(123, *(int*) actual[0].obj);
+  TESTER.assertEquals(123, *(int*)actual[0].obj);
   TESTER.assertEquals(nullptr, actual[1].obj);
-  TESTER.assertEquals('a', *(char*) actual[2].obj);
-  TESTER.assertEquals("myVar", *(string*) actual[3].obj);
+  TESTER.assertEquals('a', *(char*)actual[2].obj);
+  TESTER.assertEquals("myVar", *(string*)actual[3].obj);
   TESTER.assertEquals(nullptr, actual[4].obj);
 
   for_each(actual.cbegin(), actual.cend(), deleteObj);
@@ -30,7 +30,7 @@ void testTokenize() {
 
 
 void testTokenize_withInvalidInput() {
-  TESTER.assertThrows([](){ tokenize("123fo$a"); });
+  TESTER.assertThrows([]() { tokenize("123fo$a"); });
 }
 
 int main() {

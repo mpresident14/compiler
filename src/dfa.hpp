@@ -47,8 +47,8 @@ public:
 
   private:
     V value_;
-    // "mutable" allows us to modify the map even when a node is const (e.g., when
-    // retrieving it from a map)
+    // "mutable" allows us to modify the map even when a node is const (e.g.,
+    // when retrieving it from a map)
     std::unordered_map<T, Node*> transitions_;
     bool deleterCalled_ = false;
   };
@@ -56,7 +56,9 @@ public:
   friend struct Node;
 
   DFA(V value)
-      : root_(new Node(value)), valueToNode_{ { std::move(value), root_ } }, size_(1) {}
+      : root_(new Node(value)),
+        valueToNode_{ { std::move(value), root_ } },
+        size_(1) {}
 
   ~DFA() {
     // If invalidated via move construction/assignment
@@ -84,7 +86,9 @@ public:
 
   DFA(const DFA& other) = delete;
   DFA(DFA&& other)
-      : root_(other.root_), valueToNode_(move(other.valueToNode_)), size_(other.size_) {
+      : root_(other.root_),
+        valueToNode_(move(other.valueToNode_)),
+        size_(other.size_) {
     other.root_ = nullptr;
   }
   DFA& operator=(const DFA& other) = delete;
@@ -151,7 +155,8 @@ public:
     using NewNode = typename DFA<NewValue, T>::Node;
 
     DFA<NewValue, T> newDfa(valueConversion(root_->value_));
-    unordered_map<const OldNode*, NewNode*> visited = { {root_, newDfa.root_} };
+    unordered_map<const OldNode*, NewNode*> visited = { { root_,
+                                                          newDfa.root_ } };
     queue<pair<const OldNode*, NewNode*>> q;
     q.push(pair(root_, newDfa.root_));
 
@@ -164,17 +169,17 @@ public:
         NewNode* newSuccessor;
         auto iter = visited.find(oldSuccessor);
         if (iter == visited.end()) {
-
-          // We don't use addTransition because it is possible that the value conversion will create
-          // nodes with duplicate values that were not duplicates before the conversion. We want these
-          // to remain separate.
+          // We don't use addTransition because it is possible that the value
+          // conversion will create nodes with duplicate values that were not
+          // duplicates before the conversion. We want these to remain separate.
           newSuccessor = new NewNode(valueConversion(oldSuccessor->getValue()));
           newDfa.addDirectTransition(newNode, tran.first, newSuccessor);
           ++newDfa.size_;
           q.push(pair(oldSuccessor, newSuccessor));
           visited.emplace(oldSuccessor, newSuccessor);
         } else {
-          // If we have already visited this node in the old DFA, then don't create a new node
+          // If we have already visited this node in the old DFA, then don't
+          // create a new node
           newSuccessor = iter->second;
           newDfa.addDirectTransition(newNode, tran.first, newSuccessor);
         }
@@ -244,8 +249,7 @@ public:
 
     // Write declarations and statements to the file
     // TODO: Change to .view() when implemented
-    out << init.str() << '\n'
-        << nodeDecls.str() << tranStmts.str();
+    out << init.str() << '\n' << nodeDecls.str() << tranStmts.str();
   }
 
 
@@ -272,7 +276,6 @@ public:
   }
 
 private:
-
   void addDirectTransition(Node* fromNode, T transition, Node* toNode) {
     fromNode->transitions_.emplace(std::move(transition), toNode);
   }

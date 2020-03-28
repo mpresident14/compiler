@@ -50,15 +50,16 @@ void testConvert() {
   dfa.addTransition(node2, 5, "5");
   dfa.addTransition(node3, 5, "5");
 
-  DFAIntInt newDfa = dfa.convert<int>([](const string& str) { return str.size(); });
+  DFAIntInt newDfa =
+      dfa.convert<int>([](const string& str) { return str.size(); });
 
   TESTER.assertEquals(dfa.size(), newDfa.size());
   TESTER.assertEquals(4, newDfa.getRoot()->getValue());
-  TESTER.assertEquals(2, newDfa.run({2})->getValue());
-  TESTER.assertEquals(1, newDfa.run({3})->getValue());
-  TESTER.assertEquals(3, newDfa.run({2,4})->getValue());
-  TESTER.assertEquals(1, newDfa.run({2,5})->getValue());
-  TESTER.assertEquals(1, newDfa.run({3,5})->getValue());
+  TESTER.assertEquals(2, newDfa.run({ 2 })->getValue());
+  TESTER.assertEquals(1, newDfa.run({ 3 })->getValue());
+  TESTER.assertEquals(3, newDfa.run({ 2, 4 })->getValue());
+  TESTER.assertEquals(1, newDfa.run({ 2, 5 })->getValue());
+  TESTER.assertEquals(1, newDfa.run({ 3, 5 })->getValue());
 }
 
 int main(int, char**) {

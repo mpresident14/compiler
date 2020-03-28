@@ -7,16 +7,24 @@
 using namespace std;
 
 
-ostream& operator<<(ostream& out, RgxType type) {
-  switch(type) {
-    case RgxType::EMPTYSET: return out << "EMPTYSET";
-    case RgxType::EPSILON: return out << "EPSILON";
-    case RgxType::CHARACTER: return out << "CHARACTER";
-    case RgxType::ALT: return out << "ALT";
-    case RgxType::CONCAT: return out << "CONCAT";
-    case RgxType::STAR: return out << "STAR";
-    case RgxType::NOT: return out << "NOT";
-    case RgxType::RANGE: return out << "RANGE";
+ostream &operator<<(ostream &out, RgxType type) {
+  switch (type) {
+    case RgxType::EMPTYSET:
+      return out << "EMPTYSET";
+    case RgxType::EPSILON:
+      return out << "EPSILON";
+    case RgxType::CHARACTER:
+      return out << "CHARACTER";
+    case RgxType::ALT:
+      return out << "ALT";
+    case RgxType::CONCAT:
+      return out << "CONCAT";
+    case RgxType::STAR:
+      return out << "STAR";
+    case RgxType::NOT:
+      return out << "NOT";
+    case RgxType::RANGE:
+      return out << "RANGE";
   }
 }
 

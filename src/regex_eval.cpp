@@ -10,7 +10,8 @@ namespace {
 
   constexpr char alphabet[] =
       " !\"#$%&\'()*+,-./"
-      "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+      "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
+      "abcdefghijklmnopqrstuvwxyz{|}~";
 
   using RgxDFA = DFA<RgxPtr, char>;
 
@@ -38,7 +39,6 @@ namespace {
   }
 
 
-
   /********************
    * Merged Regex DFA *
    *******************/
@@ -50,7 +50,7 @@ namespace {
     vector<pair<RgxDFA::Node*, int>> states;
     int token;
   };
-}
+}  // namespace
 
 namespace std {
   template <>
@@ -99,8 +99,10 @@ namespace {
       initialStates.push_back({ rgxDfa.getRoot(), tokenPattern.second });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {
         // Accepting the empty string will likely result in an infinite loop
-        cerr << "WARNING: The regex \"" << tokenPattern.first << "\" accepts the empty string" << endl;
-        // Multiple regex DFAs accept the empty string. We pick the regex that was listed first.
+        cerr << "WARNING: The regex \"" << tokenPattern.first
+             << "\" accepts the empty string" << endl;
+        // Multiple regex DFAs accept the empty string. We pick the regex that
+        // was listed first.
         if (initialToken == NONE) {
           initialToken = tokenPattern.second;
         }
@@ -124,21 +126,23 @@ namespace {
         for (auto& nodeAndToken : mergedNode->getValue().states) {
           RgxDFA::Node* node = nodeAndToken.first;
           int token = nodeAndToken.second;
-          // Since Regex DFAs are actual DFAs (they have a transition for every symbol
-                // in the alphabet), each node always has a successor for every transition.
+          // Since Regex DFAs are actual DFAs (they have a transition for every
+          // symbol in the alphabet), each node always has a successor for every
+          // transition.
           RgxDFA::Node* successor = RgxDFA::step(node, c);
           newStates.push_back({ successor, token });
           if (successor->getValue()->isNullable()) {
-            // Multiple regex DFAs accept the same string. We pick the regex that was listed first.
+            // Multiple regex DFAs accept the same string. We pick the regex
+            // that was listed first.
             if (newToken == NONE) {
               newToken = token;
             }
           }
         }
-        // Add transition to the merged node and add it to the queue if it did not already
-        // exist in the merged DFA.
-        // Again, since Regex DFAs are actual DFAs, we are guaranteed to have a valid
-        // state in newStates for each Regex DFA.
+        // Add transition to the merged node and add it to the queue if it did
+        // not already exist in the merged DFA. Again, since Regex DFAs are
+        // actual DFAs, we are guaranteed to have a valid state in newStates for
+        // each Regex DFA.
         MergedRgxDFA::Node* mergedSuccessor =
             mergedDfa.addTransition(mergedNode, c, { newStates, newToken });
         if (mergedSuccessor) {
@@ -167,7 +171,7 @@ namespace {
     return str;
   }
 
-} // namespace
+}  // namespace
 
 
 void rgxDFAToCode(ostream& out, const vector<TokenPattern> patterns) {

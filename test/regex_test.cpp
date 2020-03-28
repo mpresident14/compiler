@@ -43,7 +43,7 @@ void testParse() {
 
 
 void testParseError() {
-  string err0 = TESTER.assertThrows([](){ parse("abc(b*"); });
+  string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
   ostringstream expectedStk0;
   ostringstream expectedRemaining0;
   expectedStk0 << vector<int>{ 1 /* REGEX */, -6 /* LPAREN */, 1 /* REGEX */ };
@@ -52,7 +52,7 @@ void testParseError() {
   TESTER.assertTrue(err0.find(expectedStk0.str()) != string::npos);
   TESTER.assertTrue(err0.find(expectedRemaining0.str()) != string::npos);
 
-  string err1 = TESTER.assertThrows([](){ parse("abc^*d"); });
+  string err1 = TESTER.assertThrows([]() { parse("abc^*d"); });
   ostringstream expectedStk1;
   ostringstream expectedRemaining1;
   expectedStk1 << vector<int>{ 1 /* REGEX */, -3 /* CARET */, -2 /* STAR */ };
