@@ -23,27 +23,24 @@ include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SO
 # add_library(regex_lib STATIC src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 
 set(PARSER_SRCS src/build_parser.cpp src/null_first.cpp)
-set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp)
+set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp src/regex_eval.cpp)
 
 # Test executables
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
 add_executable(build_parser_test test/build_parser_test.cpp ${PARSER_SRCS})
 add_executable(regex_test test/regex_test.cpp  ${REGEX_SRCS} ${PARSER_SRCS})
-# add_executable(regex_test test/regex_test.cpp)
-# target_link_libraries(regex_test regex_lib)
-# add_executable(tokenize_test test/tokenize_test.cpp src/tokenize.cpp)
+add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
 
 # Other executables
 # add_executable(main src/main.cpp)
 # target_link_libraries(main regex_lib)
-# add_executable(write_dfa test/write_dfa.cpp)
-# target_link_libraries(write_dfa regex_lib)
+add_executable(write_lexer test/write_lexer.cpp ${REGEX_SRCS} ${PARSER_SRCS})
 
 # Ensure that we write the regex DFA before building the corresponding test
-# add_custom_target(run_write_dfa COMMAND write_dfa)
-# add_dependencies(run_write_dfa write_dfa)
-# add_dependencies(tokenize_test run_write_dfa)
+add_custom_target(run_write_lexer COMMAND write_lexer)
+add_dependencies(run_write_lexer write_lexer)
+add_dependencies(tokenize_test run_write_lexer)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -53,17 +50,19 @@ add_test(dfa dfa_test)
 add_test(null_first null_first_test)
 add_test(build_parser build_parser_test)
 add_test(regex regex_test)
-# add_test(tokenize tokenize_test)
+add_test(tokenize tokenize_test)
 
+
+set(MYTESTS dfa_test null_first_test build_parser_test regex_test tokenize_test)
 set_tests_properties(
-    dfa null_first build_parser regex
+    dfa null_first build_parser regex tokenize
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(
     check
     COMMAND ${CMAKE_CTEST_COMMAND}
-    DEPENDS dfa_test null_first_test build_parser_test regex_test)
+    DEPENDS ${MYTESTS})
 
 
 
@@ -72,7 +71,7 @@ set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full")
 add_custom_target(
     valgrind_check
     COMMAND ${CMAKE_CTEST_COMMAND} -T memcheck
-    DEPENDS dfa_test null_first_test build_parser_test regex_test)
+    DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
 # set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_regex_dfa.hpp)

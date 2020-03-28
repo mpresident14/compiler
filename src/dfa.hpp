@@ -186,38 +186,22 @@ public:
 
 
   template <typename F1, typename F2, typename F3>
-  void writeToFile(
-      const std::string& filename,
-      const std::string& namespaceName,
-      const std::string& includes,
+  void streamAsCode(
+      std::ostream& out,
       const std::string& valueType,
       const std::string& tranType,
       const F1& convertValue,
       const F2& valueToStr,
-      const F3& tranToStr) {
+      const F3& tranToStr) const {
     std::ostringstream init;
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
 
-    std::string headerGuard = filename;
-    std::replace(headerGuard.begin(), headerGuard.end(), '/', '_');
-    std::replace(headerGuard.begin(), headerGuard.end(), '.', '_');
-    std::transform(
-        headerGuard.begin(),
-        headerGuard.end(),
-        headerGuard.begin(),
-        [](unsigned char c) { return std::toupper(c); });
-
-    init << "#ifndef " << headerGuard << '\n'
-         << "#define " << headerGuard << '\n'
-         << "#include <unordered_map>\n"
+    init << "#include <unordered_map>\n"
          << "#include <memory>\n"
-         << includes << '\n'
-         << "namespace " << namespaceName << " {\n"
          << "struct "
          << "Node {\n"
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n"
-         << "const "
          << "Node* step(const " << tranType << "& t) const {\n"
          << "auto iter = ts_.find(t);\n"
             "if (iter == ts_.end()) {\n"
@@ -226,7 +210,7 @@ public:
             "return iter->second;\n"
             "}\n"
          << valueType << " v_;\n"
-         << "std::unordered_map<" << tranType << ", const Node*> ts_;};\n";
+         << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 
     tranStmts << "auto makeDFA(){\n";
 
@@ -259,12 +243,9 @@ public:
     tranStmts << "return std::move(n" << root_ << ");\n}\nauto root=makeDFA();";
 
     // Write declarations and statements to the file
-    std::ofstream outFile;
-    outFile.open(filename);
     // TODO: Change to .view() when implemented
-    outFile << init.str() << '\n'
-            << nodeDecls.str() << tranStmts.str() << "}\n#endif\n";
-    outFile.close();
+    out << init.str() << '\n'
+        << nodeDecls.str() << tranStmts.str();
   }
 
 
