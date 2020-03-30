@@ -32,23 +32,22 @@ static constexpr int STAR = -3;
 
 
 GrammarData GRAMMAR_DATA = {
-    /* tokens */ {
-      { "INT", NONE, Assoc::NONE, "", "", ""},
-      { "PLUS", 1, Assoc::LEFT, "", "", ""},
-      { "STAR", 2, Assoc::LEFT, "", "", ""},
-    },
+  /* tokens */ {
+      { "INT", NONE, Assoc::NONE, "", "", "" },
+      { "PLUS", 1, Assoc::LEFT, "", "", "" },
+      { "STAR", 2, Assoc::LEFT, "", "", "" },
+  },
 
-    /* concretes */ {
-      {"SCONC", S, NONE, {EXPR}, {}, ""},
-      {"EINT", EXPR, NONE, {INT}, {}, ""},
-      {"EPLUS", EXPR, NONE, {EXPR, PLUS, EXPR}, {}, ""},
-      {"ETIMES", EXPR, NONE, {EXPR, STAR, EXPR}, {}, ""},
-    },
+  /* concretes */
+  {
+      { "SCONC", S, NONE, { EXPR }, {}, "" },
+      { "EINT", EXPR, NONE, { INT }, {}, "" },
+      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, {}, "" },
+      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, {}, "" },
+  },
 
-    /* variables */ {
-      {"S", {SCONC}, ""},
-      {"EXPR", {EINT, EPLUS, ETIMES}, ""}
-    }
+  /* variables */
+  { { "S", { SCONC }, "" }, { "EXPR", { EINT, EPLUS, ETIMES }, "" } }
 };
 
 
@@ -168,9 +167,11 @@ struct ETimes : Expr {
 //     case EINT:
 //       return new Expr*(new EInt(*(int*)args[0].obj));
 //     case EPLUS:
-//       return new Expr*(new EPlus(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
+//       return new Expr*(new EPlus(*(Expr**)args[0].obj,
+//       *(Expr**)args[2].obj));
 //     case ETIMES:
-//       return new Expr*(new ETimes(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
+//       return new Expr*(new ETimes(*(Expr**)args[0].obj,
+//       *(Expr**)args[2].obj));
 //     case 0: /* SCONC */
 //       return new Start((ROOT_TYPE*)args[0].obj);
 //     default:
@@ -178,7 +179,8 @@ struct ETimes : Expr {
 //   }
 // }
 
-// StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym) {
+// StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym)
+// {
 //   return StackObj{ constructObj(concrete, args),
 //                    concToSym[concrete],
 //                    concrete };

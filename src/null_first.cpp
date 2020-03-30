@@ -95,7 +95,8 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
         break;
       }
       // Tokens are never nullable, so stop considering this rule
-      if (std::any_of(rule.argSymbols.cbegin(), rule.argSymbols.cend(), isToken)) {
+      if (std::any_of(
+              rule.argSymbols.cbegin(), rule.argSymbols.cend(), isToken)) {
         continue;
       }
       // Otherwise build the conjunction bitset

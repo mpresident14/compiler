@@ -31,7 +31,7 @@ add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
 add_executable(build_parser_test test/build_parser_test.cpp ${PARSER_SRCS})
 add_executable(regex_test test/regex_test.cpp)
 target_link_libraries(regex_test parse_lib)
-add_executable(tokenize_test_exe test/tokenize_test.cpp test/tokenize.cpp)
+add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
 
 # Other executables
 add_executable(write_lexer test/write_lexer.cpp)
@@ -41,7 +41,7 @@ target_link_libraries(generate parse_lib)
 
 # Ensure that we write the regex DFA before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
-add_custom_target(tokenize_test COMMAND tokenize_test_exe DEPENDS test/gen_lexer.hpp)
+set_target_properties(tokenize_test PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description

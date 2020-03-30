@@ -54,7 +54,9 @@ using CondensedDFA = DFA<RuleData, int>;
 using CondensedNode = CondensedDFA::Node;
 
 DFA<DFARuleSet, int> buildParserDFA(const GrammarData& grammarData);
-RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarData);
+RuleData condenseRuleSet(
+    const DFARuleSet& ruleSet,
+    const GrammarData& grammarData);
 void condensedDFAToCode(std::ostream& out, const GrammarData& grammarData);
 
 #endif

@@ -236,7 +236,11 @@ public:
       q.pop();
 
       // Add node declaration
-      replaceStrs(init, makeNodeFn, currentNode, valueToStr(convertValue(currentNode->value_)));
+      replaceStrs(
+          init,
+          makeNodeFn,
+          currentNode,
+          valueToStr(convertValue(currentNode->value_)));
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->ts_={\n";

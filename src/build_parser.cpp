@@ -34,7 +34,10 @@ namespace {
     }
 
     for (int concreteType : grammarData.variables[nextSymbol].concreteTypes) {
-      ruleQueue.push(DFARule{ concreteType, grammarData.concretes[concreteType].argSymbols, 0, newLookahead });
+      ruleQueue.push(DFARule{ concreteType,
+                              grammarData.concretes[concreteType].argSymbols,
+                              0,
+                              newLookahead });
     }
   }
 
@@ -127,10 +130,14 @@ namespace {
 
 
   /* Constructs the starting node of the DFA */
-  DFA_t initDFA(const GrammarData& grammarData, const vector<BitSetToks>& firsts) {
+  DFA_t initDFA(
+      const GrammarData& grammarData,
+      const vector<BitSetToks>& firsts) {
     int rootType = grammarData.variables[S].concreteTypes[0];
-    DFARuleSet firstSet = { DFARule{
-        SCONC, grammarData.concretes[rootType].argSymbols, 0, BitSetToks(grammarData.tokens.size()) } };
+    DFARuleSet firstSet = { DFARule{ SCONC,
+                                     grammarData.concretes[rootType].argSymbols,
+                                     0,
+                                     BitSetToks(grammarData.tokens.size()) } };
     epsilonTransition(firstSet, grammarData, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;
@@ -159,7 +166,9 @@ DFA_t buildParserDFA(const GrammarData& grammarData) {
 }
 
 
-RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarData) {
+RuleData condenseRuleSet(
+    const DFARuleSet& ruleSet,
+    const GrammarData& grammarData) {
   auto setIter =
       find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
   // No reducible rules
@@ -188,8 +197,8 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarDa
     return RuleData{ optional(rule), NONE, Assoc::NONE };
   } else {
     return RuleData{ optional(rule),
-                      rulePrecedence,
-                      grammarData.tokens[tokensIndex(lastToken)].assoc };
+                     rulePrecedence,
+                     grammarData.tokens[tokensIndex(lastToken)].assoc };
   }
 }
 
@@ -205,7 +214,9 @@ namespace {
 
       // RuleData::reducibleRule::symbols
       code << '{';
-      for_each(rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n){ code << to_string(n) << ','; });
+      for_each(rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n) {
+        code << to_string(n) << ',';
+      });
       code << "},";
 
       // RuleData::reducibleRule::pos
@@ -213,7 +224,9 @@ namespace {
 
       // RuleData::reducibleRule::lookahead
       code << '{';
-      for_each(rule.lookahead.cbegin(), rule.lookahead.cend(), [&code](bool b){ code << to_string(b) << ','; });
+      for_each(rule.lookahead.cbegin(), rule.lookahead.cend(), [&code](bool b) {
+        code << to_string(b) << ',';
+      });
       code << "}},";
     } else {
       code << "{},";
@@ -227,16 +240,18 @@ namespace {
 
     return code.str();
   }
-}
+}  // namespace
 
 
 void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
-  buildParserDFA(grammarData).streamAsCode(
-    out,
-    "RuleData",
-    "int",
-    [&grammarData](const DFARuleSet& ruleSet){ return condenseRuleSet(ruleSet, grammarData); },
-    ruleDataToCode,
-    [](int n) { return to_string(n); });
+  buildParserDFA(grammarData)
+      .streamAsCode(
+          out,
+          "RuleData",
+          "int",
+          [&grammarData](const DFARuleSet& ruleSet) {
+            return condenseRuleSet(ruleSet, grammarData);
+          },
+          ruleDataToCode,
+          [](int n) { return to_string(n); });
 }
-

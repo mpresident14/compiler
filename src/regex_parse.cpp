@@ -7,32 +7,32 @@ using namespace std;
 // messages
 
 
-  /***********
-   * GRAMMAR *
-   ***********/
+/***********
+ * GRAMMAR *
+ ***********/
 
-  /* CHAR { char :: str[0] } <DELETER OPTIONAL>
-   *
-   *
-   * Regex { Regex* } { delete $; }
-   * Regex := Alts                             { new Alt(move($0)) }
-   *        | Concats                          { new Concat(move($0)) }
-   *        | Regex STAR                       { new Star($0) }
-   *        | CARET Regex                      { new Not($1) }
-   *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
-   *        | LPAREN Regex RPAREN              { $1 }
-   *        | CHAR                             { new Character($0) }
-   *
-   * Alts { RegexVector }
-   * Alts := Regex BAR Regex { RegexVector($0, $2) }
-   *       | Regex BAR Alts  { RegexVector($0, move($2)) }
-   *
-   * Concats { RegexVector* }
-   * Concats := Regex Regex   { RegexVector($0, $1) }
-   *          | Regex Concats { RegexVector($0, move($1)) }
-   *
-   *
-   * */
+/* CHAR { char :: str[0] } <DELETER OPTIONAL>
+ *
+ *
+ * Regex { Regex* } { delete $; }
+ * Regex := Alts                             { new Alt(move($0)) }
+ *        | Concats                          { new Concat(move($0)) }
+ *        | Regex STAR                       { new Star($0) }
+ *        | CARET Regex                      { new Not($1) }
+ *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
+ *        | LPAREN Regex RPAREN              { $1 }
+ *        | CHAR                             { new Character($0) }
+ *
+ * Alts { RegexVector }
+ * Alts := Regex BAR Regex { RegexVector($0, $2) }
+ *       | Regex BAR Alts  { RegexVector($0, move($2)) }
+ *
+ * Concats { RegexVector* }
+ * Concats := Regex Regex   { RegexVector($0, $1) }
+ *          | Regex Concats { RegexVector($0, move($1)) }
+ *
+ *
+ * */
 
 namespace {
 
@@ -67,51 +67,52 @@ namespace {
 
 
   struct GrammarData GRAMMAR_DATA = {
-      /* tokens */ {
-        { "BAR",  1, Assoc::LEFT, "", "", ""},
-        { "STAR", 6, Assoc::LEFT, "", "", ""},
-        { "CARET", 3, Assoc::RIGHT, "", "", ""},
-        {"LBRACKET", NONE, Assoc::NONE, "", "", ""},
-        {"RBRACKET",NONE,Assoc::NONE, "", "", ""},
-        {"LPAREN",NONE, Assoc::NONE, "", "", ""},
-        {"RPAREN",NONE, Assoc::NONE, "", "", ""},
-        {"DASH", NONE,Assoc::NONE, "", "", ""},
-        {"CHAR", 5, Assoc::LEFT, "", "", ""},
-      },
+    /* tokens */ {
+        { "BAR", 1, Assoc::LEFT, "", "", "" },
+        { "STAR", 6, Assoc::LEFT, "", "", "" },
+        { "CARET", 3, Assoc::RIGHT, "", "", "" },
+        { "LBRACKET", NONE, Assoc::NONE, "", "", "" },
+        { "RBRACKET", NONE, Assoc::NONE, "", "", "" },
+        { "LPAREN", NONE, Assoc::NONE, "", "", "" },
+        { "RPAREN", NONE, Assoc::NONE, "", "", "" },
+        { "DASH", NONE, Assoc::NONE, "", "", "" },
+        { "CHAR", 5, Assoc::LEFT, "", "", "" },
+    },
 
-      /* concretes */ {
-        {"SCONC", S, NONE, {REGEX}, {}, ""},
-        {"RALT", REGEX, NONE, {ALTS}, {}, ""},
-        {"RCONCAT", REGEX, NONE, {CONCATS}, {}, ""},
-        {"RSTAR", REGEX, NONE, {REGEX, STAR}, {}, ""},
-        {"RNOT", REGEX, NONE, {CARET, REGEX}, {}, ""},
-        {"RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, {}, ""},
-        {"RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, {}, ""},
-        {"RCHAR", REGEX, NONE, {CHAR}, {}, ""},
-        {"AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, {}, ""},
-        {"AALT", ALTS, NONE, { REGEX, BAR, ALTS }, {}, ""},
-        {"CREGEX", CONCATS, 4, { REGEX, REGEX }, {}, ""},
-        {"CCONCAT", CONCATS, 4, { REGEX, CONCATS }, {}, ""}
-      },
+    /* concretes */
+    { { "SCONC", S, NONE, { REGEX }, {}, "" },
+      { "RALT", REGEX, NONE, { ALTS }, {}, "" },
+      { "RCONCAT", REGEX, NONE, { CONCATS }, {}, "" },
+      { "RSTAR", REGEX, NONE, { REGEX, STAR }, {}, "" },
+      { "RNOT", REGEX, NONE, { CARET, REGEX }, {}, "" },
+      { "RRANGE",
+        REGEX,
+        NONE,
+        { LBRACKET, CHAR, DASH, CHAR, RBRACKET },
+        {},
+        "" },
+      { "RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, {}, "" },
+      { "RCHAR", REGEX, NONE, { CHAR }, {}, "" },
+      { "AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, {}, "" },
+      { "AALT", ALTS, NONE, { REGEX, BAR, ALTS }, {}, "" },
+      { "CREGEX", CONCATS, 4, { REGEX, REGEX }, {}, "" },
+      { "CCONCAT", CONCATS, 4, { REGEX, CONCATS }, {}, "" } },
 
-      /* variables */ {
-        {"S", {SCONC}, ""},
+    /* variables */
+    { { "S", { SCONC }, "" },
+      { "REGEX", { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR }, "" },
+      { "ALTS",
         {
-            "REGEX",
-            {
-                RALT,
-                RCONCAT,
-                RSTAR,
-                RNOT,
-                RRANGE,
-                RGROUP,
-                RCHAR
-            },
-            ""
+            AREGEX,
+            AALT,
         },
-        {"ALTS", {AREGEX, AALT,}, ""},
-        {"CONCATS", {CREGEX,CCONCAT,}, ""}
-      }
+        "" },
+      { "CONCATS",
+        {
+            CREGEX,
+            CCONCAT,
+        },
+        "" } }
   };
 
   /*********
@@ -179,8 +180,10 @@ namespace {
    **********/
 
   const CondensedDFA PARSER_DFA =
-      buildParserDFA(GRAMMAR_DATA).convert<RuleData>(
-        [](const DFARuleSet& ruleSet){ return condenseRuleSet(ruleSet, GRAMMAR_DATA); });
+      buildParserDFA(GRAMMAR_DATA)
+          .convert<RuleData>([](const DFARuleSet& ruleSet) {
+            return condenseRuleSet(ruleSet, GRAMMAR_DATA);
+          });
 
   struct Start {
     Start(Regex** r) : r_(r) {}
@@ -396,7 +399,9 @@ namespace {
         size_t reduceStart =
             stk.size() - currentNode->getValue().reducibleRule->symbols.size();
         StackObj newObj = construct(
-            concrete, &stk.data()[reduceStart], GRAMMAR_DATA.concretes[concrete].varType);
+            concrete,
+            &stk.data()[reduceStart],
+            GRAMMAR_DATA.concretes[concrete].varType);
 
         // We always add the rule S -> <root_type>, so there is only one thing
         // on the stack if we reduced to S, and we don't want to delete the

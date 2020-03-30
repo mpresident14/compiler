@@ -19,8 +19,7 @@ void generateParseDFA() {
 }
 
 
-int main()
-{
+int main() {
   generateParseDFA();
 
   return 0;
