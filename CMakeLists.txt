@@ -38,6 +38,8 @@ add_executable(write_lexer test/write_lexer.cpp)
 target_link_libraries(write_lexer parse_lib)
 add_executable(generate src/generate.cpp)
 target_link_libraries(generate parse_lib)
+add_custom_command(TARGET generate POST_BUILD COMMAND generate COMMAND clang-format -i parser.hpp parser.cpp)
+
 
 # Ensure that we write the regex DFA before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
@@ -75,4 +77,4 @@ add_custom_target(
     DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp)
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp parser.hpp parser.cpp)
