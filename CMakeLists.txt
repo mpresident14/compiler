@@ -41,7 +41,7 @@ target_link_libraries(generate parse_lib)
 
 # Ensure that we write the regex DFA before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
-set_target_properties(tokenize_test PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
+set_source_files_properties(test/tokenize.cpp PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -75,4 +75,4 @@ add_custom_target(
     DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
-# set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_regex_dfa.hpp)
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp)

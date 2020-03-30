@@ -204,6 +204,7 @@ RuleData condenseRuleSet(
 
 
 namespace {
+  // TODO: Replace vector code with toCode()
   string ruleDataToCode(const RuleData& ruleData) {
     stringstream code;
     code << '{';
