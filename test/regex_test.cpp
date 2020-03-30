@@ -1,4 +1,5 @@
 #include "regex_parse.hpp"
+#include "regex_eval.hpp"
 #include "regex.hpp"
 // #include "regex_lexer.hpp"
 #include "dfa.hpp"
@@ -131,49 +132,31 @@ void testHashFn() {
   TESTER.assertTrue(rgxs.contains(r1->getDeriv('c')));
 }
 
-// void testMatches() {
-//   TESTER.assertTrue(matches("a", "a");
-//   TESTER.assertFalse(matches("a", "b");
-
-//   TESTER.assertTrue(matches("ab*", "abbbb");
-//   TESTER.assertFalse(matches("ab*", "ac");
-
-//   TESTER.assertTrue(matches("[1-9][0-9]*", "1234");
-//   TESTER.assertFalse(matches("[1-9][0-9]*", "01234");
-
-//   TESTER.assertTrue(matches("^a*c", "ab");
-//   TESTER.assertFalse(matches("^a*c", "c");
-
-//   TESTER.assertTrue(matches("a*|[0-9]", "");
-//   TESTER.assertTrue(matches("a*|[0-9]", "5");
-//   TESTER.assertFalse(matches("a*|[0-9]", "c");
-
-//   TESTER.assertTrue(matches("(a|b)[0-9]", "a5");
-//   TESTER.assertFalse(matches("(a|b)[0-9]", "a");
-
-//   TESTER.assertTrue(matches("a.c", "abc");
-//   TESTER.assertTrue(matches("a.c", "arc");
-// }
 
 
-// void testBuildMergedRgxDFA_withNullableRegex() {
-//   vector<TokenPattern> patterns = { { "a*", 1 },
-//                                     { "[1-9][0-9]*", 2 },
-//                                     { "for", 3 } };
-//   buildMergedRgxDFA(patterns);
+void testRgxDFAToCode_withNullableRegex() {
+  vector<pair<string, int>> patterns = { { "a*", 1 },
+                                    { "[1-9][0-9]*", 2 },
+                                    { "for", 3 } };
 
-//   TESTER.assertTrue(errBuffer.str().starts_with("WARNING");
-//   errBuffer.str("";
-// }
+  stringstream out;
+  out.setstate(ios_base::badbit);
+  rgxDFAToCode(out, patterns);
+
+  TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
+  errBuffer.str("");
+}
 
 
-// void testBuildMergedRgxDFA_withInvalidRegex() {
-//   vector<TokenPattern> patterns = { { ".", 1 },
-//                                     { "1-9][0-9]*", 2 },
-//                                     { "for", 3 } };
+void testRgxDFAToCode_withInvalidRegex() {
+  vector<pair<string, int>> patterns = { { ".", 1 },
+                                    { "1-9][0-9]*", 2 },
+                                    { "for", 3 } };
 
-//   TESTER.assertThrows([&patterns]() { buildMergedRgxDFA(patterns); });
-// }
+  stringstream out;
+  out.setstate(ios_base::badbit);
+  TESTER.assertThrows(([&](){ rgxDFAToCode(out, patterns); }));
+}
 
 
 int main(int, char**) {
@@ -189,8 +172,8 @@ int main(int, char**) {
   testGetDeriv_not();
   testGetDeriv_range();
   testHashFn();
-  // testMatches();
-  // testBuildMergedRgxDFA_withNullableRegex();
-  // testBuildMergedRgxDFA_withInvalidRegex();
+  testRgxDFAToCode_withNullableRegex();
+  testRgxDFAToCode_withInvalidRegex();
+
   return 0;
 }
