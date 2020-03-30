@@ -74,32 +74,33 @@ namespace {
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitVarRef> */
-std::vector<bool> getNullabilities(const Grammar& grammar) {
+std::vector<bool> getNullabilities(const GrammarData& grammarData) {
   using namespace std;
   using BitSetVars = vector<bool>;
   using BitRef = typename vector<bool>::reference;
 
-  size_t numVars = grammar.size();
+  size_t numVars = grammarData.variables.size();
   BitSetVars nullabilities(numVars);
   vector<vector<vector<BitRef>>> equations(numVars);
 
   for (size_t var = 0; var < numVars; ++var) {
-    for (const GrammarRule& rule : grammar[var]) {
+    for (int concreteType : grammarData.variables[var].concreteTypes) {
       // Epsilon is always nullable, so this symbol is nullable
       // NOTE: EPSILON is a special symbol we include when
       // the user leaves empty arguments, so a rule with epsilon will
       // only contain epsilon.
-      if (rule.symbols[0] == EPSILON) {
+      const Concrete& rule = grammarData.concretes[concreteType];
+      if (rule.argSymbols[0] == EPSILON) {
         nullabilities[var] = true;
         break;
       }
       // Tokens are never nullable, so stop considering this rule
-      if (std::any_of(rule.symbols.cbegin(), rule.symbols.cend(), isToken)) {
+      if (std::any_of(rule.argSymbols.cbegin(), rule.argSymbols.cend(), isToken)) {
         continue;
       }
       // Otherwise build the conjunction bitset
       vector<BitRef> conjunctions;
-      for (int rhsSymbol : rule.symbols) {
+      for (int rhsSymbol : rule.argSymbols) {
         conjunctions.push_back(nullabilities[rhsSymbol]);
       }
       equations[var].push_back(move(conjunctions));
@@ -110,14 +111,13 @@ std::vector<bool> getNullabilities(const Grammar& grammar) {
   return nullabilities;
 }
 
-std::vector<std::vector<bool>> getFirsts(
-    const Grammar& grammar,
-    size_t numTokens) {
+std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
   using namespace std;
   using BitSetVars = vector<bool>;
   using BitSetToks = vector<bool>;
 
-  size_t numVars = grammar.size();
+  size_t numVars = grammarData.variables.size();
+  size_t numTokens = grammarData.tokens.size();
 
   // Initialize firsts with empty bitset vectors
   vector<BitSetToks> firsts;
@@ -133,12 +133,12 @@ std::vector<std::vector<bool>> getFirsts(
     equations.push_back(UnionEquation(numTokens));
   }
 
-  BitSetVars nullabilities = getNullabilities(grammar);
+  BitSetVars nullabilities = getNullabilities(grammarData);
 
   for (size_t var = 0; var < numVars; ++var) {
     UnionEquation& unionEq = equations[var];
-    for (const GrammarRule& rule : grammar[var]) {
-      for (int rhsSymbol : rule.symbols) {
+    for (int concreteType : grammarData.variables[var].concreteTypes) {
+      for (int rhsSymbol : grammarData.concretes[concreteType].argSymbols) {
         // If rule is empty, there is no first, so skip it
         if (rhsSymbol == EPSILON) {
           break;

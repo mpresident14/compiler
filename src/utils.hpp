@@ -37,18 +37,36 @@ inline int indexToSymbol(size_t i, size_t numVars) {
 }
 
 
-struct GrammarRule {
-  const int concrete;
-  const std::vector<int> symbols;
+struct Token {
+  std::string name;
+  int precedence;
+  Assoc assoc;
+  std::string ctorExpr;
+  std::string dtorStmt;
+  std::string regex;
 };
-using Grammar = std::vector<std::vector<GrammarRule>>;
+
+struct Concrete {
+  std::string name;
+  int varType;
+  int precedence;
+  std::vector<int> argSymbols;
+  std::vector<size_t> argIndices;
+  std::string ctorExpr;
+};
+
+struct Variable {
+  std::string name;
+  std::vector<int> concreteTypes;
+  std::string dtorStmt;
+};
 
 struct GrammarData {
-  std::vector<int> concToSymb;     // Indexed by Concrete
-  std::vector<int> overridePrecs;  // Indexed by Concrete
-  std::vector<int> tokenPrecs;     // Indexed by Token
-  std::vector<Assoc> tokenAssoc;   // Indexed by Token
+  std::vector<Token> tokens;
+  std::vector<Concrete> concretes;
+  std::vector<Variable> variables;
 };
+
 
 inline void bitOrEquals(
     std::vector<bool>& bits,

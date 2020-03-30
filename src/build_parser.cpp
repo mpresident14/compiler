@@ -11,7 +11,7 @@ namespace {
   void addRhses(
       queue<DFARule>& ruleQueue,
       const DFARule& fromRule,
-      const Grammar& grammar,
+      const GrammarData& grammarData,
       const vector<BitSetToks>& firsts) {
     // Nothing to expand if we are at the end of the rule or if the next symbol
     // is a token
@@ -33,9 +33,8 @@ namespace {
       }
     }
 
-    const vector<GrammarRule>& rules = grammar[nextSymbol];
-    for (const GrammarRule& rule : rules) {
-      ruleQueue.push(DFARule{ rule.concrete, rule.symbols, 0, newLookahead });
+    for (int concreteType : grammarData.variables[nextSymbol].concreteTypes) {
+      ruleQueue.push(DFARule{ concreteType, grammarData.concretes[concreteType].argSymbols, 0, newLookahead });
     }
   }
 
@@ -44,13 +43,13 @@ namespace {
    * Ex: S -> A.B, then add all rules B -> ??? */
   void epsilonTransition(
       DFARuleSet& ruleSet,
-      const Grammar& grammar,
+      const GrammarData& grammarData,
       const vector<BitSetToks>& firsts) {
     queue<DFARule> ruleQueue;
 
     // Expand variables (epsilon transition) in the initial set of rules.
     for (const DFARule& rule : ruleSet) {
-      addRhses(ruleQueue, rule, grammar, firsts);
+      addRhses(ruleQueue, rule, grammarData, firsts);
     }
 
     // Keep expanding variables (epsilon transition) until we've determined all
@@ -63,7 +62,7 @@ namespace {
       // TODO: Should we check for duplicate rules in the queue as well (like
       // use a set and just pop with set.begin())
       if (iter == ruleSet.end()) {
-        addRhses(ruleQueue, rule, grammar, firsts);
+        addRhses(ruleQueue, rule, grammarData, firsts);
         ruleSet.insert(move(rule));
         ruleQueue.pop();
         continue;
@@ -78,7 +77,7 @@ namespace {
         existingRule.lookahead = move(unionToks);
         // Only add RHSes if we insert the rule into the set because everything
         // in the set has already been expanded
-        addRhses(ruleQueue, rule, grammar, firsts);
+        addRhses(ruleQueue, rule, grammarData, firsts);
       }
 
       ruleQueue.pop();
@@ -91,13 +90,14 @@ namespace {
   vector<DFA_t::Node*> createTransitions(
       DFA_t& dfa,
       DFA_t::Node* node,
-      const Grammar& grammar,
-      const vector<BitSetToks>& firsts,
-      size_t numSymbols) {
+      const GrammarData& grammarData,
+      const vector<BitSetToks>& firsts) {
     // Get all the valid transition symbols and map each of them to a new set of
     // rules
+    size_t numVars = grammarData.variables.size();
+    size_t numSymbols = grammarData.tokens.size() + numVars;
     vector<DFARuleSet> newTransitions(numSymbols);
-    size_t numVars = grammar.size();
+
 
     for (const DFARule& rule : node->getValue()) {
       if (rule.atEnd()) {
@@ -115,7 +115,7 @@ namespace {
       if (transitionRules.empty()) {
         continue;
       }
-      epsilonTransition(transitionRules, grammar, firsts);
+      epsilonTransition(transitionRules, grammarData, firsts);
       DFA_t::Node* newNode = dfa.addTransition(
           node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
@@ -127,13 +127,11 @@ namespace {
 
 
   /* Constructs the starting node of the DFA */
-  DFA_t initDFA(
-      const Grammar& grammar,
-      const vector<BitSetToks>& firsts,
-      size_t numTokens) {
+  DFA_t initDFA(const GrammarData& grammarData, const vector<BitSetToks>& firsts) {
+    int rootType = grammarData.variables[S].concreteTypes[0];
     DFARuleSet firstSet = { DFARule{
-        SCONC, { grammar[S][0].symbols[0] }, 0, BitSetToks(numTokens) } };
-    epsilonTransition(firstSet, grammar, firsts);
+        SCONC, grammarData.concretes[rootType].argSymbols, 0, BitSetToks(grammarData.tokens.size()) } };
+    epsilonTransition(firstSet, grammarData, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;
   }
@@ -141,10 +139,9 @@ namespace {
 
 
 /* Build the DFA */
-DFA_t buildParserDFA(const Grammar& grammar, size_t numTokens) {
-  size_t numSymbols = numTokens + grammar.size();
-  vector<BitSetToks> firsts = getFirsts(grammar, numTokens);
-  DFA_t dfa = initDFA(grammar, firsts, numTokens);
+DFA_t buildParserDFA(const GrammarData& grammarData) {
+  vector<BitSetToks> firsts = getFirsts(grammarData);
+  DFA_t dfa = initDFA(grammarData, firsts);
   queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
@@ -152,7 +149,7 @@ DFA_t buildParserDFA(const Grammar& grammar, size_t numTokens) {
     DFA_t::Node* node = q.front();
     q.pop();
     vector<DFA_t::Node*> addedNodes =
-        createTransitions(dfa, node, grammar, firsts, numSymbols);
+        createTransitions(dfa, node, grammarData, firsts);
     for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
@@ -171,7 +168,7 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarDa
   }
 
   const DFARule& rule = *setIter;
-  int rulePrecedence = grammarData.overridePrecs[rule.concrete];
+  int rulePrecedence = grammarData.concretes[rule.concrete].precedence;
 
   auto ruleIter =
       find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
@@ -183,7 +180,7 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarDa
   int lastToken = *ruleIter;
   // If no override precedence, check precedence of token
   if (rulePrecedence == NONE) {
-    rulePrecedence = grammarData.tokenPrecs[tokensIndex(lastToken)];
+    rulePrecedence = grammarData.tokens[tokensIndex(lastToken)].precedence;
   }
 
   // If there is rule precedence, get associativity
@@ -192,7 +189,7 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarDa
   } else {
     return RuleData{ optional(rule),
                       rulePrecedence,
-                      grammarData.tokenAssoc[tokensIndex(lastToken)] };
+                      grammarData.tokens[tokensIndex(lastToken)].assoc };
   }
 }
 
@@ -217,7 +214,7 @@ namespace {
       // RuleData::reducibleRule::lookahead
       code << '{';
       for_each(rule.lookahead.cbegin(), rule.lookahead.cend(), [&code](bool b){ code << to_string(b) << ','; });
-      code << "}}";
+      code << "}},";
     } else {
       code << "{},";
     }
@@ -233,8 +230,8 @@ namespace {
 }
 
 
-void condensedDFAToCode(ostream& out, const Grammar grammar, const GrammarData& grammarData) {
-  buildParserDFA(grammar, grammarData.tokenPrecs.size()).streamAsCode(
+void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
+  buildParserDFA(grammarData).streamAsCode(
     out,
     "RuleData",
     "int",

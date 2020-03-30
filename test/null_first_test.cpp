@@ -19,7 +19,7 @@ void testGetNullabilities() {
   // NULLABLE(Y) = true
   vector<bool> expected = { false, true, false, true };
 
-  TESTER.assertEquals(expected, getNullabilities(GRAMMAR));
+  TESTER.assertEquals(expected, getNullabilities(GRAMMAR_DATA));
 }
 
 void testGetFirsts() {
@@ -32,7 +32,7 @@ void testGetFirsts() {
   vector<bool> expectedX = { false, false, true, false };
   vector<bool> expectedY = { false, true, false, true };
 
-  vector<vector<bool>> actual = getFirsts(GRAMMAR, 4);
+  vector<vector<bool>> actual = getFirsts(GRAMMAR_DATA);
   TESTER.assertEquals(expectedS, actual[S]);
   TESTER.assertEquals(expectedC, actual[C]);
   TESTER.assertEquals(expectedX, actual[X]);

@@ -65,66 +65,53 @@ namespace {
   constexpr int CREGEX = 10;
   constexpr int CCONCAT = 11;
 
-  GrammarData GRAMMAR_DATA = { { S,
-                                 REGEX,
-                                 REGEX,
-                                 REGEX,
-                                 REGEX,
-                                 REGEX,
-                                 REGEX,
-                                 REGEX,
-                                 ALTS,
-                                 ALTS,
-                                 CONCATS,
-                                 CONCATS },
-                               { NONE /* SCONC */,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 NONE,
-                                 4,
-                                 4 },
-                               { 1, 6, 3, NONE, NONE, NONE, NONE, NONE, 5 },
-                               { Assoc::LEFT,
-                                 Assoc::LEFT,
-                                 Assoc::RIGHT,
-                                 Assoc::NONE,
-                                 Assoc::NONE,
-                                 Assoc::NONE,
-                                 Assoc::NONE,
-                                 Assoc::NONE,
-                                 Assoc::LEFT } };
 
+  struct GrammarData GRAMMAR_DATA = {
+      .tokens = {
+        { "BAR",  1, Assoc::LEFT, "", "", ""},
+        { "STAR", 6, Assoc::LEFT, "", "", ""},
+        { "CARET", 3, Assoc::RIGHT, "", "", ""},
+        {"LBRACKET", NONE, Assoc::NONE, "", "", ""},
+        {"RBRACKET",NONE,Assoc::NONE, "", "", ""},
+        {"LPAREN",NONE, Assoc::NONE, "", "", ""},
+        {"RPAREN",NONE, Assoc::NONE, "", "", ""},
+        {"DASH", NONE,Assoc::NONE, "", "", ""},
+        {"CHAR", 5, Assoc::LEFT, "", "", ""},
+      },
 
-  const Grammar GRAMMAR = {
-    /* S */ { GrammarRule{ SCONC, { REGEX } } },
-    /* REGEX */
-    {
-        GrammarRule{ RALT, { ALTS } },
-        GrammarRule{ RCONCAT, { CONCATS } },
-        GrammarRule{ RSTAR, { REGEX, STAR } },
-        GrammarRule{ RNOT, { CARET, REGEX } },
-        GrammarRule{ RRANGE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET } },
-        GrammarRule{ RGROUP, { LPAREN, REGEX, RPAREN } },
-        GrammarRule{ RCHAR, { CHAR } },
-    },
-    /* ALTS */
-    {
-        GrammarRule{ AREGEX, { REGEX, BAR, REGEX } },
-        GrammarRule{ AALT, { REGEX, BAR, ALTS } },
-    },
-    /* CONCATS */
-    {
-        GrammarRule{ CREGEX, { REGEX, REGEX } },
-        GrammarRule{ CCONCAT, { REGEX, CONCATS } },
-    }
+      .concretes = {
+        {"SCONC", S, NONE, {REGEX}, {}, ""},
+        {"RALT", REGEX, NONE, {ALTS}, {}, ""},
+        {"RCONCAT", REGEX, NONE, {CONCATS}, {}, ""},
+        {"RSTAR", REGEX, NONE, {REGEX, STAR}, {}, ""},
+        {"RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, {}, ""},
+        {"RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, {}, ""},
+        {"RCHAR", REGEX, NONE, {CHAR}, {}, ""},
+        {"AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, {}, ""},
+        {"AALT", ALTS, NONE, { REGEX, BAR, ALTS }, {}, ""},
+        {"CREGEX", CONCATS, 4, { REGEX, REGEX }, {}, ""},
+        {"CCONCAT", CONCATS, 4, { REGEX, CONCATS }, {}, ""}
+      },
+
+      .variables = {
+        {"S", {&GRAMMAR_DATA.concretes[SCONC]}, ""},
+        {
+            "REGEX",
+            {
+                &GRAMMAR_DATA.concretes[RALT],
+                &GRAMMAR_DATA.concretes[RCONCAT],
+                &GRAMMAR_DATA.concretes[RSTAR],
+                &GRAMMAR_DATA.concretes[RNOT],
+                &GRAMMAR_DATA.concretes[RRANGE],
+                &GRAMMAR_DATA.concretes[RGROUP],
+                &GRAMMAR_DATA.concretes[RCHAR]
+            },
+            ""
+        },
+        {"ALTS", {&GRAMMAR_DATA.concretes[AREGEX], &GRAMMAR_DATA.concretes[AALT],}, ""},
+        {"CONCATS", {&GRAMMAR_DATA.concretes[CREGEX],&GRAMMAR_DATA.concretes[CCONCAT],}, ""}
+      }
   };
-
 
   /*********
    * LEXER *
@@ -264,8 +251,8 @@ namespace {
     }
   }
 
-  StackObj construct(int concrete, StackObj* args, const vector<int>& concToSym) {
-    return StackObj{ constructObj(concrete, args), concToSym[concrete] };
+  StackObj construct(int concrete, StackObj* args, int varType) {
+    return StackObj{ constructObj(concrete, args), varType };
   }
 
   void conflictWarning(const DFARule& rule, int nextToken) {
@@ -280,7 +267,7 @@ namespace {
       const CondensedNode* node,
       int nextToken,
       const vector<StackObj>& stk,
-      const vector<int> tokenPrecs) {
+      const vector<Token>& tokens) {
     const RuleData& ruleData = node->getValue();
 
     // No reducible rule, so try shifting
@@ -318,7 +305,7 @@ namespace {
     // - precedence of rule is higher than that of next token
     // - precedence of rule is the same of that of next token and the rule's
     //   last token is left-associative
-    int shiftPrecedence = tokenPrecs[tokensIndex(nextToken)];
+    int shiftPrecedence = tokens[tokensIndex(nextToken)].precedence;
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
@@ -400,7 +387,7 @@ namespace {
 
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
       int concrete =
-          tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokenPrecs);
+          tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
       // Reduce
       if (concrete != NONE) {
         // Construct the new object, pop the arguments off the stack,
@@ -408,7 +395,7 @@ namespace {
         size_t reduceStart =
             stk.size() - currentNode->getValue().reducibleRule->symbols.size();
         StackObj newObj = construct(
-            concrete, &stk.data()[reduceStart], GRAMMAR_DATA.concToSymb);
+            concrete, &stk.data()[reduceStart], GRAMMAR_DATA.concretes[concrete].varType);
 
         // We always add the rule S -> <root_type>, so there is only one thing
         // on the stack if we reduced to S, and we don't want to delete the

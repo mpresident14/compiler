@@ -17,6 +17,7 @@
 
 
 /* Variables are positive */
+// static constexpr int S = 0; // Defined in utils.hpp
 static constexpr int C = 1;
 static constexpr int X = 2;
 static constexpr int Y = 3;
@@ -27,59 +28,69 @@ static constexpr int b = -2;
 static constexpr int a = -3;
 static constexpr int z = -4;
 
-
-inline std::string symbolToString(int symbol) {
-  switch (symbol) {
-    case S:
-      return "S";
-    case Y:
-      return "Y";
-    case C:
-      return "C";
-    case X:
-      return "X";
-    case t:
-      return "t";
-    case b:
-      return "b";
-    case a:
-      return "a";
-    case z:
-      return "z";
-  }
-  return "";
-}
-
 /* Concrete classes of Symbols */
-static constexpr int S1 = 1;
-static constexpr int S2 = 2;
-static constexpr int C1 = 3;
-static constexpr int C2 = 4;
-static constexpr int C3 = 5;
-static constexpr int X1 = 6;
-static constexpr int X2 = 7;
-static constexpr int Y1 = 8;
-static constexpr int Y2 = 9;
-static constexpr int Y3 = 10;
+static constexpr int S1 = 0;
+static constexpr int S2 = 1;
+static constexpr int C1 = 2;
+static constexpr int C2 = 3;
+static constexpr int C3 = 4;
+static constexpr int X1 = 5;
+static constexpr int X2 = 6;
+static constexpr int Y1 = 7;
+static constexpr int Y2 = 8;
+static constexpr int Y3 = 9;
 
+GrammarData GRAMMAR_DATA = {
+    /* tokens */ {
+      { "t", NONE, Assoc::NONE, "", "", ""},
+      { "b", NONE, Assoc::NONE, "", "", ""},
+      { "a", NONE, Assoc::NONE, "", "", ""},
+      {"z", NONE, Assoc::NONE, "", "", ""},
+    },
 
-const Grammar GRAMMAR = { {
-                              GrammarRule{ S1, { t, Y } },
-                              GrammarRule{ S2, { Y, C, X } },
-                          },
-                          {
-                              GrammarRule{ C1, { C, X } },
-                              GrammarRule{ C2, { Y } },
-                              GrammarRule{ C3, { b } },
-                          },
-                          {
-                              GrammarRule{ X1, { X, X } },
-                              GrammarRule{ X2, { a } },
-                          },
-                          {
-                              GrammarRule{ Y1, { EPSILON } },
-                              GrammarRule{ Y2, { b } },
-                              GrammarRule{ Y3, { Y, z } },
-                          } };
+    /* concretes */ {
+      {"S1", S, NONE, {t, Y}, {}, ""},
+      {"S2", S, NONE, {Y, C, X}, {}, ""},
+      {"C1", C, NONE, {C, X}, {}, ""},
+      {"C2", C, NONE, {Y}, {}, ""},
+      {"C3", C, NONE, {b}, {}, ""},
+      {"X1", X, NONE, {X, X}, {}, ""},
+      {"X2", X, NONE, {a}, {}, ""},
+      {"Y1", Y, NONE, {EPSILON}, {}, ""},
+      {"Y2", Y, NONE, {b}, {}, ""},
+      {"Y3", Y, NONE, {Y, z}, {}, ""},
+    },
+
+    /* variables */ {
+      {"S", {S1, S2}, ""},
+      {
+          "C",
+          {
+              C1,
+              C2,
+              C3
+          },
+          ""
+      },
+      {
+          "X",
+          {
+              X1,
+              X2,
+          },
+          ""
+      },
+      {
+          "Y",
+          {
+              Y1,
+              Y2,
+              Y3
+          },
+          ""
+      },
+    }
+};
+
 
 #endif

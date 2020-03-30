@@ -26,26 +26,29 @@ static constexpr int EPLUS = 2;
 static constexpr int ETIMES = 3;
 
 /* Tokens are negative */
-static constexpr int PLUS = -1;
-static constexpr int STAR = -2;
-static constexpr int INT = -3;
-
-const Grammar GRAMMAR = { { { GrammarRule{ 0 /* SCONC */, { EXPR } } } },
-                          {
-                              {
-                                  GrammarRule{ EINT, { INT } },
-                                  GrammarRule{ EPLUS, { EXPR, PLUS, EXPR } },
-                                  GrammarRule{ ETIMES, { EXPR, STAR, EXPR } },
-                              },
-                          } };
+static constexpr int INT = -1;
+static constexpr int PLUS = -2;
+static constexpr int STAR = -3;
 
 
-const GrammarData GRAMMAR_DATA =
-{
-  {S, EXPR, EXPR, EXPR},
-  {NONE, NONE, NONE, NONE},
-  {NONE, 1, 2},
-  {Assoc::NONE, Assoc::LEFT, Assoc::LEFT}
+GrammarData GRAMMAR_DATA = {
+    /* tokens */ {
+      { "INT", NONE, Assoc::NONE, "", "", ""},
+      { "PLUS", 1, Assoc::LEFT, "", "", ""},
+      { "STAR", 2, Assoc::LEFT, "", "", ""},
+    },
+
+    /* concretes */ {
+      {"SCONC", S, NONE, {EXPR}, {}, ""},
+      {"EINT", EXPR, NONE, {INT}, {}, ""},
+      {"EPLUS", EXPR, NONE, {EXPR, PLUS, EXPR}, {}, ""},
+      {"ETIMES", EXPR, NONE, {EXPR, STAR, EXPR}, {}, ""},
+    },
+
+    /* variables */ {
+      {"S", {SCONC}, ""},
+      {"EXPR", {EINT, EPLUS, ETIMES}, ""}
+    }
 };
 
 
