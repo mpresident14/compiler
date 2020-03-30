@@ -18,6 +18,8 @@ void generateRgxDFA() {
 
   std::ofstream outFile;
   outFile.open("test/gen_lexer.hpp");
+  outFile << "#include <unordered_map>\n"
+          << "#include <memory>\n";
   rgxDFAToCode(outFile, patterns);
   outFile.close();
 }

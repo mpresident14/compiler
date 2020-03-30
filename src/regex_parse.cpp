@@ -6,41 +6,7 @@ using namespace std;
 // TODO: Allow passing in of an symbolToString function for better error
 // messages
 
-namespace {
 
-  struct RuleData {
-    optional<DFARule> reducibleRule;
-    int precedence;
-    Assoc assoc;
-  };
-
-  inline bool operator==(const RuleData& lhs, const RuleData rhs) noexcept {
-    return lhs.reducibleRule == rhs.reducibleRule;
-  }
-
-  // inline ostream& operator<<(ostream& out, const RuleData& ruleData) {
-  //   if (!ruleData.reducibleRule.has_value()) {
-  //     return out << "{}";
-  //   }
-  //   return out << *ruleData.reducibleRule;
-  // }
-}  // namespace
-
-// TODO: Fix these hash functions
-namespace std {
-  template <>
-  struct hash<RuleData> {
-    size_t operator()(const RuleData& ruleData) const noexcept {
-      if (!ruleData.reducibleRule.has_value()) {
-        return 0;
-      }
-      return DFARuleHash()(*ruleData.reducibleRule);
-    }
-  };
-}  // namespace std
-
-
-namespace {
   /***********
    * GRAMMAR *
    ***********/
@@ -67,6 +33,8 @@ namespace {
    *
    *
    * */
+
+namespace {
 
   /* Variables */
   constexpr int REGEX = 1;
@@ -97,12 +65,6 @@ namespace {
   constexpr int CREGEX = 10;
   constexpr int CCONCAT = 11;
 
-  struct GrammarData {
-    vector<int> concToSymb;     // Indexed by Concrete
-    vector<int> overridePrecs;  // Indexed by Concrete
-    vector<int> tokenPrecs;     // Indexed by Token
-    vector<Assoc> tokenAssoc;   // Indexed by Token
-  };
   GrammarData GRAMMAR_DATA = { { S,
                                  REGEX,
                                  REGEX,
@@ -172,9 +134,6 @@ namespace {
     // Can't delete from here since it is a void*, see constructObj
     void* obj;
     int symbol;
-
-    void deleteObj() const noexcept;
-    void deleteObjPtr() const noexcept;
   };
 
   StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
@@ -231,45 +190,9 @@ namespace {
    * PARSER *
    **********/
 
-  RuleData condenseRuleSet(const DFARuleSet& ruleSet) {
-    auto setIter =
-        find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
-    // No reducible rules
-    if (setIter == ruleSet.cend()) {
-      return RuleData{ {}, NONE, Assoc::NONE };
-    }
-
-    const DFARule& rule = *setIter;
-    int rulePrecedence = GRAMMAR_DATA.overridePrecs[rule.concrete];
-
-    auto ruleIter =
-        find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
-    // Reducible rule contains no tokens
-    if (ruleIter == rule.symbols.crend()) {
-      return RuleData{ optional(rule), rulePrecedence, Assoc::NONE };
-    }
-
-    int lastToken = *ruleIter;
-    // If no override precedence, check precedence of token
-    if (rulePrecedence == NONE) {
-      rulePrecedence = GRAMMAR_DATA.tokenPrecs[tokensIndex(lastToken)];
-    }
-
-    // If there is rule precedence, get associativity
-    if (rulePrecedence == NONE) {
-      return RuleData{ optional(rule), NONE, Assoc::NONE };
-    } else {
-      return RuleData{ optional(rule),
-                       rulePrecedence,
-                       GRAMMAR_DATA.tokenAssoc[tokensIndex(lastToken)] };
-    }
-  }
-
-  using CondensedDFA = DFA<RuleData, int>;
-  using CondensedNode = CondensedDFA::Node;
-
   const CondensedDFA PARSER_DFA =
-      buildParserDFA(GRAMMAR, 9).convert<RuleData>(condenseRuleSet);
+      buildParserDFA(GRAMMAR, 9).convert<RuleData>(
+        [](const DFARuleSet& ruleSet){ return condenseRuleSet(ruleSet, GRAMMAR_DATA); });
 
   struct Start {
     Start(Regex** r) : r_(r) {}
@@ -277,19 +200,19 @@ namespace {
     Regex** r_;
   };
 
-  void StackObj::deleteObjPtr() const noexcept {
-    switch (symbol) {
+  void deleteObjPtr(const StackObj& stackObj) noexcept {
+    switch (stackObj.symbol) {
       case REGEX:
-        delete (Regex**)obj;
+        delete (Regex**)stackObj.obj;
         break;
       case ALTS:
-        delete (RegexVector*)obj;
+        delete (RegexVector*)stackObj.obj;
         break;
       case CONCATS:
-        delete (RegexVector*)obj;
+        delete (RegexVector*)stackObj.obj;
         break;
       case CHAR:
-        delete (char*)obj;
+        delete (char*)stackObj.obj;
         break;
       default:
         return;
@@ -297,11 +220,11 @@ namespace {
   }
 
 
-  void StackObj::deleteObj() const noexcept {
-    if (symbol == REGEX) {
-      delete (*(Regex**)obj);
+  void deleteObj(const StackObj& stackObj) noexcept {
+    if (stackObj.symbol == REGEX) {
+      delete (*(Regex**)stackObj.obj);
     }
-    deleteObjPtr();
+    deleteObjPtr(stackObj);
   }
 
   // TODO: Remove throw and make noexcept when done
@@ -424,7 +347,7 @@ namespace {
   void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
     size_t size = stackObjs.size();
     for (; i < size; ++i) {
-      stackObjs[i].deleteObj();
+      deleteObj(stackObjs[i]);
     }
   }
 
@@ -495,7 +418,7 @@ namespace {
         } else {
           size_t stkSize = stk.size();
           for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-            stk.back().deleteObjPtr();
+            deleteObjPtr(stk.back());
             stk.pop_back();
           }
         }

@@ -160,3 +160,86 @@ DFA_t buildParserDFA(const Grammar& grammar, size_t numTokens) {
 
   return dfa;
 }
+
+
+RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& grammarData) {
+  auto setIter =
+      find_if(ruleSet.cbegin(), ruleSet.cend(), mem_fun_ref(&DFARule::atEnd));
+  // No reducible rules
+  if (setIter == ruleSet.cend()) {
+    return RuleData{ {}, NONE, Assoc::NONE };
+  }
+
+  const DFARule& rule = *setIter;
+  int rulePrecedence = grammarData.overridePrecs[rule.concrete];
+
+  auto ruleIter =
+      find_if(rule.symbols.crbegin(), rule.symbols.crend(), isToken);
+  // Reducible rule contains no tokens
+  if (ruleIter == rule.symbols.crend()) {
+    return RuleData{ optional(rule), rulePrecedence, Assoc::NONE };
+  }
+
+  int lastToken = *ruleIter;
+  // If no override precedence, check precedence of token
+  if (rulePrecedence == NONE) {
+    rulePrecedence = grammarData.tokenPrecs[tokensIndex(lastToken)];
+  }
+
+  // If there is rule precedence, get associativity
+  if (rulePrecedence == NONE) {
+    return RuleData{ optional(rule), NONE, Assoc::NONE };
+  } else {
+    return RuleData{ optional(rule),
+                      rulePrecedence,
+                      grammarData.tokenAssoc[tokensIndex(lastToken)] };
+  }
+}
+
+
+namespace {
+  string ruleDataToCode(const RuleData& ruleData) {
+    stringstream code;
+    code << '{';
+    if (ruleData.reducibleRule.has_value()) {
+      const DFARule& rule = *ruleData.reducibleRule;
+      // RuleData::reducibleRule::concrete
+      code << '{' << to_string(rule.concrete) << ',';
+
+      // RuleData::reducibleRule::symbols
+      code << '{';
+      for_each(rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n){ code << to_string(n) << ','; });
+      code << "},";
+
+      // RuleData::reducibleRule::pos
+      code << to_string(rule.pos) << ',';
+
+      // RuleData::reducibleRule::lookahead
+      code << '{';
+      for_each(rule.lookahead.cbegin(), rule.lookahead.cend(), [&code](bool b){ code << to_string(b) << ','; });
+      code << "}}";
+    } else {
+      code << "{},";
+    }
+
+    // RuleData::precedence
+    code << to_string(ruleData.precedence) << ',';
+
+    // RuleData::assoc
+    code << "Assoc::" << ruleData.assoc << '}';
+
+    return code.str();
+  }
+}
+
+
+void condensedDFAToCode(ostream& out, const Grammar grammar, const GrammarData& grammarData) {
+  buildParserDFA(grammar, grammarData.tokenPrecs.size()).streamAsCode(
+    out,
+    "RuleData",
+    "int",
+    [&grammarData](const DFARuleSet& ruleSet){ return condenseRuleSet(ruleSet, grammarData); },
+    ruleDataToCode,
+    [](int n) { return to_string(n); });
+}
+

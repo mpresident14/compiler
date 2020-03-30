@@ -1,6 +1,8 @@
 #ifndef DFA_HPP
 #define DFA_HPP
 
+#include "utils.hpp"
+
 #include <cstddef>
 #include <iostream>
 #include <queue>
@@ -190,6 +192,7 @@ public:
   }
 
 
+  // TODO: Make the toStr functions instead put strings directly into stream
   template <typename F1, typename F2, typename F3>
   void streamAsCode(
       std::ostream& out,
@@ -202,19 +205,24 @@ public:
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
 
-    init << "#include <unordered_map>\n"
-         << "#include <memory>\n"
-         << "struct "
+    static const char stepFn[] = R"(
+      Node* step(const #& t) const {
+        auto iter = ts_.find(t);
+        if (iter == ts_.end()) {
+          return nullptr;
+        }
+        return iter->second;
+      }
+    )";
+
+    static const char makeNodeFn[] = R"(auto n#=std::make_unique<Node>(#);
+        )";
+
+    init << "struct "
          << "Node {\n"
-         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n"
-         << "Node* step(const " << tranType << "& t) const {\n"
-         << "auto iter = ts_.find(t);\n"
-            "if (iter == ts_.end()) {\n"
-            "return nullptr;\n"
-            "}\n"
-            "return iter->second;\n"
-            "}\n"
-         << valueType << " v_;\n"
+         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
+    replaceStrs(init, stepFn, tranType);
+    init << valueType << " v_;\n"
          << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 
     tranStmts << "auto makeDFA(){\n";
@@ -228,8 +236,7 @@ public:
       q.pop();
 
       // Add node declaration
-      nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>("
-                << valueToStr(convertValue(currentNode->value_)) << ");\n";
+      replaceStrs(init, makeNodeFn, currentNode, valueToStr(convertValue(currentNode->value_)));
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->ts_={\n";

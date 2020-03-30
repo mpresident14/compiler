@@ -19,23 +19,25 @@ set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I . -I ./src")
 # The following folders will be included
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test)
 
-# So regex sources don't have to be rebuilt for each executable
-# add_library(regex_lib STATIC src/regex.cpp src/regex_lexer.cpp src/regex_match.cpp)
 
 set(PARSER_SRCS src/build_parser.cpp src/null_first.cpp)
 set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp src/regex_eval.cpp)
+# So regex sources don't have to be rebuilt for each executable
+add_library(parse_lib STATIC ${REGEX_SRCS} ${PARSER_SRCS})
 
 # Test executables
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
 add_executable(build_parser_test test/build_parser_test.cpp ${PARSER_SRCS})
-add_executable(regex_test test/regex_test.cpp  ${REGEX_SRCS} ${PARSER_SRCS})
+add_executable(regex_test test/regex_test.cpp)
+target_link_libraries(regex_test parse_lib)
 add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
 
 # Other executables
-# add_executable(main src/main.cpp)
-# target_link_libraries(main regex_lib)
-add_executable(write_lexer test/write_lexer.cpp ${REGEX_SRCS} ${PARSER_SRCS})
+add_executable(write_lexer test/write_lexer.cpp)
+target_link_libraries(write_lexer parse_lib)
+add_executable(generate src/generate.cpp)
+target_link_libraries(generate parse_lib)
 
 # Ensure that we write the regex DFA before building the corresponding test
 add_custom_target(run_write_lexer COMMAND write_lexer)

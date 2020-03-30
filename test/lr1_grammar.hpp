@@ -30,6 +30,24 @@ static constexpr int PLUS = -1;
 static constexpr int STAR = -2;
 static constexpr int INT = -3;
 
+const Grammar GRAMMAR = { { { GrammarRule{ 0 /* SCONC */, { EXPR } } } },
+                          {
+                              {
+                                  GrammarRule{ EINT, { INT } },
+                                  GrammarRule{ EPLUS, { EXPR, PLUS, EXPR } },
+                                  GrammarRule{ ETIMES, { EXPR, STAR, EXPR } },
+                              },
+                          } };
+
+
+const GrammarData GRAMMAR_DATA =
+{
+  {S, EXPR, EXPR, EXPR},
+  {NONE, NONE, NONE, NONE},
+  {NONE, 1, 2},
+  {Assoc::NONE, Assoc::LEFT, Assoc::LEFT}
+};
+
 
 /***********
  * OBJECTS *
@@ -80,98 +98,88 @@ struct ETimes : Expr {
 };
 
 
-using ROOT_TYPE = Expr*;
+// using ROOT_TYPE = Expr*;
 
 
-/* S
- * We insert this into the grammar so that we guarantee the root symbol does
- * not appear on any right hand sides of rules. This way, we know the initial
- * lookahead set is empty.
- * */
-struct Start {
-  Start(ROOT_TYPE* r) : r_(r) {}
-  ~Start() { delete r_; }
-  ROOT_TYPE* r_;
-};
+// /* S
+//  * We insert this into the grammar so that we guarantee the root symbol does
+//  * not appear on any right hand sides of rules. This way, we know the initial
+//  * lookahead set is empty.
+//  * */
+// struct Start {
+//   Start(ROOT_TYPE* r) : r_(r) {}
+//   ~Start() { delete r_; }
+//   ROOT_TYPE* r_;
+// };
 
 
-/*****************************
- *   CONSTRUCTION/DELETION   *
- *****************************/
+// /*****************************
+//  *   CONSTRUCTION/DELETION   *
+//  *****************************/
 
-struct StackObj {
-  // No deleter since pointers will be passed to the client
-  void* obj;
-  int symbol;
-  int concrete;
+// struct StackObj {
+//   // No deleter since pointers will be passed to the client
+//   void* obj;
+//   int symbol;
+//   int concrete;
 
-  void deleteObj() const noexcept;
-  void deleteObjPtr() const noexcept;
-};
+//   void deleteObj() const noexcept;
+//   void deleteObjPtr() const noexcept;
+// };
 
-template <typename T>
-inline void ptrDeleter(T* ptr) {
-  delete ptr;
-}
+// template <typename T>
+// inline void ptrDeleter(T* ptr) {
+//   delete ptr;
+// }
 
-void StackObj::deleteObj() const noexcept {
-  switch (symbol) {
-    case INT:
-      delete (int*)obj;
-      break;
-    case EXPR:
-      ptrDeleter(*(Expr**)obj);
-      delete (Expr**)obj;
-      break;
-    default:
-      return;
-  }
-}
+// void StackObj::deleteObj() const noexcept {
+//   switch (symbol) {
+//     case INT:
+//       delete (int*)obj;
+//       break;
+//     case EXPR:
+//       ptrDeleter(*(Expr**)obj);
+//       delete (Expr**)obj;
+//       break;
+//     default:
+//       return;
+//   }
+// }
 
-void StackObj::deleteObjPtr() const noexcept {
-  switch (symbol) {
-    case INT:
-      delete (int*)obj;
-      break;
-    case EXPR:
-      delete (Expr**)obj;
-      break;
-    default:
-      return;
-  }
-}
+// void StackObj::deleteObjPtr() const noexcept {
+//   switch (symbol) {
+//     case INT:
+//       delete (int*)obj;
+//       break;
+//     case EXPR:
+//       delete (Expr**)obj;
+//       break;
+//     default:
+//       return;
+//   }
+// }
 
-// TODO: Remove throw and make noexcept when done
-void* constructObj(int concrete, StackObj* args) {
-  switch (concrete) {
-    case EINT:
-      return new Expr*(new EInt(*(int*)args[0].obj));
-    case EPLUS:
-      return new Expr*(new EPlus(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
-    case ETIMES:
-      return new Expr*(new ETimes(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
-    case 0: /* SCONC */
-      return new Start((ROOT_TYPE*)args[0].obj);
-    default:
-      throw std::invalid_argument("Can't construct. Out of options.");
-  }
-}
+// // TODO: Remove throw and make noexcept when done
+// void* constructObj(int concrete, StackObj* args) {
+//   switch (concrete) {
+//     case EINT:
+//       return new Expr*(new EInt(*(int*)args[0].obj));
+//     case EPLUS:
+//       return new Expr*(new EPlus(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
+//     case ETIMES:
+//       return new Expr*(new ETimes(*(Expr**)args[0].obj, *(Expr**)args[2].obj));
+//     case 0: /* SCONC */
+//       return new Start((ROOT_TYPE*)args[0].obj);
+//     default:
+//       throw std::invalid_argument("Can't construct. Out of options.");
+//   }
+// }
 
-StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym) {
-  return StackObj{ constructObj(concrete, args),
-                   concToSym[concrete],
-                   concrete };
-}
+// StackObj construct(int concrete, StackObj* args, std::vector<int> concToSym) {
+//   return StackObj{ constructObj(concrete, args),
+//                    concToSym[concrete],
+//                    concrete };
+// }
 
-
-/* LR0 Grammar */
-const Grammar GRAMMAR = { { { GrammarRule{ 0 /* SCONC */, { EXPR } } } },
-                          {
-                              {
-                                  GrammarRule{ EINT, { INT } },
-                                  GrammarRule{ EPLUS, { EXPR, PLUS, EXPR } },
-                                  GrammarRule{ ETIMES, { EXPR, STAR, EXPR } },
-                              },
-                          } };
 
 #endif
