@@ -3,10 +3,6 @@
 using namespace std;
 
 
-// TODO: Allow passing in of an symbolToString function for better error
-// messages
-
-
 /***********
  * GRAMMAR *
  ***********/
@@ -100,14 +96,14 @@ namespace {
 
     /* variables */
     { { "S", { SCONC }, "" },
-      { "REGEX", { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR }, "" },
-      { "ALTS",
+      { "Regex", { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR }, "" },
+      { "Alts",
         {
             AREGEX,
             AALT,
         },
         "" },
-      { "CONCATS",
+      { "Concats",
         {
             CREGEX,
             CCONCAT,
@@ -348,19 +344,25 @@ namespace {
       const vector<StackObj>& inputTokens,
       size_t i) {
     ostringstream errMsg;
-    vector<int> stkSymbols;
-    vector<int> remainingTokens;
-    auto stkObjToSymbol = [](StackObj stkObj) { return stkObj.symbol; };
+    vector<string> stkSymbolNames;
+    vector<string> remainingTokenNames;
+    auto stkObjToName = [](StackObj stkObj) {
+      if (isToken(stkObj.symbol)) {
+        return GRAMMAR_DATA.tokens[tokensIndex(stkObj.symbol)].name;
+      }
+      return GRAMMAR_DATA.variables[stkObj.symbol].name;
+    };
+
     transform(
-        stk.begin(), stk.end(), back_inserter(stkSymbols), stkObjToSymbol);
+        stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
     transform(
         inputTokens.begin() + i,
         inputTokens.end(),
-        back_inserter(remainingTokens),
-        stkObjToSymbol);
+        back_inserter(remainingTokenNames),
+        stkObjToName);
 
-    errMsg << "No parse:\n\tStack: " << stkSymbols
-           << "\n\tRemaining tokens: " << remainingTokens;
+    errMsg << "No parse:\n\tStack: " << stkSymbolNames
+           << "\n\tRemaining tokens: " << remainingTokenNames;
     throw invalid_argument(errMsg.str());
   }
 

@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include <prez/unit_test.hpp>
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 using namespace prez;
@@ -44,23 +45,19 @@ void testParse() {
 
 
 void testParseError() {
-  string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
-  ostringstream expectedStk0;
-  ostringstream expectedRemaining0;
-  expectedStk0 << vector<int>{ 1 /* REGEX */, -6 /* LPAREN */, 1 /* REGEX */ };
-  expectedRemaining0 << vector<int>();
+  ostringstream expectedErr0;
+  expectedErr0 << "No parse:\n\tStack: " << vector<string>{ "Regex", "LPAREN", "Regex"}
+           << "\n\tRemaining tokens: " << vector<string>{};
 
-  TESTER.assertTrue(err0.find(expectedStk0.str()) != string::npos);
-  TESTER.assertTrue(err0.find(expectedRemaining0.str()) != string::npos);
+  string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
+  TESTER.assertEquals(expectedErr0.str(), err0);
+
+  ostringstream expectedErr1;
+  expectedErr1 << "No parse:\n\tStack: " << vector<string>{ "Regex", "CARET", "STAR"}
+           << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
   string err1 = TESTER.assertThrows([]() { parse("abc^*d"); });
-  ostringstream expectedStk1;
-  ostringstream expectedRemaining1;
-  expectedStk1 << vector<int>{ 1 /* REGEX */, -3 /* CARET */, -2 /* STAR */ };
-  expectedRemaining1 << vector<int>{ -9 /* CHAR */ };
-
-  TESTER.assertTrue(err1.find(expectedStk1.str()) != string::npos);
-  TESTER.assertTrue(err1.find(expectedRemaining1.str()) != string::npos);
+  TESTER.assertEquals(expectedErr1.str(), err1);
 
   // No conflicts
   TESTER.assertEquals("", errBuffer.str());
