@@ -67,7 +67,7 @@ namespace {
 
 
   struct GrammarData GRAMMAR_DATA = {
-      .tokens = {
+      /* tokens */ {
         { "BAR",  1, Assoc::LEFT, "", "", ""},
         { "STAR", 6, Assoc::LEFT, "", "", ""},
         { "CARET", 3, Assoc::RIGHT, "", "", ""},
@@ -79,11 +79,12 @@ namespace {
         {"CHAR", 5, Assoc::LEFT, "", "", ""},
       },
 
-      .concretes = {
+      /* concretes */ {
         {"SCONC", S, NONE, {REGEX}, {}, ""},
         {"RALT", REGEX, NONE, {ALTS}, {}, ""},
         {"RCONCAT", REGEX, NONE, {CONCATS}, {}, ""},
         {"RSTAR", REGEX, NONE, {REGEX, STAR}, {}, ""},
+        {"RNOT", REGEX, NONE, {CARET, REGEX}, {}, ""},
         {"RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, {}, ""},
         {"RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, {}, ""},
         {"RCHAR", REGEX, NONE, {CHAR}, {}, ""},
@@ -93,23 +94,23 @@ namespace {
         {"CCONCAT", CONCATS, 4, { REGEX, CONCATS }, {}, ""}
       },
 
-      .variables = {
-        {"S", {&GRAMMAR_DATA.concretes[SCONC]}, ""},
+      /* variables */ {
+        {"S", {SCONC}, ""},
         {
             "REGEX",
             {
-                &GRAMMAR_DATA.concretes[RALT],
-                &GRAMMAR_DATA.concretes[RCONCAT],
-                &GRAMMAR_DATA.concretes[RSTAR],
-                &GRAMMAR_DATA.concretes[RNOT],
-                &GRAMMAR_DATA.concretes[RRANGE],
-                &GRAMMAR_DATA.concretes[RGROUP],
-                &GRAMMAR_DATA.concretes[RCHAR]
+                RALT,
+                RCONCAT,
+                RSTAR,
+                RNOT,
+                RRANGE,
+                RGROUP,
+                RCHAR
             },
             ""
         },
-        {"ALTS", {&GRAMMAR_DATA.concretes[AREGEX], &GRAMMAR_DATA.concretes[AALT],}, ""},
-        {"CONCATS", {&GRAMMAR_DATA.concretes[CREGEX],&GRAMMAR_DATA.concretes[CCONCAT],}, ""}
+        {"ALTS", {AREGEX, AALT,}, ""},
+        {"CONCATS", {CREGEX,CCONCAT,}, ""}
       }
   };
 
@@ -178,7 +179,7 @@ namespace {
    **********/
 
   const CondensedDFA PARSER_DFA =
-      buildParserDFA(GRAMMAR, 9).convert<RuleData>(
+      buildParserDFA(GRAMMAR_DATA).convert<RuleData>(
         [](const DFARuleSet& ruleSet){ return condenseRuleSet(ruleSet, GRAMMAR_DATA); });
 
   struct Start {
