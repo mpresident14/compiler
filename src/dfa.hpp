@@ -218,7 +218,7 @@ public:
     init << "struct "
          << "Node {\n"
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
-    replaceNumbers(init, stepFn, {tranType});
+    replaceNumbersVec(init, stepFn, {tranType});
     init << valueType << " v_;\n"
          << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 

@@ -122,14 +122,25 @@ void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
 
 void stackObjDecl(ostream& out) {
   out << R"(struct StackObj {
+    void* obj;
     int symbol;
-    int concrete;
   };
   )";
 }
 
+void sObjDecl(ostream& out, const GrammarData& grammarData) {
+  vector<string> rootType = {grammarData.variables[1].type};
+  const char decl[] = R"(struct SObj {
+    SObj(#0* r) : r_(r) {}
+    ~SObj() { delete r_; }
+    #0* r_;
+  };
+  )";
+  replaceNumbersVec(out, decl, rootType);
+}
 
-void deleteObjCode(ostream& out, const GrammarData& grammarData) {
+
+void deleteObjFn(ostream& out, const GrammarData& grammarData) {
   out << R"(void deleteObj(const StackObj& s) {
     switch (s.symbol) {)";
 
@@ -140,7 +151,7 @@ void deleteObjCode(ostream& out, const GrammarData& grammarData) {
     const Token& token = grammarData.tokens[i];
     if (!token.type.empty()) {
       out << "case " << indexToSymbol(i, numVars) << ':';
-      replaceNumbers(out, token.dtorStmt, {"*(" + token.type + "*) s.obj"});
+      replaceNumbersVec(out, token.dtorStmt, {"*(" + token.type + "*) s.obj"});
       out << " delete (" << token.type << "*) s.obj; break;";
     }
   }
@@ -149,11 +160,75 @@ void deleteObjCode(ostream& out, const GrammarData& grammarData) {
   for (size_t i = 1; i < numVars; ++i) {
     const Variable& var = grammarData.variables[i];
     out << "case " << i << ':';
-    replaceNumbers(out, var.dtorStmt, {"*(" + var.type + "*) s.obj"});
+    replaceNumbersVec(out, var.dtorStmt, {"*(" + var.type + "*) s.obj"});
     out << " delete (" << var.type << "*) s.obj; break;";
   }
 
   out << "default: return;}}";
+}
+
+
+void deleteObjPtrFn(ostream& out, const GrammarData& grammarData) {
+  out << R"(void deleteObjPtr(const StackObj& s) {
+    switch (s.symbol) {)";
+
+  size_t numVars = grammarData.variables.size();
+  size_t numTokens = grammarData.tokens.size();
+  // Case statement for each token with data
+  for (size_t i = 0; i < numTokens; ++i) {
+    const Token& token = grammarData.tokens[i];
+    if (!token.type.empty()) {
+      out << "case " << indexToSymbol(i, numVars) << ':'
+          << " delete (" << token.type << "*) s.obj; break;";
+    }
+  }
+
+  // Case statement for each variable except S
+  for (size_t i = 1; i < numVars; ++i) {
+    const Variable& var = grammarData.variables[i];
+    out << "case " << i << ':'
+        << " delete (" << var.type << "*) s.obj; break;";
+  }
+
+  out << "default: return;}}";
+}
+
+
+void constructObjFn(ostream& out, const GrammarData& grammarData) {
+  out << R"(void* constructObj(int concrete, StackObj* args) {
+    switch (concrete) {)";
+  // auto convertNum = [&grammarData](const string& digits){
+  //   return "*(" + grammarData.
+  // }
+
+  size_t numConcretes = grammarData.concretes.size();
+  // Case statement for each concrete except SCONC (handled specially below)
+  for (size_t i = 1; i < numConcretes; ++i) {
+    const Concrete& concrete = grammarData.concretes[i];
+    const Variable& var = grammarData.variables[concrete.varType];
+    out << "case " << i << ": return new " << var.type << '(';
+
+    replaceNumbers(out, concrete.ctorExpr, [&concrete, &grammarData](const string& digits){
+      int argSymbol = concrete.argSymbols[stoi(digits)];
+      string symbolName;
+      if (isToken(argSymbol)) {
+        symbolName = grammarData.tokens[tokensIndex(argSymbol)].type;
+      } else {
+        symbolName = grammarData.variables[argSymbol].type;
+      }
+      return string("*(")
+          .append(symbolName)
+          .append("*) args[")
+          .append(digits)
+          .append("].obj");
+    });
+
+    out << ");";
+  }
+
+  // Root type of grammar is the first type listed
+  out << "case 0: return new SObj((" << grammarData.variables[1].type << "*)args[0].obj);";
+  out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
 }
 
 
@@ -177,9 +252,10 @@ void includes(ostream& out) {
 /********************
  * DRIVER FUNCTIONS *
  ********************/
-string hppCode() {
+string hppCode(const string& classFile) {
   stringstream out;
 
+  out << "#include \"" + classFile + "\"\n";
   includes(out);
 
   return out.str();
@@ -196,7 +272,10 @@ string cppCode(const GrammarData& grammarData) {
   variableDecl(out);
   grammarDataDecl(out, grammarData);
   stackObjDecl(out);
-  deleteObjCode(out, grammarData);
+  sObjDecl(out, grammarData);
+  deleteObjPtrFn(out, grammarData);
+  deleteObjFn(out, grammarData);
+  constructObjFn(out, grammarData);
 
 
 
@@ -205,10 +284,10 @@ string cppCode(const GrammarData& grammarData) {
 }
 
 
-void generateCode(const GrammarData& grammarData) {
+void generateCode(const string& classFile, const GrammarData& grammarData) {
   std::ofstream hppFile;
   hppFile.open("parser.hpp");
-  hppFile << hppCode();
+  hppFile << hppCode(classFile);
   hppFile.close();
 
   std::ofstream cppFile;
@@ -219,7 +298,7 @@ void generateCode(const GrammarData& grammarData) {
 
 
 int main() {
-  generateCode(GRAMMAR_DATA);
+  generateCode("test/lr1_grammar.hpp", GRAMMAR_DATA);
 
   return 0;
 }
