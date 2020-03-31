@@ -206,7 +206,7 @@ public:
     std::ostringstream tranStmts;
 
     static const char stepFn[] = R"(
-      Node* step(const #& t) const {
+      Node* step(const #0& t) const {
         auto iter = ts_.find(t);
         if (iter == ts_.end()) {
           return nullptr;
@@ -215,13 +215,10 @@ public:
       }
     )";
 
-    static const char makeNodeFn[] = R"(auto n#=std::make_unique<Node>(#);
-        )";
-
     init << "struct "
          << "Node {\n"
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
-    replaceStrs(init, stepFn, tranType);
+    replaceNumbers(init, stepFn, {tranType});
     init << valueType << " v_;\n"
          << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 
@@ -236,11 +233,8 @@ public:
       q.pop();
 
       // Add node declaration
-      replaceStrs(
-          init,
-          makeNodeFn,
-          currentNode,
-          valueToStr(convertValue(currentNode->value_)));
+      nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>("
+          << valueToStr(convertValue(currentNode->value_)) << ");\n";
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->ts_={\n";

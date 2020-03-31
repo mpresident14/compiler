@@ -11,6 +11,9 @@
 
 using namespace std;
 
+/*********
+ * UTILS *
+ *********/
 
 void toCode(ostream& out, const string& str) {
   out << '"' << str << '"';
@@ -35,9 +38,15 @@ void toCode(ostream& out, const Container& c) {
 }
 
 
+/****************
+ * GRAMMAR DATA *
+ ****************/
+
 void toCode(ostream& out,const Token& token) {
   out << '{';
   toCode(out, token.name);
+  out << ',';
+  toCode(out, token.type);
   out << ',';
   toCode(out, token.precedence);
   out << '}';
@@ -51,19 +60,30 @@ void toCode(ostream& out,const Concrete& concrete) {
   // Other fields not needed for shift-reducing
 }
 
+void toCode(ostream& out, const Variable& var) {
+  out << '{';
+  toCode(out, var.name);
+  out << ',';
+  toCode(out, var.type);
+  out << '}';
+  // Other fields not needed for shift-reducing
+}
+
 void toCode(ostream& out,const GrammarData& grammarData) {
   out << '{';
   toCode(out, grammarData.tokens);
   out << ',';
   toCode(out, grammarData.concretes);
+  out << ',';
+  toCode(out, grammarData.variables);
   out << '}';
-  // Variables not needed for shift reducing
 }
 
 
 void tokenDecl(ostream& out) {
   out << R"(struct Token {
     string name;
+    string type;
     int precedence;
   };
   )";
@@ -76,10 +96,19 @@ void concreteDecl(ostream& out) {
   )";
 }
 
+void variableDecl(ostream& out) {
+  out << R"(struct Variable {
+    string name;
+    string type;
+  };
+  )";
+}
+
 void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
   out << R"(struct GrammarData {
     vector<Token> tokens;
     vector<Concrete> concretes;
+    vector<Variable> variables;
   };
   )";
   out << "GrammarData GRAMMAR_DATA = ";
@@ -87,6 +116,50 @@ void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
   out << ';';
 }
 
+/****************
+ * STACK OBJECT *
+ ****************/
+
+void stackObjDecl(ostream& out) {
+  out << R"(struct StackObj {
+    int symbol;
+    int concrete;
+  };
+  )";
+}
+
+
+void deleteObjCode(ostream& out, const GrammarData& grammarData) {
+  out << R"(void deleteObj(const StackObj& s) {
+    switch (s.symbol) {)";
+
+  size_t numVars = grammarData.variables.size();
+  size_t numTokens = grammarData.tokens.size();
+  // Case statement for each token with data
+  for (size_t i = 0; i < numTokens; ++i) {
+    const Token& token = grammarData.tokens[i];
+    if (!token.type.empty()) {
+      out << "case " << indexToSymbol(i, numVars) << ':';
+      replaceNumbers(out, token.dtorStmt, {"*(" + token.type + "*) s.obj"});
+      out << " delete (" << token.type << "*) s.obj; break;";
+    }
+  }
+
+  // Case statement for each variable except S
+  for (size_t i = 1; i < numVars; ++i) {
+    const Variable& var = grammarData.variables[i];
+    out << "case " << i << ':';
+    replaceNumbers(out, var.dtorStmt, {"*(" + var.type + "*) s.obj"});
+    out << " delete (" << var.type << "*) s.obj; break;";
+  }
+
+  out << "default: return;}}";
+}
+
+
+/********
+ * MISC *
+ ********/
 
 void includes(ostream& out) {
   out << R"(#include <vector>
@@ -102,7 +175,7 @@ void includes(ostream& out) {
 
 
 /********************
- * Driver Functions *
+ * DRIVER FUNCTIONS *
  ********************/
 string hppCode() {
   stringstream out;
@@ -120,7 +193,11 @@ string cppCode(const GrammarData& grammarData) {
   )";
   tokenDecl(out);
   concreteDecl(out);
+  variableDecl(out);
   grammarDataDecl(out, grammarData);
+  stackObjDecl(out);
+  deleteObjCode(out, grammarData);
+
 
 
   // condensedDFAToCode(outFile, GRAMMAR_DATA);

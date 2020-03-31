@@ -43,6 +43,7 @@ inline int indexToSymbol(size_t i, size_t numVars) {
 
 struct Token {
   std::string name;
+  std::string type;
   int precedence;
   Assoc assoc;
   std::string ctorExpr;
@@ -55,12 +56,12 @@ struct Concrete {
   int varType;
   int precedence;
   std::vector<int> argSymbols;
-  std::vector<size_t> argIndices;
   std::string ctorExpr;
 };
 
 struct Variable {
   std::string name;
+  std::string type;
   std::vector<int> concreteTypes;
   std::string dtorStmt;
 };
@@ -92,35 +93,23 @@ inline std::vector<bool> bitOr(
   return result;
 }
 
-template <
-    size_t I,
-    typename Tup,
-    std::enable_if_t<I == std::tuple_size_v<Tup>, int> = 0>
-void replaceStrs(std::ostream& out, std::string_view fmt, const Tup&) {
-  out << fmt;
-}
 
-template <
-    size_t I,
-    typename Tup,
-    std::enable_if_t<I != std::tuple_size_v<Tup>, int> = 0>
-void replaceStrs(std::ostream& out, std::string_view fmt, const Tup& args) {
+/* Replace #0, #1, etc, with vector[0], vector[1], etc */
+inline void replaceNumbers(std::ostream& out, std::string_view fmt, std::vector<std::string> args) {
   size_t i = 0;
   size_t len = fmt.size();
   while (i < len) {
     if (fmt[i] == '#') {
-      out << std::get<I>(args);
-      return replaceStrs<I + 1>(out, fmt.substr(i + 1), args);
+      std::string digits;
+      char c;
+      while (isdigit((c = fmt[++i]))) {
+        digits.push_back(c);
+      }
+      out << args[stoi(digits)];
     } else {
       out << fmt[i++];
     }
   }
-}
-
-/* Replace #0, #1, etc, with vector[0], vector[1], etc */
-template <typename... Args>
-void replaceStrs(std::ostream& out, std::string_view fmt, const Args&... args) {
-  replaceStrs<0>(out, fmt, std::make_tuple(args...));
 }
 
 #endif

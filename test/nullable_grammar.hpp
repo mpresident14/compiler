@@ -42,37 +42,37 @@ static constexpr int Y3 = 9;
 
 GrammarData GRAMMAR_DATA = {
   /* tokens */ {
-      { "t", NONE, Assoc::NONE, "", "", "" },
-      { "b", NONE, Assoc::NONE, "", "", "" },
-      { "a", NONE, Assoc::NONE, "", "", "" },
-      { "z", NONE, Assoc::NONE, "", "", "" },
+      { "t", "", NONE, Assoc::NONE, "", "", "" },
+      { "b", "", NONE, Assoc::NONE, "", "", "" },
+      { "a", "", NONE, Assoc::NONE, "", "", "" },
+      { "z", "", NONE, Assoc::NONE, "", "", "" },
   },
 
   /* concretes */
   {
-      { "S1", S, NONE, { t, Y }, {}, "" },
-      { "S2", S, NONE, { Y, C, X }, {}, "" },
-      { "C1", C, NONE, { C, X }, {}, "" },
-      { "C2", C, NONE, { Y }, {}, "" },
-      { "C3", C, NONE, { b }, {}, "" },
-      { "X1", X, NONE, { X, X }, {}, "" },
-      { "X2", X, NONE, { a }, {}, "" },
-      { "Y1", Y, NONE, { EPSILON }, {}, "" },
-      { "Y2", Y, NONE, { b }, {}, "" },
-      { "Y3", Y, NONE, { Y, z }, {}, "" },
+      { "S1", S, NONE, { t, Y }, "" },
+      { "S2", S, NONE, { Y, C, X }, "" },
+      { "C1", C, NONE, { C, X }, "" },
+      { "C2", C, NONE, { Y }, "" },
+      { "C3", C, NONE, { b }, "" },
+      { "X1", X, NONE, { X, X }, "" },
+      { "X2", X, NONE, { a }, "" },
+      { "Y1", Y, NONE, { EPSILON }, "" },
+      { "Y2", Y, NONE, { b }, "" },
+      { "Y3", Y, NONE, { Y, z }, "" },
   },
 
   /* variables */
   {
-      { "S", { S1, S2 }, "" },
-      { "C", { C1, C2, C3 }, "" },
-      { "X",
+      { "S", "", { S1, S2 }, "" },
+      { "C", "", { C1, C2, C3 }, "" },
+      { "X", "",
         {
             X1,
             X2,
         },
         "" },
-      { "Y", { Y1, Y2, Y3 }, "" },
+      { "Y", "", { Y1, Y2, Y3 }, "" },
   }
 };
 

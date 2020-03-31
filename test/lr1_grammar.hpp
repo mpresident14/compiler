@@ -33,21 +33,21 @@ static constexpr int STAR = -3;
 
 GrammarData GRAMMAR_DATA = {
   /* tokens */ {
-      { "INT", NONE, Assoc::NONE, "", "", "" },
-      { "PLUS", 1, Assoc::LEFT, "", "", "" },
-      { "STAR", 2, Assoc::LEFT, "", "", "" },
+      { "INT", "int", NONE, Assoc::NONE, "atoi(#0)", "", "[1-9][0-9]*" },
+      { "PLUS", "", 1, Assoc::LEFT, "", "", "+" },
+      { "STAR", "", 2, Assoc::LEFT, "", "", "*" },
   },
 
   /* concretes */
   {
-      { "SCONC", S, NONE, { EXPR }, {}, "" },
-      { "EINT", EXPR, NONE, { INT }, {}, "" },
-      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, {}, "" },
-      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, {}, "" },
+      { "SCONC", S, NONE, { EXPR }, "Start(#0*)" },
+      { "EINT", EXPR, NONE, { INT }, "new EInt(#0)" },
+      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EPlus(#0, #2)" },
+      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new ETimes(#0, #2)" },
   },
 
   /* variables */
-  { { "S", { SCONC }, "" }, { "EXPR", { EINT, EPLUS, ETIMES }, "" } }
+  { { "S", "Start", { SCONC }, "" }, { "EXPR", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
 };
 
 
