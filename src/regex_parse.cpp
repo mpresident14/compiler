@@ -277,7 +277,7 @@ namespace {
     const DFARule& rule = *ruleData.reducibleRule;
 
     // Check if next token is in the lookahead set
-    if (nextToken != NONE && !rule.lookahead[tokensIndex(nextToken)]) {
+    if (nextToken != NONE && !rule.lookahead[tokenToFromIndex(nextToken)]) {
       return NONE;
     }
 
@@ -304,7 +304,7 @@ namespace {
     // - precedence of rule is higher than that of next token
     // - precedence of rule is the same of that of next token and the rule's
     //   last token is left-associative
-    int shiftPrecedence = tokens[tokensIndex(nextToken)].precedence;
+    int shiftPrecedence = tokens[tokenToFromIndex(nextToken)].precedence;
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
@@ -347,7 +347,7 @@ namespace {
     vector<string> remainingTokenNames;
     auto stkObjToName = [](StackObj stkObj) {
       if (isToken(stkObj.symbol)) {
-        return GRAMMAR_DATA.tokens[tokensIndex(stkObj.symbol)].name;
+        return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
       }
       return GRAMMAR_DATA.variables[stkObj.symbol].name;
     };

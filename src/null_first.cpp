@@ -146,7 +146,7 @@ std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
         }
         // Tokens are never nullable, so first can only be the token
         if (isToken(rhsSymbol)) {
-          unionEq.tokenSet[tokensIndex(rhsSymbol)] = true;
+          unionEq.tokenSet[tokenToFromIndex(rhsSymbol)] = true;
           break;
         }
 

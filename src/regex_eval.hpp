@@ -20,8 +20,6 @@
 #include <prez/print_stuff.hpp>
 
 
-void rgxDFAToCode(
-    std::ostream& out,
-    const std::vector<std::pair<std::string, int>> patterns);
+void rgxDFAToCode(std::ostream& out, const GrammarData& grammarData);
 
 #endif

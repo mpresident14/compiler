@@ -144,19 +144,19 @@ void deleteObjFn(ostream& out, const GrammarData& grammarData) {
   out << R"(void deleteObj(const StackObj& s) {
     switch (s.symbol) {)";
 
-  size_t numVars = grammarData.variables.size();
   size_t numTokens = grammarData.tokens.size();
   // Case statement for each token with data
   for (size_t i = 0; i < numTokens; ++i) {
     const Token& token = grammarData.tokens[i];
     if (!token.type.empty()) {
-      out << "case " << indexToSymbol(i, numVars) << ':';
+      out << "case " << tokenToFromIndex(i) << ':';
       replaceNumbersVec(out, token.dtorStmt, {"*(" + token.type + "*) s.obj"});
       out << " delete (" << token.type << "*) s.obj; break;";
     }
   }
 
   // Case statement for each variable except S
+  size_t numVars = grammarData.variables.size();
   for (size_t i = 1; i < numVars; ++i) {
     const Variable& var = grammarData.variables[i];
     out << "case " << i << ':';
@@ -172,18 +172,18 @@ void deleteObjPtrFn(ostream& out, const GrammarData& grammarData) {
   out << R"(void deleteObjPtr(const StackObj& s) {
     switch (s.symbol) {)";
 
-  size_t numVars = grammarData.variables.size();
   size_t numTokens = grammarData.tokens.size();
   // Case statement for each token with data
   for (size_t i = 0; i < numTokens; ++i) {
     const Token& token = grammarData.tokens[i];
     if (!token.type.empty()) {
-      out << "case " << indexToSymbol(i, numVars) << ':'
+      out << "case " << tokenToFromIndex(i) << ':'
           << " delete (" << token.type << "*) s.obj; break;";
     }
   }
 
   // Case statement for each variable except S
+  size_t numVars = grammarData.variables.size();
   for (size_t i = 1; i < numVars; ++i) {
     const Variable& var = grammarData.variables[i];
     out << "case " << i << ':'
@@ -197,10 +197,6 @@ void deleteObjPtrFn(ostream& out, const GrammarData& grammarData) {
 void constructObjFn(ostream& out, const GrammarData& grammarData) {
   out << R"(void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {)";
-  // auto convertNum = [&grammarData](const string& digits){
-  //   return "*(" + grammarData.
-  // }
-
   size_t numConcretes = grammarData.concretes.size();
   // Case statement for each concrete except SCONC (handled specially below)
   for (size_t i = 1; i < numConcretes; ++i) {
@@ -212,7 +208,7 @@ void constructObjFn(ostream& out, const GrammarData& grammarData) {
       int argSymbol = concrete.argSymbols[stoi(digits)];
       string symbolName;
       if (isToken(argSymbol)) {
-        symbolName = grammarData.tokens[tokensIndex(argSymbol)].type;
+        symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
       } else {
         symbolName = grammarData.variables[argSymbol].type;
       }
@@ -232,10 +228,36 @@ void constructObjFn(ostream& out, const GrammarData& grammarData) {
 }
 
 
+void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
+  out << R"(StackObj constructTokenObj(int token, const string_view& str) {
+    switch (token) {)";
+    size_t numTokens = grammarData.tokens.size();
+    for (size_t i = 0; i < numTokens; ++i) {
+      const Token& token = grammarData.tokens[i];
+      if (!token.type.empty()) {
+        out << "case " << tokenToFromIndex(i) << ':'
+            << "return { new " << token.type << '(' << token.ctorExpr << "), token };break;";
+      }
+    }
+    out << R"(default: return {nullptr, token}; }})";
+}
+
+
+/********
+ * DFAs *
+ ********/
+void lexerDFA(ostream& out, const GrammarData grammarData) {
+  out << "namespace lexer {";
+  rgxDFAToCode(out, grammarData);
+  out << '}';
+}
+
+
 /********
  * MISC *
  ********/
 
+/* Needed for parser */
 void includes(ostream& out) {
   out << R"(#include <vector>
     #include <string>
@@ -261,12 +283,12 @@ string hppCode(const string& classFile) {
   return out.str();
 }
 
-string cppCode(const GrammarData& grammarData) {
+string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   stringstream out;
 
   out << R"(#include "parser.hpp"
     using namespace std;
-  )";
+  )" << addlUserCode;
   tokenDecl(out);
   concreteDecl(out);
   variableDecl(out);
@@ -276,7 +298,8 @@ string cppCode(const GrammarData& grammarData) {
   deleteObjPtrFn(out, grammarData);
   deleteObjFn(out, grammarData);
   constructObjFn(out, grammarData);
-
+  constructTokenObjFn(out, grammarData);
+  lexerDFA(out, grammarData);
 
 
   // condensedDFAToCode(outFile, GRAMMAR_DATA);
@@ -292,7 +315,7 @@ void generateCode(const string& classFile, const GrammarData& grammarData) {
 
   std::ofstream cppFile;
   cppFile.open("parser.cpp");
-  cppFile << cppCode(grammarData);
+  cppFile << cppCode(grammarData, "");
   cppFile.close();
 }
 

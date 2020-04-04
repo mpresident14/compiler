@@ -78,33 +78,35 @@ namespace {
   using MergedRgxDFA = DFA<MergeData, char>;
 
 
-  MergedRgxDFA buildMergedRgxDFA(const vector<TokenPattern>& tokenPatterns) {
+  MergedRgxDFA buildMergedRgxDFA(const GrammarData& grammarData) {
     // We need the regex DFAs to be live long enough to create the merged DFA,
     // so we store them in this vector. Afterwards, all the pointers inside the
     // merged DFA will be deleted, but we will no longer need them.
+    size_t numTokens = grammarData.tokens.size();
     vector<RgxDFA> rgxDfas;
-    rgxDfas.reserve(tokenPatterns.size());
+    rgxDfas.reserve(numTokens);
 
     // Initialize the root of the merged DFA by creating DFAs for each regex
     // and mapping their roots to the appropriate token value
     vector<pair<RgxDFA::Node*, int>> initialStates;
     int initialToken = NONE;
-    for (const TokenPattern& tokenPattern : tokenPatterns) {
-      RgxPtr rgx = parse(tokenPattern.first);
+    for (size_t i = 0; i < numTokens; ++i) {
+      const Token& token = grammarData.tokens[i];
+      RgxPtr rgx = parse(token.regex);
       // Invalid regex
       if (!rgx) {
-        throw runtime_error("Invalid regex " + tokenPattern.first);
+        throw runtime_error("Invalid regex " + token.regex);
       }
       RgxDFA rgxDfa = buildRegexDFA(move(rgx));
-      initialStates.push_back({ rgxDfa.getRoot(), tokenPattern.second });
+      initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {
         // Accepting the empty string will likely result in an infinite loop
-        cerr << "WARNING: The regex \"" << tokenPattern.first
+        cerr << "WARNING: The regex \"" << token.regex
              << "\" accepts the empty string" << endl;
         // Multiple regex DFAs accept the empty string. We pick the regex that
         // was listed first.
         if (initialToken == NONE) {
-          initialToken = tokenPattern.second;
+          initialToken = tokenToFromIndex(i);
         }
       }
       rgxDfas.push_back(move(rgxDfa));
@@ -174,8 +176,8 @@ namespace {
 }  // namespace
 
 
-void rgxDFAToCode(ostream& out, const vector<TokenPattern> patterns) {
-  buildMergedRgxDFA(patterns).streamAsCode(
+void rgxDFAToCode(ostream& out, const GrammarData& grammarData) {
+  buildMergedRgxDFA(grammarData).streamAsCode(
       out,
       "int",
       "char",

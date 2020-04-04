@@ -27,7 +27,7 @@ namespace {
     if (nextNextSymbol != NONE) {
       // FIRST() of a token is just the token
       if (isToken(nextNextSymbol)) {
-        newLookahead[tokensIndex(nextNextSymbol)] = true;
+        newLookahead[tokenToFromIndex(nextNextSymbol)] = true;
       } else {  // Union with the first of the nextNextSymbol
         bitOrEquals(newLookahead, firsts[nextNextSymbol]);
       }
@@ -189,7 +189,7 @@ RuleData condenseRuleSet(
   int lastToken = *ruleIter;
   // If no override precedence, check precedence of token
   if (rulePrecedence == NONE) {
-    rulePrecedence = grammarData.tokens[tokensIndex(lastToken)].precedence;
+    rulePrecedence = grammarData.tokens[tokenToFromIndex(lastToken)].precedence;
   }
 
   // If there is rule precedence, get associativity
@@ -198,7 +198,7 @@ RuleData condenseRuleSet(
   } else {
     return RuleData{ optional(rule),
                      rulePrecedence,
-                     grammarData.tokens[tokensIndex(lastToken)].assoc };
+                     grammarData.tokens[tokenToFromIndex(lastToken)].assoc };
   }
 }
 
