@@ -253,6 +253,12 @@ void lexerDFA(ostream& out, const GrammarData grammarData) {
 }
 
 
+void parserDFA(ostream& out, const GrammarData grammarData) {
+  out << "namespace parser {";
+  condensedDFAToCode(out, grammarData);
+  out << '}';
+}
+
 /********
  * MISC *
  ********/
@@ -300,9 +306,9 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   constructObjFn(out, grammarData);
   constructTokenObjFn(out, grammarData);
   lexerDFA(out, grammarData);
+  parserDFA(out, grammarData);
 
 
-  // condensedDFAToCode(outFile, GRAMMAR_DATA);
   return out.str();
 }
 
