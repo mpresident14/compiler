@@ -43,9 +43,6 @@ namespace {
    * Merged Regex DFA *
    *******************/
 
-  /* Maps regex string to token enum type (Symbol::NONE defined to be 0) */
-  using TokenPattern = pair<string, int>;
-
   struct MergeData {
     vector<pair<RgxDFA::Node*, int>> states;
     int token;

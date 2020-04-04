@@ -46,8 +46,10 @@ Testing/
 bin/
 DartConfiguration.tcl
 
-# My generated files
+# My generated files/testing
 test/gen_parser.hpp
 test/gen_lexer.hpp
 parser.hpp
 parser.cpp
+main.cpp
+expr.hpp

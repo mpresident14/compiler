@@ -44,7 +44,8 @@ add_custom_command(
     COMMAND generate
     COMMAND clang-format -i parser.hpp parser.cpp
     COMMENT "Generating parser.hpp and parser.cpp")
-
+add_executable(main main.cpp parser.cpp)
+add_dependencies(main generate)
 
 # Ensure that we write the regex DFA before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)

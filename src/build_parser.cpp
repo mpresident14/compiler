@@ -207,11 +207,11 @@ namespace {
   // TODO: Replace vector code with toCode()
   string ruleDataToCode(const RuleData& ruleData) {
     stringstream code;
-    code << '{';
+    code << "RuleData{";
     if (ruleData.reducibleRule.has_value()) {
       const DFARule& rule = *ruleData.reducibleRule;
       // RuleData::reducibleRule::concrete
-      code << '{' << to_string(rule.concrete) << ',';
+      code << "optional<DFARule>{{" << to_string(rule.concrete) << ',';
 
       // RuleData::reducibleRule::symbols
       code << '{';
@@ -228,9 +228,9 @@ namespace {
       for_each(rule.lookahead.cbegin(), rule.lookahead.cend(), [&code](bool b) {
         code << to_string(b) << ',';
       });
-      code << "}},";
+      code << "}}},";
     } else {
-      code << "{},";
+      code << "optional<DFARule>{},";
     }
 
     // RuleData::precedence

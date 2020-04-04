@@ -259,6 +259,37 @@ void parserDFA(ostream& out, const GrammarData grammarData) {
   out << '}';
 }
 
+
+/***********
+ * PARSING *
+ ***********/
+
+void assocDecl(ostream& out) {
+  out << "enum class Assoc { LEFT, RIGHT, NOT, NONE };";
+}
+
+void dfaRuleDecl(ostream& out) {
+  out << R"(struct DFARule {
+    int concrete;
+    vector<int> symbols;
+    size_t pos;
+    mutable vector<bool> lookahead;
+  };
+  )";
+}
+
+
+void ruleDataDecl(ostream& out) {
+  out << R"(struct RuleData {
+    optional<DFARule> reducibleRule;
+    int precedence;
+    Assoc assoc;
+  };
+  )";
+}
+
+
+
 /********
  * MISC *
  ********/
@@ -273,6 +304,7 @@ void includes(ostream& out) {
     #include <functional>
     #include <optional>
     #include <stdexcept>
+    #include <memory>
   )";
 }
 
@@ -306,6 +338,9 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   constructObjFn(out, grammarData);
   constructTokenObjFn(out, grammarData);
   lexerDFA(out, grammarData);
+  assocDecl(out);
+  dfaRuleDecl(out);
+  ruleDataDecl(out);
   parserDFA(out, grammarData);
 
 
@@ -327,7 +362,7 @@ void generateCode(const string& classFile, const GrammarData& grammarData) {
 
 
 int main() {
-  generateCode("test/lr1_grammar.hpp", GRAMMAR_DATA);
+  generateCode("expr.hpp", GRAMMAR_DATA);
 
   return 0;
 }
