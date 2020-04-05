@@ -47,7 +47,7 @@ GrammarData GRAMMAR_DATA = {
   },
 
   /* variables */
-  { { "S", "Start", { SCONC }, "" }, { "EXPR", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
+  { { "S", "Start", { SCONC }, "" }, { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
 };
 
 

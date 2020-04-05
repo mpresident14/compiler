@@ -339,6 +339,7 @@ namespace {
                 [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.symbol)].name; });
             error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
+            for_each(tokens.cbegin(), tokens.cend(), deleteObj);
             throw runtime_error(error.str());
           }
 
