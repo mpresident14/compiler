@@ -282,14 +282,11 @@ namespace {
     }
 
     // Check if rule matches the stack
-    auto eqlLambda = [](int symbol, const StackObj& stkObj) {
-      return stkObj.symbol == symbol;
-    };
     if (!equal(
             rule.symbols.crbegin(),
             rule.symbols.crend(),
             stk.crbegin(),
-            move(eqlLambda))) {
+            [](int symbol, const StackObj& stkObj) { return stkObj.symbol == symbol; })) {
       return NONE;
     }
 
@@ -447,7 +444,7 @@ namespace {
 }  // namespace
 
 
-RgxPtr parse(const string& pattern) {
-  vector<StackObj> stackObjs = lex(pattern);
+RgxPtr parse(const string& input) {
+  vector<StackObj> stackObjs = lex(input);
   return RgxPtr(shiftReduce(stackObjs));
 }

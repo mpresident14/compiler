@@ -16,6 +16,6 @@
 #include <stdexcept>
 #include <sstream>
 
-RgxPtr parse(const std::string& pattern);
+RgxPtr parse(const std::string& input);
 
 #endif

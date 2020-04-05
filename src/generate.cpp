@@ -129,14 +129,13 @@ void stackObjDecl(ostream& out) {
 }
 
 void sObjDecl(ostream& out, const GrammarData& grammarData) {
-  vector<string> rootType = {grammarData.variables[1].type};
   const char decl[] = R"(struct SObj {
     SObj(#0* r) : r_(r) {}
     ~SObj() { delete r_; }
     #0* r_;
   };
   )";
-  replaceNumbersVec(out, decl, rootType);
+  replaceNumbersVec(out, decl, {grammarData.variables[1].type});
 }
 
 
@@ -225,6 +224,13 @@ void constructObjFn(ostream& out, const GrammarData& grammarData) {
   // Root type of grammar is the first type listed
   out << "case 0: return new SObj((" << grammarData.variables[1].type << "*)args[0].obj);";
   out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
+}
+
+
+void constructFn(ostream& out) {
+  out << R"(StackObj construct(int concrete, StackObj* args, int varType) {
+    return StackObj{ constructObj(concrete, args), varType };
+  })";
 }
 
 
@@ -319,19 +325,16 @@ void tokenizeFn(ostream& out) {
           tokens.push_back(move(*optionalObj));
         } else {
           ostringstream error;
-          vector<int> prevTokens;
+          vector<string> prevTokenNames;
           auto startIter =
               tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
           transform(
               move(startIter),
               tokens.cend(),
-              back_inserter(prevTokens),
-              [](const StackObj& stackObj) { return stackObj.symbol; });
+              back_inserter(prevTokenNames),
+              [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.symbol)].name; });
           error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
-              << "Previous tokens were: ";
-          for_each(prevTokens.cbegin(), prevTokens.cend(), [&error](int tokenId) {
-            error << GRAMMAR_DATA.tokens[tokenToFromIndex(tokenId)].name << ", ";
-          });
+              << "Previous tokens were: " << prevTokenNames;
           throw runtime_error(error.str());
         }
 
@@ -358,6 +361,21 @@ void dfaRuleDecl(ostream& out) {
     vector<int> symbols;
     size_t pos;
     mutable vector<bool> lookahead;
+
+    friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
+      out << rule.concrete << " -> ";
+      size_t len = rule.symbols.size();
+      for (size_t i = 0; i < len; ++i) {
+        if (i == rule.pos) {
+          out << '.';
+        }
+        out << rule.symbols[i] << ' ';
+      }
+      if (rule.pos == len) {
+        out << '.';
+      }
+      return out;
+    }
   };
   )";
 }
@@ -369,6 +387,198 @@ void ruleDataDecl(ostream& out) {
     int precedence;
     Assoc assoc;
   };
+  )";
+}
+
+
+void parseDecl(ostream& out, const GrammarData& grammarData) {
+  const string& rootType = grammarData.variables[1].type;
+  out << rootType << " parse(const std::string& input);"
+      << rootType << " parse(std::istream& input);";
+}
+
+
+void parseHelperFns(ostream& out) {
+  out << R"(
+    void conflictWarning(const DFARule& rule, int nextToken) {
+      cerr << "WARNING: Shift reduce conflict for rule\n\t" << rule
+          << "\n\tNext token: " << nextToken << endl;
+    }
+
+    void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
+      size_t size = stackObjs.size();
+      for (; i < size; ++i) {
+        deleteObj(stackObjs[i]);
+      }
+    }
+
+    parser::Node* runDFA(const std::vector<int>& input) {
+      parser::Node* currentNode = parser::root.get();
+      for (int inputToken : input) {
+        currentNode = currentNode->step(inputToken);
+        if (currentNode == nullptr) {
+          return nullptr;
+        }
+      }
+      return currentNode;
+    }
+
+    void parseError(
+        const vector<StackObj>& stk,
+        const vector<StackObj>& inputTokens,
+        size_t i) {
+      ostringstream errMsg;
+      vector<string> stkSymbolNames;
+      vector<string> remainingTokenNames;
+      auto stkObjToName = [](StackObj stkObj) {
+        if (isToken(stkObj.symbol)) {
+          return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
+        }
+        return GRAMMAR_DATA.variables[stkObj.symbol].name;
+      };
+
+      transform(
+          stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
+      transform(
+          inputTokens.begin() + i,
+          inputTokens.end(),
+          back_inserter(remainingTokenNames),
+          stkObjToName);
+
+      errMsg << "No parse:\n\tStack: " << stkSymbolNames
+            << "\n\tRemaining tokens: " << remainingTokenNames;
+      throw invalid_argument(errMsg.str());
+    }
+  )";
+}
+
+void tryReduceFn(ostream& out) {
+  out << R"(int tryReduce(
+      const parser::Node* node,
+      int nextToken,
+      const vector<StackObj>& stk,
+      const vector<Token>& tokens) {
+    const RuleData& ruleData = node->v_;
+    if (!ruleData.reducibleRule.has_value()) {
+      return NONE;
+    }
+    const DFARule& rule = *ruleData.reducibleRule;
+    if (nextToken != NONE && !rule.lookahead[tokenToFromIndex(nextToken)]) {
+      return NONE;
+    }
+    if (!equal(
+            rule.symbols.crbegin(),
+            rule.symbols.crend(),
+            stk.crbegin(),
+            [](int symbol, const StackObj& stkObj) {
+      return stkObj.symbol == symbol;
+    })) {
+      return NONE;
+    }
+    if (!node->ts_.contains(nextToken)) {
+      return ruleData.reducibleRule->concrete;
+    }
+    int shiftPrecedence = tokens[tokenToFromIndex(nextToken)].precedence;
+    if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
+      conflictWarning(*ruleData.reducibleRule, nextToken);
+      return NONE;
+    }
+    if (ruleData.precedence > shiftPrecedence) {
+      return ruleData.reducibleRule->concrete;
+    } else if (ruleData.precedence == shiftPrecedence) {
+      if (ruleData.assoc == Assoc::LEFT) {
+        return ruleData.reducibleRule->concrete;
+      } else if (ruleData.assoc == Assoc::NONE) {
+        conflictWarning(*ruleData.reducibleRule, nextToken);
+        return NONE;
+      }
+    }
+    return NONE;
+  })";
+}
+
+
+
+void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
+  const char code[] = R"(
+      #0 shiftReduce(vector<StackObj>& inputTokens) {
+      vector<StackObj> stk = { move(inputTokens[0]) };
+      size_t i = 1;
+      size_t inputSize = inputTokens.size();
+      while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
+        vector<int> stkSymbols;
+        transform(
+            stk.begin(),
+            stk.end(),
+            back_inserter(stkSymbols),
+            [](StackObj stkObj) { return stkObj.symbol; });
+        parser::Node* currentNode = runDFA(stkSymbols);
+        if (currentNode == nullptr) {
+          cleanPtrsFrom(stk, 0);
+          cleanPtrsFrom(inputTokens, i + 1);
+          parseError(stk, inputTokens, i + 1);
+        }
+        int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
+        int concrete =
+            tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
+        if (concrete != NONE) {
+          size_t reduceStart =
+              stk.size() - currentNode->v_.reducibleRule->symbols.size();
+          StackObj newObj = construct(
+              concrete,
+              &stk.data()[reduceStart],
+              GRAMMAR_DATA.concretes[concrete].varType);
+          if (newObj.symbol == S) {
+            stk.pop_back();
+          } else {
+            size_t stkSize = stk.size();
+            for (size_t j = 0; j < stkSize - reduceStart; ++j) {
+              deleteObjPtr(stk.back());
+              stk.pop_back();
+            }
+          }
+          stk.push_back(newObj);
+        } else {
+
+          if (i == inputSize) {
+            cleanPtrsFrom(stk, 0);
+            parseError(stk, inputTokens, i);
+          }
+          StackObj token = inputTokens[i];
+          currentNode = currentNode->step(token.symbol);
+          stk.push_back(move(token));
+
+          if (currentNode == nullptr) {
+            cleanPtrsFrom(stk, 0);
+            cleanPtrsFrom(inputTokens, i + 1);
+            parseError(stk, inputTokens, i + 1);
+          }
+          ++i;
+        }
+      }
+
+      SObj* start = (SObj*)(stk[0].obj);
+      #0 root = *start->r_;
+      delete start;
+      return root;
+    }
+  )";
+
+  replaceNumbersVec(out, code, {grammarData.variables[1].type});
+}
+
+
+void parseFn(ostream& out, const GrammarData& grammarData) {
+  const string& rootType = grammarData.variables[1].type;
+  out << rootType << R"(
+    parse(const string& input) {
+      vector<StackObj> stackObjs = tokenize(input);
+      return shiftReduce(stackObjs);
+    }
+  )" << rootType << R"(
+    parse(istream& input) {
+      return parse(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
+    }
   )";
 }
 
@@ -394,6 +604,8 @@ void includes(ostream& out) {
     #include <climits>
     #include <unordered_map>
     #include <string_view>
+    #include <streambuf>
+    #include <prez/print_stuff.hpp>
   )";
 }
 
@@ -401,33 +613,26 @@ void includes(ostream& out) {
 void constInts(ostream& out) {
   out << R"(
     constexpr int NONE = INT_MIN;
-    constexpr int EPSILON = INT_MAX;
     constexpr int S = 0;
-    constexpr int SCONC = 0;
   )";
 }
 
-void symbolIndexFns(ostream& out) {
+void tokenIndexFns(ostream& out) {
   out << R"(
     bool isToken(int symbol) { return symbol < 0; }
     int tokenToFromIndex(int token) { return -token - 1; }
-    int symbolIndex(int symbol, size_t numVars) {
-      return isToken(symbol) ? tokenToFromIndex(symbol) + numVars : symbol;
-    }
-    int indexToSymbol(size_t i, size_t numVars) {
-      return i >= numVars ? numVars - i - 1 : i;
-    }
   )";
 }
 
 /********************
  * DRIVER FUNCTIONS *
  ********************/
-string hppCode(const string& classFile) {
+string hppCode(const GrammarData& grammarData, const string& classFile) {
   stringstream out;
 
   out << "#include \"" + classFile + "\"\n";
   includes(out);
+  parseDecl(out, grammarData);
 
   return out.str();
 }
@@ -438,7 +643,7 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   out << "#include \"parser.hpp\"\n" << "using namespace std;"
       << addlUserCode << "namespace {";
   constInts(out);
-  symbolIndexFns(out);
+  tokenIndexFns(out);
   tokenDecl(out);
   concreteDecl(out);
   variableDecl(out);
@@ -448,6 +653,7 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   deleteObjPtrFn(out, grammarData);
   deleteObjFn(out, grammarData);
   constructObjFn(out, grammarData);
+  constructFn(out);
   constructTokenObjFn(out, grammarData);
   lexerDFA(out, grammarData);
   assocDecl(out);
@@ -455,7 +661,11 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   ruleDataDecl(out);
   parserDFA(out, grammarData);
   tokenizeFn(out);
+  parseHelperFns(out);
+  tryReduceFn(out);
+  shiftReduceFn(out, grammarData);
   out << '}';
+  parseFn(out, grammarData);
 
 
   return out.str();
@@ -465,7 +675,7 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
 void generateCode(const string& classFile, const GrammarData& grammarData) {
   std::ofstream hppFile;
   hppFile.open("parser.hpp");
-  hppFile << hppCode(classFile);
+  hppFile << hppCode(grammarData, classFile);
   hppFile.close();
 
   std::ofstream cppFile;
