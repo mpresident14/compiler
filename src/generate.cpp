@@ -259,6 +259,90 @@ void parserDFA(ostream& out, const GrammarData grammarData) {
   out << '}';
 }
 
+/**********
+ * LEXING *
+ **********/
+
+void tokenizeFn(ostream& out) {
+  out << R"(
+    void consumeWhiteSpace(string_view& input) {
+      size_t i = 0;
+      while (isspace(input[i])) {
+        ++i;
+      }
+      input = input.substr(i);
+    }
+
+    optional<StackObj> getToken(string_view& input) {
+      size_t i = 0;
+      const size_t len = input.size();
+      size_t lastAcceptingPos;
+      int lastAcceptingToken = NONE;
+      lexer::Node* currentNode = lexer::root.get();
+
+      while (currentNode) {
+        int token = currentNode->v_;
+        if (token != NONE) {
+          lastAcceptingToken = token;
+          lastAcceptingPos = i;
+        }
+
+        if (i == len) {
+          break;
+        }
+        currentNode = currentNode->step(input[i++]);
+      }
+
+      if (lastAcceptingToken == NONE) {
+        return {};
+      }
+
+      StackObj stackObj =
+          constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
+      input = input.substr(lastAcceptingPos);
+      return { move(stackObj) };
+    }
+
+
+    vector<StackObj> tokenize(const string& input) {
+      if (input.empty()) {
+        return {};
+      }
+
+      vector<StackObj> tokens;
+      string_view inputView = input;
+
+      consumeWhiteSpace(inputView);
+      while (!inputView.empty()) {
+        optional<StackObj> optionalObj = getToken(inputView);
+        if (optionalObj.has_value()) {
+          tokens.push_back(move(*optionalObj));
+        } else {
+          ostringstream error;
+          vector<int> prevTokens;
+          auto startIter =
+              tokens.size() < 25 ? tokens.cbegin() : tokens.cend() - 25;
+          transform(
+              move(startIter),
+              tokens.cend(),
+              back_inserter(prevTokens),
+              [](const StackObj& stackObj) { return stackObj.symbol; });
+          error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
+              << "Previous tokens were: ";
+          for_each(prevTokens.cbegin(), prevTokens.cend(), [&error](int tokenId) {
+            error << GRAMMAR_DATA.tokens[tokenToFromIndex(tokenId)].name << ", ";
+          });
+          throw runtime_error(error.str());
+        }
+
+        consumeWhiteSpace(inputView);
+      }
+
+      return tokens;
+    }
+  )";
+}
+
 
 /***********
  * PARSING *
@@ -296,7 +380,8 @@ void ruleDataDecl(ostream& out) {
 
 /* Needed for parser */
 void includes(ostream& out) {
-  out << R"(#include <vector>
+  out << R"(
+    #include <vector>
     #include <string>
     #include <iostream>
     #include <cstddef>
@@ -305,9 +390,35 @@ void includes(ostream& out) {
     #include <optional>
     #include <stdexcept>
     #include <memory>
+    #include <sstream>
+    #include <climits>
+    #include <unordered_map>
+    #include <string_view>
   )";
 }
 
+
+void constInts(ostream& out) {
+  out << R"(
+    constexpr int NONE = INT_MIN;
+    constexpr int EPSILON = INT_MAX;
+    constexpr int S = 0;
+    constexpr int SCONC = 0;
+  )";
+}
+
+void symbolIndexFns(ostream& out) {
+  out << R"(
+    bool isToken(int symbol) { return symbol < 0; }
+    int tokenToFromIndex(int token) { return -token - 1; }
+    int symbolIndex(int symbol, size_t numVars) {
+      return isToken(symbol) ? tokenToFromIndex(symbol) + numVars : symbol;
+    }
+    int indexToSymbol(size_t i, size_t numVars) {
+      return i >= numVars ? numVars - i - 1 : i;
+    }
+  )";
+}
 
 /********************
  * DRIVER FUNCTIONS *
@@ -324,9 +435,10 @@ string hppCode(const string& classFile) {
 string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   stringstream out;
 
-  out << R"(#include "parser.hpp"
-    using namespace std;
-  )" << addlUserCode;
+  out << "#include \"parser.hpp\"\n" << "using namespace std;"
+      << addlUserCode << "namespace {";
+  constInts(out);
+  symbolIndexFns(out);
   tokenDecl(out);
   concreteDecl(out);
   variableDecl(out);
@@ -342,6 +454,8 @@ string cppCode(const GrammarData& grammarData, const string& addlUserCode) {
   dfaRuleDecl(out);
   ruleDataDecl(out);
   parserDFA(out, grammarData);
+  tokenizeFn(out);
+  out << '}';
 
 
   return out.str();
