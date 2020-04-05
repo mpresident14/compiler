@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include "rules.hpp"
 #include "build_parser.hpp"
-#include "test/lr1_grammar.hpp"
+#include "test/expr_grammar.hpp"
 
 #include <prez/unit_test.hpp>
 #include <prez/print_stuff.hpp>

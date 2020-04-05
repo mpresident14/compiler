@@ -19,10 +19,9 @@ set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g -I . -I ./src")
 # The following folders will be included
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/test)
 
-
+# So regex sources don't have to be rebuilt for each executable
 set(PARSER_SRCS src/build_parser.cpp src/null_first.cpp)
 set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp src/regex_eval.cpp)
-# So regex sources don't have to be rebuilt for each executable
 add_library(parse_lib STATIC ${REGEX_SRCS} ${PARSER_SRCS})
 
 # Test executables
@@ -32,24 +31,23 @@ add_executable(build_parser_test test/build_parser_test.cpp ${PARSER_SRCS})
 add_executable(regex_test test/regex_test.cpp)
 target_link_libraries(regex_test parse_lib)
 add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
+add_executable(parse_test test/parse_test.cpp test/parser.cpp)
 
 # Other executables
 add_executable(write_lexer test/write_lexer.cpp)
 target_link_libraries(write_lexer parse_lib)
-add_executable(generate src/generate.cpp)
-target_link_libraries(generate parse_lib)
-add_custom_command(
-    TARGET generate
-    POST_BUILD
-    COMMAND generate
-    COMMAND clang-format -i parser.hpp parser.cpp
-    COMMENT "Generating parser.hpp and parser.cpp")
-add_executable(main main.cpp parser.cpp)
-add_dependencies(main generate)
+add_executable(write_parser test/write_parser.cpp src/generate.cpp)
+target_link_libraries(write_parser parse_lib)
 
-# Ensure that we write the regex DFA before building the corresponding test
+# Ensure that we generate the correct code before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
 set_source_files_properties(test/tokenize.cpp PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
+add_custom_command(
+    OUTPUT test/gen_parser.hpp test/gen_parser.cpp
+    COMMAND write_parser
+    COMMAND clang-format -i test/gen_parser.hpp test/gen_parser.cpp
+    DEPENDS write_parser)
+set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/gen_parser.hpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -60,11 +58,11 @@ add_test(null_first null_first_test)
 add_test(build_parser build_parser_test)
 add_test(regex regex_test)
 add_test(tokenize tokenize_test)
+add_test(parse parse_test)
 
-
-set(MYTESTS dfa_test null_first_test build_parser_test regex_test tokenize_test)
+set(MYTESTS dfa_test null_first_test build_parser_test regex_test tokenize_test parse_test)
 set_tests_properties(
-    dfa null_first build_parser regex tokenize
+    dfa null_first build_parser regex tokenize parse
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
@@ -72,7 +70,6 @@ add_custom_target(
     check
     COMMAND ${CMAKE_CTEST_COMMAND}
     DEPENDS ${MYTESTS})
-
 
 
 set(CTEST_MEMORYCHECK_COMMAND "valgrind")
@@ -83,4 +80,4 @@ add_custom_target(
     DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp parser.hpp parser.cpp)
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp test/gen_parser.hpp test/gen_parser.cpp)

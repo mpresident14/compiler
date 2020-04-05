@@ -132,13 +132,23 @@ void testHashFn() {
 
 
 void testRgxDFAToCode_withNullableRegex() {
+  GrammarData grammarData = {
+    {
+      { "", "", NONE, Assoc::NONE, "", "", "a*" },
+      { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" },
+      {"", "", NONE, Assoc::NONE, "", "", "for"},
+    },
+    {},
+    {}
+  };
+
   vector<pair<string, int>> patterns = { { "a*", 1 },
                                     { "[1-9][0-9]*", 2 },
                                     { "for", 3 } };
 
   stringstream out;
   out.setstate(ios_base::badbit);
-  rgxDFAToCode(out, patterns);
+  rgxDFAToCode(out, grammarData);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
   errBuffer.str("");
@@ -146,13 +156,19 @@ void testRgxDFAToCode_withNullableRegex() {
 
 
 void testRgxDFAToCode_withInvalidRegex() {
-  vector<pair<string, int>> patterns = { { ".", 1 },
-                                    { "1-9][0-9]*", 2 },
-                                    { "for", 3 } };
+  GrammarData grammarData = {
+    {
+      { "", "", NONE, Assoc::NONE, "", "", "." },
+      { "", "", NONE, Assoc::NONE, "", "", "1-9][0-9]*" },
+      {"", "", NONE, Assoc::NONE, "", "", "for"},
+    },
+    {},
+    {}
+  };
 
   stringstream out;
   out.setstate(ios_base::badbit);
-  TESTER.assertThrows(([&](){ rgxDFAToCode(out, patterns); }));
+  TESTER.assertThrows(([&](){ rgxDFAToCode(out, grammarData); }));
 }
 
 
