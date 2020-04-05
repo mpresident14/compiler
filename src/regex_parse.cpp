@@ -93,11 +93,7 @@ namespace {
       { "RCONCAT", REGEX, NONE, { CONCATS }, "" },
       { "RSTAR", REGEX, NONE, { REGEX, STAR }, "" },
       { "RNOT", REGEX, NONE, { CARET, REGEX }, "" },
-      { "RRANGE",
-        REGEX,
-        NONE,
-        { LBRACKET, CHAR, DASH, CHAR, RBRACKET },
-        "" },
+      { "RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
       { "RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
       { "RCHAR", REGEX, NONE, { CHAR }, "" },
       { "AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
@@ -107,14 +103,19 @@ namespace {
 
     /* variables */
     { { "S", "", { SCONC }, "" },
-      { "Regex", "", { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR }, "" },
-      { "Alts", "",
+      { "Regex",
+        "",
+        { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR },
+        "" },
+      { "Alts",
+        "",
         {
             AREGEX,
             AALT,
         },
         "" },
-      { "Concats", "",
+      { "Concats",
+        "",
         {
             CREGEX,
             CCONCAT,
@@ -301,7 +302,9 @@ namespace {
             rule.symbols.crbegin(),
             rule.symbols.crend(),
             stk.crbegin(),
-            [](int symbol, const StackObj& stkObj) { return stkObj.symbol == symbol; })) {
+            [](int symbol, const StackObj& stkObj) {
+              return stkObj.symbol == symbol;
+            })) {
       return NONE;
     }
 

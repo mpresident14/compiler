@@ -11,11 +11,12 @@ using namespace std;
 void generateRgxDFA() {
   GrammarData grammarData = {
     {
-      { "", "", NONE, Assoc::NONE, "", "", "a" /* CHAR */ },
-      { "", "", NONE, Assoc::NONE, "", "", "for" /* FOR */ },
-      { "", "", NONE, Assoc::NONE, "", "", "while" /* WHILE */ },
-      { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" /* INT */ },
-      {"", "", NONE, Assoc::NONE, "", "", "([a-z]|[A-Z])([a-z]|[A-Z])*", /* IDENTIFIER */ },
+        { "", "", NONE, Assoc::NONE, "", "", "a" /* CHAR */ },
+        { "", "", NONE, Assoc::NONE, "", "", "for" /* FOR */ },
+        { "", "", NONE, Assoc::NONE, "", "", "while" /* WHILE */ },
+        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" /* INT */ },
+        { "", "", NONE, Assoc::NONE, "", "", "([a-z]|[A-Z])([a-z]|[A-Z])*",
+          /* IDENTIFIER */ },
     },
     {},
     {}

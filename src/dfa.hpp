@@ -218,7 +218,7 @@ public:
     init << "struct "
          << "Node {\n"
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
-    replaceNumbersVec(init, stepFn, {tranType});
+    replaceNumbersVec(init, stepFn, { tranType });
     init << valueType << " v_;\n"
          << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 
@@ -234,7 +234,7 @@ public:
 
       // Add node declaration
       nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>("
-          << valueToStr(convertValue(currentNode->value_)) << ");\n";
+                << valueToStr(convertValue(currentNode->value_)) << ");\n";
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->ts_={\n";

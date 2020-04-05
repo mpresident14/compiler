@@ -24,21 +24,17 @@ namespace {
   void toCode(ostream& out, const GrammarData& grammarData);
 
 
-  void toCode(ostream& out, const string& str) {
-    out << '"' << str << '"';
-  }
+  void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
 
-  void toCode(ostream& out, int n) {
-    out << to_string(n);
-  }
+  void toCode(ostream& out, int n) { out << to_string(n); }
 
   template <typename T>
   void toCode(ostream& out, const vector<T>& v) {
     out << '{';
     for_each(v.cbegin(), v.cend(), [&out](auto item) {
-          toCode(out, item);
-          out << ',';
-        });
+      toCode(out, item);
+      out << ',';
+    });
     out << '}';
   }
 
@@ -53,7 +49,7 @@ namespace {
     // Other fields not needed for shift-reducing
   }
 
-  void toCode(ostream& out,const Concrete& concrete) {
+  void toCode(ostream& out, const Concrete& concrete) {
     out << '{';
     toCode(out, concrete.varType);
     out << '}';
@@ -69,7 +65,7 @@ namespace {
     // Other fields not needed for shift-reducing
   }
 
-  void toCode(ostream& out,const GrammarData& grammarData) {
+  void toCode(ostream& out, const GrammarData& grammarData) {
     out << '{';
     toCode(out, grammarData.tokens);
     out << ',';
@@ -139,7 +135,7 @@ namespace {
       #0* r_;
     };
     )";
-    replaceNumbersVec(out, decl, {grammarData.variables[1].type});
+    replaceNumbersVec(out, decl, { grammarData.variables[1].type });
   }
 
 
@@ -153,7 +149,8 @@ namespace {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':';
-        replaceNumbersVec(out, token.dtorStmt, {"*(" + token.type + "*) s.obj"});
+        replaceNumbersVec(
+            out, token.dtorStmt, { "*(" + token.type + "*) s.obj" });
         out << " delete (" << token.type << "*) s.obj; break;";
       }
     }
@@ -163,7 +160,7 @@ namespace {
     for (size_t i = 1; i < numVars; ++i) {
       const Variable& var = grammarData.variables[i];
       out << "case " << i << ':';
-      replaceNumbersVec(out, var.dtorStmt, {"*(" + var.type + "*) s.obj"});
+      replaceNumbersVec(out, var.dtorStmt, { "*(" + var.type + "*) s.obj" });
       out << " delete (" << var.type << "*) s.obj; break;";
     }
 
@@ -180,8 +177,8 @@ namespace {
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
-        out << "case " << tokenToFromIndex(i) << ':'
-            << " delete (" << token.type << "*) s.obj; break;";
+        out << "case " << tokenToFromIndex(i) << ':' << " delete ("
+            << token.type << "*) s.obj; break;";
       }
     }
 
@@ -189,8 +186,8 @@ namespace {
     size_t numVars = grammarData.variables.size();
     for (size_t i = 1; i < numVars; ++i) {
       const Variable& var = grammarData.variables[i];
-      out << "case " << i << ':'
-          << " delete (" << var.type << "*) s.obj; break;";
+      out << "case " << i << ':' << " delete (" << var.type
+          << "*) s.obj; break;";
     }
 
     out << "default: return;}}";
@@ -207,26 +204,30 @@ namespace {
       const Variable& var = grammarData.variables[concrete.varType];
       out << "case " << i << ": return new " << var.type << '(';
 
-      replaceNumbers(out, concrete.ctorExpr, [&concrete, &grammarData](const string& digits){
-        int argSymbol = concrete.argSymbols[stoi(digits)];
-        string symbolName;
-        if (isToken(argSymbol)) {
-          symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
-        } else {
-          symbolName = grammarData.variables[argSymbol].type;
-        }
-        return string("*(")
-            .append(symbolName)
-            .append("*) args[")
-            .append(digits)
-            .append("].obj");
-      });
+      replaceNumbers(
+          out,
+          concrete.ctorExpr,
+          [&concrete, &grammarData](const string& digits) {
+            int argSymbol = concrete.argSymbols[stoi(digits)];
+            string symbolName;
+            if (isToken(argSymbol)) {
+              symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
+            } else {
+              symbolName = grammarData.variables[argSymbol].type;
+            }
+            return string("*(")
+                .append(symbolName)
+                .append("*) args[")
+                .append(digits)
+                .append("].obj");
+          });
 
       out << ");";
     }
 
     // Root type of grammar is the first type listed
-    out << "case 0: return new SObj((" << grammarData.variables[1].type << "*)args[0].obj);";
+    out << "case 0: return new SObj((" << grammarData.variables[1].type
+        << "*)args[0].obj);";
     out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
   }
 
@@ -241,15 +242,15 @@ namespace {
   void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
     out << R"(StackObj constructTokenObj(int token, const string_view& str) {
       switch (token) {)";
-      size_t numTokens = grammarData.tokens.size();
-      for (size_t i = 0; i < numTokens; ++i) {
-        const Token& token = grammarData.tokens[i];
-        if (!token.type.empty()) {
-          out << "case " << tokenToFromIndex(i) << ':'
-              << "return { new " << token.type << '(' << token.ctorExpr << "), token };break;";
-        }
+    size_t numTokens = grammarData.tokens.size();
+    for (size_t i = 0; i < numTokens; ++i) {
+      const Token& token = grammarData.tokens[i];
+      if (!token.type.empty()) {
+        out << "case " << tokenToFromIndex(i) << ':' << "return { new "
+            << token.type << '(' << token.ctorExpr << "), token };break;";
       }
-      out << R"(default: return {nullptr, token}; }})";
+    }
+    out << R"(default: return {nullptr, token}; }})";
   }
 
 
@@ -405,8 +406,8 @@ namespace {
 
   void parseDecl(ostream& out, const GrammarData& grammarData) {
     const string& rootType = grammarData.variables[1].type;
-    out << rootType << " parse(const std::string& input);"
-        << rootType << " parse(std::istream& input);";
+    out << rootType << " parse(const std::string& input);" << rootType
+        << " parse(std::istream& input);";
   }
 
 
@@ -510,7 +511,6 @@ namespace {
   }
 
 
-
   void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
     const char code[] = R"(
         #0 shiftReduce(vector<StackObj>& inputTokens) {
@@ -576,7 +576,7 @@ namespace {
       }
     )";
 
-    replaceNumbersVec(out, code, {grammarData.variables[1].type});
+    replaceNumbersVec(out, code, { grammarData.variables[1].type });
   }
 
 
@@ -587,13 +587,13 @@ namespace {
         vector<StackObj> stackObjs = tokenize(input);
         return shiftReduce(stackObjs);
       }
-    )" << rootType << R"(
+    )" << rootType
+        << R"(
       parse(istream& input) {
         return parse(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
       }
     )";
   }
-
 
 
   /********
@@ -654,7 +654,10 @@ namespace {
     return out.str();
   }
 
-  string cppCode(const string& parserFilePath, const string& addlCode, const GrammarData& grammarData) {
+  string cppCode(
+      const string& parserFilePath,
+      const string& addlCode,
+      const GrammarData& grammarData) {
     stringstream out;
 
     out << "#include \"" << parserFilePath << ".hpp\"\n";
@@ -688,11 +691,15 @@ namespace {
 
     return out.str();
   }
-}
+}  // namespace
 
 
 // TODO: Allow user to specify file name
-void generateCode(const string& parserFilePath, const string& classFile, const string& addlCode, const GrammarData& grammarData) {
+void generateCode(
+    const string& parserFilePath,
+    const string& classFile,
+    const string& addlCode,
+    const GrammarData& grammarData) {
   std::ofstream hppFile;
   hppFile.open(parserFilePath + ".hpp");
   hppFile << hppCode(classFile, grammarData);

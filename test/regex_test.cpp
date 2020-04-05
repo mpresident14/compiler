@@ -46,15 +46,17 @@ void testParse() {
 
 void testParseError() {
   ostringstream expectedErr0;
-  expectedErr0 << "No parse:\n\tStack: " << vector<string>{ "Regex", "LPAREN", "Regex"}
-           << "\n\tRemaining tokens: " << vector<string>{};
+  expectedErr0 << "No parse:\n\tStack: "
+               << vector<string>{ "Regex", "LPAREN", "Regex" }
+               << "\n\tRemaining tokens: " << vector<string>{};
 
   string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
 
   ostringstream expectedErr1;
-  expectedErr1 << "No parse:\n\tStack: " << vector<string>{ "Regex", "CARET", "STAR"}
-           << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
+  expectedErr1 << "No parse:\n\tStack: "
+               << vector<string>{ "Regex", "CARET", "STAR" }
+               << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
   string err1 = TESTER.assertThrows([]() { parse("abc^*d"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
@@ -130,21 +132,20 @@ void testHashFn() {
 }
 
 
-
 void testRgxDFAToCode_withNullableRegex() {
   GrammarData grammarData = {
     {
-      { "", "", NONE, Assoc::NONE, "", "", "a*" },
-      { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" },
-      {"", "", NONE, Assoc::NONE, "", "", "for"},
+        { "", "", NONE, Assoc::NONE, "", "", "a*" },
+        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" },
+        { "", "", NONE, Assoc::NONE, "", "", "for" },
     },
     {},
     {}
   };
 
   vector<pair<string, int>> patterns = { { "a*", 1 },
-                                    { "[1-9][0-9]*", 2 },
-                                    { "for", 3 } };
+                                         { "[1-9][0-9]*", 2 },
+                                         { "for", 3 } };
 
   stringstream out;
   out.setstate(ios_base::badbit);
@@ -158,9 +159,9 @@ void testRgxDFAToCode_withNullableRegex() {
 void testRgxDFAToCode_withInvalidRegex() {
   GrammarData grammarData = {
     {
-      { "", "", NONE, Assoc::NONE, "", "", "." },
-      { "", "", NONE, Assoc::NONE, "", "", "1-9][0-9]*" },
-      {"", "", NONE, Assoc::NONE, "", "", "for"},
+        { "", "", NONE, Assoc::NONE, "", "", "." },
+        { "", "", NONE, Assoc::NONE, "", "", "1-9][0-9]*" },
+        { "", "", NONE, Assoc::NONE, "", "", "for" },
     },
     {},
     {}
@@ -168,7 +169,7 @@ void testRgxDFAToCode_withInvalidRegex() {
 
   stringstream out;
   out.setstate(ios_base::badbit);
-  TESTER.assertThrows(([&](){ rgxDFAToCode(out, grammarData); }));
+  TESTER.assertThrows(([&]() { rgxDFAToCode(out, grammarData); }));
 }
 
 

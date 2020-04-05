@@ -189,11 +189,12 @@ namespace {
 
 
 void rgxDFAToCode(ostream& out, const GrammarData& grammarData) {
-  buildMergedRgxDFA(grammarData).streamAsCode(
-      out,
-      "int",
-      "char",
-      [](const MergeData& mergedData) { return mergedData.token; },
-      [](int n) { return to_string(n); },
-      charToString);
+  buildMergedRgxDFA(grammarData)
+      .streamAsCode(
+          out,
+          "int",
+          "char",
+          [](const MergeData& mergedData) { return mergedData.token; },
+          [](int n) { return to_string(n); },
+          charToString);
 }

@@ -95,7 +95,9 @@ inline std::vector<bool> bitOr(
 }
 
 
-template <typename Fn, std::enable_if_t<std::is_invocable_v<Fn, std::string>, int> = 0>
+template <
+    typename Fn,
+    std::enable_if_t<std::is_invocable_v<Fn, std::string>, int> = 0>
 void replaceNumbers(std::ostream& out, std::string_view fmt, Fn&& convertNum) {
   size_t i = 0;
   size_t len = fmt.size();
@@ -114,12 +116,16 @@ void replaceNumbers(std::ostream& out, std::string_view fmt, Fn&& convertNum) {
 }
 
 /* Replace #0, #1, etc, with vector[0], vector[1], etc */
-// TODO: Special case for when vector::size < 10 so we can just convert the character
-// instead of creating a string
-inline void replaceNumbersVec(std::ostream& out, std::string_view fmt, const std::vector<std::string>& args) {
-  replaceNumbers(out, fmt, [&args](const std::string& digits) { return args[stoi(digits)]; });
+// TODO: Special case for when vector::size < 10 so we can just convert the
+// character instead of creating a string
+inline void replaceNumbersVec(
+    std::ostream& out,
+    std::string_view fmt,
+    const std::vector<std::string>& args) {
+  replaceNumbers(out, fmt, [&args](const std::string& digits) {
+    return args[stoi(digits)];
+  });
 }
-
 
 
 #endif

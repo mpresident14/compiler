@@ -33,7 +33,13 @@ static constexpr int STAR = -3;
 
 GrammarData GRAMMAR_DATA = {
   /* tokens */ {
-      { "INT", "int", NONE, Assoc::NONE, "stoi(string(str))", "", "[1-9][0-9]*" },
+      { "INT",
+        "int",
+        NONE,
+        Assoc::NONE,
+        "stoi(string(str))",
+        "",
+        "[1-9][0-9]*" },
       { "PLUS", "", 1, Assoc::LEFT, "", "", "\\+" },
       { "STAR", "", 2, Assoc::LEFT, "", "", "\\*" },
   },
@@ -47,7 +53,8 @@ GrammarData GRAMMAR_DATA = {
   },
 
   /* variables */
-  { { "S", "Start", { SCONC }, "" }, { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
+  { { "S", "Start", { SCONC }, "" },
+    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
 };
 
 
