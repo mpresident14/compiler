@@ -1,5 +1,12 @@
 #include "null_first.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <bitset>
+
 namespace {
   using namespace std;
   using BitSetVars = vector<bool>;

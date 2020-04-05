@@ -3,12 +3,7 @@
 
 #include "utils.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <iostream>
-#include <string>
-#include <bitset>
+#include <vector>
 
 std::vector<bool> getNullabilities(const GrammarData& grammarData);
 std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData);

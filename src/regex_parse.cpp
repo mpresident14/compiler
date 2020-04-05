@@ -1,4 +1,16 @@
 #include "regex_parse.hpp"
+#include "utils.hpp"
+#include "dfa.hpp"
+#include "rules.hpp"
+#include "build_parser.hpp"
+
+#include <iostream>
+#include <cstddef>
+#include <algorithm>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <sstream>
 
 using namespace std;
 
@@ -173,6 +185,9 @@ namespace {
   /**********
    * PARSER *
    **********/
+
+  using CondensedDFA = DFA<RuleData, int>;
+  using CondensedNode = CondensedDFA::Node;
 
   const CondensedDFA PARSER_DFA =
       buildParserDFA(GRAMMAR_DATA)

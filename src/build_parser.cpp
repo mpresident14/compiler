@@ -1,4 +1,16 @@
 #include "build_parser.hpp"
+#include "null_first.hpp"
+
+#include <cstddef>
+#include <string>
+#include <memory>
+#include <queue>
+#include <stdexcept>
+#include <unordered_set>
+#include <vector>
+#include <sstream>
+
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 using DFA_t = DFA<DFARuleSet, int>;

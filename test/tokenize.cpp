@@ -1,8 +1,17 @@
 #include "test/tokenize.hpp"
 #include "test/gen_lexer.hpp"
 
-using namespace std;
+#include <optional>
+#include <string_view>
+#include <stdexcept>
+#include <iostream>
+#include <sstream>
+#include <cstddef>
+#include <functional>
+#include <algorithm>
+#include <cctype>
 
+using namespace std;
 
 void deleteObj(const StackObj& stackObj) noexcept {
   switch (stackObj.symbol) {

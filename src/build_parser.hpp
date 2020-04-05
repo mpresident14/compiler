@@ -1,23 +1,12 @@
 #ifndef BUILD_PARSER_HPP
 #define BUILD_PARSER_HPP
 
+#include "rules.hpp"
 #include "utils.hpp"
 #include "dfa.hpp"
-#include "rules.hpp"
-#include "null_first.hpp"
 
-#include <iostream>
-#include <cstddef>
-#include <string>
-#include <memory>
-#include <queue>
-#include <stdexcept>
-#include <unordered_set>
-#include <vector>
 #include <optional>
-#include <sstream>
-
-#include <prez/print_stuff.hpp>
+#include <ostream>
 
 
 struct RuleData {
@@ -28,13 +17,6 @@ struct RuleData {
   bool operator==(const RuleData rhs) const noexcept {
     return reducibleRule == rhs.reducibleRule;
   }
-
-  // inline ostream& operator<<(ostream& out, const RuleData& ruleData) {
-  //   if (!ruleData.reducibleRule.has_value()) {
-  //     return out << "{}";
-  //   }
-  //   return out << *ruleData.reducibleRule;
-  // }
 };
 
 // TODO: Fix these hash functions
@@ -50,8 +32,6 @@ namespace std {
   };
 }  // namespace std
 
-using CondensedDFA = DFA<RuleData, int>;
-using CondensedNode = CondensedDFA::Node;
 
 DFA<DFARuleSet, int> buildParserDFA(const GrammarData& grammarData);
 RuleData condenseRuleSet(

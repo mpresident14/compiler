@@ -1,4 +1,11 @@
 #include "generate.hpp"
+#include "build_parser.hpp"
+#include "regex_eval.hpp"
+
+#include <fstream>
+#include <ostream>
+#include <cstddef>
+#include <sstream>
 
 using namespace std;
 
@@ -366,7 +373,14 @@ namespace {
           if (i == rule.pos) {
             out << '.';
           }
-          out << rule.symbols[i] << ' ';
+
+          int symbol = rule.symbols[i];
+          if (isToken(symbol)) {
+            out << GRAMMAR_DATA.tokens[tokenToFromIndex(symbol)].name;
+          } else {
+            out << GRAMMAR_DATA.variables[symbol].name;
+          }
+          out << ' ';
         }
         if (rule.pos == len) {
           out << '.';
@@ -399,7 +413,7 @@ namespace {
     out << R"(
       void conflictWarning(const DFARule& rule, int nextToken) {
         cerr << "WARNING: Shift reduce conflict for rule\n\t" << rule
-            << "\n\tNext token: " << nextToken << endl;
+            << "\n\tNext token: " << GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].name << endl;
       }
 
       void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
@@ -586,11 +600,16 @@ namespace {
    ********/
 
   /* Needed for parser */
-  void includes(ostream& out) {
+  void hppIncludes(ostream& out) {
+    out << R"(
+      #include <iostream>
+      #include <string>
+    )";
+  }
+
+  void cppIncludes(ostream& out) {
     out << R"(
       #include <vector>
-      #include <string>
-      #include <iostream>
       #include <cstddef>
       #include <algorithm>
       #include <functional>
@@ -628,16 +647,18 @@ namespace {
     stringstream out;
 
     out << "#include \"" + classFile + "\"\n";
-    includes(out);
+    hppIncludes(out);
     parseDecl(out, grammarData);
 
     return out.str();
   }
 
-  string cppCode(const GrammarData& grammarData, const string& addlCode) {
+  string cppCode(const string& parserFilePath, const string& addlCode, const GrammarData& grammarData) {
     stringstream out;
 
-    out << "#include \"parser.hpp\"\n" << addlCode << "using namespace std;"
+    out << "#include \"" << parserFilePath << ".hpp\"\n";
+    cppIncludes(out);
+    out << addlCode << "using namespace std;"
         << "namespace {";
     constInts(out);
     tokenIndexFns(out);
@@ -678,6 +699,6 @@ void generateCode(const string& parserFilePath, const string& classFile, const s
 
   std::ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
-  cppFile << cppCode(grammarData, addlCode);
+  cppFile << cppCode(parserFilePath, addlCode, grammarData);
   cppFile.close();
 }

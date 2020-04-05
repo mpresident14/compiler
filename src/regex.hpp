@@ -1,10 +1,8 @@
 #ifndef REGEX_HPP
 #define REGEX_HPP
 
-#include <algorithm>
 #include <memory>
 #include <ostream>
-#include <utility>
 #include <deque>
 
 #include <prez/print_stuff.hpp>

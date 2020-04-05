@@ -1,6 +1,7 @@
 #include "regex_eval.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <cstddef>
 #include <string>
 

@@ -22,22 +22,26 @@ include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SO
 # So regex sources don't have to be rebuilt for each executable
 set(PARSER_SRCS src/build_parser.cpp src/null_first.cpp)
 set(REGEX_SRCS src/regex.cpp src/regex_parse.cpp src/regex_eval.cpp)
-add_library(parse_lib STATIC ${REGEX_SRCS} ${PARSER_SRCS})
+add_library(parse_lib STATIC ${PARSER_SRCS})
+add_library(regex_lib STATIC ${REGEX_SRCS})
+target_link_libraries(regex_lib parse_lib)
+
 
 # Test executables
 add_executable(dfa_test test/dfa_test.cpp)
 add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
-add_executable(build_parser_test test/build_parser_test.cpp ${PARSER_SRCS})
+add_executable(build_parser_test test/build_parser_test.cpp)
+target_link_libraries(build_parser_test parse_lib)
 add_executable(regex_test test/regex_test.cpp)
-target_link_libraries(regex_test parse_lib)
+target_link_libraries(regex_test parse_lib regex_lib)
 add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
-add_executable(parse_test test/parse_test.cpp test/parser.cpp)
+add_executable(parse_test test/parse_test.cpp test/gen_parser.cpp)
 
 # Other executables
 add_executable(write_lexer test/write_lexer.cpp)
-target_link_libraries(write_lexer parse_lib)
+target_link_libraries(write_lexer parse_lib regex_lib)
 add_executable(write_parser test/write_parser.cpp src/generate.cpp)
-target_link_libraries(write_parser parse_lib)
+target_link_libraries(write_parser parse_lib regex_lib)
 
 # Ensure that we generate the correct code before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)

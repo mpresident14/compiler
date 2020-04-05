@@ -1,20 +1,11 @@
 #ifndef TOKENIZE_HPP
 #define TOKENIZE_HPP
 
-#include <prez/print_stuff.hpp>
-
-#include <optional>
-#include <string_view>
 #include <vector>
 #include <string>
-#include <stdexcept>
-#include <iostream>
-#include <sstream>
-#include <cstddef>
-#include <functional>
-#include <algorithm>
-#include <cctype>
 #include <climits>
+
+#include <prez/print_stuff.hpp>
 
 constexpr int NONE = INT_MIN;
 constexpr int CHAR = -1;
