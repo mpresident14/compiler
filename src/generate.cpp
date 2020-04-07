@@ -3,7 +3,6 @@
 #include "regex_eval.hpp"
 
 #include <fstream>
-#include <ostream>
 #include <cstddef>
 #include <sstream>
 
@@ -352,7 +351,6 @@ namespace {
     )";
   }
 
-
   /***********
    * PARSING *
    ***********/
@@ -641,6 +639,21 @@ namespace {
     )";
   }
 
+  string replaceAll(const string& str, char from, const string& to) {
+    string s;
+    s.reserve(str.size());
+
+    for (char c : str) {
+      if (c == from) {
+        s.append(to);
+      } else {
+        s.push_back(c);
+      }
+    }
+    return s;
+  }
+
+
   /********************
    * DRIVER FUNCTIONS *
    ********************/
@@ -698,18 +711,13 @@ namespace {
 }  // namespace
 
 
-string replaceAll(const string& str, char from, const string& to) {
-  string s;
-  s.reserve(str.size());
-
-  for (char c : str) {
-    if (c == from) {
-      s.append(to);
-    } else {
-      s.push_back(c);
-    }
-  }
-  return s;
+void lexerStuff(ostream& out, const GrammarData& grammarData) {
+  cppIncludes(out);
+  out << "using namespace std;";
+  constructTokenObjFn(out, grammarData);
+  deleteObjFn(out, grammarData);
+  lexerDFA(out, grammarData);
+  tokenizeFn(out);
 }
 
 // TODO: Allow user to specify file name

@@ -34,17 +34,12 @@ add_executable(build_parser_test test/build_parser_test.cpp)
 target_link_libraries(build_parser_test parse_lib)
 add_executable(regex_test test/regex_test.cpp)
 target_link_libraries(regex_test parse_lib regex_lib)
-add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
 add_executable(parse_test test/parse_test.cpp test/expr_parser.cpp test/bad_expr_parser.cpp)
 
 # Parser generation for testing
-add_executable(write_lexer test/write_lexer.cpp)
-target_link_libraries(write_lexer parse_lib regex_lib)
 add_executable(write_parser test/write_parser.cpp src/generate.cpp)
 target_link_libraries(write_parser parse_lib regex_lib)
 # Ensure that we generate the correct code before building the corresponding test
-add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
-set_source_files_properties(test/tokenize.cpp PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
 add_custom_command(
     OUTPUT test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
     COMMAND write_parser
@@ -52,7 +47,15 @@ add_custom_command(
     DEPENDS write_parser)
 set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/expr_parser.hpp OBJECT_DEPENDS test/bad_expr_parser.hpp)
 
-add_executable(config_parse src/config_parse.cpp)
+add_executable(write_config_lexer src/write_config_lexer.cpp src/generate.cpp)
+target_link_libraries(write_config_lexer parse_lib regex_lib)
+add_custom_command(
+    OUTPUT src/config_lexer.cpp
+    COMMAND write_config_lexer
+    COMMAND clang-format -i src/config_lexer.cpp
+    DEPENDS write_config_lexer)
+
+add_executable(config_parse src/config_parse.cpp src/config_lexer.cpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -62,12 +65,11 @@ add_test(dfa dfa_test)
 add_test(null_first null_first_test)
 add_test(build_parser build_parser_test)
 add_test(regex regex_test)
-add_test(tokenize tokenize_test)
 add_test(parse parse_test)
 
-set(MYTESTS dfa_test null_first_test build_parser_test regex_test tokenize_test parse_test)
+set(MYTESTS dfa_test null_first_test build_parser_test regex_test parse_test)
 set_tests_properties(
-    dfa null_first build_parser regex tokenize parse
+    dfa null_first build_parser regex parse
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
@@ -85,4 +87,6 @@ add_custom_target(
     DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp)
+set_directory_properties(
+    PROPERTIES
+        ADDITIONAL_CLEAN_FILES "test/expr_parser.hpp;test/expr_parser.cpp;test/bad_expr_parser.hpp;test/bad_expr_parser.cpp")
