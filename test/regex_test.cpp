@@ -24,8 +24,8 @@ stringstream errBuffer;
 
 void testParse() {
   RgxPtr r0 = parse("a");
-  RgxPtr r1 = parse("^a|b");
-  RgxPtr r2 = parse("^(a|b)");
+  RgxPtr r1 = parse("ab*|b");
+  RgxPtr r2 = parse("[^a-z]");
   RgxPtr r3 = parse("abcd*");
   RgxPtr r4 = parse("a|b|cd");
   RgxPtr r5 = parse("[1-9]");
@@ -33,7 +33,7 @@ void testParse() {
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
-  TESTER.assertEquals(RgxType::NOT, r2->getType());
+  TESTER.assertEquals(RgxType::RANGE, r2->getType());
   TESTER.assertEquals(RgxType::CONCAT, r3->getType());
   TESTER.assertEquals(RgxType::ALT, r4->getType());
   TESTER.assertEquals(RgxType::RANGE, r5->getType());
@@ -55,10 +55,10 @@ void testParseError() {
 
   ostringstream expectedErr1;
   expectedErr1 << "No parse:\n\tStack: "
-               << vector<string>{ "Regex", "CARET", "STAR" }
+               << vector<string>{ "Regex", "BAR", "STAR" }
                << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
-  string err1 = TESTER.assertThrows([]() { parse("abc^*d"); });
+  string err1 = TESTER.assertThrows([]() { parse("abc|*d"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
 
   // No conflicts
@@ -108,19 +108,14 @@ void testGetDeriv_star() {
 }
 
 
-void testGetDeriv_not() {
-  RgxPtr r1 = RgxPtr(parse("^a"));
-
-  TESTER.assertEquals(Not(new Epsilon()), *r1->getDeriv('a'));
-  TESTER.assertEquals(Not(new EmptySet()), *r1->getDeriv('b'));
-}
-
-
 void testGetDeriv_range() {
   RgxPtr r1 = RgxPtr(parse("[0-9]"));
+  RgxPtr r2 = RgxPtr(parse("[^0-9]"));
 
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('a'));
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('7'));
+  TESTER.assertEquals(EmptySet(), *r2->getDeriv('7'));
+  TESTER.assertEquals(Epsilon(), *r2->getDeriv('a'));
 }
 
 
@@ -183,7 +178,6 @@ int main(int, char**) {
   testGetDeriv_alt();
   testGetDeriv_concat();
   testGetDeriv_star();
-  testGetDeriv_not();
   testGetDeriv_range();
   testHashFn();
   testRgxDFAToCode_withNullableRegex();

@@ -101,7 +101,7 @@ namespace {
     // Initialize the root of the merged DFA by creating DFAs for each regex
     // and mapping their roots to the appropriate token value
     vector<pair<RgxDFA::Node*, int>> initialStates;
-    int initialToken = NONE;
+    int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       RgxPtr rgx = parse(token.regex);
@@ -117,14 +117,14 @@ namespace {
              << "\" accepts the empty string" << endl;
         // Multiple regex DFAs accept the empty string. We pick the regex that
         // was listed first.
-        if (initialToken == NONE) {
-          initialToken = tokenToFromIndex(i);
+        if (stateToken == NONE) {
+          stateToken = tokenToFromIndex(i);
         }
       }
       rgxDfas.push_back(move(rgxDfa));
     }
 
-    MergedRgxDFA mergedDfa(MergeData{ move(initialStates), initialToken });
+    MergedRgxDFA mergedDfa(MergeData{ move(initialStates), stateToken });
 
     // BFS to build the merged DFA
     queue<MergedRgxDFA::Node*> q;
@@ -136,7 +136,7 @@ namespace {
       char c;
       for (size_t i = 0; (c = alphabet[i]) != '\0'; ++i) {
         vector<pair<RgxDFA::Node*, int>> newStates;
-        int newToken = NONE;
+        stateToken = NONE;
         for (auto& nodeAndToken : mergedNode->getValue().states) {
           RgxDFA::Node* node = nodeAndToken.first;
           int token = nodeAndToken.second;
@@ -148,8 +148,8 @@ namespace {
           if (successor->getValue()->isNullable()) {
             // Multiple regex DFAs accept the same string. We pick the regex
             // that was listed first.
-            if (newToken == NONE) {
-              newToken = token;
+            if (token > stateToken) {
+              stateToken = token;
             }
           }
         }
@@ -158,7 +158,7 @@ namespace {
         // actual DFAs, we are guaranteed to have a valid state in newStates for
         // each Regex DFA.
         MergedRgxDFA::Node* mergedSuccessor =
-            mergedDfa.addTransition(mergedNode, c, { newStates, newToken });
+            mergedDfa.addTransition(mergedNode, c, { newStates, stateToken });
         if (mergedSuccessor) {
           q.push(mergedSuccessor);
         }

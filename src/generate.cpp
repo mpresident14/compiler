@@ -711,12 +711,18 @@ namespace {
 }  // namespace
 
 
-void lexerStuff(ostream& out, const GrammarData& grammarData) {
+void configLexerStuff(ostream& out, const GrammarData& grammarData) {
   cppIncludes(out);
   out << "using namespace std;";
+  out << "namespace {";
+  tokenDecl(out);
+  concreteDecl(out);
+  variableDecl(out);
+  grammarDataDecl(out, grammarData);
   constructTokenObjFn(out, grammarData);
-  deleteObjFn(out, grammarData);
   lexerDFA(out, grammarData);
+  out << '}';
+  deleteObjFn(out, grammarData);
   tokenizeFn(out);
 }
 

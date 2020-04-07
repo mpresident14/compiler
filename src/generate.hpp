@@ -12,6 +12,6 @@ void generateCode(
     const std::string& addlCode,
     const GrammarData& grammarData);
 
-void lexerStuff(std::ostream& out, const GrammarData& grammarData);
+void configLexerStuff(std::ostream& out, const GrammarData& grammarData);
 
 #endif

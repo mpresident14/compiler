@@ -64,7 +64,7 @@ namespace {
   constexpr int RALT = 1;
   constexpr int RCONCAT = 2;
   constexpr int RSTAR = 3;
-  constexpr int RNOT = 4;
+  constexpr int RNOTRANGE = 4;
   constexpr int RRANGE = 5;
   constexpr int RGROUP = 6;
   constexpr int RCHAR = 7;
@@ -78,7 +78,7 @@ namespace {
     /* tokens */ {
         { "BAR", "", 1, Assoc::LEFT, "", "", "" },
         { "STAR", "", 6, Assoc::LEFT, "", "", "" },
-        { "CARET", "", 3, Assoc::RIGHT, "", "", "" },
+        { "CARET", "", NONE, Assoc::RIGHT, "", "", "" },
         { "LBRACKET", "", NONE, Assoc::NONE, "", "", "" },
         { "RBRACKET", "", NONE, Assoc::NONE, "", "", "" },
         { "LPAREN", "", NONE, Assoc::NONE, "", "", "" },
@@ -92,7 +92,7 @@ namespace {
       { "RALT", REGEX, NONE, { ALTS }, "" },
       { "RCONCAT", REGEX, NONE, { CONCATS }, "" },
       { "RSTAR", REGEX, NONE, { REGEX, STAR }, "" },
-      { "RNOT", REGEX, NONE, { CARET, REGEX }, "" },
+      { "RNOTRANGE", REGEX, NONE, { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET }, "" },
       { "RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
       { "RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
       { "RCHAR", REGEX, NONE, { CHAR }, "" },
@@ -105,7 +105,7 @@ namespace {
     { { "S", "", { SCONC }, "" },
       { "Regex",
         "",
-        { RALT, RCONCAT, RSTAR, RNOT, RRANGE, RGROUP, RCHAR },
+        { RALT, RCONCAT, RSTAR, RNOTRANGE, RRANGE, RGROUP, RCHAR },
         "" },
       { "Alts",
         "",
@@ -126,12 +126,6 @@ namespace {
   /*********
    * LEXER *
    *********/
-
-  struct StackObj {
-    // Can't delete from here since it is a void*, see constructObj
-    void* obj;
-    int symbol;
-  };
 
   StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
 
@@ -239,10 +233,10 @@ namespace {
         return new Regex*(new Concat(move(*(RegexVector*)args[0].obj)));
       case RSTAR:
         return new Regex*(new Star(*(Regex**)args[0].obj));
-      case RNOT:
-        return new Regex*(new Not(*(Regex**)args[1].obj));
+      case RNOTRANGE:
+        return new Regex*(new Range(*(char*)args[2].obj, *(char*)args[4].obj, true));
       case RRANGE:
-        return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
+        return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj, false));
       case RGROUP:
         return new Regex*(*(Regex**)args[1].obj);
       case RCHAR:

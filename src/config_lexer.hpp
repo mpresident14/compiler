@@ -6,12 +6,7 @@
 #include <vector>
 #include <string>
 
-struct StackObj {
-  // Can't delete from here since it is a void*, see constructObj
-  void* obj;
-  int symbol;
-};
-
+void deleteObj(const StackObj& s);
 std::vector<StackObj> tokenize(const std::string& input);
 
 #endif

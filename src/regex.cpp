@@ -21,8 +21,6 @@ ostream &operator<<(ostream &out, RgxType type) {
       return out << "CONCAT";
     case RgxType::STAR:
       return out << "STAR";
-    case RgxType::NOT:
-      return out << "NOT";
     case RgxType::RANGE:
       return out << "RANGE";
   }
@@ -77,14 +75,6 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
 RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   RgxType r1Type = r1->getType();
   RgxType r2Type = r2->getType();
-  // ^∅ | r2 = ^∅
-  // r1 | ^∅ = ^∅
-  if ((r1Type == RgxType::NOT &&
-       static_cast<Not *>(r1.get())->rgx_->getType() == RgxType::EMPTYSET) ||
-      (r2Type == RgxType::NOT &&
-       static_cast<Not *>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
-    return make_shared<Not>(new EmptySet);
-  }
   // ∅ | r2 = r2
   if (r1Type == RgxType::EMPTYSET) {
     return r2;
@@ -143,13 +133,6 @@ RgxPtr makeStar(RgxPtr r) {
     default:
       return make_shared<Star>(r);
   }
-}
-
-RgxPtr makeNot(RgxPtr r) {
-  if (r->getType() == RgxType::NOT) {
-    return static_cast<Not *>(r.get())->rgx_;
-  }
-  return make_shared<Not>(r);
 }
 
 
@@ -330,32 +313,13 @@ size_t Star::hashFn() const { return rgx_->hashFn(); }
 void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
 
 
-/*******
- * Not *
- *******/
-Not::Not(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
-Not::Not(RgxPtr rgx) : rgx_(rgx) {}
-bool Not::isNullable() const { return !rgx_->isNullable(); }
-RgxPtr Not::getDeriv(char c) const { return makeNot(rgx_->getDeriv(c)); }
-RgxType Not::getType() const { return RgxType::NOT; }
-
-bool Not::operator==(const Regex &other) const {
-  return other.getType() == RgxType::NOT &&
-         *static_cast<const Not &>(other).rgx_ == *rgx_;
-}
-
-size_t Not::hashFn() const { return rgx_->hashFn(); }
-
-void Not::toStream(ostream &out) const { out << "NOT (" << rgx_ << ')'; }
-
-
 /*********
  * Range *
  *********/
-Range::Range(char start, char end) : start_(start), end_(end) {}
+Range::Range(char start, char end, bool invert) : start_(start), end_(end), invert_(invert) {}
 bool Range::isNullable() const { return false; }
 RgxPtr Range::getDeriv(char c) const {
-  if (start_ <= c && c <= end_) {
+  if ((start_ <= c && c <= end_) ^ invert_) {
     return make_shared<Epsilon>();
   }
   return make_shared<EmptySet>();
@@ -365,14 +329,15 @@ RgxType Range::getType() const { return RgxType::RANGE; }
 bool Range::operator==(const Regex &other) const {
   return other.getType() == RgxType::RANGE &&
          static_cast<const Range &>(other).start_ == start_ &&
-         static_cast<const Range &>(other).end_ == end_;
+         static_cast<const Range &>(other).end_ == end_ &&
+         static_cast<const Range &>(other).invert_ == invert_;
 }
 
 size_t Range::hashFn() const {
   hash<char> hasher;
-  return hasher(start_) ^ (hasher(end_) << 1);
+  return hash<bool>()(invert_) + hasher(start_) ^ (hasher(end_) << 1);
 }
 
 void Range::toStream(std::ostream &out) const {
-  out << "RANGE (" << start_ << "-" << end_ << ')';
+  out << "RANGE (" << (invert_ ? "^" : "") << start_ << "-" << end_ << ')';
 }

@@ -16,7 +16,6 @@ enum class RgxType {
   ALT,
   CONCAT,
   STAR,
-  NOT,
   RANGE
 };
 
@@ -156,27 +155,10 @@ private:
   RgxPtr rgx_;
 };
 
-class Not : public Regex {
-public:
-  Not(Regex* rgx);
-  Not(RgxPtr rgx);
-  bool isNullable() const override;
-  RgxPtr getDeriv(char c) const override;
-  RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
-  size_t hashFn() const override;
-  void toStream(std::ostream& out) const override;
-
-  friend RgxPtr makeNot(RgxPtr r);
-  friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
-
-private:
-  RgxPtr rgx_;
-};
 
 class Range : public Regex {
 public:
-  Range(char start, char end);
+  Range(char start, char end, bool invert);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
@@ -187,6 +169,7 @@ public:
 private:
   char start_;
   char end_;
+  bool invert_;
 };
 
 #endif
