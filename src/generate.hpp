@@ -7,7 +7,7 @@
 
 void generateCode(
     const std::string& parserFilePath,
-    const std::string& classFile,
+    const std::string& addlHdrIncludes,
     const std::string& addlCode,
     const GrammarData& grammarData);
 

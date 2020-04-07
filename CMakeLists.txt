@@ -37,12 +37,11 @@ target_link_libraries(regex_test parse_lib regex_lib)
 add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
 add_executable(parse_test test/parse_test.cpp test/expr_parser.cpp test/bad_expr_parser.cpp)
 
-# Other executables
+# Parser generation for testing
 add_executable(write_lexer test/write_lexer.cpp)
 target_link_libraries(write_lexer parse_lib regex_lib)
 add_executable(write_parser test/write_parser.cpp src/generate.cpp)
 target_link_libraries(write_parser parse_lib regex_lib)
-
 # Ensure that we generate the correct code before building the corresponding test
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
 set_source_files_properties(test/tokenize.cpp PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
@@ -52,6 +51,8 @@ add_custom_command(
     COMMAND clang-format -i test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
     DEPENDS write_parser)
 set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/expr_parser.hpp OBJECT_DEPENDS test/bad_expr_parser.hpp)
+
+add_executable(config_parse src/config_parse.cpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
