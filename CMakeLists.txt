@@ -35,7 +35,7 @@ target_link_libraries(build_parser_test parse_lib)
 add_executable(regex_test test/regex_test.cpp)
 target_link_libraries(regex_test parse_lib regex_lib)
 add_executable(tokenize_test test/tokenize_test.cpp test/tokenize.cpp)
-add_executable(parse_test test/parse_test.cpp test/gen_parser.cpp)
+add_executable(parse_test test/parse_test.cpp test/expr_parser.cpp test/bad_expr_parser.cpp)
 
 # Other executables
 add_executable(write_lexer test/write_lexer.cpp)
@@ -47,11 +47,11 @@ target_link_libraries(write_parser parse_lib regex_lib)
 add_custom_command(OUTPUT test/gen_lexer.hpp COMMAND write_lexer DEPENDS write_lexer)
 set_source_files_properties(test/tokenize.cpp PROPERTIES OBJECT_DEPENDS test/gen_lexer.hpp)
 add_custom_command(
-    OUTPUT test/gen_parser.hpp test/gen_parser.cpp
+    OUTPUT test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
     COMMAND write_parser
-    COMMAND clang-format -i test/gen_parser.hpp test/gen_parser.cpp
+    COMMAND clang-format -i test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
     DEPENDS write_parser)
-set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/gen_parser.hpp)
+set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/expr_parser.hpp OBJECT_DEPENDS test/bad_expr_parser.hpp)
 
 # Testing
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
@@ -84,4 +84,4 @@ add_custom_target(
     DEPENDS ${MYTESTS})
 
 # Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp test/gen_parser.hpp test/gen_parser.cpp)
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES test/gen_lexer.hpp test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp)

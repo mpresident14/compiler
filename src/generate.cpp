@@ -644,18 +644,21 @@ namespace {
   /********************
    * DRIVER FUNCTIONS *
    ********************/
-  string hppCode(const string& classFile, const GrammarData& grammarData) {
+  string hppCode(const string& namespaceName, const string& addlHdrIncludes, const GrammarData& grammarData) {
     stringstream out;
 
-    out << "#include \"" + classFile + "\"\n";
+    out << addlHdrIncludes;
     hppIncludes(out);
+    out << "namespace " << namespaceName << '{';
     parseDecl(out, grammarData);
+    out << '}';
 
     return out.str();
   }
 
   string cppCode(
       const string& parserFilePath,
+      const string& namespaceName,
       const string& addlCode,
       const GrammarData& grammarData) {
     stringstream out;
@@ -686,27 +689,44 @@ namespace {
     parseHelperFns(out);
     tryReduceFn(out);
     shiftReduceFn(out, grammarData);
-    out << '}';
+    out << "} namespace " << namespaceName << '{';
     parseFn(out, grammarData);
+    out << '}';
 
     return out.str();
   }
 }  // namespace
 
 
+string replaceAll(const string& str, char from, const string& to) {
+  string s;
+  s.reserve(str.size());
+
+  for (char c : str) {
+    if (c == from) {
+      s.append(to);
+    } else {
+      s.push_back(c);
+    }
+  }
+  return s;
+}
+
 // TODO: Allow user to specify file name
 void generateCode(
     const string& parserFilePath,
-    const string& classFile,
+    const string& addlHdrIncludes,
     const string& addlCode,
     const GrammarData& grammarData) {
+  string namespaceName = replaceAll(parserFilePath, '/', "::");
+
   std::ofstream hppFile;
   hppFile.open(parserFilePath + ".hpp");
-  hppFile << hppCode(classFile, grammarData);
+  hppFile << hppCode(namespaceName, addlHdrIncludes, grammarData);
   hppFile.close();
 
   std::ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
-  cppFile << cppCode(parserFilePath, addlCode, grammarData);
+  cppFile << cppCode(parserFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
 }

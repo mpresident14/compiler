@@ -58,4 +58,32 @@ GrammarData GRAMMAR_DATA = {
 };
 
 
+/* Will result in conflict because no operator precedence */
+GrammarData BAD_GRAMMAR_DATA = {
+  /* tokens */ {
+      { "INT",
+        "int",
+        NONE,
+        Assoc::NONE,
+        "stoi(string(str))",
+        "",
+        "[1-9][0-9]*" },
+      { "PLUS", "", NONE, Assoc::LEFT, "", "", "\\+" },
+      { "STAR", "", NONE, Assoc::LEFT, "", "", "\\*" },
+  },
+
+  /* concretes */
+  {
+      { "SCONC", S, NONE, { EXPR }, "Start(#0*)" },
+      { "EINT", EXPR, NONE, { INT }, "new EInt(#0)" },
+      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EPlus(#0, #2)" },
+      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new ETimes(#0, #2)" },
+  },
+
+  /* variables */
+  { { "S", "Start", { SCONC }, "" },
+    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
+};
+
+
 #endif

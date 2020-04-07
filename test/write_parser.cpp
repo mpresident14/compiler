@@ -8,7 +8,8 @@
 using namespace std;
 
 int main() {
-  generateCode("test/gen_parser", "test/expr.hpp", "", GRAMMAR_DATA);
+  generateCode("test/expr_parser", "#include \"test/expr.hpp\"\n", "", GRAMMAR_DATA);
+  generateCode("test/bad_expr_parser", "#include \"test/expr.hpp\"\n", "", BAD_GRAMMAR_DATA);
 
   return 0;
 }
