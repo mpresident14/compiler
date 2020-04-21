@@ -99,7 +99,7 @@ namespace {
       { "AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
       { "AALT", ALTS, NONE, { REGEX, BAR, ALTS }, "" },
       { "CREGEX", CONCATS, 4, { REGEX, REGEX }, "" },
-      { "CCONCAT", CONCATS, 4, { REGEX, CONCATS }, "" } },
+      { "CCONCAT", CONCATS, 4, { REGEX, CONCATS  }, "" } },
 
     /* variables */
     { { "S", "", { SCONC }, "" },
@@ -264,14 +264,7 @@ namespace {
     return StackObj{ constructObj(concrete, args), varType };
   }
 
-  void conflictWarning(const DFARule& rule, int nextToken) {
-    cerr << "WARNING: Shift reduce conflict for rule\n\t" << rule
-         << "\n\tNext token: " << nextToken << endl;
-  }
 
-
-  // TODO: Is it possible to have more than one rule able to be reduced? If so,
-  // handle it.
   int tryReduce(
       const CondensedNode* node,
       int nextToken,
@@ -317,7 +310,6 @@ namespace {
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
-      conflictWarning(*ruleData.reducibleRule, nextToken);
       return NONE;
     }
 
@@ -328,7 +320,6 @@ namespace {
         return ruleData.reducibleRule->concrete;
       } else if (ruleData.assoc == Assoc::NONE) {
         // Unspecified associativity -> conflict! (Resolve by shifting)
-        conflictWarning(*ruleData.reducibleRule, nextToken);
         return NONE;
       }
     }
@@ -392,6 +383,21 @@ namespace {
           stk.end(),
           back_inserter(stkSymbols),
           [](StackObj stkObj) { return stkObj.symbol; });
+
+      // ----------DEBUG------------
+      vector<string> stkSymbolNames;
+      auto stkObjToName = [](StackObj stkObj) {
+        if (isToken(stkObj.symbol)) {
+          return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
+        }
+        return GRAMMAR_DATA.variables[stkObj.symbol].name;
+      };
+      transform(
+          stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
+      cout << stkSymbolNames << endl;
+      // ----------END-DEBUG----------
+
+
       CondensedNode* currentNode = PARSER_DFA.run(stkSymbols);
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);
