@@ -65,17 +65,6 @@ void testParse_noParse() {
 }
 
 
-void testParse_withConflict() {
-  ExprPtr e(bad_expr_parser::parse("3+12 * 4"));
-
-  ostringstream expectedWarning;
-  expectedWarning << "WARNING: Shift reduce conflict for rule\n\t2 -> Expr "
-                     "PLUS Expr .\n\tNext token: STAR\n";
-
-  TESTER.assertEquals(expectedWarning.str(), errBuffer.str());
-}
-
-
 int main() {
   // To test stderr output
   cerr.rdbuf(errBuffer.rdbuf());
@@ -83,7 +72,6 @@ int main() {
   testParse();
   testParse_invalidTokens();
   testParse_noParse();
-  testParse_withConflict();
 
   return 0;
 }

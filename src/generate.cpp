@@ -365,28 +365,6 @@ namespace {
       vector<int> symbols;
       size_t pos;
       mutable vector<bool> lookahead;
-
-      friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
-        out << rule.concrete << " -> ";
-        size_t len = rule.symbols.size();
-        for (size_t i = 0; i < len; ++i) {
-          if (i == rule.pos) {
-            out << '.';
-          }
-
-          int symbol = rule.symbols[i];
-          if (isToken(symbol)) {
-            out << GRAMMAR_DATA.tokens[tokenToFromIndex(symbol)].name;
-          } else {
-            out << GRAMMAR_DATA.variables[symbol].name;
-          }
-          out << ' ';
-        }
-        if (rule.pos == len) {
-          out << '.';
-        }
-        return out;
-      }
     };
     )";
   }
@@ -411,11 +389,6 @@ namespace {
 
   void parseHelperFns(ostream& out) {
     out << R"(
-      void conflictWarning(const DFARule& rule, int nextToken) {
-        cerr << "WARNING: Shift reduce conflict for rule\n\t" << rule
-            << "\n\tNext token: " << GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].name << endl;
-      }
-
       void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
         size_t size = stackObjs.size();
         for (; i < size; ++i) {
@@ -491,7 +464,6 @@ namespace {
       }
       int shiftPrecedence = tokens[tokenToFromIndex(nextToken)].precedence;
       if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
-        conflictWarning(*ruleData.reducibleRule, nextToken);
         return NONE;
       }
       if (ruleData.precedence > shiftPrecedence) {
@@ -500,7 +472,6 @@ namespace {
         if (ruleData.assoc == Assoc::LEFT) {
           return ruleData.reducibleRule->concrete;
         } else if (ruleData.assoc == Assoc::NONE) {
-          conflictWarning(*ruleData.reducibleRule, nextToken);
           return NONE;
         }
       }
