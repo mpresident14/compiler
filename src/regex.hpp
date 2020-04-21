@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <ostream>
-#include <deque>
+#include <vector>
 
 #include <prez/print_stuff.hpp>
 
@@ -99,12 +99,12 @@ private:
 struct RegexVector {
 public:
   RegexVector(Regex* r1, Regex* r2);
-  RegexVector(Regex* r, RegexVector&& rVec);
-  RegexVector(std::deque<RgxPtr>&& vec);
+  RegexVector(RegexVector&& rVec, Regex* r);
+  RegexVector(std::vector<RgxPtr>&& vec);
   bool operator==(const RegexVector& other) const;
   size_t hashFn() const;
 
-  std::deque<RgxPtr> rgxs_;
+  std::vector<RgxPtr> rgxs_;
 };
 
 class Alt : public Regex {

@@ -215,7 +215,7 @@ void shiftReduceConflict(const DFARule& reduceRule, const DFARule& shiftRule, co
 }
 
 void reduceReduceConflict(const DFARule& reduceRule1, const DFARule& reduceRule2, const GrammarData& grammarData) {
-  cerr << "WARNING: Shift-reduce conflict for rules\n\t";
+  cerr << "WARNING: Reduce-reduce conflict for rules\n\t";
   streamRule(cerr, reduceRule1, grammarData);
   cerr << "\n\t";
   streamRule(cerr, reduceRule2, grammarData);
@@ -293,7 +293,7 @@ RuleData condenseRuleSet(
   }
 
   // Check for shift-reduce conflicts
-  Assoc lastTokenAssoc = lastToken == NONE ? Assoc::NONE : grammarData.tokens[lastToken].assoc;
+  Assoc lastTokenAssoc = lastToken == NONE ? Assoc::NONE : grammarData.tokens[tokenToFromIndex(lastToken)].assoc;
   findConflicts(*reducibleRule, rulePrecedence, lastTokenAssoc, ruleSet, grammarData);
 
   // Reducible rule contains no tokens

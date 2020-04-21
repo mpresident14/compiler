@@ -79,12 +79,12 @@ namespace {
         { "BAR", "", 1, Assoc::LEFT, "", "", "" },
         { "STAR", "", 6, Assoc::LEFT, "", "", "" },
         { "CARET", "", NONE, Assoc::RIGHT, "", "", "" },
-        { "LBRACKET", "", NONE, Assoc::NONE, "", "", "" },
-        { "RBRACKET", "", NONE, Assoc::NONE, "", "", "" },
-        { "LPAREN", "", NONE, Assoc::NONE, "", "", "" },
-        { "RPAREN", "", NONE, Assoc::NONE, "", "", "" },
+        { "LBRACKET", "", 4, Assoc::NONE, "", "", "" },
+        { "RBRACKET", "", 4, Assoc::NONE, "", "", "" },
+        { "LPAREN", "", 4, Assoc::NONE, "", "", "" },
+        { "RPAREN", "", 4, Assoc::NONE, "", "", "" },
         { "DASH", "", NONE, Assoc::NONE, "", "", "" },
-        { "CHAR", "", 5, Assoc::LEFT, "", "", "" },
+        { "CHAR", "", 4, Assoc::LEFT, "", "", "" },
     },
 
     /* concretes */
@@ -97,9 +97,9 @@ namespace {
       { "RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
       { "RCHAR", REGEX, NONE, { CHAR }, "" },
       { "AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
-      { "AALT", ALTS, NONE, { REGEX, BAR, ALTS }, "" },
-      { "CREGEX", CONCATS, 4, { REGEX, REGEX }, "" },
-      { "CCONCAT", CONCATS, 4, { REGEX, CONCATS  }, "" } },
+      { "AALT", ALTS, NONE, { ALTS, BAR, REGEX }, "" },
+      { "CREGEX", CONCATS, 5, { REGEX, REGEX }, "" },
+      { "CCONCAT", CONCATS, 5, { CONCATS, REGEX }, "" } },
 
     /* variables */
     { { "S", "", { SCONC }, "" },
@@ -246,13 +246,13 @@ namespace {
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
       case AALT:
         return new RegexVector(RegexVector(
-            *(Regex**)args[0].obj, move(*(RegexVector*)args[2].obj)));
+            move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
       case CREGEX:
         return new RegexVector(
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
       case CCONCAT:
         return new RegexVector(RegexVector(
-            *(Regex**)args[0].obj, move(*(RegexVector*)args[1].obj)));
+            move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
       case SCONC:
         return new Start((Regex**)args[0].obj);
       default:
@@ -385,16 +385,16 @@ namespace {
           [](StackObj stkObj) { return stkObj.symbol; });
 
       // ----------DEBUG------------
-      vector<string> stkSymbolNames;
-      auto stkObjToName = [](StackObj stkObj) {
-        if (isToken(stkObj.symbol)) {
-          return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
-        }
-        return GRAMMAR_DATA.variables[stkObj.symbol].name;
-      };
-      transform(
-          stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
-      cout << stkSymbolNames << endl;
+      // vector<string> stkSymbolNames;
+      // auto stkObjToName = [](StackObj stkObj) {
+      //   if (isToken(stkObj.symbol)) {
+      //     return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
+      //   }
+      //   return GRAMMAR_DATA.variables[stkObj.symbol].name;
+      // };
+      // transform(
+      //     stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
+      // cout << stkSymbolNames << endl;
       // ----------END-DEBUG----------
 
 

@@ -1,5 +1,5 @@
 #include "null_first.hpp"
-#include "test/nullable_grammar.hpp"
+#include "test/utils/nullable_grammar.hpp"
 
 #include <bitset>
 

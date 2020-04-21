@@ -10,6 +10,7 @@
 #include <vector>
 
 
+namespace test::expr_grammar {
 /*
  * S    -> Expr
  * Expr -> INT
@@ -85,5 +86,5 @@ GrammarData BAD_GRAMMAR_DATA = {
     { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
 };
 
-
+}
 #endif

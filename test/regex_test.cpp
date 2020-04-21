@@ -21,6 +21,10 @@ UnitTest TESTER = UnitTest::createTester();
 
 stringstream errBuffer;
 
+// void testParse() {
+//   RgxPtr r0 = parse("abc");
+// }
+
 
 void testParse() {
   RgxPtr r0 = parse("a");
@@ -47,7 +51,7 @@ void testParse() {
 void testParseError() {
   ostringstream expectedErr0;
   expectedErr0 << "No parse:\n\tStack: "
-               << vector<string>{ "Regex", "LPAREN", "Regex" }
+               << vector<string>{ "Concats", "LPAREN", "Regex" }
                << "\n\tRemaining tokens: " << vector<string>{};
 
   string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });

@@ -27,25 +27,47 @@ add_library(regex_lib STATIC ${REGEX_SRCS})
 target_link_libraries(regex_lib parse_lib)
 
 
+###########
+# TESTING #
+###########
+set(TEST_DIR test)
+set(TEST_UTIL_DIR ${TEST_DIR}/utils)
+set(TEST_GEN_DIR ${TEST_DIR}/generated)
+
 # Test executables
-add_executable(dfa_test test/dfa_test.cpp)
-add_executable(null_first_test test/null_first_test.cpp src/null_first.cpp)
-add_executable(build_parser_test test/build_parser_test.cpp)
+add_executable(dfa_test ${TEST_DIR}/dfa_test.cpp)
+add_executable(null_first_test ${TEST_DIR}/null_first_test.cpp src/null_first.cpp)
+add_executable(build_parser_test ${TEST_DIR}/build_parser_test.cpp)
 target_link_libraries(build_parser_test parse_lib)
-add_executable(regex_test test/regex_test.cpp)
+add_executable(regex_test ${TEST_DIR}/regex_test.cpp)
 target_link_libraries(regex_test parse_lib regex_lib)
-add_executable(parse_test test/parse_test.cpp test/expr_parser.cpp test/bad_expr_parser.cpp)
+add_executable(parse_test
+     ${TEST_DIR}/parse_test.cpp
+     ${TEST_GEN_DIR}/expr_parser.cpp
+     ${TEST_GEN_DIR}/bad_expr_parser.cpp)
 
 # Parser generation for testing
-add_executable(write_parser test/write_parser.cpp src/generate.cpp)
+add_executable(write_parser ${TEST_UTIL_DIR}/write_parser.cpp src/generate.cpp)
 target_link_libraries(write_parser parse_lib regex_lib)
 # Ensure that we generate the correct code before building the corresponding test
 add_custom_command(
-    OUTPUT test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
+    OUTPUT
+        ${TEST_GEN_DIR}/expr_parser.hpp
+        ${TEST_GEN_DIR}/expr_parser.cpp
+        ${TEST_GEN_DIR}/bad_expr_parser.hpp
+        ${TEST_GEN_DIR}/bad_expr_parser.cpp
     COMMAND write_parser
-    COMMAND clang-format -i test/expr_parser.hpp test/expr_parser.cpp test/bad_expr_parser.hpp test/bad_expr_parser.cpp
+    COMMAND clang-format -i
+        ${TEST_GEN_DIR}/expr_parser.hpp
+        ${TEST_GEN_DIR}/expr_parser.cpp
+        ${TEST_GEN_DIR}/bad_expr_parser.hpp
+        ${TEST_GEN_DIR}/bad_expr_parser.cpp
     DEPENDS write_parser)
-set_source_files_properties(test/parse_test.cpp PROPERTIES OBJECT_DEPENDS test/expr_parser.hpp OBJECT_DEPENDS test/bad_expr_parser.hpp)
+set_source_files_properties(
+    ${TEST_DIR}/parse_test.cpp
+    PROPERTIES
+        OBJECT_DEPENDS ${TEST_GEN_DIR}/expr_parser.hpp
+        OBJECT_DEPENDS ${TEST_GEN_DIR}/bad_expr_parser.hpp)
 
 add_executable(write_config_lexer src/write_config_lexer.cpp src/generate.cpp)
 target_link_libraries(write_config_lexer parse_lib regex_lib)
@@ -57,9 +79,9 @@ add_custom_command(
 
 add_executable(config_parse src/config_parse.cpp src/config_lexer.cpp)
 
-# Testing
+# Running Tests
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
-# https://gitlab.kitware.com/cmake/community/-/wikis/doc/ctest/Testing-With-CTest
+# https://gitlab.kitware.com/cmake/community/-/wikis/doc/c${TEST_DIR}/Testing-With-CTest
 include(CTest)
 add_test(dfa dfa_test)
 add_test(null_first null_first_test)
@@ -89,4 +111,4 @@ add_custom_target(
 # Remove generated files on make clean
 set_directory_properties(
     PROPERTIES
-        ADDITIONAL_CLEAN_FILES "test/expr_parser.hpp;test/expr_parser.cpp;test/bad_expr_parser.hpp;test/bad_expr_parser.cpp")
+        ADDITIONAL_CLEAN_FILES "${TEST_DIR}/expr_parser.hpp;${TEST_DIR}/expr_parser.cpp;${TEST_DIR}/bad_expr_parser.hpp;${TEST_DIR}/bad_expr_parser.cpp")

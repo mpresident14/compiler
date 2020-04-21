@@ -2,13 +2,14 @@
 #include "utils.hpp"
 #include "rules.hpp"
 #include "build_parser.hpp"
-#include "test/expr_grammar.hpp"
+#include "test/utils/expr_grammar.hpp"
 
 #include <prez/unit_test.hpp>
 #include <prez/print_stuff.hpp>
 
 using namespace std;
 using namespace prez;
+using namespace test::expr_grammar;
 
 
 UnitTest TESTER = UnitTest::createTester();
