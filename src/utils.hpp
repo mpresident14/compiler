@@ -10,6 +10,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <memory>
 
 /* Fixed for all grammars */
 enum class Assoc { LEFT, RIGHT, NOT, NONE };
@@ -41,10 +42,19 @@ inline int indexToSymbol(size_t i, size_t numVars) {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-struct StackObj {
-  // Can't delete from here since it is a void*, see constructObj
-  void* obj;
+struct StackObjBase {
+  virtual void* getObj() const;
+
   int symbol;
+};
+
+template<typename T>
+struct StackObj : public StackObjBase {
+  virtual void* getObj() const override {
+    return (void*) obj.release();
+  }
+
+  unique_ptr<T> obj;
 };
 
 struct Token {

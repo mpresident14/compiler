@@ -127,16 +127,16 @@ namespace {
    * LEXER *
    *********/
 
-  StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
+  StackObj<nullptr_t> datalessObj(int symbol) { return StackObj<nullptr_t>{ {symbol}, unique_ptr<nullptr_t>() }; }
 
-  vector<StackObj> lex(const string& input) {
-    vector<StackObj> tokens;
+  vector<StackObjBase> lex(const string& input) {
+    vector<StackObjBase> tokens;
     bool escaped = false;
     tokens.reserve(input.size());
 
     for (char c : input) {
       if (escaped) {
-        tokens.push_back({ new char(c), CHAR });
+        tokens.push_back(StackObj<char>{ {CHAR}, new char(c) });
         escaped = false;
         continue;
       }
@@ -170,7 +170,7 @@ namespace {
           escaped = true;
           break;
         default:
-          tokens.push_back({ new char(c), CHAR });
+          tokens.push_back(StackObj<char>{ {CHAR}, new char(c) });
       }
     }
 
@@ -196,31 +196,31 @@ namespace {
     Regex** r_;
   };
 
-  void deleteObjPtr(const StackObj& stackObj) noexcept {
-    switch (stackObj.symbol) {
-      case REGEX:
-        delete (Regex**)stackObj.obj;
-        break;
-      case ALTS:
-        delete (RegexVector*)stackObj.obj;
-        break;
-      case CONCATS:
-        delete (RegexVector*)stackObj.obj;
-        break;
-      case CHAR:
-        delete (char*)stackObj.obj;
-        break;
-      default:
-        return;
-    }
-  }
+  // void deleteObjPtr(const StackObj& stackObj) noexcept {
+  //   switch (stackObj.symbol) {
+  //     case REGEX:
+  //       delete (Regex**)stackObj.obj;
+  //       break;
+  //     case ALTS:
+  //       delete (RegexVector*)stackObj.obj;
+  //       break;
+  //     case CONCATS:
+  //       delete (RegexVector*)stackObj.obj;
+  //       break;
+  //     case CHAR:
+  //       delete (char*)stackObj.obj;
+  //       break;
+  //     default:
+  //       return;
+  //   }
+  // }
 
 
   void deleteObj(const StackObj& stackObj) noexcept {
     if (stackObj.symbol == REGEX) {
       delete (*(Regex**)stackObj.obj);
     }
-    deleteObjPtr(stackObj);
+    // deleteObjPtr(stackObj);
   }
 
   // TODO: Remove throw and make noexcept when done
