@@ -9,17 +9,8 @@
 
 using namespace std;
 
-/* See test/tokenize.cpp */
-void generateConfigLexer() {
-  std::ofstream outFile;
-  outFile.open("src/config_lexer.cpp");
-  outFile << R"(#include "config_lexer.hpp")" << '\n';
-  configLexerStuff(outFile, CONFIG_GRAMMAR);
-  outFile.close();
-}
-
 int main() {
-  generateConfigLexer();
+  generateLexerCode("src/config_lexer", "", CONFIG_GRAMMAR);
 
   return 0;
 }

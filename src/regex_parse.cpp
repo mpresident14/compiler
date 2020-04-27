@@ -174,6 +174,12 @@ namespace {
    * LEXER *
    *********/
 
+  struct StackObj {
+    // Can't delete from here since it is a void*, see constructObj
+    void* obj;
+    int symbol;
+  };
+
   StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
 
   vector<StackObj> lex(const string& input) {

@@ -12,7 +12,7 @@
 #include <prez/print_stuff.hpp>
 
 using namespace std;
-
+using namespace src::config_lexer;
 
 namespace {
   // string addlHdrIncludes;

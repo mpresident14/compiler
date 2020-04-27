@@ -351,6 +351,13 @@ namespace {
     )";
   }
 
+  void lexerHppDecls(ostream& out) {
+    out << R"(void deleteObj(const StackObj& s);
+      std::vector<StackObj> tokenize(const std::string& input);
+      std::vector<StackObj> tokenize(std::istream& input);
+    )";
+  }
+
   /***********
    * PARSING *
    ***********/
@@ -569,11 +576,18 @@ namespace {
    * MISC *
    ********/
 
-  /* Needed for parser */
-  void hppIncludes(ostream& out) {
+  void parserHppIncludes(ostream& out) {
     out << R"(
       #include <iostream>
       #include <string>
+    )";
+  }
+
+  void lexerHppIncludes(ostream& out) {
+    out << R"(
+      #include <vector>
+      #include <string>
+      #include <iostream>
     )";
   }
 
@@ -596,16 +610,26 @@ namespace {
   }
 
 
-  void constInts(ostream& out) {
+  void noneInt(ostream& out) {
     out << R"(
       constexpr int NONE = INT_MIN;
+    )";
+  }
+
+  void sInt(ostream& out) {
+    out << R"(
       constexpr int S = 0;
     )";
   }
 
-  void tokenIndexFns(ostream& out) {
+  void isTokenFn(ostream& out) {
     out << R"(
       bool isToken(int symbol) { return symbol < 0; }
+    )";
+  }
+
+  void tokenToFromIndexFn(ostream& out) {
+    out << R"(
       int tokenToFromIndex(int token) { return -token - 1; }
     )";
   }
@@ -629,32 +653,54 @@ namespace {
    * DRIVER FUNCTIONS *
    ********************/
 
+  constexpr char generatedWarning[] = "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
+
   // TODO: Header guards
-  string hppCode(const string& namespaceName, const string& addlHdrIncludes, const GrammarData& grammarData) {
+  string parserHppCode(const string& namespaceName, const string& headerGuard, const string& addlHdrIncludes, const GrammarData& grammarData) {
     stringstream out;
 
+    out << "#ifndef "<< headerGuard << "\n#define " << headerGuard << '\n' << endl;
+    out << generatedWarning;
     out << addlHdrIncludes;
-    hppIncludes(out);
+    parserHppIncludes(out);
     out << "namespace " << namespaceName << '{';
     parseDecl(out, grammarData);
-    out << '}';
+    out << "}\n#endif";
 
     return out.str();
   }
 
-  string cppCode(
+  string lexerHppCode(const string& namespaceName, const string& headerGuard) {
+    stringstream out;
+
+    out << "#ifndef "<< headerGuard << "\n#define " << headerGuard << '\n' << endl;
+    out << generatedWarning;
+    lexerHppIncludes(out);
+    out << "namespace " << namespaceName << '{';
+    stackObjDecl(out);
+    lexerHppDecls(out);
+    out << "}\n#endif";
+
+    return out.str();
+  }
+
+  string parserCppCode(
       const string& parserFilePath,
       const string& namespaceName,
       const string& addlCode,
       const GrammarData& grammarData) {
     stringstream out;
 
+    out << generatedWarning;
     out << "#include \"" << parserFilePath << ".hpp\"\n";
     cppIncludes(out);
-    out << addlCode << "using namespace std;"
+    out << addlCode
+        << "using namespace std;"
         << "namespace {";
-    constInts(out);
-    tokenIndexFns(out);
+    noneInt(out);
+    sInt(out);
+    isTokenFn(out);
+    tokenToFromIndexFn(out);
     tokenDecl(out);
     concreteDecl(out);
     variableDecl(out);
@@ -681,40 +727,77 @@ namespace {
 
     return out.str();
   }
+
+   string lexerCppCode(
+      const string& lexerFilePath,
+      const string& namespaceName,
+      const string& addlCode,
+      const GrammarData& grammarData) {
+    stringstream out;
+
+    out << generatedWarning;
+    out << "#include \"" << lexerFilePath << ".hpp\"\n";
+    cppIncludes(out);
+    out << addlCode
+        << "using namespace std;"
+        << "using namespace " << namespaceName << ';'
+        << "namespace {";
+    noneInt(out);
+    tokenToFromIndexFn(out);
+    tokenDecl(out);
+    concreteDecl(out);
+    variableDecl(out);
+    grammarDataDecl(out, grammarData);
+    constructTokenObjFn(out, grammarData);
+    lexerDFA(out, grammarData);
+    out << "} namespace " << namespaceName << '{';
+    deleteObjFn(out, grammarData);
+    tokenizeFn(out);
+    out << '}';
+
+    return out.str();
+  }
+
 }  // namespace
 
 
-// TODO: Allow user to specify file name
-void generateCode(
+void generateParserCode(
     const string& parserFilePath,
     const string& addlHdrIncludes,
     const string& addlCode,
     const GrammarData& grammarData) {
   string namespaceName = replaceAll(parserFilePath, '/', "::");
+  string headerGuard = replaceAll(parserFilePath, '/', "_") + "_HPP";
+  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
   std::ofstream hppFile;
   hppFile.open(parserFilePath + ".hpp");
-  hppFile << hppCode(namespaceName, addlHdrIncludes, grammarData);
+  hppFile << parserHppCode(namespaceName, headerGuard, addlHdrIncludes, grammarData);
   hppFile.close();
 
   std::ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
-  cppFile << cppCode(parserFilePath, namespaceName, addlCode, grammarData);
+  cppFile << parserCppCode(parserFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
 }
 
 
-void configLexerStuff(ostream& out, const GrammarData& grammarData) {
-  cppIncludes(out);
-  out << "using namespace std;";
-  out << "namespace {";
-  tokenDecl(out);
-  concreteDecl(out);
-  variableDecl(out);
-  grammarDataDecl(out, grammarData);
-  constructTokenObjFn(out, grammarData);
-  lexerDFA(out, grammarData);
-  out << '}';
-  deleteObjFn(out, grammarData);
-  tokenizeFn(out);
+void generateLexerCode(
+    const string& lexerFilePath,
+    const string& addlCode,
+    const GrammarData& grammarData) {
+  string namespaceName = replaceAll(lexerFilePath, '/', "::");
+  string headerGuard = replaceAll(lexerFilePath, '/', "_") + "_HPP";
+  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+
+  std::ofstream hppFile;
+  hppFile.open(lexerFilePath + ".hpp");
+  hppFile << lexerHppCode(namespaceName, headerGuard);
+  hppFile.close();
+
+  std::ofstream cppFile;
+  cppFile.open(lexerFilePath + ".cpp");
+  cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
+  cppFile.close();
 }
+

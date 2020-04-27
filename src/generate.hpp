@@ -6,12 +6,15 @@
 #include <string>
 #include <ostream>
 
-void generateCode(
+void generateParserCode(
     const std::string& parserFilePath,
     const std::string& addlHdrIncludes,
     const std::string& addlCode,
     const GrammarData& grammarData);
 
-void configLexerStuff(std::ostream& out, const GrammarData& grammarData);
+void generateLexerCode(
+    const std::string& lexerFilePath,
+    const std::string& addlHdrIncludes,
+    const GrammarData& grammarData);
 
 #endif

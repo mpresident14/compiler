@@ -1,12 +1,17 @@
-#ifndef CONFIG_LEXER_HPP
-#define CONFIG_LEXER_HPP
+#ifndef SRC_CONFIG_LEXER_HPP
+#define SRC_CONFIG_LEXER_HPP
 
-#include "utils.hpp"
+/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */
 
-#include <vector>
-#include <string>
-
-void deleteObj(const StackObj& s);
-std::vector<StackObj> tokenize(const std::string& input);
-
+      #include <vector>
+      #include <string>
+      #include <iostream>
+    namespace src::config_lexer{struct StackObj {
+      void* obj;
+      int symbol;
+    };
+    void deleteObj(const StackObj& s);
+      std::vector<StackObj> tokenize(const std::string& input);
+      std::vector<StackObj> tokenize(std::istream& input);
+    }
 #endif

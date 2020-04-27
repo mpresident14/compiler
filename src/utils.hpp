@@ -41,12 +41,6 @@ inline int indexToSymbol(size_t i, size_t numVars) {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-struct StackObj {
-  // Can't delete from here since it is a void*, see constructObj
-  void* obj;
-  int symbol;
-};
-
 struct Token {
   std::string name;
   std::string type;

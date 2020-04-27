@@ -15,7 +15,7 @@ UnitTest TESTER = UnitTest::createTester();
 stringstream errBuffer;
 
 void test_parserWithConflicts() {
-  generateCode("test/generated/bad_expr_parser", "#include \"test/utils/expr.hpp\"\n", "", BAD_GRAMMAR_DATA);
+  generateParserCode("test/generated/bad_expr_parser", "#include \"test/utils/expr.hpp\"\n", "", BAD_GRAMMAR_DATA);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
 }
@@ -24,7 +24,7 @@ int main() {
   // To test stderr output
   cerr.rdbuf(errBuffer.rdbuf());
 
-  generateCode("test/generated/expr_parser", "#include \"test/utils/expr.hpp\"\n", "", GRAMMAR_DATA);
+  generateParserCode("test/generated/expr_parser", "#include \"test/utils/expr.hpp\"\n", "", GRAMMAR_DATA);
   test_parserWithConflicts();
 
   return 0;

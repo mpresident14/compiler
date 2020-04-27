@@ -72,9 +72,9 @@ set_source_files_properties(
 add_executable(write_config_lexer src/write_config_lexer.cpp src/generate.cpp)
 target_link_libraries(write_config_lexer parse_lib regex_lib)
 add_custom_command(
-    OUTPUT src/config_lexer.cpp
+    OUTPUT src/config_lexer.hpp src/config_lexer.cpp
     COMMAND write_config_lexer
-    COMMAND clang-format -i src/config_lexer.cpp
+    COMMAND clang-format -i src/config_lexer.hpp src/config_lexer.cpp
     DEPENDS write_config_lexer)
 
 add_executable(config_parse src/config_parse.cpp src/config_lexer.cpp)
