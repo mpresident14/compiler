@@ -628,6 +628,8 @@ namespace {
   /********************
    * DRIVER FUNCTIONS *
    ********************/
+
+  // TODO: Header guards
   string hppCode(const string& namespaceName, const string& addlHdrIncludes, const GrammarData& grammarData) {
     stringstream out;
 
@@ -682,21 +684,6 @@ namespace {
 }  // namespace
 
 
-void configLexerStuff(ostream& out, const GrammarData& grammarData) {
-  cppIncludes(out);
-  out << "using namespace std;";
-  out << "namespace {";
-  tokenDecl(out);
-  concreteDecl(out);
-  variableDecl(out);
-  grammarDataDecl(out, grammarData);
-  constructTokenObjFn(out, grammarData);
-  lexerDFA(out, grammarData);
-  out << '}';
-  deleteObjFn(out, grammarData);
-  tokenizeFn(out);
-}
-
 // TODO: Allow user to specify file name
 void generateCode(
     const string& parserFilePath,
@@ -714,4 +701,20 @@ void generateCode(
   cppFile.open(parserFilePath + ".cpp");
   cppFile << cppCode(parserFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
+}
+
+
+void configLexerStuff(ostream& out, const GrammarData& grammarData) {
+  cppIncludes(out);
+  out << "using namespace std;";
+  out << "namespace {";
+  tokenDecl(out);
+  concreteDecl(out);
+  variableDecl(out);
+  grammarDataDecl(out, grammarData);
+  constructTokenObjFn(out, grammarData);
+  lexerDFA(out, grammarData);
+  out << '}';
+  deleteObjFn(out, grammarData);
+  tokenizeFn(out);
 }

@@ -16,7 +16,8 @@ enum class RgxType {
   ALT,
   CONCAT,
   STAR,
-  RANGE
+  RANGE,
+  NOT
 };
 
 std::ostream& operator<<(std::ostream& out, RgxType type);
@@ -158,7 +159,7 @@ private:
 
 class Range : public Regex {
 public:
-  Range(char start, char end, bool invert);
+  Range(char start, char end);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
@@ -169,7 +170,28 @@ public:
 private:
   char start_;
   char end_;
-  bool invert_;
+};
+
+/* *
+ * Match a single character NOT present in bracketed list
+ * (e.g. [^ab...z] or [^a-z])
+ * */
+class Not : public Regex {
+public:
+  Not(Regex* rgx);
+  Not(RgxPtr rgx);
+  bool isNullable() const override;
+  RgxPtr getDeriv(char c) const override;
+  RgxType getType() const override;
+  bool operator==(const Regex& other) const override;
+  size_t hashFn() const override;
+  void toStream(std::ostream& out) const override;
+
+  friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
+
+private:
+  /* This must be a Character, Range, or Concat (enforced by lexer and parser) */
+  RgxPtr rgx_;
 };
 
 #endif

@@ -22,103 +22,150 @@ using namespace std;
 /* CHAR { char :: str[0] } <DELETER OPTIONAL>
  *
  *
- * Regex { Regex* } { delete $; }
- * Regex := Alts                             { new Alt(move($0)) }
- *        | Concats                          { new Concat(move($0)) }
- *        | Regex STAR                       { new Star($0) }
- *        | CARET Regex                      { new Not($1) }
- *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range($1, $3) }
- *        | LPAREN Regex RPAREN              { $1 }
- *        | CHAR                             { new Character($0) }
+ * Regex { Regex* } { delete #0; }
+ * Regex := Alt                              { #0 }
+ *        | Concats                          { new Concat(move(#0)) }
+ *        | Regex STAR                       { new Star(#0) }
+ *        | Not                              { #0 }
+ *        | LBRACKET CHAR DASH CHAR RBRACKET { new Range(#1, #3) }
+ *        | LPAREN Regex RPAREN              { #1 }
+ *        | CHAR                             { new Character(#0) }
+ *        | LBRACKET CHAR RBRACKET           { new Character(#1))) }
+ *
+ * Alt { Regex* } { delete #0; }
+ * Alt := Alts                       { new Alt(move(#0)) }
+ *      | LBRACKET Concats RBRACKET  { new Alt(move(#1)) }
+ *
+ * Not { Regex* } { delete #0; }
+ * Not := LBRACKET CARET CHAR RBRACKET            { new Not(new Character(#2))) }
+ *      | LBRACKET CARET Concats RBRACKET         { new Not(new Alt(move(#2))) }
+ *      | LBRACKET CARET CHAR DASH CHAR RBRACKET  { new Not(new Range(#2, #4)) }
  *
  * Alts { RegexVector }
- * Alts := Regex BAR Regex { RegexVector($0, $2) }
- *       | Regex BAR Alts  { RegexVector($0, move($2)) }
+ * Alts := Regex BAR Regex { RegexVector(#0, #2) }
+ *       | Regex BAR Alts  { RegexVector(#0, move(#2)) }
  *
  * Concats { RegexVector* }
- * Concats := Regex Regex   { RegexVector($0, $1) }
- *          | Regex Concats { RegexVector($0, move($1)) }
+ * Concats := Regex Regex   { RegexVector(#0, #1) }
+ *          | Regex Concats { RegexVector(#0, move(#1)) }
  *
  *
  * */
 
 namespace {
 
-  /* Variables */
-  constexpr int REGEX = 1;
-  constexpr int ALTS = 2;
-  constexpr int CONCATS = 3;
-
   /* Tokens */
-  constexpr int BAR = -1;
-  constexpr int STAR = -2;
-  constexpr int CARET = -3;
-  constexpr int LBRACKET = -4;
-  constexpr int RBRACKET = -5;
-  constexpr int LPAREN = -6;
-  constexpr int RPAREN = -7;
-  constexpr int DASH = -8;
-  constexpr int CHAR = -9;
+  enum TokenEnum {
+    BAR = -1,
+    STAR = -2,
+    CARET = -3,
+    LBRACKET = -4,
+    RBRACKET = -5,
+    LPAREN = -6,
+    RPAREN = -7,
+    DASH = -8,
+    CHAR = -9,
+  };
+
+  /* Variables */
+  enum VarEnum {
+    REGEX = 1,
+    ALT,
+    NOT,
+    ALTS,
+    CONCATS,
+  };
 
   /* Concrete Types */
-  constexpr int RALT = 1;
-  constexpr int RCONCAT = 2;
-  constexpr int RSTAR = 3;
-  constexpr int RNOTRANGE = 4;
-  constexpr int RRANGE = 5;
-  constexpr int RGROUP = 6;
-  constexpr int RCHAR = 7;
-  constexpr int AREGEX = 8;
-  constexpr int AALT = 9;
-  constexpr int CREGEX = 10;
-  constexpr int CCONCAT = 11;
+  enum ConcreteEnum {
+    REGEX_ALT = 1,
+    REGEX_CONCATS,
+    REGEX_STAR,
+    REGEX_NOT,
+    REGEX_RANGE,
+    REGEX_GROUP,
+    REGEX_CHAR,
+    REGEX_BRACKET_CHAR,
+    ALT_ALTS,
+    ALT_BRACKET,
+    NOT_CHAR,
+    NOT_CONCATS,
+    NOT_RANGE,
+    ALTS_REGEX,
+    ALTS_ALTS,
+    CONCATS_REGEX,
+    CONCATS_CONCATS,
+  };
 
 
+  // NOTE: These must be in same order as the constants above.
+  // TODO: Fix when we get {[<int>] = <value>} initialization
   struct GrammarData GRAMMAR_DATA = {
     /* tokens */ {
         { "BAR", "", 1, Assoc::LEFT, "", "", "" },
         { "STAR", "", 6, Assoc::LEFT, "", "", "" },
         { "CARET", "", NONE, Assoc::RIGHT, "", "", "" },
-        { "LBRACKET", "", 4, Assoc::NONE, "", "", "" },
-        { "RBRACKET", "", 4, Assoc::NONE, "", "", "" },
-        { "LPAREN", "", 4, Assoc::NONE, "", "", "" },
-        { "RPAREN", "", 4, Assoc::NONE, "", "", "" },
+        { "LBRACKET", "", 3, Assoc::NONE, "", "", "" },
+        { "RBRACKET", "", 5, Assoc::NONE, "", "", "" },
+        { "LPAREN", "", 3, Assoc::NONE, "", "", "" },
+        { "RPAREN", "", 3, Assoc::NONE, "", "", "" },
         { "DASH", "", NONE, Assoc::NONE, "", "", "" },
-        { "CHAR", "", 4, Assoc::LEFT, "", "", "" },
+        { "CHAR", "", 3, Assoc::LEFT, "", "", "" },
     },
 
     /* concretes */
     { { "SCONC", S, NONE, { REGEX }, "" },
-      { "RALT", REGEX, NONE, { ALTS }, "" },
-      { "RCONCAT", REGEX, NONE, { CONCATS }, "" },
-      { "RSTAR", REGEX, NONE, { REGEX, STAR }, "" },
-      { "RNOTRANGE", REGEX, NONE, { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET }, "" },
-      { "RRANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
-      { "RGROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
-      { "RCHAR", REGEX, NONE, { CHAR }, "" },
-      { "AREGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
-      { "AALT", ALTS, NONE, { ALTS, BAR, REGEX }, "" },
-      { "CREGEX", CONCATS, 5, { REGEX, REGEX }, "" },
-      { "CCONCAT", CONCATS, 5, { CONCATS, REGEX }, "" } },
+      { "REGEX_ALT", REGEX, NONE, { ALT }, "" },
+      { "REGEX_CONCATS", REGEX, NONE, { CONCATS }, "" },
+      { "REGEX_STAR", REGEX, NONE, { REGEX, STAR }, "" },
+      { "REGEX_NOT", REGEX, NONE, { NOT }, "" },
+      { "REGEX_RANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
+      { "REGEX_GROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
+      { "REGEX_CHAR", REGEX, NONE, { CHAR }, "" },
+      { "REGEX_BRACKET_CHAR", REGEX, NONE, { LBRACKET, CHAR, RBRACKET }, "" },
+      { "ALT_ALTS", ALT, NONE, { ALTS }, "" },
+      { "ALT_BRACKET", ALT, NONE, { LBRACKET, CONCATS, RBRACKET }, "" },
+      { "NOT_CHAR", NOT, NONE, { LBRACKET, CARET, CHAR, RBRACKET }, "" },
+      { "NOT_CONCATS", NOT, NONE, { LBRACKET, CARET, CONCATS, RBRACKET }, "" },
+      { "NOT_RANGE", NOT, NONE, { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET }, "" },
+      { "ALTS_REGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
+      { "ALTS_ALTS", ALTS, NONE, { ALTS, BAR, REGEX }, "" },
+      { "CONCATS_REGEX", CONCATS, 4, { REGEX, REGEX }, "" },
+      { "CONCATS_CONCATS", CONCATS, 4, { CONCATS, REGEX }, "" } },
 
     /* variables */
     { { "S", "", { SCONC }, "" },
       { "Regex",
         "",
-        { RALT, RCONCAT, RSTAR, RNOTRANGE, RRANGE, RGROUP, RCHAR },
+        { REGEX_ALT, REGEX_CONCATS, REGEX_STAR, REGEX_NOT, REGEX_RANGE, REGEX_GROUP, REGEX_CHAR, REGEX_BRACKET_CHAR },
+        "" },
+      { "Alt",
+        "",
+        {
+            ALT_ALTS,
+            ALT_BRACKET,
+        },
+        "" },
+      { "Not",
+        "",
+        {
+            NOT_CHAR,
+            NOT_CONCATS,
+            NOT_RANGE,
+        },
         "" },
       { "Alts",
         "",
         {
-            AREGEX,
-            AALT,
+            ALTS_REGEX,
+            ALTS_ALTS,
         },
         "" },
       { "Concats",
         "",
         {
-            CREGEX,
-            CCONCAT,
+            CONCATS_REGEX,
+            CONCATS_CONCATS,
         },
         "" } }
   };
@@ -132,9 +179,42 @@ namespace {
   vector<StackObj> lex(const string& input) {
     vector<StackObj> tokens;
     bool escaped = false;
+    size_t leftBracket = 0;
+    bool caret = false;
     tokens.reserve(input.size());
 
     for (char c : input) {
+
+      // All characters within brackets are just literals except '-' for a range and the first '^'
+      if (leftBracket > 0) {
+        if (escaped) {
+          tokens.push_back({ new char(c), CHAR });
+          escaped = false;
+          ++leftBracket;
+          continue;
+        }
+
+        if (c == '^' && leftBracket == 1) {
+          tokens.push_back(datalessObj(CARET));
+          caret = true;
+          leftBracket = 2;
+        } else if (c == '-' && ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
+          tokens.push_back(datalessObj(DASH));
+          leftBracket = 4;
+        } else if (c == '\\') {
+          escaped = true;
+        } else if (c == ']') {
+          tokens.push_back(datalessObj(RBRACKET));
+          leftBracket = 0;
+          caret = false;
+        } else {
+          tokens.push_back({ new char(c), CHAR });
+          ++leftBracket;
+        }
+        continue;
+      }
+
+
       if (escaped) {
         tokens.push_back({ new char(c), CHAR });
         escaped = false;
@@ -148,23 +228,15 @@ namespace {
         case '*':
           tokens.push_back(datalessObj(STAR));
           break;
-        case '^':
-          tokens.push_back(datalessObj(CARET));
-          break;
         case '[':
           tokens.push_back(datalessObj(LBRACKET));
-          break;
-        case ']':
-          tokens.push_back(datalessObj(RBRACKET));
+          leftBracket = 1;
           break;
         case '(':
           tokens.push_back(datalessObj(LPAREN));
           break;
         case ')':
           tokens.push_back(datalessObj(RPAREN));
-          break;
-        case '-':
-          tokens.push_back(datalessObj(DASH));
           break;
         case '\\':
           escaped = true;
@@ -199,11 +271,11 @@ namespace {
   void deleteObjPtr(const StackObj& stackObj) noexcept {
     switch (stackObj.symbol) {
       case REGEX:
+      case ALT:
+      case NOT:
         delete (Regex**)stackObj.obj;
         break;
       case ALTS:
-        delete (RegexVector*)stackObj.obj;
-        break;
       case CONCATS:
         delete (RegexVector*)stackObj.obj;
         break;
@@ -217,8 +289,11 @@ namespace {
 
 
   void deleteObj(const StackObj& stackObj) noexcept {
-    if (stackObj.symbol == REGEX) {
-      delete (*(Regex**)stackObj.obj);
+    switch (stackObj.symbol) {
+      case REGEX:
+      case ALT:
+      case NOT:
+        delete (*(Regex**)stackObj.obj);
     }
     deleteObjPtr(stackObj);
   }
@@ -227,30 +302,42 @@ namespace {
   /* Construct a concrete object */
   void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {
-      case RALT:
-        return new Regex*(new Alt(move(*(RegexVector*)args[0].obj)));
-      case RCONCAT:
+      case REGEX_ALT:
+        return new Regex*(*(Regex**) args[0].obj);
+      case REGEX_CONCATS:
         return new Regex*(new Concat(move(*(RegexVector*)args[0].obj)));
-      case RSTAR:
+      case REGEX_STAR:
         return new Regex*(new Star(*(Regex**)args[0].obj));
-      case RNOTRANGE:
-        return new Regex*(new Range(*(char*)args[2].obj, *(char*)args[4].obj, true));
-      case RRANGE:
-        return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj, false));
-      case RGROUP:
+      case REGEX_NOT:
+        return new Regex*(*(Regex**) args[0].obj);
+      case REGEX_RANGE:
+        return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
+      case REGEX_GROUP:
         return new Regex*(*(Regex**)args[1].obj);
-      case RCHAR:
+      case REGEX_CHAR:
         return new Regex*(new Character(*(char*)args[0].obj));
-      case AREGEX:
+      case REGEX_BRACKET_CHAR:
+        return new Regex*(new Character(*(char*)args[1].obj));
+      case ALT_ALTS:
+        return new Regex*(new Alt(move(*(RegexVector*)args[0].obj)));
+      case ALT_BRACKET:
+        return new Regex*(new Alt(move(*(RegexVector*)args[1].obj)));
+      case NOT_CHAR:
+        return new Regex*(new Not(new Character(*(char*) args[2].obj)));
+      case NOT_CONCATS:
+        return new Regex*(new Not(new Alt(move(*(RegexVector*) args[2].obj))));
+      case NOT_RANGE:
+        return new Regex*(new Not(new Range(*(char*)args[2].obj, *(char*)args[4].obj)));
+      case ALTS_REGEX:
         return new RegexVector(
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
-      case AALT:
+      case ALTS_ALTS:
         return new RegexVector(RegexVector(
             move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
-      case CREGEX:
+      case CONCATS_REGEX:
         return new RegexVector(
             RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
-      case CCONCAT:
+      case CONCATS_CONCATS:
         return new RegexVector(RegexVector(
             move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
       case SCONC:

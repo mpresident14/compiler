@@ -21,11 +21,6 @@ UnitTest TESTER = UnitTest::createTester();
 
 stringstream errBuffer;
 
-// void testParse() {
-//   RgxPtr r0 = parse("abc");
-// }
-
-
 void testParse() {
   RgxPtr r0 = parse("a");
   RgxPtr r1 = parse("ab*|b");
@@ -37,7 +32,7 @@ void testParse() {
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
-  TESTER.assertEquals(RgxType::RANGE, r2->getType());
+  TESTER.assertEquals(RgxType::NOT, r2->getType());
   TESTER.assertEquals(RgxType::CONCAT, r3->getType());
   TESTER.assertEquals(RgxType::ALT, r4->getType());
   TESTER.assertEquals(RgxType::RANGE, r5->getType());
@@ -112,14 +107,20 @@ void testGetDeriv_star() {
 }
 
 
-void testGetDeriv_range() {
+void testGetDeriv_brackets() {
   RgxPtr r1 = RgxPtr(parse("[0-9]"));
   RgxPtr r2 = RgxPtr(parse("[^0-9]"));
+  RgxPtr r3 = RgxPtr(parse("[\\]*$-]"));
+  RgxPtr r4 = RgxPtr(parse("[^\\]*$-]"));
 
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('a'));
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('7'));
-  TESTER.assertEquals(EmptySet(), *r2->getDeriv('7'));
   TESTER.assertEquals(Epsilon(), *r2->getDeriv('a'));
+  TESTER.assertEquals(EmptySet(), *r2->getDeriv('7'));
+  TESTER.assertEquals(Epsilon(), *r3->getDeriv(']'));
+  TESTER.assertEquals(EmptySet(), *r3->getDeriv('a'));
+  TESTER.assertEquals(EmptySet(), *r4->getDeriv(']'));
+  TESTER.assertEquals(Epsilon(), *r4->getDeriv('a'));
 }
 
 
@@ -159,7 +160,7 @@ void testRgxDFAToCode_withInvalidRegex() {
   GrammarData grammarData = {
     {
         { "", "", NONE, Assoc::NONE, "", "", "." },
-        { "", "", NONE, Assoc::NONE, "", "", "1-9][0-9]*" },
+        { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" },
         { "", "", NONE, Assoc::NONE, "", "", "for" },
     },
     {},
@@ -182,7 +183,7 @@ int main(int, char**) {
   testGetDeriv_alt();
   testGetDeriv_concat();
   testGetDeriv_star();
-  testGetDeriv_range();
+  testGetDeriv_brackets();
   testHashFn();
   testRgxDFAToCode_withNullableRegex();
   testRgxDFAToCode_withInvalidRegex();
