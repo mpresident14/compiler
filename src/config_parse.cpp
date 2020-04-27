@@ -1,5 +1,6 @@
 #include "config_parse.hpp"
 #include "config_lexer.hpp"
+#include "config_grammar.hpp"
 
 #include <vector>
 #include <string_view>
@@ -7,6 +8,8 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 
@@ -36,18 +39,27 @@ int main() {
   // cout << addlHdrIncludes << endl;
   // cout << addlCode << endl;
 
-  vector<StackObj> tokens = tokenize(R"(#header %code% %code2% "Hello, world!" "Hello, world!")");
+  vector<StackObj> tokens = tokenize(R"(-> #header %code% %code2% "Hello, \"world!" "Hello, world!")");
 
   // vector<StackObj> tokens = tokenize(R"(
   //   "Hello, world!"
   //   )");
 
-  for (auto& sObj : tokens) {
-    cout << sObj.symbol << endl;
-    if (sObj.symbol < -8) {
-      cout << ((string*) sObj.obj)->size() << ": " << *(string*) sObj.obj << endl;
+  vector<string> tokenNames;
+  auto stkObjToName = [](StackObj stkObj) {
+    return CONFIG_GRAMMAR.tokens[tokenToFromIndex(stkObj.symbol)].name;
+  };
+  transform(
+      tokens.begin(), tokens.end(), back_inserter(tokenNames), stkObjToName);
+  cout << tokenNames << endl;
+
+  for (auto token : tokens) {
+    if (token.symbol <= -9) {
+      cout << *(string*) token.obj << endl;
     }
   }
+
+
 
   for_each(tokens.cbegin(), tokens.cend(), deleteObj);
 
