@@ -42,13 +42,18 @@ target_link_libraries(build_parser_test parse_lib)
 add_executable(regex_test ${TEST_DIR}/regex_test.cpp)
 target_link_libraries(regex_test parse_lib regex_lib)
 add_executable(parse_test
-     ${TEST_DIR}/parse_test.cpp
-     ${TEST_GEN_DIR}/expr_parser.cpp
-     ${TEST_GEN_DIR}/bad_expr_parser.cpp)
+    ${TEST_DIR}/parse_test.cpp
+    ${TEST_GEN_DIR}/expr_parser.cpp
+    ${TEST_GEN_DIR}/bad_expr_parser.cpp)
+add_executable(tokenize_test
+    ${TEST_DIR}/tokenize_test.cpp
+    ${TEST_GEN_DIR}/random_lexer.cpp)
 
-# Parser generation for testing
+# Parser and lexer generation for testing
 add_executable(write_parser ${TEST_UTIL_DIR}/write_parser.cpp src/generate.cpp)
+add_executable(write_lexer ${TEST_UTIL_DIR}/write_lexer.cpp src/generate.cpp)
 target_link_libraries(write_parser parse_lib regex_lib)
+target_link_libraries(write_lexer parse_lib regex_lib)
 # Ensure that we generate the correct code before building the corresponding test
 add_custom_command(
     OUTPUT
@@ -63,11 +68,19 @@ add_custom_command(
         ${TEST_GEN_DIR}/bad_expr_parser.hpp
         ${TEST_GEN_DIR}/bad_expr_parser.cpp
     DEPENDS write_parser)
+add_custom_command(
+    OUTPUT ${TEST_GEN_DIR}/random_lexer.hpp ${TEST_GEN_DIR}/random_lexer.cpp
+    COMMAND write_lexer
+    COMMAND clang-format -i ${TEST_GEN_DIR}/random_lexer.hpp ${TEST_GEN_DIR}/random_lexer.cpp
+    DEPENDS write_lexer)
 set_source_files_properties(
     ${TEST_DIR}/parse_test.cpp
     PROPERTIES
         OBJECT_DEPENDS ${TEST_GEN_DIR}/expr_parser.hpp
         OBJECT_DEPENDS ${TEST_GEN_DIR}/bad_expr_parser.hpp)
+set_source_files_properties(
+    ${TEST_DIR}/tokenize_test.cpp
+    PROPERTIES OBJECT_DEPENDS ${TEST_GEN_DIR}/random_lexer.hpp)
 
 add_executable(write_config_lexer src/write_config_lexer.cpp src/generate.cpp)
 target_link_libraries(write_config_lexer parse_lib regex_lib)
@@ -88,10 +101,11 @@ add_test(null_first null_first_test)
 add_test(build_parser build_parser_test)
 add_test(regex regex_test)
 add_test(parse parse_test)
+add_test(tokenize tokenize_test)
 
-set(MYTESTS dfa_test null_first_test build_parser_test regex_test parse_test)
+set(MYTESTS dfa_test null_first_test build_parser_test regex_test parse_test tokenize_test)
 set_tests_properties(
-    dfa null_first build_parser regex parse
+    dfa null_first build_parser regex parse tokenize
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests

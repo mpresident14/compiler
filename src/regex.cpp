@@ -365,7 +365,7 @@ void Range::toStream(std::ostream &out) const {
  *******/
 Not::Not(Regex *rgx) : rgx_(RgxPtr(rgx)) {}
 Not::Not(RgxPtr rgx) : rgx_(rgx) {}
-bool Not::isNullable() const { return !rgx_->isNullable(); }
+bool Not::isNullable() const { return false; }
 RgxPtr Not::getDeriv(char c) const {
   switch (rgx_->getDeriv(c)->getType()) {
     case RgxType::EPSILON:
