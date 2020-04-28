@@ -12,6 +12,7 @@
 enum class RgxType {
   EMPTYSET,
   EPSILON,
+  DOT,
   CHARACTER,
   ALT,
   CONCAT,
@@ -64,6 +65,16 @@ inline bool operator==(const RgxPtr& r1, const RgxPtr& r2) {
 }
 
 class EmptySet : public Regex {
+public:
+  bool isNullable() const override;
+  RgxPtr getDeriv(char) const override;
+  RgxType getType() const override;
+  bool operator==(const Regex& other) const override;
+  void toStream(std::ostream& out) const override;
+  size_t hashFn() const override;
+};
+
+class Dot : public Regex {
 public:
   bool isNullable() const override;
   RgxPtr getDeriv(char) const override;

@@ -172,6 +172,17 @@ RgxType Epsilon::getType() const { return RgxType::EPSILON; }
 size_t Epsilon::hashFn() const { return 0; }
 void Epsilon::toStream(ostream &out) const { out << "EPSILON"; }
 
+/*******
+ * Dot *
+ *******/
+bool Dot::isNullable() const { return false; }
+RgxPtr Dot::getDeriv(char) const { return make_shared<Epsilon>(); }
+bool Dot::operator==(const Regex &other) const {
+  return other.getType() == RgxType::DOT;
+}
+RgxType Dot::getType() const { return RgxType::DOT; }
+size_t Dot::hashFn() const { return 0; }
+void Dot::toStream(ostream &out) const { out << "DOT"; }
 
 /*************
  * Character *
@@ -181,7 +192,7 @@ Character::Character(char c) : c_{ c } {}
 bool Character::isNullable() const { return false; }
 
 RgxPtr Character::getDeriv(char c) const {
-  if (c_ == '.' || c == c_) {
+  if (c == c_) {
     return make_shared<Epsilon>();
   }
   return make_shared<EmptySet>();

@@ -31,6 +31,7 @@ using namespace std;
  *        | LPAREN Regex RPAREN              { #1 }
  *        | CHAR                             { new Character(#0) }
  *        | LBRACKET CHAR RBRACKET           { new Character(#1))) }
+ *        | DOT                              { new Dot() }
  *
  * Alt { Regex* } { delete #0; }
  * Alt := Alts                       { new Alt(move(#0)) }
@@ -65,6 +66,7 @@ namespace {
     RPAREN = -7,
     DASH = -8,
     CHAR = -9,
+    DOT = -10,
   };
 
   /* Variables */
@@ -86,6 +88,7 @@ namespace {
     REGEX_GROUP,
     REGEX_CHAR,
     REGEX_BRACKET_CHAR,
+    REGEX_DOT,
     ALT_ALTS,
     ALT_BRACKET,
     NOT_CHAR,
@@ -111,6 +114,7 @@ namespace {
         { "RPAREN", "", 3, Assoc::NONE, "", "", "" },
         { "DASH", "", NONE, Assoc::NONE, "", "", "" },
         { "CHAR", "", 3, Assoc::LEFT, "", "", "" },
+        { "DOT", "", 3, Assoc::LEFT, "", "", "" },
     },
 
     /* concretes */
@@ -123,6 +127,7 @@ namespace {
       { "REGEX_GROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
       { "REGEX_CHAR", REGEX, NONE, { CHAR }, "" },
       { "REGEX_BRACKET_CHAR", REGEX, NONE, { LBRACKET, CHAR, RBRACKET }, "" },
+      { "REGEX_DOT", REGEX, NONE, { DOT }, "" },
       { "ALT_ALTS", ALT, NONE, { ALTS }, "" },
       { "ALT_BRACKET", ALT, NONE, { LBRACKET, CONCATS, RBRACKET }, "" },
       { "NOT_CHAR", NOT, NONE, { LBRACKET, CARET, CHAR, RBRACKET }, "" },
@@ -137,7 +142,7 @@ namespace {
     { { "S", "", { SCONC }, "" },
       { "Regex",
         "",
-        { REGEX_ALT, REGEX_CONCATS, REGEX_STAR, REGEX_NOT, REGEX_RANGE, REGEX_GROUP, REGEX_CHAR, REGEX_BRACKET_CHAR },
+        { REGEX_ALT, REGEX_CONCATS, REGEX_STAR, REGEX_NOT, REGEX_RANGE, REGEX_GROUP, REGEX_CHAR, REGEX_BRACKET_CHAR, REGEX_DOT },
         "" },
       { "Alt",
         "",
@@ -228,6 +233,9 @@ namespace {
       }
 
       switch (c) {
+        case '.':
+          tokens.push_back(datalessObj(DOT));
+          break;
         case '|':
           tokens.push_back(datalessObj(BAR));
           break;
@@ -324,6 +332,8 @@ namespace {
         return new Regex*(new Character(*(char*)args[0].obj));
       case REGEX_BRACKET_CHAR:
         return new Regex*(new Character(*(char*)args[1].obj));
+      case REGEX_DOT:
+        return new Regex*(new Dot());
       case ALT_ALTS:
         return new Regex*(new Alt(move(*(RegexVector*)args[0].obj)));
       case ALT_BRACKET:
