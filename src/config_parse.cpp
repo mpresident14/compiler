@@ -39,7 +39,17 @@ int main() {
   // cout << addlHdrIncludes << endl;
   // cout << addlCode << endl;
 
-  vector<StackObj> tokens = tokenize(R"(-> #header %code% %code2% "Hello, \"world!" "Hello, world!")");
+  ifstream configFile;
+  configFile.open("test/utils/expr_config.txt");
+  vector<StackObj> tokens;
+
+  try {
+    tokens = tokenize(configFile);
+    // tokens = tokenize("%\ncode%");
+  } catch (runtime_error& e) {
+    cout << e.what() << endl;
+    configFile.close();
+  }
 
   // vector<StackObj> tokens = tokenize(R"(
   //   "Hello, world!"

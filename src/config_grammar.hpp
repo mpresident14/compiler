@@ -13,7 +13,7 @@ GrammarData CONFIG_GRAMMAR = {
       { "DEFINED", "", NONE, Assoc::NONE, "", "", ":=" },
       { "BAR", "", NONE, Assoc::NONE, "", "", "\\|" },
       { "ARROW", "", NONE, Assoc::NONE, "", "", "->" },
-      { "IDENT", "string", NONE, Assoc::NONE, "str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*" },
+      { "IDENT", "string", NONE, Assoc::NONE, "str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*\\**&*" },
       { "STRLIT", "string", NONE, Assoc::NONE, "str.substr(1, str.size() - 2)", "", R"("([^"]|\\")*")" },
       { "CODE", "string", NONE, Assoc::NONE, "str.substr(1, str.size() - 2)", "", R"(%([^%]|\\%)*%)" },
   },

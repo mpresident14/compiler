@@ -1,23 +1,23 @@
-%header
+#header
 %
   #include "test/expr.hpp"
 %
 
-%source
+#source
 %
   char c[] = "Just for testing";
 %
 
-%tokens
-INT -> int "[1-9][0-9]*" % stoi(string(str)) %
+#tokens
+INT  "[1-9][0-9]*" -> int % stoi(string(str)) %
 PLUS "\+"
 STAR "\*"
 
-%prec
+#prec
 PLUS %left
 STAR %left
 
-%grammar
+#grammar
 Expr -> Expr* % delete #0 %
 Expr := INT            % new EInt(#0) %
       | Expr PLUS Expr % new EPlus(#0, #2) %

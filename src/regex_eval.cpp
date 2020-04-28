@@ -26,7 +26,7 @@ namespace {
   constexpr char alphabet[] =
       " !\"#$%&\'()*+,-./"
       "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
-      "abcdefghijklmnopqrstuvwxyz{|}~";
+      "abcdefghijklmnopqrstuvwxyz{|}~\n\t";
 
   using RgxDFA = DFA<RgxPtr, char>;
 
@@ -175,14 +175,13 @@ namespace {
 
   /* Value string representation */
   string charToString(char c) {
-    string str(1, '\'');
-    str.reserve(4);
-    if (c == '\\' || c == '\'') {
-      str.append(1, '\\');
+    switch (c) {
+      case '\\': return {'\'', '\\', '\\', '\''};
+      case '\'': return {'\'', '\\', '\'', '\''};
+      case '\n': return {'\'', '\\', 'n', '\''};
+      case '\t': return {'\'', '\\', 't', '\''};
+      default: return string{'\'', c, '\''};
     }
-    str.append(1, c);
-    str.append(1, '\'');
-    return str;
   }
 
 }  // namespace

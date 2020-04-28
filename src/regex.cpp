@@ -128,10 +128,16 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
 
 
 RgxPtr makeConcats(vector<RgxPtr> &&rs) {
+  if (rs.empty()) {
+    return make_shared<Concat>(move(rs));
+  }
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
 }
 
 RgxPtr makeAlts(vector<RgxPtr> &&rs) {
+  if (rs.empty()) {
+    return make_shared<Alt>(move(rs));
+  }
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeAlt);
 }
 
@@ -294,6 +300,9 @@ bool Concat::isNullable() const {
 // TODO: Make this better
 RgxPtr Concat::getDeriv(char c) const {
   const vector<RgxPtr> &rgxs = rVec_.rgxs_;
+  if (rgxs.empty()) {
+    return make_shared<EmptySet>();
+  }
   vector<RgxPtr> derivAndRest = { rgxs[0]->getDeriv(c) };
   copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 

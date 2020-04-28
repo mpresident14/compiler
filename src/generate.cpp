@@ -351,6 +351,13 @@ namespace {
     )";
   }
 
+  void tokenizeFileFn(ostream& out) {
+    out << R"(vector<StackObj> tokenize(istream& input) {
+        return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
+      }
+    )";
+  }
+
   void lexerHppDecls(ostream& out) {
     out << R"(void deleteObj(const StackObj& s);
       std::vector<StackObj> tokenize(const std::string& input);
@@ -753,6 +760,7 @@ namespace {
     out << "} namespace " << namespaceName << '{';
     deleteObjFn(out, grammarData);
     tokenizeFn(out);
+    tokenizeFileFn(out);
     out << '}';
 
     return out.str();
