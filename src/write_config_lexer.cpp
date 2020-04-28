@@ -10,7 +10,9 @@
 using namespace std;
 
 int main() {
-  generateLexerCode("src/config_lexer", "", CONFIG_GRAMMAR);
+
+
+  generateLexerCode("src/config_lexer", ADDL_CODE, CONFIG_GRAMMAR);
 
   return 0;
 }

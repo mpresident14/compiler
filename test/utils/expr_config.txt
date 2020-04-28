@@ -1,16 +1,18 @@
 #header
 %
   #include "test/expr.hpp"
+  #include <iostream>
 %
 
 #source
 %
-  char c[] = "Just for testing";
+  char c[] = "Just for testing \%";
 %
 
 #tokens
 INT  "[1-9][0-9]*" -> int % stoi(string(str)) %
-PLUS "\+"
+                          % cout << "Would-be deleter called" << endl; %
+PLUS "+"
 STAR "\*"
 
 #prec
@@ -19,6 +21,6 @@ STAR %left
 
 #grammar
 Expr -> Expr* % delete #0 %
-Expr := INT            % new EInt(#0) %
-      | Expr PLUS Expr % new EPlus(#0, #2) %
-      | Expr STAR Expr % new ETimes(#0, #2) %
+Expr := INT                       % new EInt(#0) %
+      | Expr PLUS Expr            % new EPlus(#0, #2) %
+      | Expr STAR Expr #prec STAR % new ETimes(#0, #2) %
