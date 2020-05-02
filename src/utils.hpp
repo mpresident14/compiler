@@ -12,7 +12,7 @@
 #include <type_traits>
 
 /* Fixed for all grammars */
-enum class Assoc { LEFT, RIGHT, NOT, NONE };
+enum class Assoc { NONE, LEFT, RIGHT, NOT };
 inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
   switch (assoc) {
     case Assoc::LEFT:
@@ -44,8 +44,8 @@ inline int indexToSymbol(size_t i, size_t numVars) {
 struct Token {
   std::string name;
   std::string type;
-  int precedence;
-  Assoc assoc;
+  int precedence = NONE;
+  Assoc assoc = Assoc::NONE;
   std::string ctorExpr;
   std::string dtorStmt;
   std::string regex;
@@ -54,7 +54,7 @@ struct Token {
 struct Concrete {
   std::string name;
   int varType;
-  int precedence;
+  int precedence = NONE;
   std::vector<int> argSymbols;
   std::string ctorExpr;
 };

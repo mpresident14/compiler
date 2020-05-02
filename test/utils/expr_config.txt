@@ -16,8 +16,8 @@ PLUS "+"
 STAR "\*"
 
 #prec
-PLUS %left
-STAR %left
+PLUS #left
+STAR #left
 
 #grammar
 Expr -> Expr* % delete #0 %

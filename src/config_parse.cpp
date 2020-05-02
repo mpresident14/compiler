@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <unordered_map>
 
 #include <prez/print_stuff.hpp>
 
@@ -19,9 +20,11 @@ namespace {
   string addlHdrIncludes;
   string addlCode;
   GrammarData grammarData;
-  vector<Token>& tokens = grammarData.tokens;
-  vector<Concrete>& concretes = grammarData.concretes;
-  vector<Variable>& variables = grammarData.variables;
+  vector<Token>& gdTokens = grammarData.tokens;
+  vector<Concrete>& gdConcretes = grammarData.concretes;
+  vector<Variable>& gdVariables = grammarData.variables;
+
+  unordered_map<string, size_t> tokenNameToIndex;
 
   string tokenToString(int tokenId) {
     return CONFIG_GRAMMAR.tokens[tokenToFromIndex(tokenId)].name;
@@ -38,31 +41,109 @@ namespace {
     return s.str();
   }
 
-  bool maybeConsume(int tokenId, const vector<StackObj>& tokens, size_t pos) {
+
+  /*******************
+   * CONSUME HELPERS *
+   *******************/
+  bool maybeConsume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
       return false;
     }
     ++pos;
     return true;
   }
-  void consume(int tokenId, const vector<StackObj>& tokens, size_t pos) {
+  void consume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (!maybeConsume(tokenId, tokens, pos)) {
       throw runtime_error("Parse error at: " + tokensToStrings(tokens) + ". Expected " + tokenToString(tokenId));
     }
   }
-  string* maybeConsumeString(int tokenId, const vector<StackObj>& tokens, size_t pos) {
+  string* maybeConsumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
       return nullptr;
     }
     return (string*) tokens[pos++].obj;
   }
-  string consumeString(int tokenId, const vector<StackObj>& tokens, size_t pos) {
+  string consumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     string* strPtr = maybeConsumeString(tokenId, tokens, pos);
     if (!strPtr) {
       throw runtime_error("Parse error at: " + tokensToStrings(tokens) + ". Expected " + tokenToString(tokenId));
     }
     return *strPtr;
   }
+
+
+  // TODO: move() all strings from tokens instead of copying
+
+  void parseHeader(const vector<StackObj>& tokens, size_t& pos) {
+    consume(HEADER, tokens, pos);
+    addlHdrIncludes = consumeString(CODE, tokens, pos);
+  }
+
+  void parseSource(const vector<StackObj>& tokens, size_t& pos) {
+    consume(SOURCE, tokens, pos);
+    addlCode = consumeString(CODE, tokens, pos);
+  }
+
+  bool maybeParseToken(const vector<StackObj>& tokens, size_t& pos) {
+    // Check for an identifier to see if there are any more tokens
+    string* name = maybeConsumeString(IDENT, tokens, pos);
+    if (!name) {
+      return false;
+    }
+
+    gdTokens.push_back(Token());
+    Token& gdToken = gdTokens.back();
+    gdToken.name = *name;
+    // Keep track of the index for this name so that we can use it when parsing #prec
+    tokenNameToIndex.emplace(*name, gdTokens.size() - 1);
+    gdToken.regex = consumeString(STRLIT, tokens, pos);
+    // An arrow signifies that the token holds data
+    if (maybeConsume(ARROW, tokens, pos)) {
+      gdToken.type = consumeString(IDENT, tokens, pos);
+      gdToken.ctorExpr = consumeString(CODE, tokens, pos);
+      gdToken.dtorStmt = consumeString(CODE, tokens, pos);
+    }
+    return true;
+  }
+
+  void parseTokens(const vector<StackObj>& tokens, size_t& pos) {
+    consume(TOKENS, tokens, pos);
+    while (maybeParseToken(tokens, pos));
+  }
+
+  bool maybeParsePrec(const vector<StackObj>& tokens, size_t& pos, size_t prec) {
+    // Check for an identifier to see if there are any more precedence lines
+    string* name = maybeConsumeString(IDENT, tokens, pos);
+    if (!name) {
+      return false;
+    }
+
+    // Look up the index of the token in the map
+    auto iter = tokenNameToIndex.find(*name);
+    if (iter == tokenNameToIndex.end()) {
+      throw runtime_error("Unknown token " + *name);
+    }
+
+    Token& gdToken = gdTokens[iter->second];
+    gdToken.precedence = prec;
+    // Figure out the associativity (which is required)
+    if (maybeConsume(LEFTASSOC, tokens, pos)) {
+      gdToken.assoc = Assoc::LEFT;
+    } else if (maybeConsume(RIGHTASSOC, tokens, pos)) {
+      gdToken.assoc = Assoc::RIGHT;
+    } else {
+      consume(NONASSOC, tokens, pos);
+      gdToken.assoc = Assoc::NOT;
+    }
+    return true;
+  }
+
+  void parsePrecs(const vector<StackObj>& tokens, size_t& pos) {
+    consume(PREC, tokens, pos);
+    size_t prec = 1;
+    while (maybeParsePrec(tokens, pos, prec++));
+  }
+
 } // namespace
 
 
@@ -81,26 +162,31 @@ int main() {
   // cout << addlHdrIncludes << endl;
   // cout << addlCode << endl;
 
-  ifstream configFile;
-  configFile.open("test/utils/expr_config.txt");
+  ifstream configFile("test/utils/expr_config.txt");
   vector<StackObj> tokens;
 
   try {
     tokens = tokenize(configFile);
-    // tokens = tokenize("%\ncode%");
   } catch (runtime_error& e) {
     cout << e.what() << endl;
-    configFile.close();
   }
 
-  cout << tokensToStrings(tokens) << endl;
-
-  for (auto token : tokens) {
-    if (token.symbol <= -9) {
-      cout << *(string*) token.obj << endl;
-    }
+  size_t pos = 0;
+  parseHeader(tokens, pos);
+  parseSource(tokens, pos);
+  parseTokens(tokens, pos);
+  parsePrecs(tokens, pos);
+  cout << addlHdrIncludes << endl;
+  cout << addlCode << endl;
+  for (const Token& tok : gdTokens) {
+    cout << tok.name << endl;
+    cout << tok.regex << endl;
+    cout << tok.type << endl;
+    cout << tok.ctorExpr << endl;
+    cout << tok.dtorStmt << endl;
+    cout << tok.precedence << endl;
+    cout << tok.assoc << endl;
   }
-
 
 
   for_each(tokens.cbegin(), tokens.cend(), deleteObj);
