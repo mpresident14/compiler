@@ -15,7 +15,7 @@
 
 struct DFARule {
   int concrete;
-  std::vector<int> symbols;
+  std::vector<intptr_t> symbols;
   size_t pos;
   // Allows us to change lookahead while it is inside of a RuleSet, which is ok
   // b/c lookahead is not involved in the hash function or equality for RuleSets

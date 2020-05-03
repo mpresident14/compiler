@@ -10,6 +10,8 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <cstdint>
+
 
 /* Fixed for all grammars */
 enum class Assoc { NONE, LEFT, RIGHT, NOT };
@@ -27,7 +29,6 @@ inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
 }
 
 static constexpr int NONE = INT_MIN;
-static constexpr int EPSILON = INT_MAX;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
 
@@ -51,11 +52,13 @@ struct Token {
   std::string regex;
 };
 
+// TODO: I changed argSymbols from int to intptr_t. Change all symbol stuff to long.
 struct Concrete {
   std::string name;
   int varType;
   int precedence = NONE;
-  std::vector<int> argSymbols;
+  // See parseGrammarDef() in config_parse.cpp for why this is intptr_t
+  std::vector<intptr_t> argSymbols;
   std::string ctorExpr;
 };
 

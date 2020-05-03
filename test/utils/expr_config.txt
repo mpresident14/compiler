@@ -21,6 +21,6 @@ STAR #left
 
 #grammar
 Expr -> Expr* % delete #0 %
-Expr := INT                       % new EInt(#0) %
-      | Expr PLUS Expr            % new EPlus(#0, #2) %
-      | Expr STAR Expr #prec STAR % new ETimes(#0, #2) %
+ := INT                       % new EInt(#0) %
+  | Expr PLUS Expr            % new EPlus(#0, #2) %
+  | Expr STAR Expr #prec STAR % new ETimes(#0, #2) %

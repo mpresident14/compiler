@@ -92,12 +92,9 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
 
   for (size_t var = 0; var < numVars; ++var) {
     for (int concreteType : grammarData.variables[var].concreteTypes) {
-      // Epsilon is always nullable, so this symbol is nullable
-      // NOTE: EPSILON is a special symbol we include when
-      // the user leaves empty arguments, so a rule with epsilon will
-      // only contain epsilon.
+      // Epsilon (i.e. empty) is always nullable, so this symbol is nullable
       const Concrete& rule = grammarData.concretes[concreteType];
-      if (rule.argSymbols[0] == EPSILON) {
+      if (rule.argSymbols.empty()) {
         nullabilities[var] = true;
         break;
       }
@@ -147,10 +144,6 @@ std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
     UnionEquation& unionEq = equations[var];
     for (int concreteType : grammarData.variables[var].concreteTypes) {
       for (int rhsSymbol : grammarData.concretes[concreteType].argSymbols) {
-        // If rule is empty, there is no first, so skip it
-        if (rhsSymbol == EPSILON) {
-          break;
-        }
         // Tokens are never nullable, so first can only be the token
         if (isToken(rhsSymbol)) {
           unionEq.tokenSet[tokenToFromIndex(rhsSymbol)] = true;

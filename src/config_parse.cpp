@@ -10,6 +10,7 @@
 #include <iostream>
 #include <optional>
 #include <unordered_map>
+#include <cstdint>
 
 #include <prez/print_stuff.hpp>
 
@@ -25,6 +26,7 @@ namespace {
   vector<Variable>& gdVariables = grammarData.variables;
 
   unordered_map<string, size_t> tokenNameToIndex;
+  unordered_map<string, size_t> varNameToIndex;
 
   string tokenToString(int tokenId) {
     return CONFIG_GRAMMAR.tokens[tokenToFromIndex(tokenId)].name;
@@ -73,6 +75,9 @@ namespace {
 
 
   // TODO: move() all strings from tokens instead of copying
+  // TODO: Use a class so we don't have to pass around tokens and pos everywhere
+  // TODO: Need to check to make sure things aren't empty,
+  // e.g., at least one token and grammar variable
 
   void parseHeader(const vector<StackObj>& tokens, size_t& pos) {
     consume(HEADER, tokens, pos);
@@ -144,6 +149,106 @@ namespace {
     while (maybeParsePrec(tokens, pos, prec++));
   }
 
+
+  bool maybeParseGrammarDecl(const vector<StackObj>& tokens, size_t& pos) {
+    // Check for an identifier to see if there are any more declarations
+    string* name = maybeConsumeString(IDENT, tokens, pos);
+    if (!name) {
+      return false;
+    }
+
+    gdVariables.push_back(Variable());
+    Variable& gdVariable = gdVariables.back();
+    gdVariable.name = *name;
+    varNameToIndex.emplace(*name, gdVariables.size() - 1);
+    consume(ARROW, tokens, pos);
+    gdVariable.type = consumeString(IDENT, tokens, pos);
+    string* dtor = maybeConsumeString(CODE, tokens, pos);
+    if (dtor) {
+      gdVariable.dtorStmt = *dtor;
+    }
+    return true;
+  }
+
+  /* This must be called right after parseGrammarDecl() */
+  void parseGrammarDef(const vector<StackObj>& tokens, size_t& pos, size_t concNum) {
+    Variable& gdVariable = gdVariables.back();
+    gdConcretes.push_back(Concrete());
+    Concrete& gdConcrete = gdConcretes.back();
+    gdVariable.concreteTypes.push_back(gdConcretes.size() - 1);
+    gdConcrete.name = gdVariable.name + to_string(concNum);
+    gdConcrete.varType = gdVariables.size() - 1;
+    // Store argSymbols as string*s for now until we have seen all the
+    // variables. Then, we will convert them to correct integral values.
+    string* conc;
+    while ((conc = maybeConsumeString(IDENT, tokens, pos))) {
+      gdConcrete.argSymbols.push_back((intptr_t) conc);
+    }
+
+    if (maybeConsume(PREC, tokens, pos)) {
+      string tokenName = consumeString(IDENT, tokens, pos);
+      // Look up the index of the token in the map
+      auto iter = tokenNameToIndex.find(tokenName);
+      if (iter == tokenNameToIndex.end()) {
+        throw runtime_error("Unknown token " + tokenName);
+      }
+      const Token& token = gdTokens[iter->second];
+      if (token.precedence == NONE) {
+        cerr << "WARNING: Token " << token.name << " is used to override a rule's precedence, "
+            "but has no precedence set." << endl;
+      }
+      gdConcrete.precedence = gdTokens[iter->second].precedence;
+    }
+
+    gdConcrete.ctorExpr = consumeString(CODE, tokens, pos);
+  }
+
+  bool maybeParseGrammarVar(const vector<StackObj>& tokens, size_t& pos) {
+    if (!maybeParseGrammarDecl(tokens, pos)) {
+      return false;
+    }
+
+    consume(DEFINED, tokens, pos);
+    size_t concNum = 0;
+    parseGrammarDef(tokens, pos, concNum++);
+    while (maybeConsume(BAR, tokens, pos)) {
+      parseGrammarDef(tokens, pos, concNum++);
+    }
+    return true;
+  }
+
+
+  void parseGrammar(const vector<StackObj>& tokens, size_t& pos) {
+    gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
+    gdConcretes.push_back(Concrete{ "SCONC", S, NONE, {1}, "Start(#0)" });
+    consume(GRAMMAR, tokens, pos);
+    while (maybeParseGrammarVar(tokens, pos));
+
+    // Translate the string pointers to token/variable ids now that we
+    // have parsed the whole file (skip SCONC)
+    size_t numConcs = gdConcretes.size();
+    for (size_t i = 1; i < numConcs; ++i) {
+      Concrete& concrete = gdConcretes[i];
+      size_t len = concrete.argSymbols.size();
+      for (size_t j = 0; j < len; ++j) {
+        string symbolName = *(string*) concrete.argSymbols[j];
+        // Check if it is a token first
+        auto tokIter = tokenNameToIndex.find(symbolName);
+        if (tokIter == tokenNameToIndex.end()) {
+          // Otherwise, check if it is a variable
+          auto varIter = varNameToIndex.find(symbolName);
+          if (varIter == varNameToIndex.end()) {
+            throw runtime_error("Unknown symbol " + symbolName);
+          } else {
+            concrete.argSymbols[j] = varIter->second;
+          }
+        } else {
+          concrete.argSymbols[j] = tokenToFromIndex(tokIter->second);
+        }
+      }
+    }
+  }
+
 } // namespace
 
 
@@ -176,6 +281,7 @@ int main() {
   parseSource(tokens, pos);
   parseTokens(tokens, pos);
   parsePrecs(tokens, pos);
+  parseGrammar(tokens, pos);
   cout << addlHdrIncludes << endl;
   cout << addlCode << endl;
   for (const Token& tok : gdTokens) {
@@ -186,6 +292,19 @@ int main() {
     cout << tok.dtorStmt << endl;
     cout << tok.precedence << endl;
     cout << tok.assoc << endl;
+  }
+  for (const Variable& var : gdVariables) {
+    cout << var.name << endl;
+    cout << var.type << endl;
+    cout << var.concreteTypes << endl;
+    cout << var.dtorStmt << endl;
+  }
+  for (const Concrete& conc : gdConcretes) {
+    cout << conc.name << endl;
+    cout << conc.varType << endl;
+    cout << conc.precedence << endl;
+    cout << conc.argSymbols << endl;
+    cout << conc.ctorExpr << endl;
   }
 
 

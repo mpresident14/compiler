@@ -57,7 +57,7 @@ GrammarData GRAMMAR_DATA = {
       { "C3", C, NONE, { b }, "" },
       { "X1", X, NONE, { X, X }, "" },
       { "X2", X, NONE, { a }, "" },
-      { "Y1", Y, NONE, { EPSILON }, "" },
+      { "Y1", Y, NONE, {}, "" },
       { "Y2", Y, NONE, { b }, "" },
       { "Y3", Y, NONE, { Y, z }, "" },
   },
