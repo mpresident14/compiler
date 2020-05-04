@@ -5,6 +5,12 @@
 
 #include <string>
 
-GrammarData parseConfig(const std::string& fileName);
+struct ParseInfo {
+  GrammarData grammarData;
+  std::string addlHppCode;
+  std::string addlCppCode;
+};
+
+ParseInfo parseConfig(const std::string& fileName);
 
 #endif

@@ -42,8 +42,8 @@ GrammarData GRAMMAR_DATA = {
   {
       { "SCONC", S, NONE, { EXPR }, "Start(#0*)" },
       { "EINT", EXPR, NONE, { INT }, "new EInt(#0)" },
-      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EPlus(#0, #2)" },
-      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new ETimes(#0, #2)" },
+      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EBinOp(#0, PLUS, #2)" },
+      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new EBinOp(#0, TIMES, #2)" },
   },
 
   /* variables */
@@ -70,8 +70,8 @@ GrammarData BAD_GRAMMAR_DATA = {
   {
       { "SCONC", S, NONE, { EXPR }, "Start(#0*)" },
       { "EINT", EXPR, NONE, { INT }, "new EInt(#0)" },
-      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EPlus(#0, #2)" },
-      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new ETimes(#0, #2)" },
+      { "EPLUS", EXPR, NONE, { EXPR, PLUS, EXPR }, "new EBinOp(#0, PLUS, #2)" },
+      { "ETIMES", EXPR, NONE, { EXPR, STAR, EXPR }, "new EBinOp(#0, TIMES, #2)" },
   },
 
   /* variables */

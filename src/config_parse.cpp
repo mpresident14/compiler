@@ -17,9 +17,12 @@
 using namespace std;
 using namespace src::config_lexer;
 
+// TODO: Use consistent signed/unsigned vars for prec, varType, symbol, etc.
+
+
 namespace {
-  string addlHdrIncludes;
-  string addlCode;
+  string addlHppCode;
+  string addlCppCode;
   GrammarData grammarData;
   vector<Token>& gdTokens = grammarData.tokens;
   vector<Concrete>& gdConcretes = grammarData.concretes;
@@ -27,6 +30,7 @@ namespace {
 
   unordered_map<string, size_t> tokenNameToIndex;
   unordered_map<string, size_t> varNameToIndex;
+  unordered_map<string, int> precNameToPrec;
 
   string tokenToString(int tokenId) {
     return CONFIG_GRAMMAR.tokens[tokenToFromIndex(tokenId)].name;
@@ -81,12 +85,12 @@ namespace {
 
   void parseHeader(const vector<StackObj>& tokens, size_t& pos) {
     consume(HEADER, tokens, pos);
-    addlHdrIncludes = consumeString(CODE, tokens, pos);
+    addlHppCode = consumeString(CODE, tokens, pos);
   }
 
   void parseSource(const vector<StackObj>& tokens, size_t& pos) {
     consume(SOURCE, tokens, pos);
-    addlCode = consumeString(CODE, tokens, pos);
+    addlCppCode = consumeString(CODE, tokens, pos);
   }
 
   bool maybeParseToken(const vector<StackObj>& tokens, size_t& pos) {
@@ -111,41 +115,54 @@ namespace {
     return true;
   }
 
+
   void parseTokens(const vector<StackObj>& tokens, size_t& pos) {
     consume(TOKENS, tokens, pos);
     while (maybeParseToken(tokens, pos));
   }
 
-  bool maybeParsePrec(const vector<StackObj>& tokens, size_t& pos, size_t prec) {
+  bool maybeParsePrec(const vector<StackObj>& tokens, size_t& pos, int prec) {
+    vector<string*> precNames;
     // Check for an identifier to see if there are any more precedence lines
-    string* name = maybeConsumeString(IDENT, tokens, pos);
-    if (!name) {
+    string* precName;
+    while ((precName = maybeConsumeString(IDENT, tokens, pos))) {
+      precNames.push_back(precName);
+    }
+    if (precNames.empty()) {
       return false;
     }
 
-    // Look up the index of the token in the map
-    auto iter = tokenNameToIndex.find(*name);
-    if (iter == tokenNameToIndex.end()) {
-      throw runtime_error("Unknown token " + *name);
-    }
-
-    Token& gdToken = gdTokens[iter->second];
-    gdToken.precedence = prec;
     // Figure out the associativity (which is required)
+    Assoc assoc;
     if (maybeConsume(LEFTASSOC, tokens, pos)) {
-      gdToken.assoc = Assoc::LEFT;
+      assoc = Assoc::LEFT;
     } else if (maybeConsume(RIGHTASSOC, tokens, pos)) {
-      gdToken.assoc = Assoc::RIGHT;
+      assoc = Assoc::RIGHT;
     } else {
       consume(NONASSOC, tokens, pos);
-      gdToken.assoc = Assoc::NOT;
+      assoc = Assoc::NOT;
     }
+
+    for (string* name : precNames) {
+      // Look up the index of the token in the map
+      auto iter = tokenNameToIndex.find(*name);
+      if (iter == tokenNameToIndex.end()) {
+        // This is not an actual token, just a placeholder to override a rule's precedence
+        precNameToPrec.emplace(*name, prec);
+        continue;
+      }
+
+      Token& gdToken = gdTokens[iter->second];
+      gdToken.precedence = prec;
+      gdToken.assoc = assoc;
+    }
+
     return true;
   }
 
   void parsePrecs(const vector<StackObj>& tokens, size_t& pos) {
     consume(PREC, tokens, pos);
-    size_t prec = 1;
+    int prec = 1;
     while (maybeParsePrec(tokens, pos, prec++));
   }
 
@@ -187,17 +204,25 @@ namespace {
 
     if (maybeConsume(PREC, tokens, pos)) {
       string tokenName = consumeString(IDENT, tokens, pos);
+      int prec;
       // Look up the index of the token in the map
       auto iter = tokenNameToIndex.find(tokenName);
       if (iter == tokenNameToIndex.end()) {
-        throw runtime_error("Unknown token " + tokenName);
+        auto precIter = precNameToPrec.find(tokenName);
+        if (precIter == precNameToPrec.end()) {
+          throw runtime_error("Unknown token " + tokenName);
+        } else {
+          prec = precIter->second;
+        }
+      } else {
+        prec = gdTokens[iter->second].precedence;
       }
-      const Token& token = gdTokens[iter->second];
-      if (token.precedence == NONE) {
-        cerr << "WARNING: Token " << token.name << " is used to override a rule's precedence, "
+
+      if (prec == NONE) {
+        cerr << "WARNING: Token " << tokenName << " is used to override a rule's precedence, "
             "but has no precedence set." << endl;
       }
-      gdConcrete.precedence = gdTokens[iter->second].precedence;
+      gdConcrete.precedence = prec;
     }
 
     gdConcrete.ctorExpr = consumeString(CODE, tokens, pos);
@@ -232,6 +257,7 @@ namespace {
       size_t len = concrete.argSymbols.size();
       for (size_t j = 0; j < len; ++j) {
         string symbolName = *(string*) concrete.argSymbols[j];
+
         // Check if it is a token first
         auto tokIter = tokenNameToIndex.find(symbolName);
         if (tokIter == tokenNameToIndex.end()) {
@@ -253,28 +279,9 @@ namespace {
 
 
 
-// GrammarData parseConfig(const string& fileName) {
-//   ifstream config;
-//   config.open(fileName);
-//   string inputStr(istreambuf_iterator<char>{config}, istreambuf_iterator<char>{});
-//   string_view input(inputStr);
-//   config.close();
-//   return grammarData;
-// }
-
-int main() {
-  // parseConfig("test/expr_config.txt");
-  // cout << addlHdrIncludes << endl;
-  // cout << addlCode << endl;
-
-  ifstream configFile("test/utils/expr_config.txt");
-  vector<StackObj> tokens;
-
-  try {
-    tokens = tokenize(configFile);
-  } catch (runtime_error& e) {
-    cout << e.what() << endl;
-  }
+ParseInfo parseConfig(const string& fileName) {
+  ifstream configFile(fileName);
+  vector<StackObj> tokens = tokenize(configFile);
 
   size_t pos = 0;
   parseHeader(tokens, pos);
@@ -282,33 +289,8 @@ int main() {
   parseTokens(tokens, pos);
   parsePrecs(tokens, pos);
   parseGrammar(tokens, pos);
-  cout << addlHdrIncludes << endl;
-  cout << addlCode << endl;
-  for (const Token& tok : gdTokens) {
-    cout << tok.name << endl;
-    cout << tok.regex << endl;
-    cout << tok.type << endl;
-    cout << tok.ctorExpr << endl;
-    cout << tok.dtorStmt << endl;
-    cout << tok.precedence << endl;
-    cout << tok.assoc << endl;
-  }
-  for (const Variable& var : gdVariables) {
-    cout << var.name << endl;
-    cout << var.type << endl;
-    cout << var.concreteTypes << endl;
-    cout << var.dtorStmt << endl;
-  }
-  for (const Concrete& conc : gdConcretes) {
-    cout << conc.name << endl;
-    cout << conc.varType << endl;
-    cout << conc.precedence << endl;
-    cout << conc.argSymbols << endl;
-    cout << conc.ctorExpr << endl;
-  }
-
 
   for_each(tokens.cbegin(), tokens.cend(), deleteObj);
-
-  return 0;
+  return { grammarData, addlHppCode, addlCppCode };
 }
+

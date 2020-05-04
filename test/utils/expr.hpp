@@ -1,44 +1,58 @@
 #ifndef EXPR_HPP
 #define EXPR_HPP
 
-enum class ExprType { EINT, EPLUS, ETIMES };
+enum BinOp { PLUS, MINUS, TIMES, DIVIDE };
+enum UOp { NEG, BITNEG };
 
 /* Expr */
 struct Expr {
   virtual ~Expr(){};
-  virtual ExprType getType() const = 0;
   virtual int eval() const = 0;
 };
 
 struct EInt : Expr {
   EInt(int i) : i_(i) {}
-  ExprType getType() const override { return ExprType::EINT; }
   int eval() const override { return i_; }
   int i_;
 };
 
-struct EPlus : Expr {
-  EPlus(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~EPlus() {
+struct EBinOp : Expr {
+  EBinOp(Expr* e1, BinOp op, Expr* e2) : e1_(e1), e2_(e2), op_(op) {}
+  ~EBinOp() {
     delete e1_;
     delete e2_;
   }
-  ExprType getType() const override { return ExprType::EPLUS; }
-  int eval() const override { return e1_->eval() + e2_->eval(); }
+  int eval() const override {
+    int x = e1_->eval();
+    int y = e2_->eval();
+    switch (op_) {
+      case PLUS: return x + y;
+      case MINUS: return x - y;
+      case TIMES: return x * y;
+      case DIVIDE: return x / y;
+    }
+  }
+
   Expr* e1_;
   Expr* e2_;
+  BinOp op_;
 };
 
-struct ETimes : Expr {
-  ETimes(Expr* e1, Expr* e2) : e1_(e1), e2_(e2) {}
-  ~ETimes() {
-    delete e1_;
-    delete e2_;
+struct EUOp : Expr {
+  EUOp(Expr* e, UOp op) : e_(e), op_(op) {}
+  ~EUOp() {
+    delete e_;
   }
-  ExprType getType() const override { return ExprType::EPLUS; }
-  int eval() const override { return e1_->eval() * e2_->eval(); }
-  Expr* e1_;
-  Expr* e2_;
+  int eval() const override {
+    int x = e_->eval();
+    switch (op_) {
+      case NEG: return -x;
+      case BITNEG: return ~x;
+    }
+  }
+
+  Expr* e_;
+  UOp op_;
 };
 
 #endif
