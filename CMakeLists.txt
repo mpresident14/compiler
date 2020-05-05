@@ -9,14 +9,18 @@ cmake_minimum_required(VERSION 3.17.0)
 project(compiler)
 
 # Set the output folder where your program will be created
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+# These two are supposedly deprecated in favor of the two above,
+# but those don't seem to be working
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
 set(SRC ${CMAKE_SOURCE_DIR}/src)
 set(TEST ${CMAKE_SOURCE_DIR}/test)
 
 # Append these directories to compiler include path
+# I believe it also allows CMake to find these paths in CMakeLists.txt
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${LIBRARY_OUTPUT_PATH})
 include_directories(${CMAKE_BINARY_DIR})
@@ -24,5 +28,8 @@ include_directories(${CMAKE_BINARY_DIR})
 # Set compilation flags
 set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g")
 
+# Add subdirectories
 add_subdirectory(${SRC}/parser)
 add_subdirectory(${TEST}/parser)
+
+
