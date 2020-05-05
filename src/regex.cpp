@@ -232,6 +232,7 @@ bool RegexVector::operator==(const RegexVector &other) const {
       rgxs_.cbegin(),
       rgxs_.cend(),
       other.rgxs_.cbegin(),
+      other.rgxs_.cend(),
       [](const RgxPtr &rPtr1, const RgxPtr &rPtr2) {
         return *rPtr1 == *rPtr2;
       });

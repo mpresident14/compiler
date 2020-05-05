@@ -94,18 +94,31 @@ namespace {
   }
 
   bool maybeParseToken(const vector<StackObj>& tokens, size_t& pos) {
+    bool skip = false;
     // Check for an identifier to see if there are any more tokens
     string* name = maybeConsumeString(IDENT, tokens, pos);
     if (!name) {
-      return false;
+      if (maybeConsume(SKIP, tokens, pos)) {
+        skip = true;
+      } else {
+        return false;
+      }
     }
 
     gdTokens.push_back(Token());
     Token& gdToken = gdTokens.back();
+    gdToken.regex = consumeString(STRLIT, tokens, pos);
+
+    // We indicate to the lexer that the token should be skipped by setting the
+    // precedence to SKIP_TOKEN (this is useful for things such as comments)
+    if (skip) {
+      gdToken.precedence = SKIP_TOKEN;
+      return true;
+    }
+
     gdToken.name = *name;
     // Keep track of the index for this name so that we can use it when parsing #prec
     tokenNameToIndex.emplace(*name, gdTokens.size() - 1);
-    gdToken.regex = consumeString(STRLIT, tokens, pos);
     // An arrow signifies that the token holds data
     if (maybeConsume(ARROW, tokens, pos)) {
       gdToken.type = consumeString(IDENT, tokens, pos);

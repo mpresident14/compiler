@@ -326,7 +326,9 @@ namespace {
         while (!inputView.empty()) {
           optional<StackObj> optionalObj = getToken(inputView);
           if (optionalObj.has_value()) {
-            tokens.push_back(move(*optionalObj));
+            if (GRAMMAR_DATA.tokens[tokenToFromIndex(optionalObj->symbol)].precedence != SKIP_TOKEN) {
+              tokens.push_back(move(*optionalObj));
+            }
           } else {
             ostringstream error;
             vector<string> prevTokenNames;
@@ -620,6 +622,7 @@ namespace {
   void noneInt(ostream& out) {
     out << R"(
       constexpr int NONE = INT_MIN;
+      constexpr int SKIP_TOKEN = INT_MIN + 1;
     )";
   }
 
@@ -662,7 +665,6 @@ namespace {
 
   constexpr char generatedWarning[] = "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
 
-  // TODO: Header guards
   string parserHppCode(const string& namespaceName, const string& headerGuard, const string& addlHdrIncludes, const GrammarData& grammarData) {
     stringstream out;
 

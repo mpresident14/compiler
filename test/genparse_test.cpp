@@ -38,6 +38,7 @@ void testParse() {
   checkEval("12 + ~-1", 12);
   checkEval("(3+12) * 4", 60);
   checkEval("-(3+12)", -15);
+  checkEval("3 + ??? 12", 15);
 }
 
 void testParse_invalidTokens() {

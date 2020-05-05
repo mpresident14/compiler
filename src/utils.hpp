@@ -29,6 +29,7 @@ inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
 }
 
 static constexpr int NONE = INT_MIN;
+static constexpr int SKIP_TOKEN = INT_MIN + 1;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
 

@@ -4,10 +4,13 @@
   #include <iostream>
 %
 
+// This is a comment. It should be ignored!
+
 #source
 %
   char c[] = "Just for testing \%";
 %
+
 
 #tokens
 INT  "[1-9][0-9]*" -> int % stoi(string(str)) %
@@ -19,6 +22,7 @@ FSLASH "/"
 TILDE "~"
 LPAREN "\("
 RPAREN "\)"
+#skip "???"
 
 #prec
 PLUS MINUS #left
