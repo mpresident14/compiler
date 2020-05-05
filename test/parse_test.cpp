@@ -32,7 +32,7 @@ void testParse() {
 
 void testParse_invalidTokens() {
   ostringstream expectedErr0;
-  expectedErr0 << "Lexer error at: a * 24\n"
+  expectedErr0 << "Lexer error on line 1 at: a * 24\n"
                << "Previous tokens were: " << vector<string>{ "INT", "PLUS" };
 
   string err0 =
@@ -43,7 +43,7 @@ void testParse_invalidTokens() {
 
 void testParse_noParse() {
   ostringstream expectedErr0;
-  expectedErr0 << "No parse:\n\tStack: "
+  expectedErr0 << "Parse error on line 1:\n\tStack: "
                << vector<string>{ "Expr", "PLUS", "Expr", "STAR", "PLUS" }
                << "\n\tRemaining tokens: " << vector<string>{ "INT" };
 
@@ -54,13 +54,13 @@ void testParse_noParse() {
   // Note that INT is not in lookahead set after Expr STAR INT, so INT doesn't
   // reduce to Expr
   ostringstream expectedErr1;
-  expectedErr1 << "No parse:\n\tStack: "
+  expectedErr1 << "Parse error on line 2:\n\tStack: "
                << vector<string>{ "Expr", "STAR", "INT", "INT" }
                << "\n\tRemaining tokens: "
                << vector<string>{ "STAR", "PLUS", "INT" };
 
   string err1 =
-      TESTER.assertThrows([]() { expr_parser::parse("3 * 2 34* + 5"); });
+      TESTER.assertThrows([]() { expr_parser::parse("3 * 2\n 34* + 5"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
 }
 

@@ -50,8 +50,8 @@ add_executable(parse_test
 add_executable(tokenize_test
     ${TEST_DIR}/tokenize_test.cpp
     ${TEST_GEN_DIR}/random_lexer.cpp)
-add_executable(genparse_test
-    ${TEST_DIR}/genparse_test.cpp
+add_executable(parsegen_test
+    ${TEST_DIR}/parsegen_test.cpp
     ${TEST_GEN_DIR}/gp_expr_parser.cpp)
 
 
@@ -97,20 +97,20 @@ add_custom_command(
     COMMAND clang-format -i ${SRC_DIR}/config_lexer.hpp ${SRC_DIR}/config_lexer.cpp
     DEPENDS write_config_lexer)
 
-add_executable(genparse
-    ${SRC_DIR}/genparse.cpp
+add_executable(parsegen
+    ${SRC_DIR}/parsegen.cpp
     ${SRC_DIR}/config_parse.cpp
     ${SRC_DIR}/config_lexer.cpp
     ${SRC_DIR}/generate.cpp
     ${SRC_DIR}/config_parse.cpp)
-target_link_libraries(genparse parse_lib regex_lib)
+target_link_libraries(parsegen parse_lib regex_lib)
 add_custom_command(
     OUTPUT ${TEST_GEN_DIR}/gp_expr_parser.hpp ${TEST_GEN_DIR}/gp_expr_parser.cpp
-    COMMAND genparse ${TEST_UTIL_DIR}/expr.gp ${TEST_GEN_DIR}/gp_expr_parser
+    COMMAND parsegen ${TEST_UTIL_DIR}/expr.gp ${TEST_GEN_DIR}/gp_expr_parser
     COMMAND clang-format -i ${TEST_GEN_DIR}/gp_expr_parser.hpp ${TEST_GEN_DIR}/gp_expr_parser.cpp
-    DEPENDS genparse ${TEST_UTIL_DIR}/expr.gp)
+    DEPENDS parsegen ${TEST_UTIL_DIR}/expr.gp)
 set_source_files_properties(
-    ${TEST_DIR}/genparse_test.cpp
+    ${TEST_DIR}/parsegen_test.cpp
     PROPERTIES
         OBJECT_DEPENDS ${TEST_GEN_DIR}/gp_expr_parser.hpp)
 
@@ -124,7 +124,7 @@ add_test(build_parser build_parser_test)
 add_test(regex regex_test)
 add_test(parse parse_test)
 add_test(tokenize tokenize_test)
-add_test(genparse genparse_test)
+add_test(parsegen parsegen_test)
 
 set(MYTESTS
     dfa_test
@@ -133,9 +133,9 @@ set(MYTESTS
     regex_test
     parse_test
     tokenize_test
-    genparse_test)
+    parsegen_test)
 set_tests_properties(
-    dfa null_first build_parser regex parse tokenize genparse
+    dfa null_first build_parser regex parse tokenize parsegen
     PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests

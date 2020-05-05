@@ -123,6 +123,7 @@ namespace {
     out << R"(struct StackObj {
       void* obj;
       int symbol;
+      size_t line;
     };
     )";
   }
@@ -232,8 +233,9 @@ namespace {
 
 
   void constructFn(ostream& out) {
-    out << R"(StackObj construct(int concrete, StackObj* args, int varType) {
-      return StackObj{ constructObj(concrete, args), varType };
+    out << R"(StackObj construct(int concrete, vector<StackObj>& stk, size_t reduceStart, int varType) {
+      size_t line = reduceStart == stk.size() ? 0 : stk[reduceStart].line;
+      return StackObj{ constructObj(concrete, &stk[reduceStart]), varType, line};
     })";
   }
 
@@ -246,10 +248,10 @@ namespace {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':' << "return { new "
-            << token.type << '(' << token.ctorExpr << "), token };break;";
+            << token.type << '(' << token.ctorExpr << "), token, currentLine };break;";
       }
     }
-    out << R"(default: return {nullptr, token}; }})";
+    out << R"(default: return {nullptr, token, currentLine}; }})";
   }
 
 
@@ -273,11 +275,19 @@ namespace {
    * LEXING *
    **********/
 
+  void currentLineDecl(ostream& out) {
+    out << "static size_t currentLine = 1;";
+  }
+
   void tokenizeFn(ostream& out) {
     out << R"(
       void consumeWhiteSpace(string_view& input) {
         size_t i = 0;
-        while (isspace(input[i])) {
+        char c;
+        while (isspace((c = input[i]))) {
+          if (c == '\n') {
+            ++currentLine;
+          }
           ++i;
         }
         input = input.substr(i);
@@ -288,6 +298,8 @@ namespace {
         const size_t len = input.size();
         size_t lastAcceptingPos;
         int lastAcceptingToken = NONE;
+        size_t newlineCount = 0;
+        size_t lastAcceptingNewlineCount = 0;
         lexer::Node* currentNode = lexer::root.get();
 
         while (currentNode) {
@@ -295,12 +307,18 @@ namespace {
           if (token != NONE) {
             lastAcceptingToken = token;
             lastAcceptingPos = i;
+            lastAcceptingNewlineCount = newlineCount;
           }
 
           if (i == len) {
             break;
           }
-          currentNode = currentNode->step(input[i++]);
+          char c;
+          currentNode = currentNode->step((c = input[i]));
+          ++i;
+          if (c == '\n') {
+            ++newlineCount;
+          }
         }
 
         if (lastAcceptingToken == NONE) {
@@ -310,6 +328,7 @@ namespace {
         StackObj stackObj =
             constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
         input = input.substr(lastAcceptingPos);
+        currentLine += lastAcceptingNewlineCount;
         return { move(stackObj) };
       }
 
@@ -339,7 +358,7 @@ namespace {
                 tokens.cend(),
                 back_inserter(prevTokenNames),
                 [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.symbol)].name; });
-            error << "Lexer error at: " << inputView.substr(0, 25) << '\n'
+            error << "Lexer error on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
             for_each(tokens.cbegin(), tokens.cend(), deleteObj);
             throw runtime_error(error.str());
@@ -445,7 +464,7 @@ namespace {
             back_inserter(remainingTokenNames),
             stkObjToName);
 
-        errMsg << "No parse:\n\tStack: " << stkSymbolNames
+        errMsg << "Parse error on line " << stk[stk.size() - 1].line << ":\n\tStack: " << stkSymbolNames
               << "\n\tRemaining tokens: " << remainingTokenNames;
         throw invalid_argument(errMsg.str());
       }
@@ -523,7 +542,8 @@ namespace {
                 stk.size() - currentNode->v_.reducibleRule->symbols.size();
             StackObj newObj = construct(
                 concrete,
-                &stk.data()[reduceStart],
+                stk,
+                reduceStart,
                 GRAMMAR_DATA.concretes[concrete].varType);
             if (newObj.symbol == S) {
               stk.pop_back();
@@ -716,6 +736,7 @@ namespace {
     grammarDataDecl(out, grammarData);
     stackObjDecl(out);
     sObjDecl(out, grammarData);
+    currentLineDecl(out);
     deleteObjPtrFn(out, grammarData);
     deleteObjFn(out, grammarData);
     constructObjFn(out, grammarData);
@@ -757,6 +778,7 @@ namespace {
     concreteDecl(out);
     variableDecl(out);
     grammarDataDecl(out, grammarData);
+    currentLineDecl(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
     out << "} namespace " << namespaceName << '{';

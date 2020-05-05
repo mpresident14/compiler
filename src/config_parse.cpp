@@ -60,7 +60,9 @@ namespace {
   }
   void consume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (!maybeConsume(tokenId, tokens, pos)) {
-      throw runtime_error("Parse error at: " + tokensToStrings(tokens) + ". Expected " + tokenToString(tokenId));
+      stringstream errMsg;
+      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + tokenToString(tokenId);
+      throw runtime_error(errMsg.str());
     }
   }
   string* maybeConsumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
@@ -72,7 +74,9 @@ namespace {
   string consumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     string* strPtr = maybeConsumeString(tokenId, tokens, pos);
     if (!strPtr) {
-      throw runtime_error("Parse error at: " + tokensToStrings(tokens) + ". Expected " + tokenToString(tokenId));
+      stringstream errMsg;
+      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + tokenToString(tokenId);
+      throw runtime_error(errMsg.str());
     }
     return *strPtr;
   }
