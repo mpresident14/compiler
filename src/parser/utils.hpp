@@ -81,6 +81,29 @@ struct GrammarData {
 };
 
 
+inline std::string symbolToString(int symbolId, const GrammarData& grammarData) {
+  if (isToken(symbolId)) {
+    return grammarData.tokens[tokenToFromIndex(symbolId)].name;
+  }
+  return grammarData.variables[symbolId].name;
+}
+
+
+inline std::string symbolsToStrings(const std::vector<intptr_t>& symbols, const GrammarData& grammarData) {
+  std::vector<std::string> symbolNames;
+  transform(
+      symbols.begin(),
+      symbols.end(),
+      back_inserter(symbolNames),
+      [&grammarData](int symbol){
+        return symbolToString(symbol, grammarData);
+      });
+  std::stringstream s;
+  s << symbolNames;
+  return s.str();
+}
+
+
 inline void bitOrEquals(
     std::vector<bool>& bits,
     const std::vector<bool>& other) {
@@ -114,40 +137,6 @@ void checkBounds(int i, const std::vector<T>& vec) {
         << vec;
     throw std::runtime_error(err.str());
   }
-}
-
-
-template <
-    typename Fn,
-    std::enable_if_t<std::is_invocable_v<Fn, std::string>, int> = 0>
-void replaceNumbers(std::ostream& out, std::string_view fmt, Fn&& convertNum) {
-  size_t i = 0;
-  size_t len = fmt.size();
-  while (i < len) {
-    if (fmt[i] == '#') {
-      std::string digits;
-      char c;
-      while (isdigit((c = fmt[++i]))) {
-        digits.push_back(c);
-      }
-      out << convertNum(digits);
-    } else {
-      out << fmt[i++];
-    }
-  }
-}
-
-
-/* Replace #0, #1, etc, with vector[0], vector[1], etc */
-inline void replaceNumbersVec(
-    std::ostream& out,
-    std::string_view fmt,
-    const std::vector<std::string>& args) {
-  replaceNumbers(out, fmt, [&args](const std::string& digits) {
-    int i = stoi(digits);
-    checkBounds(i, args);
-    return args[stoi(digits)];
-  });
 }
 
 

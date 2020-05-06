@@ -194,8 +194,12 @@ public:
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
 
-    static const char stepFn[] = R"(
-      Node* step(const #0& t) const {
+    init << "struct "
+         << "Node {\n"
+         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
+
+    init << R"(
+      Node* step(const )" << tranType << R"(& t) const {
         auto iter = ts_.find(t);
         if (iter == ts_.end()) {
           return nullptr;
@@ -204,10 +208,6 @@ public:
       }
     )";
 
-    init << "struct "
-         << "Node {\n"
-         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
-    replaceNumbersVec(init, stepFn, { tranType });
     init << valueType << " v_;\n"
          << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
 

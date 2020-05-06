@@ -74,6 +74,45 @@ namespace {
     out << '}';
   }
 
+  /******************
+   * STRING REPLACE *
+   ******************/
+  void replaceAll(
+    std::ostream& out,
+    string_view str,
+    const std::string& from,
+    const std::string& to) {
+
+  size_t startPos = 0;
+  size_t endPos = 0;
+  while ((endPos = str.find(from, startPos)) != std::string::npos) {
+    out << str.substr(startPos, endPos - startPos) << to;
+    startPos = endPos + from.length();
+  }
+  out << str.substr(startPos);
+}
+
+
+template <
+    typename Fn,
+    std::enable_if_t<std::is_invocable_v<Fn, std::string>, int> = 0>
+void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) {
+  size_t i = 0;
+  size_t len = fmt.size();
+  while (i < len) {
+    if (fmt[i] == '#') {
+      std::string digits;
+      char c;
+      while (isdigit((c = fmt[++i]))) {
+        digits.push_back(c);
+      }
+      out << convertNum(digits);
+    } else {
+      out << fmt[i++];
+    }
+  }
+}
+
 
   /****************
    * GRAMMAR DATA *
@@ -135,12 +174,16 @@ namespace {
       #0* r_;
     };
     )";
-    replaceNumbersVec(out, decl, { grammarData.variables[1].type });
+    replaceNumbers(
+        out,
+        decl,
+        [&grammarData](const std::string&){ return grammarData.variables[1].type; });
   }
 
 
   void deleteObjFn(ostream& out, const GrammarData& grammarData) {
     out << R"(void deleteObj(const StackObj& s) {
+      void* obj = s.obj;
       switch (s.symbol) {)";
 
     size_t numTokens = grammarData.tokens.size();
@@ -149,9 +192,8 @@ namespace {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':';
-        replaceNumbersVec(
-            out, token.dtorStmt, { "*(" + token.type + "*) s.obj" });
-        out << " delete (" << token.type << "*) s.obj; break;";
+        replaceAll(out, token.dtorStmt, "#obj", "*(" + token.type + "*) obj");
+        out << " delete (" << token.type << "*) obj; break;";
       }
     }
 
@@ -160,8 +202,8 @@ namespace {
     for (size_t i = 1; i < numVars; ++i) {
       const Variable& var = grammarData.variables[i];
       out << "case " << i << ':';
-      replaceNumbersVec(out, var.dtorStmt, { "*(" + var.type + "*) s.obj" });
-      out << " delete (" << var.type << "*) s.obj; break;";
+      replaceAll(out, var.dtorStmt, "#obj", "*(" + var.type + "*) obj");
+      out << " delete (" << var.type << "*) obj; break;";
     }
 
     out << "default: return;}}";
@@ -170,6 +212,7 @@ namespace {
 
   void deleteObjPtrFn(ostream& out, const GrammarData& grammarData) {
     out << R"(void deleteObjPtr(const StackObj& s) {
+      void* obj = s.obj;
       switch (s.symbol) {)";
 
     size_t numTokens = grammarData.tokens.size();
@@ -178,7 +221,7 @@ namespace {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':' << " delete ("
-            << token.type << "*) s.obj; break;";
+            << token.type << "*) obj; break;";
       }
     }
 
@@ -208,9 +251,21 @@ namespace {
           out,
           concrete.ctorExpr,
           [&concrete, &grammarData](const string& digits) {
+            const vector<intptr_t>& argSymbols = concrete.argSymbols;
             int i = stoi(digits);
-            checkBounds(i, concrete.argSymbols);
-            int argSymbol = concrete.argSymbols[i];
+            // These are user-provided numbers, so check the bounds
+            if (i < 0) {
+              std::stringstream err;
+              err << "Index " << i << " is < 0 for rule " << symbolsToStrings(argSymbols, grammarData);
+              throw std::runtime_error("Index " + std::to_string(i) + " is < 0.");
+            }
+            if ((size_t) i >= argSymbols.size()) {
+              std::stringstream err;
+              err << "Index " << i << " is greater than the number of elements in rule " << symbolsToStrings(concrete.argSymbols, grammarData);
+              throw std::runtime_error(err.str());
+            }
+
+            int argSymbol = argSymbols[i];
             string symbolName;
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
@@ -243,14 +298,16 @@ namespace {
 
 
   void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
-    out << R"(StackObj constructTokenObj(int token, const string_view& str) {
+    out << R"(StackObj constructTokenObj(int token, string_view str) {
       switch (token) {)";
     size_t numTokens = grammarData.tokens.size();
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':' << "return { new "
-            << token.type << '(' << token.ctorExpr << "), token, currentLine };break;";
+            << token.type << '(';
+        replaceAll(out, token.ctorExpr, "#str", "str");
+        out << "), token, currentLine };break;";
       }
     }
     out << R"(default: return {nullptr, token, currentLine}; }})";
@@ -561,7 +618,10 @@ namespace {
       }
     )";
 
-    replaceNumbersVec(out, code, { grammarData.variables[1].type });
+    replaceNumbers(
+        out,
+        code,
+        [&grammarData](const std::string&){ return grammarData.variables[1].type; });
   }
 
 

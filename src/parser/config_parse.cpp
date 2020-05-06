@@ -32,16 +32,13 @@ namespace {
   unordered_map<string, size_t> varNameToIndex;
   unordered_map<string, int> precNameToPrec;
 
-  string tokenToString(int tokenId) {
-    return CONFIG_GRAMMAR.tokens[tokenToFromIndex(tokenId)].name;
-  }
   string tokensToStrings(const vector<StackObj>& tokens) {
     vector<string> tokenNames;
     transform(
         tokens.begin(),
         tokens.end(),
         back_inserter(tokenNames),
-        [](const StackObj& stackObj){ return tokenToString(stackObj.symbol); });
+        [](const StackObj& stackObj){ return symbolToString(stackObj.symbol, CONFIG_GRAMMAR); });
     stringstream s;
     s << tokenNames;
     return s.str();
@@ -61,7 +58,7 @@ namespace {
   void consume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (!maybeConsume(tokenId, tokens, pos)) {
       stringstream errMsg;
-      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + tokenToString(tokenId);
+      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
       throw runtime_error(errMsg.str());
     }
   }
@@ -75,7 +72,7 @@ namespace {
     string* strPtr = maybeConsumeString(tokenId, tokens, pos);
     if (!strPtr) {
       stringstream errMsg;
-      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + tokenToString(tokenId);
+      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
       throw runtime_error(errMsg.str());
     }
     return *strPtr;

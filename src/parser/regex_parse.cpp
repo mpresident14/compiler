@@ -19,10 +19,10 @@ using namespace std;
  * GRAMMAR *
  ***********/
 
-/* CHAR { char :: str[0] } <DELETER OPTIONAL>
+/* CHAR { char :: #str[0] } <DELETER OPTIONAL>
  *
  *
- * Regex { Regex* } { delete #0; }
+ * Regex { Regex* } { delete #obj; }
  * Regex := Alt                              { #0 }
  *        | Concats                          { new Concat(move(#0)) }
  *        | Regex STAR                       { new Star(#0) }
@@ -33,11 +33,11 @@ using namespace std;
  *        | LBRACKET CHAR RBRACKET           { new Character(#1))) }
  *        | DOT                              { new Dot() }
  *
- * Alt { Regex* } { delete #0; }
+ * Alt { Regex* } { delete #obj; }
  * Alt := Alts                       { new Alt(move(#0)) }
  *      | LBRACKET Concats RBRACKET  { new Alt(move(#1)) }
  *
- * Not { Regex* } { delete #0; }
+ * Not { Regex* } { delete #obj; }
  * Not := LBRACKET CARET CHAR RBRACKET            { new Not(new Character(#2))) }
  *      | LBRACKET CARET Concats RBRACKET         { new Not(new Alt(move(#2))) }
  *      | LBRACKET CARET CHAR DASH CHAR RBRACKET  { new Not(new Range(#2, #4)) }

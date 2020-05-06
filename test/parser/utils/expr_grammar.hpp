@@ -31,7 +31,7 @@ GrammarData GRAMMAR_DATA = {
         "int",
         NONE,
         Assoc::NONE,
-        "stoi(string(str))",
+        "stoi(string(#str))",
         "",
         "[1-9][0-9]*" },
       { "PLUS", "", 1, Assoc::LEFT, "", "", "\\+" },
@@ -48,7 +48,7 @@ GrammarData GRAMMAR_DATA = {
 
   /* variables */
   { { "S", "Start", { SCONC }, "" },
-    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
+    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #obj;" } }
 };
 
 
@@ -59,7 +59,7 @@ GrammarData BAD_GRAMMAR_DATA = {
         "int",
         NONE,
         Assoc::NONE,
-        "stoi(string(str))",
+        "stoi(string(#str))",
         "",
         "[1-9][0-9]*" },
       { "PLUS", "", NONE, Assoc::LEFT, "", "", "\\+" },
@@ -76,7 +76,7 @@ GrammarData BAD_GRAMMAR_DATA = {
 
   /* variables */
   { { "S", "Start", { SCONC }, "" },
-    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #0;" } }
+    { "Expr", "Expr*", { EINT, EPLUS, ETIMES }, "delete #obj;" } }
 };
 
 }
