@@ -32,22 +32,28 @@ namespace {
   unordered_map<string, size_t> varNameToIndex;
   unordered_map<string, int> precNameToPrec;
 
-  string tokensToStrings(const vector<StackObj>& tokens) {
+  void streamTokenNames(ostream& out, const vector<StackObj>& tokens) {
     vector<string> tokenNames;
     transform(
         tokens.begin(),
         tokens.end(),
         back_inserter(tokenNames),
         [](const StackObj& stackObj){ return symbolToString(stackObj.symbol, CONFIG_GRAMMAR); });
-    stringstream s;
-    s << tokenNames;
-    return s.str();
+    out << tokenNames;
   }
 
 
   /*******************
    * CONSUME HELPERS *
    *******************/
+  void parseError(int tokenId, const vector<StackObj>& tokens, size_t pos) {
+    stringstream errMsg;
+    errMsg << "Parse error on line " << tokens[pos].line << " before tokens: ";
+    streamTokenNames(errMsg, tokens);
+    errMsg << ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
+    throw runtime_error(errMsg.str());
+  }
+
   bool maybeConsume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
       return false;
@@ -55,25 +61,24 @@ namespace {
     ++pos;
     return true;
   }
+
   void consume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (!maybeConsume(tokenId, tokens, pos)) {
-      stringstream errMsg;
-      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
-      throw runtime_error(errMsg.str());
+      parseError(tokenId, tokens, pos);
     }
   }
+
   string* maybeConsumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
       return nullptr;
     }
     return (string*) tokens[pos++].obj;
   }
+
   string consumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
     string* strPtr = maybeConsumeString(tokenId, tokens, pos);
     if (!strPtr) {
-      stringstream errMsg;
-      errMsg << "Parse error on line " << tokens[pos].line << " before tokens: " << tokensToStrings(tokens) + ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
-      throw runtime_error(errMsg.str());
+      parseError(tokenId, tokens, pos);
     }
     return *strPtr;
   }

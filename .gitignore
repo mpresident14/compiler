@@ -48,4 +48,4 @@ lib/
 DartConfiguration.tcl
 
 # My generated files for testing
-test/generated/*
+test/parser/generated/*

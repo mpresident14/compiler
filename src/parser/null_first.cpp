@@ -163,3 +163,11 @@ std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
   computeFirsts(firsts, equations);
   return firsts;
 }
+
+
+void bitOrEquals(vector<bool>& bits, const vector<bool>& other) {
+  size_t len = bits.size();
+  for (size_t i = 0; i < len; ++i) {
+    bits[i] = bits[i] | other[i];
+  }
+}

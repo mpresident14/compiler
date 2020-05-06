@@ -74,18 +74,19 @@ namespace {
     out << '}';
   }
 
+
   /******************
    * STRING REPLACE *
    ******************/
   void replaceAll(
-    std::ostream& out,
+    ostream& out,
     string_view str,
-    const std::string& from,
-    const std::string& to) {
+    const string& from,
+    const string& to) {
 
   size_t startPos = 0;
   size_t endPos = 0;
-  while ((endPos = str.find(from, startPos)) != std::string::npos) {
+  while ((endPos = str.find(from, startPos)) != string::npos) {
     out << str.substr(startPos, endPos - startPos) << to;
     startPos = endPos + from.length();
   }
@@ -95,13 +96,13 @@ namespace {
 
 template <
     typename Fn,
-    std::enable_if_t<std::is_invocable_v<Fn, std::string>, int> = 0>
-void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) {
+    enable_if_t<is_invocable_v<Fn, string>, int> = 0>
+void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
   size_t i = 0;
   size_t len = fmt.size();
   while (i < len) {
     if (fmt[i] == '#') {
-      std::string digits;
+      string digits;
       char c;
       while (isdigit((c = fmt[++i]))) {
         digits.push_back(c);
@@ -177,7 +178,7 @@ void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) 
     replaceNumbers(
         out,
         decl,
-        [&grammarData](const std::string&){ return grammarData.variables[1].type; });
+        [&grammarData](const string&){ return grammarData.variables[1].type; });
   }
 
 
@@ -237,6 +238,19 @@ void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) 
   }
 
 
+  void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const GrammarData& grammarData) {
+    vector<string> symbolNames;
+    transform(
+        symbols.begin(),
+        symbols.end(),
+        back_inserter(symbolNames),
+        [&grammarData](int symbol){
+          return symbolToString(symbol, grammarData);
+        });
+    out << symbolNames;
+  }
+
+
   void constructObjFn(ostream& out, const GrammarData& grammarData) {
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
@@ -255,14 +269,16 @@ void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) 
             int i = stoi(digits);
             // These are user-provided numbers, so check the bounds
             if (i < 0) {
-              std::stringstream err;
-              err << "Index " << i << " is < 0 for rule " << symbolsToStrings(argSymbols, grammarData);
-              throw std::runtime_error("Index " + std::to_string(i) + " is < 0.");
+              stringstream err;
+              err << "Index " << i << " is < 0 for rule ";
+              streamSymbolNames(err, argSymbols, grammarData);
+              throw runtime_error(err.str());
             }
             if ((size_t) i >= argSymbols.size()) {
-              std::stringstream err;
-              err << "Index " << i << " is greater than the number of elements in rule " << symbolsToStrings(concrete.argSymbols, grammarData);
-              throw std::runtime_error(err.str());
+              stringstream err;
+              err << "Index " << i << " is greater than the number of elements in rule ";
+              streamSymbolNames(err, argSymbols, grammarData);
+              throw runtime_error(err.str());
             }
 
             int argSymbol = argSymbols[i];
@@ -621,7 +637,7 @@ void replaceNumbers(std::ostream& out, const std::string& fmt, Fn&& convertNum) 
     replaceNumbers(
         out,
         code,
-        [&grammarData](const std::string&){ return grammarData.variables[1].type; });
+        [&grammarData](const string&){ return grammarData.variables[1].type; });
   }
 
 
@@ -842,12 +858,12 @@ void generateParserCode(
   string headerGuard = replaceAll(parserFilePath, '/', "_") + "_HPP";
   transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
-  std::ofstream hppFile;
+  ofstream hppFile;
   hppFile.open(parserFilePath + ".hpp");
   hppFile << parserHppCode(namespaceName, headerGuard, addlHdrIncludes, grammarData);
   hppFile.close();
 
-  std::ofstream cppFile;
+  ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
   cppFile << parserCppCode(parserFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
@@ -862,12 +878,12 @@ void generateLexerCode(
   string headerGuard = replaceAll(lexerFilePath, '/', "_") + "_HPP";
   transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
-  std::ofstream hppFile;
+  ofstream hppFile;
   hppFile.open(lexerFilePath + ".hpp");
   hppFile << lexerHppCode(namespaceName, headerGuard);
   hppFile.close();
 
-  std::ofstream cppFile;
+  ofstream cppFile;
   cppFile.open(lexerFilePath + ".cpp");
   cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
