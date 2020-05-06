@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <numeric>
 
 #include <prez/print_stuff.hpp>
 
@@ -21,24 +22,26 @@ struct DFARule {
   // b/c lookahead is not involved in the hash function or equality for RuleSets
   mutable std::vector<bool> lookahead;
 
-  bool atEnd() const { return pos == symbols.size(); }
+  bool atEnd() const noexcept { return pos == symbols.size(); }
+
   /* Given a rule "S -> A.B", returns B */
-  // TODO: Remove throw and make noexcept when done
-  int nextSymbol() const { return pos == symbols.size() ? NONE : symbols[pos]; }
-  int nextNextSymbol() const {
+  int nextSymbol() const noexcept { return atEnd() ? NONE : symbols[pos]; }
+
+  /* Given a rule "S -> A.BC", returns C */
+  int nextNextSymbol() const noexcept {
     return pos >= symbols.size() - 1 ? NONE : symbols[pos + 1];
   }
 
   /* Given a rule "S -> A.B", returns "S -> AB." */
   DFARule nextStep() const {
-    if (pos == symbols.size()) {
+    if (atEnd()) {
       throw std::invalid_argument("Out of bounds");
     }
     return { concrete, symbols, pos + 1, lookahead };
   }
 
-  // TODO: Make appropriate functions noexcept and const(expr)
-  bool operator==(const DFARule& other) const {
+
+  bool operator==(const DFARule& other) const noexcept {
     return concrete == other.concrete && symbols == other.symbols &&
            pos == other.pos && lookahead == other.lookahead;
   }
@@ -60,7 +63,7 @@ struct DFARule {
   }
 };
 
-// TODO: Fix these hash functions
+
 /* Does not use lookahead set. See comment below */
 struct DFARuleHash {
   size_t operator()(const DFARule& rule) const noexcept {
@@ -71,7 +74,7 @@ struct DFARuleHash {
       h2 += intHasher(symbol);
     }
     size_t h3 = std::hash<size_t>()(rule.pos);
-    return h3 + h1 ^ (h2 << 1);
+    return h3 ^ h1 ^ (h2 << 1);
   }
 };
 
@@ -85,7 +88,7 @@ struct DFARuleHash {
  * rules they contain.
  * */
 struct DFARuleEq {
-  bool operator()(const DFARule& left, const DFARule& right) const {
+  bool operator()(const DFARule& left, const DFARule& right) const noexcept {
     return left.concrete == right.concrete && left.symbols == right.symbols &&
            left.pos == right.pos;
   }

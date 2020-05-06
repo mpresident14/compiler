@@ -11,6 +11,10 @@
 #include <tuple>
 #include <type_traits>
 #include <cstdint>
+#include <stdexcept>
+#include <sstream>
+
+#include <prez/print_stuff.hpp>
 
 
 /* Fixed for all grammars */
@@ -33,13 +37,13 @@ static constexpr int SKIP_TOKEN = INT_MIN + 1;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
 
-inline bool isToken(int symbol) { return symbol < 0; }
-inline int tokenToFromIndex(int token) { return -token - 1; }
-inline int symbolIndex(int symbol, size_t numVars) {
+constexpr bool isToken(int symbol) noexcept { return symbol < 0; }
+constexpr int tokenToFromIndex(int token) noexcept { return -token - 1; }
+constexpr int symbolIndex(int symbol, size_t numVars) noexcept {
   return isToken(symbol) ? tokenToFromIndex(symbol) + numVars : symbol;
 }
 /* For use in array of both variables and tokens */
-inline int indexToSymbol(size_t i, size_t numVars) {
+constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
@@ -53,7 +57,7 @@ struct Token {
   std::string regex;
 };
 
-// TODO: I changed argSymbols from int to intptr_t. Change all symbol stuff to long.
+
 struct Concrete {
   std::string name;
   int varType;
@@ -86,6 +90,7 @@ inline void bitOrEquals(
   }
 }
 
+
 inline std::vector<bool> bitOr(
     const std::vector<bool>& lhs,
     const std::vector<bool>& rhs) {
@@ -95,6 +100,20 @@ inline std::vector<bool> bitOr(
     result[i] = lhs[i] | rhs[i];
   }
   return result;
+}
+
+
+template<typename T>
+void checkBounds(int i, const std::vector<T>& vec) {
+  if (i < 0) {
+    throw std::runtime_error("Index " + std::to_string(i) + " is < 0.");
+  }
+  if ((size_t) i >= vec.size()) {
+    std::stringstream err;
+    err << "Index " << std::to_string(i) << " is greater than the number of elements in "
+        << vec;
+    throw std::runtime_error(err.str());
+  }
 }
 
 
@@ -118,14 +137,15 @@ void replaceNumbers(std::ostream& out, std::string_view fmt, Fn&& convertNum) {
   }
 }
 
+
 /* Replace #0, #1, etc, with vector[0], vector[1], etc */
-// TODO: Special case for when vector::size < 10 so we can just convert the
-// character instead of creating a string
 inline void replaceNumbersVec(
     std::ostream& out,
     std::string_view fmt,
     const std::vector<std::string>& args) {
   replaceNumbers(out, fmt, [&args](const std::string& digits) {
+    int i = stoi(digits);
+    checkBounds(i, args);
     return args[stoi(digits)];
   });
 }

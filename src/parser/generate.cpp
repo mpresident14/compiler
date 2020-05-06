@@ -30,7 +30,7 @@ namespace {
   template <typename T>
   void toCode(ostream& out, const vector<T>& v) {
     out << '{';
-    for_each(v.cbegin(), v.cend(), [&out](auto item) {
+    for_each(v.cbegin(), v.cend(), [&out](const T& item) {
       toCode(out, item);
       out << ',';
     });
@@ -208,7 +208,9 @@ namespace {
           out,
           concrete.ctorExpr,
           [&concrete, &grammarData](const string& digits) {
-            int argSymbol = concrete.argSymbols[stoi(digits)];
+            int i = stoi(digits);
+            checkBounds(i, concrete.argSymbols);
+            int argSymbol = concrete.argSymbols[i];
             string symbolName;
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
@@ -431,17 +433,6 @@ namespace {
         }
       }
 
-      parser::Node* runDFA(const std::vector<int>& input) {
-        parser::Node* currentNode = parser::root.get();
-        for (int inputToken : input) {
-          currentNode = currentNode->step(inputToken);
-          if (currentNode == nullptr) {
-            return nullptr;
-          }
-        }
-        return currentNode;
-      }
-
       void parseError(
           const vector<StackObj>& stk,
           const vector<StackObj>& inputTokens,
@@ -501,14 +492,9 @@ namespace {
       if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
         return NONE;
       }
-      if (ruleData.precedence > shiftPrecedence) {
+      if (ruleData.precedence > shiftPrecedence
+          || (ruleData.precedence == shiftPrecedence && ruleData.assoc == Assoc::LEFT)) {
         return ruleData.reducibleRule->concrete;
-      } else if (ruleData.precedence == shiftPrecedence) {
-        if (ruleData.assoc == Assoc::LEFT) {
-          return ruleData.reducibleRule->concrete;
-        } else if (ruleData.assoc == Assoc::NONE) {
-          return NONE;
-        }
       }
       return NONE;
     })";
@@ -518,22 +504,22 @@ namespace {
   void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
     const char code[] = R"(
         #0 shiftReduce(vector<StackObj>& inputTokens) {
+        if (inputTokens.empty()) {
+          parseError({}, inputTokens, 0);
+        }
         vector<StackObj> stk = { move(inputTokens[0]) };
+        vector<parser::Node*> dfaPath = { parser::root.get() };
         size_t i = 1;
         size_t inputSize = inputTokens.size();
         while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
-          vector<int> stkSymbols;
-          transform(
-              stk.begin(),
-              stk.end(),
-              back_inserter(stkSymbols),
-              [](StackObj stkObj) { return stkObj.symbol; });
-          parser::Node* currentNode = runDFA(stkSymbols);
+          parser::Node* currentNode = dfaPath.back()->step(stk.back().symbol);
           if (currentNode == nullptr) {
             cleanPtrsFrom(stk, 0);
-            cleanPtrsFrom(inputTokens, i + 1);
-            parseError(stk, inputTokens, i + 1);
+            cleanPtrsFrom(inputTokens, i);
+            parseError(stk, inputTokens, i);
           }
+          dfaPath.push_back(currentNode);
+
           int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
           int concrete =
               tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
@@ -552,6 +538,7 @@ namespace {
               for (size_t j = 0; j < stkSize - reduceStart; ++j) {
                 deleteObjPtr(stk.back());
                 stk.pop_back();
+                dfaPath.pop_back();
               }
             }
             stk.push_back(newObj);
@@ -562,14 +549,7 @@ namespace {
               parseError(stk, inputTokens, i);
             }
             StackObj token = inputTokens[i];
-            currentNode = currentNode->step(token.symbol);
             stk.push_back(move(token));
-
-            if (currentNode == nullptr) {
-              cleanPtrsFrom(stk, 0);
-              cleanPtrsFrom(inputTokens, i + 1);
-              parseError(stk, inputTokens, i + 1);
-            }
             ++i;
           }
         }

@@ -140,268 +140,268 @@ namespace {
       std::unordered_map<char, Node*> ts_;
     };
 
-    auto n0x1ba8080 = std::make_unique<Node>(-2147483648);
-    auto n0x1b2cc70 = std::make_unique<Node>(-2147483648);
-    auto n0x1b2f3a0 = std::make_unique<Node>(-1);
-    auto n0x1b2f790 = std::make_unique<Node>(-2);
-    auto n0x1b2d770 = std::make_unique<Node>(-3);
+    auto n0xe68610 = std::make_unique<Node>(-2147483648);
+    auto n0xe68340 = std::make_unique<Node>(-2147483648);
+    auto n0xe682e0 = std::make_unique<Node>(-1);
+    auto n0xe68220 = std::make_unique<Node>(-2);
+    auto n0xe68280 = std::make_unique<Node>(-3);
     auto makeDFA() {
-      n0x1ba8080->ts_ = {
-        { '~', n0x1b2cc70.get() }, { '}', n0x1b2cc70.get() },
-        { '|', n0x1b2cc70.get() }, { '{', n0x1b2cc70.get() },
-        { 'z', n0x1b2cc70.get() }, { 'y', n0x1b2cc70.get() },
-        { 'x', n0x1b2cc70.get() }, { 'w', n0x1b2cc70.get() },
-        { 'v', n0x1b2cc70.get() }, { 'u', n0x1b2cc70.get() },
-        { 't', n0x1b2cc70.get() }, { 's', n0x1b2cc70.get() },
-        { 'r', n0x1b2cc70.get() }, { 'q', n0x1b2cc70.get() },
-        { 'p', n0x1b2cc70.get() }, { 'o', n0x1b2cc70.get() },
-        { 'n', n0x1b2cc70.get() }, { 'm', n0x1b2cc70.get() },
-        { 'l', n0x1b2cc70.get() }, { '\n', n0x1b2cc70.get() },
-        { 'k', n0x1b2cc70.get() }, { '\t', n0x1b2cc70.get() },
-        { 'j', n0x1b2cc70.get() }, { 'i', n0x1b2cc70.get() },
-        { 'h', n0x1b2cc70.get() }, { 'g', n0x1b2cc70.get() },
-        { 'f', n0x1b2cc70.get() }, { 'e', n0x1b2cc70.get() },
-        { 'd', n0x1b2cc70.get() }, { 'c', n0x1b2cc70.get() },
-        { 'b', n0x1b2cc70.get() }, { 'a', n0x1b2cc70.get() },
-        { '`', n0x1b2cc70.get() }, { '_', n0x1b2cc70.get() },
-        { '^', n0x1b2cc70.get() }, { ']', n0x1b2cc70.get() },
-        { '[', n0x1b2cc70.get() }, { 'Z', n0x1b2cc70.get() },
-        { 'Y', n0x1b2cc70.get() }, { 'X', n0x1b2cc70.get() },
-        { 'W', n0x1b2cc70.get() }, { 'V', n0x1b2cc70.get() },
-        { 'U', n0x1b2cc70.get() }, { 'T', n0x1b2cc70.get() },
-        { 'S', n0x1b2cc70.get() }, { 'R', n0x1b2cc70.get() },
-        { 'Q', n0x1b2cc70.get() }, { 'P', n0x1b2cc70.get() },
-        { 'O', n0x1b2cc70.get() }, { 'N', n0x1b2cc70.get() },
-        { '5', n0x1b2f3a0.get() }, { '4', n0x1b2f3a0.get() },
-        { '3', n0x1b2f3a0.get() }, { '2', n0x1b2f3a0.get() },
-        { '1', n0x1b2f3a0.get() }, { '0', n0x1b2cc70.get() },
-        { '/', n0x1b2cc70.get() }, { '\\', n0x1b2cc70.get() },
-        { '-', n0x1b2cc70.get() }, { '.', n0x1b2cc70.get() },
-        { ',', n0x1b2cc70.get() }, { '+', n0x1b2f790.get() },
-        { '$', n0x1b2cc70.get() }, { '#', n0x1b2cc70.get() },
-        { '"', n0x1b2cc70.get() }, { ' ', n0x1b2cc70.get() },
-        { '!', n0x1b2cc70.get() }, { '%', n0x1b2cc70.get() },
-        { '&', n0x1b2cc70.get() }, { '\'', n0x1b2cc70.get() },
-        { '(', n0x1b2cc70.get() }, { ')', n0x1b2cc70.get() },
-        { '*', n0x1b2d770.get() }, { '6', n0x1b2f3a0.get() },
-        { '7', n0x1b2f3a0.get() }, { '8', n0x1b2f3a0.get() },
-        { '9', n0x1b2f3a0.get() }, { ':', n0x1b2cc70.get() },
-        { ';', n0x1b2cc70.get() }, { '<', n0x1b2cc70.get() },
-        { '=', n0x1b2cc70.get() }, { '>', n0x1b2cc70.get() },
-        { '?', n0x1b2cc70.get() }, { '@', n0x1b2cc70.get() },
-        { 'A', n0x1b2cc70.get() }, { 'B', n0x1b2cc70.get() },
-        { 'C', n0x1b2cc70.get() }, { 'D', n0x1b2cc70.get() },
-        { 'E', n0x1b2cc70.get() }, { 'F', n0x1b2cc70.get() },
-        { 'G', n0x1b2cc70.get() }, { 'H', n0x1b2cc70.get() },
-        { 'I', n0x1b2cc70.get() }, { 'J', n0x1b2cc70.get() },
-        { 'K', n0x1b2cc70.get() }, { 'L', n0x1b2cc70.get() },
-        { 'M', n0x1b2cc70.get() },
+      n0xe68610->ts_ = {
+        { '~', n0xe68340.get() }, { '}', n0xe68340.get() },
+        { '|', n0xe68340.get() }, { '{', n0xe68340.get() },
+        { 'z', n0xe68340.get() }, { 'y', n0xe68340.get() },
+        { 'x', n0xe68340.get() }, { 'w', n0xe68340.get() },
+        { 'v', n0xe68340.get() }, { 'u', n0xe68340.get() },
+        { 't', n0xe68340.get() }, { 's', n0xe68340.get() },
+        { 'r', n0xe68340.get() }, { 'q', n0xe68340.get() },
+        { 'p', n0xe68340.get() }, { 'o', n0xe68340.get() },
+        { 'n', n0xe68340.get() }, { 'm', n0xe68340.get() },
+        { 'l', n0xe68340.get() }, { '\n', n0xe68340.get() },
+        { 'k', n0xe68340.get() }, { '\t', n0xe68340.get() },
+        { 'j', n0xe68340.get() }, { 'i', n0xe68340.get() },
+        { 'h', n0xe68340.get() }, { 'g', n0xe68340.get() },
+        { 'f', n0xe68340.get() }, { 'e', n0xe68340.get() },
+        { 'd', n0xe68340.get() }, { 'c', n0xe68340.get() },
+        { 'b', n0xe68340.get() }, { 'a', n0xe68340.get() },
+        { '`', n0xe68340.get() }, { '_', n0xe68340.get() },
+        { '^', n0xe68340.get() }, { ']', n0xe68340.get() },
+        { '[', n0xe68340.get() }, { 'Z', n0xe68340.get() },
+        { 'Y', n0xe68340.get() }, { 'X', n0xe68340.get() },
+        { 'W', n0xe68340.get() }, { 'V', n0xe68340.get() },
+        { 'U', n0xe68340.get() }, { 'T', n0xe68340.get() },
+        { 'S', n0xe68340.get() }, { 'R', n0xe68340.get() },
+        { 'Q', n0xe68340.get() }, { 'P', n0xe68340.get() },
+        { 'O', n0xe68340.get() }, { 'N', n0xe68340.get() },
+        { '5', n0xe682e0.get() }, { '4', n0xe682e0.get() },
+        { '3', n0xe682e0.get() }, { '2', n0xe682e0.get() },
+        { '1', n0xe682e0.get() }, { '0', n0xe68340.get() },
+        { '/', n0xe68340.get() }, { '\\', n0xe68340.get() },
+        { '-', n0xe68340.get() }, { '.', n0xe68340.get() },
+        { ',', n0xe68340.get() }, { '+', n0xe68220.get() },
+        { '$', n0xe68340.get() }, { '#', n0xe68340.get() },
+        { '"', n0xe68340.get() }, { ' ', n0xe68340.get() },
+        { '!', n0xe68340.get() }, { '%', n0xe68340.get() },
+        { '&', n0xe68340.get() }, { '\'', n0xe68340.get() },
+        { '(', n0xe68340.get() }, { ')', n0xe68340.get() },
+        { '*', n0xe68280.get() }, { '6', n0xe682e0.get() },
+        { '7', n0xe682e0.get() }, { '8', n0xe682e0.get() },
+        { '9', n0xe682e0.get() }, { ':', n0xe68340.get() },
+        { ';', n0xe68340.get() }, { '<', n0xe68340.get() },
+        { '=', n0xe68340.get() }, { '>', n0xe68340.get() },
+        { '?', n0xe68340.get() }, { '@', n0xe68340.get() },
+        { 'A', n0xe68340.get() }, { 'B', n0xe68340.get() },
+        { 'C', n0xe68340.get() }, { 'D', n0xe68340.get() },
+        { 'E', n0xe68340.get() }, { 'F', n0xe68340.get() },
+        { 'G', n0xe68340.get() }, { 'H', n0xe68340.get() },
+        { 'I', n0xe68340.get() }, { 'J', n0xe68340.get() },
+        { 'K', n0xe68340.get() }, { 'L', n0xe68340.get() },
+        { 'M', n0xe68340.get() },
       };
-      n0x1b2cc70->ts_ = {
-        { '~', n0x1b2cc70.get() }, { '}', n0x1b2cc70.get() },
-        { '|', n0x1b2cc70.get() }, { '{', n0x1b2cc70.get() },
-        { 'z', n0x1b2cc70.get() }, { 'y', n0x1b2cc70.get() },
-        { 'x', n0x1b2cc70.get() }, { 'w', n0x1b2cc70.get() },
-        { 'v', n0x1b2cc70.get() }, { 'u', n0x1b2cc70.get() },
-        { 't', n0x1b2cc70.get() }, { 's', n0x1b2cc70.get() },
-        { 'r', n0x1b2cc70.get() }, { 'q', n0x1b2cc70.get() },
-        { 'p', n0x1b2cc70.get() }, { 'o', n0x1b2cc70.get() },
-        { 'n', n0x1b2cc70.get() }, { 'm', n0x1b2cc70.get() },
-        { 'l', n0x1b2cc70.get() }, { '\n', n0x1b2cc70.get() },
-        { 'k', n0x1b2cc70.get() }, { '\t', n0x1b2cc70.get() },
-        { 'j', n0x1b2cc70.get() }, { 'i', n0x1b2cc70.get() },
-        { 'h', n0x1b2cc70.get() }, { 'g', n0x1b2cc70.get() },
-        { 'f', n0x1b2cc70.get() }, { 'e', n0x1b2cc70.get() },
-        { 'd', n0x1b2cc70.get() }, { 'c', n0x1b2cc70.get() },
-        { 'b', n0x1b2cc70.get() }, { 'a', n0x1b2cc70.get() },
-        { '`', n0x1b2cc70.get() }, { '_', n0x1b2cc70.get() },
-        { '^', n0x1b2cc70.get() }, { ']', n0x1b2cc70.get() },
-        { '[', n0x1b2cc70.get() }, { 'Z', n0x1b2cc70.get() },
-        { 'Y', n0x1b2cc70.get() }, { 'X', n0x1b2cc70.get() },
-        { 'W', n0x1b2cc70.get() }, { 'V', n0x1b2cc70.get() },
-        { 'U', n0x1b2cc70.get() }, { 'T', n0x1b2cc70.get() },
-        { 'S', n0x1b2cc70.get() }, { 'R', n0x1b2cc70.get() },
-        { 'Q', n0x1b2cc70.get() }, { 'P', n0x1b2cc70.get() },
-        { 'O', n0x1b2cc70.get() }, { 'N', n0x1b2cc70.get() },
-        { '5', n0x1b2cc70.get() }, { '4', n0x1b2cc70.get() },
-        { '3', n0x1b2cc70.get() }, { '2', n0x1b2cc70.get() },
-        { '1', n0x1b2cc70.get() }, { '0', n0x1b2cc70.get() },
-        { '/', n0x1b2cc70.get() }, { '\\', n0x1b2cc70.get() },
-        { '-', n0x1b2cc70.get() }, { '.', n0x1b2cc70.get() },
-        { ',', n0x1b2cc70.get() }, { '+', n0x1b2cc70.get() },
-        { '$', n0x1b2cc70.get() }, { '#', n0x1b2cc70.get() },
-        { '"', n0x1b2cc70.get() }, { ' ', n0x1b2cc70.get() },
-        { '!', n0x1b2cc70.get() }, { '%', n0x1b2cc70.get() },
-        { '&', n0x1b2cc70.get() }, { '\'', n0x1b2cc70.get() },
-        { '(', n0x1b2cc70.get() }, { ')', n0x1b2cc70.get() },
-        { '*', n0x1b2cc70.get() }, { '6', n0x1b2cc70.get() },
-        { '7', n0x1b2cc70.get() }, { '8', n0x1b2cc70.get() },
-        { '9', n0x1b2cc70.get() }, { ':', n0x1b2cc70.get() },
-        { ';', n0x1b2cc70.get() }, { '<', n0x1b2cc70.get() },
-        { '=', n0x1b2cc70.get() }, { '>', n0x1b2cc70.get() },
-        { '?', n0x1b2cc70.get() }, { '@', n0x1b2cc70.get() },
-        { 'A', n0x1b2cc70.get() }, { 'B', n0x1b2cc70.get() },
-        { 'C', n0x1b2cc70.get() }, { 'D', n0x1b2cc70.get() },
-        { 'E', n0x1b2cc70.get() }, { 'F', n0x1b2cc70.get() },
-        { 'G', n0x1b2cc70.get() }, { 'H', n0x1b2cc70.get() },
-        { 'I', n0x1b2cc70.get() }, { 'J', n0x1b2cc70.get() },
-        { 'K', n0x1b2cc70.get() }, { 'L', n0x1b2cc70.get() },
-        { 'M', n0x1b2cc70.get() },
+      n0xe68340->ts_ = {
+        { '~', n0xe68340.get() }, { '}', n0xe68340.get() },
+        { '|', n0xe68340.get() }, { '{', n0xe68340.get() },
+        { 'z', n0xe68340.get() }, { 'y', n0xe68340.get() },
+        { 'x', n0xe68340.get() }, { 'w', n0xe68340.get() },
+        { 'v', n0xe68340.get() }, { 'u', n0xe68340.get() },
+        { 't', n0xe68340.get() }, { 's', n0xe68340.get() },
+        { 'r', n0xe68340.get() }, { 'q', n0xe68340.get() },
+        { 'p', n0xe68340.get() }, { 'o', n0xe68340.get() },
+        { 'n', n0xe68340.get() }, { 'm', n0xe68340.get() },
+        { 'l', n0xe68340.get() }, { '\n', n0xe68340.get() },
+        { 'k', n0xe68340.get() }, { '\t', n0xe68340.get() },
+        { 'j', n0xe68340.get() }, { 'i', n0xe68340.get() },
+        { 'h', n0xe68340.get() }, { 'g', n0xe68340.get() },
+        { 'f', n0xe68340.get() }, { 'e', n0xe68340.get() },
+        { 'd', n0xe68340.get() }, { 'c', n0xe68340.get() },
+        { 'b', n0xe68340.get() }, { 'a', n0xe68340.get() },
+        { '`', n0xe68340.get() }, { '_', n0xe68340.get() },
+        { '^', n0xe68340.get() }, { ']', n0xe68340.get() },
+        { '[', n0xe68340.get() }, { 'Z', n0xe68340.get() },
+        { 'Y', n0xe68340.get() }, { 'X', n0xe68340.get() },
+        { 'W', n0xe68340.get() }, { 'V', n0xe68340.get() },
+        { 'U', n0xe68340.get() }, { 'T', n0xe68340.get() },
+        { 'S', n0xe68340.get() }, { 'R', n0xe68340.get() },
+        { 'Q', n0xe68340.get() }, { 'P', n0xe68340.get() },
+        { 'O', n0xe68340.get() }, { 'N', n0xe68340.get() },
+        { '5', n0xe68340.get() }, { '4', n0xe68340.get() },
+        { '3', n0xe68340.get() }, { '2', n0xe68340.get() },
+        { '1', n0xe68340.get() }, { '0', n0xe68340.get() },
+        { '/', n0xe68340.get() }, { '\\', n0xe68340.get() },
+        { '-', n0xe68340.get() }, { '.', n0xe68340.get() },
+        { ',', n0xe68340.get() }, { '+', n0xe68340.get() },
+        { '$', n0xe68340.get() }, { '#', n0xe68340.get() },
+        { '"', n0xe68340.get() }, { ' ', n0xe68340.get() },
+        { '!', n0xe68340.get() }, { '%', n0xe68340.get() },
+        { '&', n0xe68340.get() }, { '\'', n0xe68340.get() },
+        { '(', n0xe68340.get() }, { ')', n0xe68340.get() },
+        { '*', n0xe68340.get() }, { '6', n0xe68340.get() },
+        { '7', n0xe68340.get() }, { '8', n0xe68340.get() },
+        { '9', n0xe68340.get() }, { ':', n0xe68340.get() },
+        { ';', n0xe68340.get() }, { '<', n0xe68340.get() },
+        { '=', n0xe68340.get() }, { '>', n0xe68340.get() },
+        { '?', n0xe68340.get() }, { '@', n0xe68340.get() },
+        { 'A', n0xe68340.get() }, { 'B', n0xe68340.get() },
+        { 'C', n0xe68340.get() }, { 'D', n0xe68340.get() },
+        { 'E', n0xe68340.get() }, { 'F', n0xe68340.get() },
+        { 'G', n0xe68340.get() }, { 'H', n0xe68340.get() },
+        { 'I', n0xe68340.get() }, { 'J', n0xe68340.get() },
+        { 'K', n0xe68340.get() }, { 'L', n0xe68340.get() },
+        { 'M', n0xe68340.get() },
       };
-      n0x1b2f3a0->ts_ = {
-        { '~', n0x1b2cc70.get() }, { '}', n0x1b2cc70.get() },
-        { '|', n0x1b2cc70.get() }, { '{', n0x1b2cc70.get() },
-        { 'z', n0x1b2cc70.get() }, { 'y', n0x1b2cc70.get() },
-        { 'x', n0x1b2cc70.get() }, { 'w', n0x1b2cc70.get() },
-        { 'v', n0x1b2cc70.get() }, { 'u', n0x1b2cc70.get() },
-        { 't', n0x1b2cc70.get() }, { 's', n0x1b2cc70.get() },
-        { 'r', n0x1b2cc70.get() }, { 'q', n0x1b2cc70.get() },
-        { 'p', n0x1b2cc70.get() }, { 'o', n0x1b2cc70.get() },
-        { 'n', n0x1b2cc70.get() }, { 'm', n0x1b2cc70.get() },
-        { 'l', n0x1b2cc70.get() }, { '\n', n0x1b2cc70.get() },
-        { 'k', n0x1b2cc70.get() }, { '\t', n0x1b2cc70.get() },
-        { 'j', n0x1b2cc70.get() }, { 'i', n0x1b2cc70.get() },
-        { 'h', n0x1b2cc70.get() }, { 'g', n0x1b2cc70.get() },
-        { 'f', n0x1b2cc70.get() }, { 'e', n0x1b2cc70.get() },
-        { 'd', n0x1b2cc70.get() }, { 'c', n0x1b2cc70.get() },
-        { 'b', n0x1b2cc70.get() }, { 'a', n0x1b2cc70.get() },
-        { '`', n0x1b2cc70.get() }, { '_', n0x1b2cc70.get() },
-        { '^', n0x1b2cc70.get() }, { ']', n0x1b2cc70.get() },
-        { '[', n0x1b2cc70.get() }, { 'Z', n0x1b2cc70.get() },
-        { 'Y', n0x1b2cc70.get() }, { 'X', n0x1b2cc70.get() },
-        { 'W', n0x1b2cc70.get() }, { 'V', n0x1b2cc70.get() },
-        { 'U', n0x1b2cc70.get() }, { 'T', n0x1b2cc70.get() },
-        { 'S', n0x1b2cc70.get() }, { 'R', n0x1b2cc70.get() },
-        { 'Q', n0x1b2cc70.get() }, { 'P', n0x1b2cc70.get() },
-        { 'O', n0x1b2cc70.get() }, { 'N', n0x1b2cc70.get() },
-        { '5', n0x1b2f3a0.get() }, { '4', n0x1b2f3a0.get() },
-        { '3', n0x1b2f3a0.get() }, { '2', n0x1b2f3a0.get() },
-        { '1', n0x1b2f3a0.get() }, { '0', n0x1b2f3a0.get() },
-        { '/', n0x1b2cc70.get() }, { '\\', n0x1b2cc70.get() },
-        { '-', n0x1b2cc70.get() }, { '.', n0x1b2cc70.get() },
-        { ',', n0x1b2cc70.get() }, { '+', n0x1b2cc70.get() },
-        { '$', n0x1b2cc70.get() }, { '#', n0x1b2cc70.get() },
-        { '"', n0x1b2cc70.get() }, { ' ', n0x1b2cc70.get() },
-        { '!', n0x1b2cc70.get() }, { '%', n0x1b2cc70.get() },
-        { '&', n0x1b2cc70.get() }, { '\'', n0x1b2cc70.get() },
-        { '(', n0x1b2cc70.get() }, { ')', n0x1b2cc70.get() },
-        { '*', n0x1b2cc70.get() }, { '6', n0x1b2f3a0.get() },
-        { '7', n0x1b2f3a0.get() }, { '8', n0x1b2f3a0.get() },
-        { '9', n0x1b2f3a0.get() }, { ':', n0x1b2cc70.get() },
-        { ';', n0x1b2cc70.get() }, { '<', n0x1b2cc70.get() },
-        { '=', n0x1b2cc70.get() }, { '>', n0x1b2cc70.get() },
-        { '?', n0x1b2cc70.get() }, { '@', n0x1b2cc70.get() },
-        { 'A', n0x1b2cc70.get() }, { 'B', n0x1b2cc70.get() },
-        { 'C', n0x1b2cc70.get() }, { 'D', n0x1b2cc70.get() },
-        { 'E', n0x1b2cc70.get() }, { 'F', n0x1b2cc70.get() },
-        { 'G', n0x1b2cc70.get() }, { 'H', n0x1b2cc70.get() },
-        { 'I', n0x1b2cc70.get() }, { 'J', n0x1b2cc70.get() },
-        { 'K', n0x1b2cc70.get() }, { 'L', n0x1b2cc70.get() },
-        { 'M', n0x1b2cc70.get() },
+      n0xe682e0->ts_ = {
+        { '~', n0xe68340.get() }, { '}', n0xe68340.get() },
+        { '|', n0xe68340.get() }, { '{', n0xe68340.get() },
+        { 'z', n0xe68340.get() }, { 'y', n0xe68340.get() },
+        { 'x', n0xe68340.get() }, { 'w', n0xe68340.get() },
+        { 'v', n0xe68340.get() }, { 'u', n0xe68340.get() },
+        { 't', n0xe68340.get() }, { 's', n0xe68340.get() },
+        { 'r', n0xe68340.get() }, { 'q', n0xe68340.get() },
+        { 'p', n0xe68340.get() }, { 'o', n0xe68340.get() },
+        { 'n', n0xe68340.get() }, { 'm', n0xe68340.get() },
+        { 'l', n0xe68340.get() }, { '\n', n0xe68340.get() },
+        { 'k', n0xe68340.get() }, { '\t', n0xe68340.get() },
+        { 'j', n0xe68340.get() }, { 'i', n0xe68340.get() },
+        { 'h', n0xe68340.get() }, { 'g', n0xe68340.get() },
+        { 'f', n0xe68340.get() }, { 'e', n0xe68340.get() },
+        { 'd', n0xe68340.get() }, { 'c', n0xe68340.get() },
+        { 'b', n0xe68340.get() }, { 'a', n0xe68340.get() },
+        { '`', n0xe68340.get() }, { '_', n0xe68340.get() },
+        { '^', n0xe68340.get() }, { ']', n0xe68340.get() },
+        { '[', n0xe68340.get() }, { 'Z', n0xe68340.get() },
+        { 'Y', n0xe68340.get() }, { 'X', n0xe68340.get() },
+        { 'W', n0xe68340.get() }, { 'V', n0xe68340.get() },
+        { 'U', n0xe68340.get() }, { 'T', n0xe68340.get() },
+        { 'S', n0xe68340.get() }, { 'R', n0xe68340.get() },
+        { 'Q', n0xe68340.get() }, { 'P', n0xe68340.get() },
+        { 'O', n0xe68340.get() }, { 'N', n0xe68340.get() },
+        { '5', n0xe682e0.get() }, { '4', n0xe682e0.get() },
+        { '3', n0xe682e0.get() }, { '2', n0xe682e0.get() },
+        { '1', n0xe682e0.get() }, { '0', n0xe682e0.get() },
+        { '/', n0xe68340.get() }, { '\\', n0xe68340.get() },
+        { '-', n0xe68340.get() }, { '.', n0xe68340.get() },
+        { ',', n0xe68340.get() }, { '+', n0xe68340.get() },
+        { '$', n0xe68340.get() }, { '#', n0xe68340.get() },
+        { '"', n0xe68340.get() }, { ' ', n0xe68340.get() },
+        { '!', n0xe68340.get() }, { '%', n0xe68340.get() },
+        { '&', n0xe68340.get() }, { '\'', n0xe68340.get() },
+        { '(', n0xe68340.get() }, { ')', n0xe68340.get() },
+        { '*', n0xe68340.get() }, { '6', n0xe682e0.get() },
+        { '7', n0xe682e0.get() }, { '8', n0xe682e0.get() },
+        { '9', n0xe682e0.get() }, { ':', n0xe68340.get() },
+        { ';', n0xe68340.get() }, { '<', n0xe68340.get() },
+        { '=', n0xe68340.get() }, { '>', n0xe68340.get() },
+        { '?', n0xe68340.get() }, { '@', n0xe68340.get() },
+        { 'A', n0xe68340.get() }, { 'B', n0xe68340.get() },
+        { 'C', n0xe68340.get() }, { 'D', n0xe68340.get() },
+        { 'E', n0xe68340.get() }, { 'F', n0xe68340.get() },
+        { 'G', n0xe68340.get() }, { 'H', n0xe68340.get() },
+        { 'I', n0xe68340.get() }, { 'J', n0xe68340.get() },
+        { 'K', n0xe68340.get() }, { 'L', n0xe68340.get() },
+        { 'M', n0xe68340.get() },
       };
-      n0x1b2f790->ts_ = {
-        { '~', n0x1b2cc70.get() }, { '}', n0x1b2cc70.get() },
-        { '|', n0x1b2cc70.get() }, { '{', n0x1b2cc70.get() },
-        { 'z', n0x1b2cc70.get() }, { 'y', n0x1b2cc70.get() },
-        { 'x', n0x1b2cc70.get() }, { 'w', n0x1b2cc70.get() },
-        { 'v', n0x1b2cc70.get() }, { 'u', n0x1b2cc70.get() },
-        { 't', n0x1b2cc70.get() }, { 's', n0x1b2cc70.get() },
-        { 'r', n0x1b2cc70.get() }, { 'q', n0x1b2cc70.get() },
-        { 'p', n0x1b2cc70.get() }, { 'o', n0x1b2cc70.get() },
-        { 'n', n0x1b2cc70.get() }, { 'm', n0x1b2cc70.get() },
-        { 'l', n0x1b2cc70.get() }, { '\n', n0x1b2cc70.get() },
-        { 'k', n0x1b2cc70.get() }, { '\t', n0x1b2cc70.get() },
-        { 'j', n0x1b2cc70.get() }, { 'i', n0x1b2cc70.get() },
-        { 'h', n0x1b2cc70.get() }, { 'g', n0x1b2cc70.get() },
-        { 'f', n0x1b2cc70.get() }, { 'e', n0x1b2cc70.get() },
-        { 'd', n0x1b2cc70.get() }, { 'c', n0x1b2cc70.get() },
-        { 'b', n0x1b2cc70.get() }, { 'a', n0x1b2cc70.get() },
-        { '`', n0x1b2cc70.get() }, { '_', n0x1b2cc70.get() },
-        { '^', n0x1b2cc70.get() }, { ']', n0x1b2cc70.get() },
-        { '[', n0x1b2cc70.get() }, { 'Z', n0x1b2cc70.get() },
-        { 'Y', n0x1b2cc70.get() }, { 'X', n0x1b2cc70.get() },
-        { 'W', n0x1b2cc70.get() }, { 'V', n0x1b2cc70.get() },
-        { 'U', n0x1b2cc70.get() }, { 'T', n0x1b2cc70.get() },
-        { 'S', n0x1b2cc70.get() }, { 'R', n0x1b2cc70.get() },
-        { 'Q', n0x1b2cc70.get() }, { 'P', n0x1b2cc70.get() },
-        { 'O', n0x1b2cc70.get() }, { 'N', n0x1b2cc70.get() },
-        { '5', n0x1b2cc70.get() }, { '4', n0x1b2cc70.get() },
-        { '3', n0x1b2cc70.get() }, { '2', n0x1b2cc70.get() },
-        { '1', n0x1b2cc70.get() }, { '0', n0x1b2cc70.get() },
-        { '/', n0x1b2cc70.get() }, { '\\', n0x1b2cc70.get() },
-        { '-', n0x1b2cc70.get() }, { '.', n0x1b2cc70.get() },
-        { ',', n0x1b2cc70.get() }, { '+', n0x1b2cc70.get() },
-        { '$', n0x1b2cc70.get() }, { '#', n0x1b2cc70.get() },
-        { '"', n0x1b2cc70.get() }, { ' ', n0x1b2cc70.get() },
-        { '!', n0x1b2cc70.get() }, { '%', n0x1b2cc70.get() },
-        { '&', n0x1b2cc70.get() }, { '\'', n0x1b2cc70.get() },
-        { '(', n0x1b2cc70.get() }, { ')', n0x1b2cc70.get() },
-        { '*', n0x1b2cc70.get() }, { '6', n0x1b2cc70.get() },
-        { '7', n0x1b2cc70.get() }, { '8', n0x1b2cc70.get() },
-        { '9', n0x1b2cc70.get() }, { ':', n0x1b2cc70.get() },
-        { ';', n0x1b2cc70.get() }, { '<', n0x1b2cc70.get() },
-        { '=', n0x1b2cc70.get() }, { '>', n0x1b2cc70.get() },
-        { '?', n0x1b2cc70.get() }, { '@', n0x1b2cc70.get() },
-        { 'A', n0x1b2cc70.get() }, { 'B', n0x1b2cc70.get() },
-        { 'C', n0x1b2cc70.get() }, { 'D', n0x1b2cc70.get() },
-        { 'E', n0x1b2cc70.get() }, { 'F', n0x1b2cc70.get() },
-        { 'G', n0x1b2cc70.get() }, { 'H', n0x1b2cc70.get() },
-        { 'I', n0x1b2cc70.get() }, { 'J', n0x1b2cc70.get() },
-        { 'K', n0x1b2cc70.get() }, { 'L', n0x1b2cc70.get() },
-        { 'M', n0x1b2cc70.get() },
+      n0xe68220->ts_ = {
+        { '~', n0xe68340.get() }, { '}', n0xe68340.get() },
+        { '|', n0xe68340.get() }, { '{', n0xe68340.get() },
+        { 'z', n0xe68340.get() }, { 'y', n0xe68340.get() },
+        { 'x', n0xe68340.get() }, { 'w', n0xe68340.get() },
+        { 'v', n0xe68340.get() }, { 'u', n0xe68340.get() },
+        { 't', n0xe68340.get() }, { 's', n0xe68340.get() },
+        { 'r', n0xe68340.get() }, { 'q', n0xe68340.get() },
+        { 'p', n0xe68340.get() }, { 'o', n0xe68340.get() },
+        { 'n', n0xe68340.get() }, { 'm', n0xe68340.get() },
+        { 'l', n0xe68340.get() }, { '\n', n0xe68340.get() },
+        { 'k', n0xe68340.get() }, { '\t', n0xe68340.get() },
+        { 'j', n0xe68340.get() }, { 'i', n0xe68340.get() },
+        { 'h', n0xe68340.get() }, { 'g', n0xe68340.get() },
+        { 'f', n0xe68340.get() }, { 'e', n0xe68340.get() },
+        { 'd', n0xe68340.get() }, { 'c', n0xe68340.get() },
+        { 'b', n0xe68340.get() }, { 'a', n0xe68340.get() },
+        { '`', n0xe68340.get() }, { '_', n0xe68340.get() },
+        { '^', n0xe68340.get() }, { ']', n0xe68340.get() },
+        { '[', n0xe68340.get() }, { 'Z', n0xe68340.get() },
+        { 'Y', n0xe68340.get() }, { 'X', n0xe68340.get() },
+        { 'W', n0xe68340.get() }, { 'V', n0xe68340.get() },
+        { 'U', n0xe68340.get() }, { 'T', n0xe68340.get() },
+        { 'S', n0xe68340.get() }, { 'R', n0xe68340.get() },
+        { 'Q', n0xe68340.get() }, { 'P', n0xe68340.get() },
+        { 'O', n0xe68340.get() }, { 'N', n0xe68340.get() },
+        { '5', n0xe68340.get() }, { '4', n0xe68340.get() },
+        { '3', n0xe68340.get() }, { '2', n0xe68340.get() },
+        { '1', n0xe68340.get() }, { '0', n0xe68340.get() },
+        { '/', n0xe68340.get() }, { '\\', n0xe68340.get() },
+        { '-', n0xe68340.get() }, { '.', n0xe68340.get() },
+        { ',', n0xe68340.get() }, { '+', n0xe68340.get() },
+        { '$', n0xe68340.get() }, { '#', n0xe68340.get() },
+        { '"', n0xe68340.get() }, { ' ', n0xe68340.get() },
+        { '!', n0xe68340.get() }, { '%', n0xe68340.get() },
+        { '&', n0xe68340.get() }, { '\'', n0xe68340.get() },
+        { '(', n0xe68340.get() }, { ')', n0xe68340.get() },
+        { '*', n0xe68340.get() }, { '6', n0xe68340.get() },
+        { '7', n0xe68340.get() }, { '8', n0xe68340.get() },
+        { '9', n0xe68340.get() }, { ':', n0xe68340.get() },
+        { ';', n0xe68340.get() }, { '<', n0xe68340.get() },
+        { '=', n0xe68340.get() }, { '>', n0xe68340.get() },
+        { '?', n0xe68340.get() }, { '@', n0xe68340.get() },
+        { 'A', n0xe68340.get() }, { 'B', n0xe68340.get() },
+        { 'C', n0xe68340.get() }, { 'D', n0xe68340.get() },
+        { 'E', n0xe68340.get() }, { 'F', n0xe68340.get() },
+        { 'G', n0xe68340.get() }, { 'H', n0xe68340.get() },
+        { 'I', n0xe68340.get() }, { 'J', n0xe68340.get() },
+        { 'K', n0xe68340.get() }, { 'L', n0xe68340.get() },
+        { 'M', n0xe68340.get() },
       };
-      n0x1b2d770->ts_ = {
-        { '~', n0x1b2cc70.get() }, { '}', n0x1b2cc70.get() },
-        { '|', n0x1b2cc70.get() }, { '{', n0x1b2cc70.get() },
-        { 'z', n0x1b2cc70.get() }, { 'y', n0x1b2cc70.get() },
-        { 'x', n0x1b2cc70.get() }, { 'w', n0x1b2cc70.get() },
-        { 'v', n0x1b2cc70.get() }, { 'u', n0x1b2cc70.get() },
-        { 't', n0x1b2cc70.get() }, { 's', n0x1b2cc70.get() },
-        { 'r', n0x1b2cc70.get() }, { 'q', n0x1b2cc70.get() },
-        { 'p', n0x1b2cc70.get() }, { 'o', n0x1b2cc70.get() },
-        { 'n', n0x1b2cc70.get() }, { 'm', n0x1b2cc70.get() },
-        { 'l', n0x1b2cc70.get() }, { '\n', n0x1b2cc70.get() },
-        { 'k', n0x1b2cc70.get() }, { '\t', n0x1b2cc70.get() },
-        { 'j', n0x1b2cc70.get() }, { 'i', n0x1b2cc70.get() },
-        { 'h', n0x1b2cc70.get() }, { 'g', n0x1b2cc70.get() },
-        { 'f', n0x1b2cc70.get() }, { 'e', n0x1b2cc70.get() },
-        { 'd', n0x1b2cc70.get() }, { 'c', n0x1b2cc70.get() },
-        { 'b', n0x1b2cc70.get() }, { 'a', n0x1b2cc70.get() },
-        { '`', n0x1b2cc70.get() }, { '_', n0x1b2cc70.get() },
-        { '^', n0x1b2cc70.get() }, { ']', n0x1b2cc70.get() },
-        { '[', n0x1b2cc70.get() }, { 'Z', n0x1b2cc70.get() },
-        { 'Y', n0x1b2cc70.get() }, { 'X', n0x1b2cc70.get() },
-        { 'W', n0x1b2cc70.get() }, { 'V', n0x1b2cc70.get() },
-        { 'U', n0x1b2cc70.get() }, { 'T', n0x1b2cc70.get() },
-        { 'S', n0x1b2cc70.get() }, { 'R', n0x1b2cc70.get() },
-        { 'Q', n0x1b2cc70.get() }, { 'P', n0x1b2cc70.get() },
-        { 'O', n0x1b2cc70.get() }, { 'N', n0x1b2cc70.get() },
-        { '5', n0x1b2cc70.get() }, { '4', n0x1b2cc70.get() },
-        { '3', n0x1b2cc70.get() }, { '2', n0x1b2cc70.get() },
-        { '1', n0x1b2cc70.get() }, { '0', n0x1b2cc70.get() },
-        { '/', n0x1b2cc70.get() }, { '\\', n0x1b2cc70.get() },
-        { '-', n0x1b2cc70.get() }, { '.', n0x1b2cc70.get() },
-        { ',', n0x1b2cc70.get() }, { '+', n0x1b2cc70.get() },
-        { '$', n0x1b2cc70.get() }, { '#', n0x1b2cc70.get() },
-        { '"', n0x1b2cc70.get() }, { ' ', n0x1b2cc70.get() },
-        { '!', n0x1b2cc70.get() }, { '%', n0x1b2cc70.get() },
-        { '&', n0x1b2cc70.get() }, { '\'', n0x1b2cc70.get() },
-        { '(', n0x1b2cc70.get() }, { ')', n0x1b2cc70.get() },
-        { '*', n0x1b2cc70.get() }, { '6', n0x1b2cc70.get() },
-        { '7', n0x1b2cc70.get() }, { '8', n0x1b2cc70.get() },
-        { '9', n0x1b2cc70.get() }, { ':', n0x1b2cc70.get() },
-        { ';', n0x1b2cc70.get() }, { '<', n0x1b2cc70.get() },
-        { '=', n0x1b2cc70.get() }, { '>', n0x1b2cc70.get() },
-        { '?', n0x1b2cc70.get() }, { '@', n0x1b2cc70.get() },
-        { 'A', n0x1b2cc70.get() }, { 'B', n0x1b2cc70.get() },
-        { 'C', n0x1b2cc70.get() }, { 'D', n0x1b2cc70.get() },
-        { 'E', n0x1b2cc70.get() }, { 'F', n0x1b2cc70.get() },
-        { 'G', n0x1b2cc70.get() }, { 'H', n0x1b2cc70.get() },
-        { 'I', n0x1b2cc70.get() }, { 'J', n0x1b2cc70.get() },
-        { 'K', n0x1b2cc70.get() }, { 'L', n0x1b2cc70.get() },
-        { 'M', n0x1b2cc70.get() },
+      n0xe68280->ts_ = {
+        { '~', n0xe68340.get() }, { '}', n0xe68340.get() },
+        { '|', n0xe68340.get() }, { '{', n0xe68340.get() },
+        { 'z', n0xe68340.get() }, { 'y', n0xe68340.get() },
+        { 'x', n0xe68340.get() }, { 'w', n0xe68340.get() },
+        { 'v', n0xe68340.get() }, { 'u', n0xe68340.get() },
+        { 't', n0xe68340.get() }, { 's', n0xe68340.get() },
+        { 'r', n0xe68340.get() }, { 'q', n0xe68340.get() },
+        { 'p', n0xe68340.get() }, { 'o', n0xe68340.get() },
+        { 'n', n0xe68340.get() }, { 'm', n0xe68340.get() },
+        { 'l', n0xe68340.get() }, { '\n', n0xe68340.get() },
+        { 'k', n0xe68340.get() }, { '\t', n0xe68340.get() },
+        { 'j', n0xe68340.get() }, { 'i', n0xe68340.get() },
+        { 'h', n0xe68340.get() }, { 'g', n0xe68340.get() },
+        { 'f', n0xe68340.get() }, { 'e', n0xe68340.get() },
+        { 'd', n0xe68340.get() }, { 'c', n0xe68340.get() },
+        { 'b', n0xe68340.get() }, { 'a', n0xe68340.get() },
+        { '`', n0xe68340.get() }, { '_', n0xe68340.get() },
+        { '^', n0xe68340.get() }, { ']', n0xe68340.get() },
+        { '[', n0xe68340.get() }, { 'Z', n0xe68340.get() },
+        { 'Y', n0xe68340.get() }, { 'X', n0xe68340.get() },
+        { 'W', n0xe68340.get() }, { 'V', n0xe68340.get() },
+        { 'U', n0xe68340.get() }, { 'T', n0xe68340.get() },
+        { 'S', n0xe68340.get() }, { 'R', n0xe68340.get() },
+        { 'Q', n0xe68340.get() }, { 'P', n0xe68340.get() },
+        { 'O', n0xe68340.get() }, { 'N', n0xe68340.get() },
+        { '5', n0xe68340.get() }, { '4', n0xe68340.get() },
+        { '3', n0xe68340.get() }, { '2', n0xe68340.get() },
+        { '1', n0xe68340.get() }, { '0', n0xe68340.get() },
+        { '/', n0xe68340.get() }, { '\\', n0xe68340.get() },
+        { '-', n0xe68340.get() }, { '.', n0xe68340.get() },
+        { ',', n0xe68340.get() }, { '+', n0xe68340.get() },
+        { '$', n0xe68340.get() }, { '#', n0xe68340.get() },
+        { '"', n0xe68340.get() }, { ' ', n0xe68340.get() },
+        { '!', n0xe68340.get() }, { '%', n0xe68340.get() },
+        { '&', n0xe68340.get() }, { '\'', n0xe68340.get() },
+        { '(', n0xe68340.get() }, { ')', n0xe68340.get() },
+        { '*', n0xe68340.get() }, { '6', n0xe68340.get() },
+        { '7', n0xe68340.get() }, { '8', n0xe68340.get() },
+        { '9', n0xe68340.get() }, { ':', n0xe68340.get() },
+        { ';', n0xe68340.get() }, { '<', n0xe68340.get() },
+        { '=', n0xe68340.get() }, { '>', n0xe68340.get() },
+        { '?', n0xe68340.get() }, { '@', n0xe68340.get() },
+        { 'A', n0xe68340.get() }, { 'B', n0xe68340.get() },
+        { 'C', n0xe68340.get() }, { 'D', n0xe68340.get() },
+        { 'E', n0xe68340.get() }, { 'F', n0xe68340.get() },
+        { 'G', n0xe68340.get() }, { 'H', n0xe68340.get() },
+        { 'I', n0xe68340.get() }, { 'J', n0xe68340.get() },
+        { 'K', n0xe68340.get() }, { 'L', n0xe68340.get() },
+        { 'M', n0xe68340.get() },
       };
-      return std::move(n0x1ba8080);
+      return std::move(n0xe68610);
     }
     auto root = makeDFA();
   }  // namespace lexer
@@ -432,9 +432,9 @@ namespace {
       std::unordered_map<int, Node*> ts_;
     };
 
-    auto n0x1b31500 = std::make_unique<Node>(
+    auto n0xe69950 = std::make_unique<Node>(
         RuleData{ optional<DFARule>{}, -2147483648, Assoc::NONE });
-    auto n0x1b32df0 =
+    auto n0xe699d0 =
         std::make_unique<Node>(RuleData{ optional<DFARule>{ { 1,
                                                               {
                                                                   -1,
@@ -447,7 +447,7 @@ namespace {
                                                               } } },
                                          -2147483648,
                                          Assoc::NONE });
-    auto n0x1b351d0 =
+    auto n0xe6b330 =
         std::make_unique<Node>(RuleData{ optional<DFARule>{ { 0,
                                                               {
                                                                   1,
@@ -460,11 +460,11 @@ namespace {
                                                               } } },
                                          -2147483648,
                                          Assoc::NONE });
-    auto n0x1b38790 = std::make_unique<Node>(
+    auto n0xe6c2e0 = std::make_unique<Node>(
         RuleData{ optional<DFARule>{}, -2147483648, Assoc::NONE });
-    auto n0x1b37530 = std::make_unique<Node>(
+    auto n0xe6c260 = std::make_unique<Node>(
         RuleData{ optional<DFARule>{}, -2147483648, Assoc::NONE });
-    auto n0x1b2e710 =
+    auto n0xe67710 =
         std::make_unique<Node>(RuleData{ optional<DFARule>{ { 3,
                                                               {
                                                                   1,
@@ -479,7 +479,7 @@ namespace {
                                                               } } },
                                          2,
                                          Assoc::LEFT });
-    auto n0x1b38860 =
+    auto n0xe6c360 =
         std::make_unique<Node>(RuleData{ optional<DFARule>{ { 2,
                                                               {
                                                                   1,
@@ -495,32 +495,32 @@ namespace {
                                          1,
                                          Assoc::LEFT });
     auto makeDFA() {
-      n0x1b31500->ts_ = {
-        { -1, n0x1b32df0.get() },
-        { 1, n0x1b351d0.get() },
+      n0xe69950->ts_ = {
+        { -1, n0xe699d0.get() },
+        { 1, n0xe6b330.get() },
       };
-      n0x1b32df0->ts_ = {};
-      n0x1b351d0->ts_ = {
-        { -3, n0x1b38790.get() },
-        { -2, n0x1b37530.get() },
+      n0xe699d0->ts_ = {};
+      n0xe6b330->ts_ = {
+        { -3, n0xe6c2e0.get() },
+        { -2, n0xe6c260.get() },
       };
-      n0x1b38790->ts_ = {
-        { -1, n0x1b32df0.get() },
-        { 1, n0x1b2e710.get() },
+      n0xe6c2e0->ts_ = {
+        { -1, n0xe699d0.get() },
+        { 1, n0xe67710.get() },
       };
-      n0x1b37530->ts_ = {
-        { -1, n0x1b32df0.get() },
-        { 1, n0x1b38860.get() },
+      n0xe6c260->ts_ = {
+        { -1, n0xe699d0.get() },
+        { 1, n0xe6c360.get() },
       };
-      n0x1b2e710->ts_ = {
-        { -3, n0x1b38790.get() },
-        { -2, n0x1b37530.get() },
+      n0xe67710->ts_ = {
+        { -3, n0xe6c2e0.get() },
+        { -2, n0xe6c260.get() },
       };
-      n0x1b38860->ts_ = {
-        { -3, n0x1b38790.get() },
-        { -2, n0x1b37530.get() },
+      n0xe6c360->ts_ = {
+        { -3, n0xe6c2e0.get() },
+        { -2, n0xe6c260.get() },
       };
-      return std::move(n0x1b31500);
+      return std::move(n0xe69950);
     }
     auto root = makeDFA();
   }  // namespace parser
@@ -625,17 +625,6 @@ namespace {
     }
   }
 
-  parser::Node* runDFA(const std::vector<int>& input) {
-    parser::Node* currentNode = parser::root.get();
-    for (int inputToken : input) {
-      currentNode = currentNode->step(inputToken);
-      if (currentNode == nullptr) {
-        return nullptr;
-      }
-    }
-    return currentNode;
-  }
-
   void parseError(
       const vector<StackObj>& stk,
       const vector<StackObj>& inputTokens,
@@ -692,34 +681,30 @@ namespace {
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
       return NONE;
     }
-    if (ruleData.precedence > shiftPrecedence) {
+    if (ruleData.precedence > shiftPrecedence ||
+        (ruleData.precedence == shiftPrecedence &&
+         ruleData.assoc == Assoc::LEFT)) {
       return ruleData.reducibleRule->concrete;
-    } else if (ruleData.precedence == shiftPrecedence) {
-      if (ruleData.assoc == Assoc::LEFT) {
-        return ruleData.reducibleRule->concrete;
-      } else if (ruleData.assoc == Assoc::NONE) {
-        return NONE;
-      }
     }
     return NONE;
   }
   Expr* shiftReduce(vector<StackObj>& inputTokens) {
+    if (inputTokens.empty()) {
+      parseError({}, inputTokens, 0);
+    }
     vector<StackObj> stk = { move(inputTokens[0]) };
+    vector<parser::Node*> dfaPath = { parser::root.get() };
     size_t i = 1;
     size_t inputSize = inputTokens.size();
     while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
-      vector<int> stkSymbols;
-      transform(
-          stk.begin(),
-          stk.end(),
-          back_inserter(stkSymbols),
-          [](StackObj stkObj) { return stkObj.symbol; });
-      parser::Node* currentNode = runDFA(stkSymbols);
+      parser::Node* currentNode = dfaPath.back()->step(stk.back().symbol);
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);
-        cleanPtrsFrom(inputTokens, i + 1);
-        parseError(stk, inputTokens, i + 1);
+        cleanPtrsFrom(inputTokens, i);
+        parseError(stk, inputTokens, i);
       }
+      dfaPath.push_back(currentNode);
+
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
       int concrete =
           tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
@@ -738,6 +723,7 @@ namespace {
           for (size_t j = 0; j < stkSize - reduceStart; ++j) {
             deleteObjPtr(stk.back());
             stk.pop_back();
+            dfaPath.pop_back();
           }
         }
         stk.push_back(newObj);
@@ -747,14 +733,7 @@ namespace {
           parseError(stk, inputTokens, i);
         }
         StackObj token = inputTokens[i];
-        currentNode = currentNode->step(token.symbol);
         stk.push_back(move(token));
-
-        if (currentNode == nullptr) {
-          cleanPtrsFrom(stk, 0);
-          cleanPtrsFrom(inputTokens, i + 1);
-          parseError(stk, inputTokens, i + 1);
-        }
         ++i;
       }
     }

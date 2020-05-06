@@ -54,7 +54,7 @@ namespace {
   }
 
 
-  /* Adds possible rules to node's state via epsilon transition in DFA.
+  /* Adds possible rules to node's state (ruleSet) via epsilon transition in DFA.
    * Ex: S -> A.B, then add all rules B -> ??? */
   void epsilonTransition(
       DFARuleSet& ruleSet,
@@ -73,9 +73,9 @@ namespace {
       DFARule& rule = ruleQueue.front();
       auto iter = ruleSet.find(rule);
       // If rule is not yet in the set, add it
-
-      // TODO: Should we check for duplicate rules in the queue as well (like
-      // use a set and just pop with set.begin())
+      // NOTE: We could check for duplicate rules in the queue as well (like
+      // use a set and just pop with set.begin()), but this would incur a large penalty
+      // for every add to the queue. I don't think the tradeoff would be worth it.
       if (iter == ruleSet.end()) {
         addRhses(ruleQueue, rule, grammarData, firsts);
         ruleSet.insert(move(rule));
@@ -88,7 +88,6 @@ namespace {
       const DFARule& existingRule = *iter;
       BitSetToks unionToks = bitOr(rule.lookahead, existingRule.lookahead);
       if (existingRule.lookahead != unionToks) {
-        // TODO: Might be faster to just do operator|= again
         existingRule.lookahead = move(unionToks);
         // Only add RHSes if we insert the rule into the set because everything
         // in the set has already been expanded
@@ -313,10 +312,10 @@ RuleData condenseRuleSet(
 
 
 namespace {
-  // TODO: Replace vector code with toCode()
   string ruleDataToCode(const RuleData& ruleData) {
     stringstream code;
     code << "RuleData{";
+
     if (ruleData.reducibleRule.has_value()) {
       const DFARule& rule = *ruleData.reducibleRule;
       // RuleData::reducibleRule::concrete

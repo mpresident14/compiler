@@ -16,8 +16,7 @@
 
 #include <prez/print_stuff.hpp>
 
-// TODO: If we specialize DFA for when T is an enum, we can use arrays for node
-// transitions instead of a hashmap
+
 template <typename V, typename T>
 class DFA {
 public:
@@ -28,38 +27,31 @@ public:
   public:
     friend class DFA;
 
-    Node(V value) : value_(std::move(value)) {}
+    Node(const V& value) : value_(value) {}
+    Node(V&& value) : value_(std::move(value)) {}
 
-    bool operator==(const Node& other) const { return value_ == other.value_; }
+    bool operator==(const Node& other) const noexcept { return value_ == other.value_; }
 
-    friend std::ostream& operator<<(std::ostream& out, const Node& node) {
+    friend std::ostream& operator<<(std::ostream& out, const Node& node) noexcept {
       return out << node.value_;
     }
 
-    const V& getValue() const { return value_; }
+    const V& getValue() const noexcept { return value_; }
 
-    const std::unordered_map<T, Node*>& getTransitions() const {
+    const std::unordered_map<T, Node*>& getTransitions() const noexcept {
       return transitions_;
-    }
-
-    /* FOR GENERATED DFA ONLY. DO NOT CALL THIS FUNCTION */
-    void setTransitions(std::unordered_map<T, Node*>&& tranMap) {
-      transitions_ = move(tranMap);
     }
 
   private:
     V value_;
-    // "mutable" allows us to modify the map even when a node is const (e.g.,
-    // when retrieving it from a map)
     std::unordered_map<T, Node*> transitions_;
-    bool deleterCalled_ = false;
   };
 
   friend struct Node;
 
   DFA(V value)
       : root_(new Node(value)),
-        valueToNode_{ { std::move(value), root_ } },
+        valueToNode_{ { &root_->value_, root_ } },
         size_(1) {}
 
   ~DFA() {
@@ -101,7 +93,7 @@ public:
     other.root_ = nullptr;
   }
 
-  Node* getRoot() const { return root_; }
+  Node* getRoot() const noexcept { return root_; }
 
   Node* run(const std::vector<T>& input) const {
     Node* currentNode = root_;
@@ -123,7 +115,8 @@ public:
     return iter->second;
   }
 
-  // TODO: Make newNodeValue a universal reference so that we can forward it
+
+  /* Add a transition to an existing or new node */
   Node* addTransition(Node* node, T transition, V newNodeValue) {
     // No duplicate or updated transitions
     if (node->transitions_.contains(transition)) {
@@ -132,19 +125,16 @@ public:
 
     // If a node with this value already exists, just add a transition to the
     // existing node
-    if (valueToNode_.contains(newNodeValue)) {
-      Node* successor = valueToNode_.at(newNodeValue);
+    if (valueToNode_.contains(&newNodeValue)) {
+      Node* successor = valueToNode_.at(&newNodeValue);
       node->transitions_.emplace(std::move(transition), successor);
       return nullptr;
     }
 
     // Otherwise, create a new node
-    // TODO: If we make valueToNode_ hold V*s and insert the address of
-    // newNode.value, we can avoid expensive copies. Would have to define
-    // equality and hash of V* to be that of V
-    Node* newNode = new Node(newNodeValue);
+    Node* newNode = new Node(std::move(newNodeValue));
     node->transitions_.emplace(std::move(transition), newNode);
-    valueToNode_.emplace(newNodeValue, newNode);
+    valueToNode_.emplace(&newNode->value_, newNode);
     ++size_;
     return newNode;
   }
@@ -192,7 +182,6 @@ public:
   }
 
 
-  // TODO: Make the toStr functions instead put strings directly into stream
   template <typename F1, typename F2, typename F3>
   void streamAsCode(
       std::ostream& out,
@@ -280,6 +269,21 @@ public:
     return out;
   }
 
+  // These structs allow us to store V*s as hashmap keys, which prevent
+  // expensive copies, since the values themselves are already stored in
+  // the corresponding Node.
+  struct VPtrHash {
+    size_t operator()(const V* vptr) const noexcept {
+      return std::hash<V>()(*vptr);
+    }
+  };
+
+  struct VPtrEquals {
+    bool operator()(const V* vptr1, const V* vptr2) const noexcept {
+      return *vptr1 == *vptr2;
+    }
+  };
+
 private:
   void addDirectTransition(Node* fromNode, T transition, Node* toNode) {
     fromNode->transitions_.emplace(std::move(transition), toNode);
@@ -288,8 +292,7 @@ private:
   Node* root_;
   // Allows us to check whether a node with some value exists in the
   // DFA and grab a pointer to it.
-  // TODO: When P0919R3 is added to clang/gcc, use is_transparent
-  std::unordered_map<V, Node*> valueToNode_;
+  std::unordered_map<V*, Node*, VPtrHash, VPtrEquals> valueToNode_;
   // We don't use valueToNode_.size() because of the comment in convert.
   size_t size_;
 };

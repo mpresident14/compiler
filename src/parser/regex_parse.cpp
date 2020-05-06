@@ -312,7 +312,7 @@ namespace {
     deleteObjPtr(stackObj);
   }
 
-  // TODO: Remove throw and make noexcept when done
+
   /* Construct a concrete object */
   void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {
@@ -388,13 +388,15 @@ namespace {
     }
 
     // Check if rule matches the stack
+    // NOTE: stk is necessarily as large as the reducible rule, or we couldn't have
+    // stepped through the DFA to get to this reducible rule
     if (!equal(
-            rule.symbols.crbegin(),
-            rule.symbols.crend(),
-            stk.crbegin(),
-            [](int symbol, const StackObj& stkObj) {
-              return stkObj.symbol == symbol;
-            })) {
+        rule.symbols.crbegin(),
+        rule.symbols.crend(),
+        stk.crbegin(),
+        [](int symbol, const StackObj& stkObj) {
+          return stkObj.symbol == symbol;
+        })) {
       return NONE;
     }
 
@@ -404,7 +406,9 @@ namespace {
       return ruleData.reducibleRule->concrete;
     }
 
-    // TODO: Handle nonassociativity
+    // TODO: Handle nonassociativity, e.g. --3 and 3 < 4 < 5 should be syntax errors
+    // if these operators are nonassociative
+
     // If both are options, then reduce if one of the following is true:
     // - precedence of rule is higher than that of next token
     // - precedence of rule is the same of that of next token and the rule's
@@ -416,18 +420,12 @@ namespace {
       return NONE;
     }
 
-    if (ruleData.precedence > shiftPrecedence) {
+    if (ruleData.precedence > shiftPrecedence
+        || (ruleData.precedence == shiftPrecedence && ruleData.assoc == Assoc::LEFT)) {
       return ruleData.reducibleRule->concrete;
-    } else if (ruleData.precedence == shiftPrecedence) {
-      if (ruleData.assoc == Assoc::LEFT) {
-        return ruleData.reducibleRule->concrete;
-      } else if (ruleData.assoc == Assoc::NONE) {
-        // Unspecified associativity -> conflict! (Resolve by shifting)
-        return NONE;
-      }
     }
 
-    // shift precedence is higher, or same and right associative, so shift
+    // shift precedence is higher, or same and not left-associative, so shift
     return NONE;
   }
 
@@ -470,43 +468,26 @@ namespace {
 
 
   Regex* shiftReduce(vector<StackObj>& inputTokens) {
-    // TODO: Check for empty input
+    if (inputTokens.empty()) {
+      parseError({}, inputTokens, 0);
+    }
+
     vector<StackObj> stk = { move(inputTokens[0]) };
+    vector<CondensedNode*> dfaPath = { PARSER_DFA.getRoot() };
     size_t i = 1;
     size_t inputSize = inputTokens.size();
 
     // Stop when we have consumed all the input and the root of grammar
     // is the only thing on the stack
     while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
-      // Run the DFA.
-      // TODO: Only backtrack as far as the reduction (store path)
-      vector<int> stkSymbols;
-      transform(
-          stk.begin(),
-          stk.end(),
-          back_inserter(stkSymbols),
-          [](StackObj stkObj) { return stkObj.symbol; });
-
-      // ----------DEBUG------------
-      // vector<string> stkSymbolNames;
-      // auto stkObjToName = [](StackObj stkObj) {
-      //   if (isToken(stkObj.symbol)) {
-      //     return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
-      //   }
-      //   return GRAMMAR_DATA.variables[stkObj.symbol].name;
-      // };
-      // transform(
-      //     stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
-      // cout << stkSymbolNames << endl;
-      // ----------END-DEBUG----------
-
-
-      CondensedNode* currentNode = PARSER_DFA.run(stkSymbols);
+      // Advance the DFA.
+      CondensedNode* currentNode = PARSER_DFA.step(dfaPath.back(), stk.back().symbol);
       if (currentNode == nullptr) {
         cleanPtrsFrom(stk, 0);
-        cleanPtrsFrom(inputTokens, i + 1);
-        parseError(stk, inputTokens, i + 1);
+        cleanPtrsFrom(inputTokens, i);
+        parseError(stk, inputTokens, i);
       }
+      dfaPath.push_back(currentNode);
 
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
       int concrete =
@@ -532,6 +513,7 @@ namespace {
           for (size_t j = 0; j < stkSize - reduceStart; ++j) {
             deleteObjPtr(stk.back());
             stk.pop_back();
+            dfaPath.pop_back();
           }
         }
 
@@ -544,14 +526,7 @@ namespace {
           parseError(stk, inputTokens, i);
         }
         StackObj token = inputTokens[i];
-        currentNode = CondensedDFA::step(currentNode, token.symbol);
         stk.push_back(move(token));
-        // No transition for this token
-        if (currentNode == nullptr) {
-          cleanPtrsFrom(stk, 0);
-          cleanPtrsFrom(inputTokens, i + 1);
-          parseError(stk, inputTokens, i + 1);
-        }
         ++i;
       }
     }

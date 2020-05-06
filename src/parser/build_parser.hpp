@@ -19,7 +19,7 @@ struct RuleData {
   }
 };
 
-// TODO: Fix these hash functions
+
 namespace std {
   template <>
   struct hash<RuleData> {
