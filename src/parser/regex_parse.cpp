@@ -175,17 +175,77 @@ namespace {
         "" } }
   };
 
+  /*************
+   * STACK_OBJ *
+   *************/
+
+  // TODO: Copy fixed code to generate.cpp
+  // TODO: For analogous code in generate.cpp, ask if type T is move-constructible with SFINAE.
+  // If so, move it. Otherwise, copy it.
+  struct Start {
+    Start(Regex* r) : r_(r) {}
+    Regex* r_;
+  };
+
+  class StackObj {
+  public:
+    StackObj(int symbol, void* obj) : symbol_(symbol), obj_(obj) {}
+    StackObj(StackObj&& other)
+      : symbol_(other.symbol_), obj_(other.obj_), released_(other.released_) {
+      other.obj_ = nullptr;
+    }
+    StackObj(const StackObj& other) = delete;
+    StackObj& operator=(const StackObj& other) = delete;
+    StackObj& operator=(StackObj&& other) = delete;
+
+    // A StackObj is always responsible for deleting its own pointer (unless moved).
+    // However, once a StackObj releases its object, it is no longer responsible
+    // for calling the custom deleter for that object (except in the case of a parseError).
+    ~StackObj() {
+      if (!obj_) {
+        return;
+      }
+
+      switch (symbol_) {
+        case S:
+          delete static_cast<Start*>(obj_);
+          break;
+        case REGEX: // Fall thru
+        case ALT:   // Fall thru
+        case NOT:
+          if (!released_) {
+            delete *static_cast<Regex**>(obj_);
+          }
+          delete static_cast<Regex**>(obj_);
+          break;
+        case ALTS:
+        case CONCATS:
+          delete static_cast<RegexVector*>(obj_);
+          break;
+        case CHAR:
+          delete static_cast<char*>(obj_);
+          break;
+        default:
+          return;
+      }
+    }
+
+    void* releaseObj() noexcept {
+      released_ = true;
+      return obj_;
+    }
+    int getSymbol() const noexcept { return symbol_; }
+    void unrelease() noexcept { released_ = false; }
+
+  private:
+    const int symbol_;
+    void* obj_;
+    bool released_ = false;
+  };
+
   /*********
    * LEXER *
    *********/
-
-  struct StackObj {
-    // Can't delete from here since it is a void*, see constructObj
-    void* obj;
-    int symbol;
-  };
-
-  StackObj datalessObj(int symbol) { return StackObj{ nullptr, symbol }; }
 
   vector<StackObj> lex(const string& input) {
     vector<StackObj> tokens;
@@ -199,27 +259,27 @@ namespace {
       // All characters within brackets are just literals except '-' for a range and the first '^'
       if (leftBracket > 0) {
         if (escaped) {
-          tokens.push_back({ new char(c), CHAR });
+          tokens.emplace_back(CHAR, new char(c));
           escaped = false;
           ++leftBracket;
           continue;
         }
 
         if (c == '^' && leftBracket == 1) {
-          tokens.push_back(datalessObj(CARET));
+          tokens.emplace_back(CARET, nullptr);
           caret = true;
           leftBracket = 2;
         } else if (c == '-' && ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
-          tokens.push_back(datalessObj(DASH));
+          tokens.emplace_back(DASH, nullptr);
           leftBracket = 4;
         } else if (c == '\\') {
           escaped = true;
         } else if (c == ']') {
-          tokens.push_back(datalessObj(RBRACKET));
+          tokens.emplace_back(RBRACKET, nullptr);
           leftBracket = 0;
           caret = false;
         } else {
-          tokens.push_back({ new char(c), CHAR });
+          tokens.emplace_back(CHAR, new char(c));
           ++leftBracket;
         }
         continue;
@@ -227,36 +287,36 @@ namespace {
 
 
       if (escaped) {
-        tokens.push_back({ new char(c), CHAR });
+        tokens.emplace_back(CHAR, new char(c));
         escaped = false;
         continue;
       }
 
       switch (c) {
         case '.':
-          tokens.push_back(datalessObj(DOT));
+          tokens.emplace_back(DOT, nullptr);
           break;
         case '|':
-          tokens.push_back(datalessObj(BAR));
+          tokens.emplace_back(BAR, nullptr);
           break;
         case '*':
-          tokens.push_back(datalessObj(STAR));
+          tokens.emplace_back(STAR, nullptr);
           break;
         case '[':
-          tokens.push_back(datalessObj(LBRACKET));
+          tokens.emplace_back(LBRACKET, nullptr);
           leftBracket = 1;
           break;
         case '(':
-          tokens.push_back(datalessObj(LPAREN));
+          tokens.emplace_back(LPAREN, nullptr);
           break;
         case ')':
-          tokens.push_back(datalessObj(RPAREN));
+          tokens.emplace_back(RPAREN, nullptr);
           break;
         case '\\':
           escaped = true;
           break;
         default:
-          tokens.push_back({ new char(c), CHAR });
+          tokens.emplace_back(CHAR, new char(c));
       }
     }
 
@@ -276,95 +336,59 @@ namespace {
             return condenseRuleSet(ruleSet, GRAMMAR_DATA);
           });
 
-  struct Start {
-    Start(Regex** r) : r_(r) {}
-    ~Start() { delete r_; }
-    Regex** r_;
-  };
-
-  void deleteObjPtr(const StackObj& stackObj) noexcept {
-    switch (stackObj.symbol) {
-      case REGEX:
-      case ALT:
-      case NOT:
-        delete (Regex**)stackObj.obj;
-        break;
-      case ALTS:
-      case CONCATS:
-        delete (RegexVector*)stackObj.obj;
-        break;
-      case CHAR:
-        delete (char*)stackObj.obj;
-        break;
-      default:
-        return;
-    }
-  }
-
-
-  void deleteObj(const StackObj& stackObj) noexcept {
-    switch (stackObj.symbol) {
-      case REGEX:
-      case ALT:
-      case NOT:
-        delete (*(Regex**)stackObj.obj);
-    }
-    deleteObjPtr(stackObj);
-  }
-
 
   /* Construct a concrete object */
   void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {
       case REGEX_ALT:
-        return new Regex*(*(Regex**) args[0].obj);
+        return new Regex*(*(Regex**) args[0].releaseObj());
       case REGEX_CONCATS:
-        return new Regex*(new Concat(move(*(RegexVector*)args[0].obj)));
+        return new Regex*(new Concat(move(*(RegexVector*)args[0].releaseObj())));
       case REGEX_STAR:
-        return new Regex*(new Star(*(Regex**)args[0].obj));
+        return new Regex*(new Star(*(Regex**)args[0].releaseObj()));
       case REGEX_NOT:
-        return new Regex*(*(Regex**) args[0].obj);
+        return new Regex*(*(Regex**) args[0].releaseObj());
       case REGEX_RANGE:
-        return new Regex*(new Range(*(char*)args[1].obj, *(char*)args[3].obj));
+        return new Regex*(new Range(*(char*)args[1].releaseObj(), *(char*)args[3].releaseObj()));
       case REGEX_GROUP:
-        return new Regex*(*(Regex**)args[1].obj);
+        return new Regex*(*(Regex**)args[1].releaseObj());
       case REGEX_CHAR:
-        return new Regex*(new Character(*(char*)args[0].obj));
+        return new Regex*(new Character(*(char*)args[0].releaseObj()));
       case REGEX_BRACKET_CHAR:
-        return new Regex*(new Character(*(char*)args[1].obj));
+        return new Regex*(new Character(*(char*)args[1].releaseObj()));
       case REGEX_DOT:
         return new Regex*(new Dot());
       case ALT_ALTS:
-        return new Regex*(new Alt(move(*(RegexVector*)args[0].obj)));
+        return new Regex*(new Alt(move(*(RegexVector*)args[0].releaseObj())));
       case ALT_BRACKET:
-        return new Regex*(new Alt(move(*(RegexVector*)args[1].obj)));
+        return new Regex*(new Alt(move(*(RegexVector*)args[1].releaseObj())));
       case NOT_CHAR:
-        return new Regex*(new Not(new Character(*(char*) args[2].obj)));
+        return new Regex*(new Not(new Character(*(char*) args[2].releaseObj())));
       case NOT_CONCATS:
-        return new Regex*(new Not(new Alt(move(*(RegexVector*) args[2].obj))));
+        return new Regex*(new Not(new Alt(move(*(RegexVector*) args[2].releaseObj()))));
       case NOT_RANGE:
-        return new Regex*(new Not(new Range(*(char*)args[2].obj, *(char*)args[4].obj)));
+        return new Regex*(new Not(new Range(*(char*)args[2].releaseObj(), *(char*)args[4].releaseObj())));
       case ALTS_REGEX:
         return new RegexVector(
-            RegexVector(*(Regex**)args[0].obj, *(Regex**)args[2].obj));
+            RegexVector(*(Regex**)args[0].releaseObj(), *(Regex**)args[2].releaseObj()));
       case ALTS_ALTS:
         return new RegexVector(RegexVector(
-            move(*(RegexVector*)args[0].obj), *(Regex**)args[2].obj));
+            move(*(RegexVector*)args[0].releaseObj()), *(Regex**)args[2].releaseObj()));
       case CONCATS_REGEX:
         return new RegexVector(
-            RegexVector(*(Regex**)args[0].obj, *(Regex**)args[1].obj));
+            RegexVector(*(Regex**)args[0].releaseObj(), *(Regex**)args[1].releaseObj()));
       case CONCATS_CONCATS:
         return new RegexVector(RegexVector(
-            move(*(RegexVector*)args[0].obj), *(Regex**)args[1].obj));
+            move(*(RegexVector*)args[0].releaseObj()), *(Regex**)args[1].releaseObj()));
       case SCONC:
-        return new Start((Regex**)args[0].obj);
+        return new Start(*(Regex**)args[0].releaseObj());
       default:
         throw invalid_argument("Can't construct. Out of options.");
     }
   }
 
-  StackObj construct(int concrete, StackObj* args, int varType) {
-    return StackObj{ constructObj(concrete, args), varType };
+  StackObj construct(int concrete, StackObj* args) {
+    return StackObj(GRAMMAR_DATA.concretes[concrete].varType, constructObj(concrete, args));
   }
 
 
@@ -395,7 +419,7 @@ namespace {
         rule.symbols.crend(),
         stk.crbegin(),
         [](int symbol, const StackObj& stkObj) {
-          return stkObj.symbol == symbol;
+          return stkObj.getSymbol() == symbol;
         })) {
       return NONE;
     }
@@ -431,32 +455,36 @@ namespace {
 
 
   /* Deep delete StackObj::obj starting at index i */
-  void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
-    size_t size = stackObjs.size();
-    for (; i < size; ++i) {
-      deleteObj(stackObjs[i]);
-    }
-  }
+  // void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
+  //   size_t size = stackObjs.size();
+  //   for (; i < size; ++i) {
+  //     deleteObj(stackObjs[i]);
+  //   }
+  // }
 
 
   void parseError(
-      const vector<StackObj>& stk,
+      vector<StackObj>& stk,
       const vector<StackObj>& inputTokens,
-      size_t i) {
+      size_t tokenPos) {
+
+    for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
+
+
     ostringstream errMsg;
     vector<string> stkSymbolNames;
     vector<string> remainingTokenNames;
-    auto stkObjToName = [](StackObj stkObj) {
-      if (isToken(stkObj.symbol)) {
-        return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
+    auto stkObjToName = [](const StackObj& stkObj) {
+      if (isToken(stkObj.getSymbol())) {
+        return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.getSymbol())].name;
       }
-      return GRAMMAR_DATA.variables[stkObj.symbol].name;
+      return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
     };
 
     transform(
         stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
     transform(
-        inputTokens.begin() + i,
+        inputTokens.begin() + tokenPos,
         inputTokens.end(),
         back_inserter(remainingTokenNames),
         stkObjToName);
@@ -468,28 +496,29 @@ namespace {
 
 
   Regex* shiftReduce(vector<StackObj>& inputTokens) {
+    vector<StackObj> stk;
     if (inputTokens.empty()) {
-      parseError({}, inputTokens, 0);
+      parseError(stk, inputTokens, 0);
     }
 
-    vector<StackObj> stk = { move(inputTokens[0]) };
+    stk.push_back(move(inputTokens[0]));
     vector<CondensedNode*> dfaPath = { PARSER_DFA.getRoot() };
     size_t i = 1;
     size_t inputSize = inputTokens.size();
 
     // Stop when we have consumed all the input and the root of grammar
     // is the only thing on the stack
-    while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
+    while (!(i == inputSize && stk.size() == 1 && stk[0].getSymbol() == S)) {
       // Advance the DFA.
-      CondensedNode* currentNode = PARSER_DFA.step(dfaPath.back(), stk.back().symbol);
+      CondensedNode* currentNode = PARSER_DFA.step(dfaPath.back(), stk.back().getSymbol());
       if (currentNode == nullptr) {
-        cleanPtrsFrom(stk, 0);
-        cleanPtrsFrom(inputTokens, i);
+        // cleanPtrsFrom(stk, 0);
+        // cleanPtrsFrom(inputTokens, i);
         parseError(stk, inputTokens, i);
       }
       dfaPath.push_back(currentNode);
 
-      int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
+      int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
       int concrete =
           tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
       // Reduce
@@ -498,44 +527,34 @@ namespace {
         // and push the new object onto it.
         size_t reduceStart =
             stk.size() - currentNode->getValue().reducibleRule->symbols.size();
-        StackObj newObj = construct(
-            concrete,
-            &stk.data()[reduceStart],
-            GRAMMAR_DATA.concretes[concrete].varType);
+        StackObj newObj = construct(concrete, &stk.data()[reduceStart]);
 
-        // We always add the rule S -> <root_type>, so there is only one thing
-        // on the stack if we reduced to S, and we don't want to delete the
-        // pointer because this is the object we are returning to the caller
-        if (newObj.symbol == S) {
+        // // We always add the rule S -> <root_type>, so there is only one thing
+        // // on the stack if we reduced to S, and we don't want to delete the
+        // // pointer because this is the object we are returning to the caller
+        size_t stkSize = stk.size();
+        for (size_t j = 0; j < stkSize - reduceStart; ++j) {
+          // deleteObjPtr(stk.back());
           stk.pop_back();
-        } else {
-          size_t stkSize = stk.size();
-          for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-            deleteObjPtr(stk.back());
-            stk.pop_back();
-            dfaPath.pop_back();
-          }
+          dfaPath.pop_back();
         }
-
-        stk.push_back(newObj);
-
+        stk.push_back(move(newObj));
       } else {  // Shift
         // No more tokens, didn't reduce to S
         if (i == inputSize) {
-          cleanPtrsFrom(stk, 0);
+          // cleanPtrsFrom(stk, 0);
           parseError(stk, inputTokens, i);
         }
-        StackObj token = inputTokens[i];
-        stk.push_back(move(token));
+        stk.push_back(move(inputTokens[i]));
         ++i;
       }
     }
 
     // Remove the actual grammar root from the fake root we encapsulated it with
-    Start* start = (Start*)(stk[0].obj);
-    Regex* root = *start->r_;
-    delete start;
-    return root;
+    Start* start = (Start*)(stk[0].releaseObj());
+    // Regex* root = start->r_;
+    // delete start;
+    return start->r_;
   }
 }  // namespace
 
