@@ -72,12 +72,26 @@ STAR #left
 
 #grammar
 Regex -> {Regex*} % delete #obj; %
-  := Concats                                 % #0 %
-   | Alts                                    % #0 %
-   | Regex STAR                              % new Star(#0) %
-   | LPAREN Regex RPAREN                     % #1 %
-   | OneChar                                 % #0 %
-   | Bracket                                 % #0 %
+  := Concats                        % #0 %
+   | Alts                           % #0 %
+   | Regex STAR                     % new Star(#0) %
+   | LPAREN Regex RPAREN            % #1 %
+
+   // Bracket
+   | RANGE                          % new Range(#0) %
+   | NOTRANGE                       % new Not(new Range(#0)) %
+   | ALTBRACKET                     % #0.size() == 1
+                                        ? static_cast<Regex*>(new Character(#0[0]))
+                                        : static_cast<Regex*>(new Alt(#0)) %
+   | NOTALTBRACKET                  % new Not(
+                                        #0.size() == 1
+                                          ? static_cast<Regex*>(new Character(#0[0]))
+                                          : static_cast<Regex*>(new Alt(#0))) %
+
+   // OneChar
+   | CHAR                           % new Character(#0) %
+   | ESCAPED                        % new Character(#0) %
+   | DOT                            % new Dot() %
 
 Alts -> {Regex*} % delete #obj; %
   := Regex BAR Regex % new Alt(#0, #2) %
@@ -86,14 +100,3 @@ Alts -> {Regex*} % delete #obj; %
 Concats -> {Regex*} % delete #obj; %
   := Regex Regex    #prec CONCAT % new Concat(#0, #1) %
    | Concats Regex  #prec CONCAT % new Concat(move(#0), #1) %
-
-Bracket -> {Regex*} % delete #obj; %
-  := RANGE          % new Range(#0) %
-   | NOTRANGE       % new Not(new Range(#0)) %
-   | ALTBRACKET     % #0.size() == 1 ? new Character(#0[0]) : new Alt(#0) %
-   | NOTALTBRACKET  % new Not(#0.size() == 1 ? new Character(#0[0]) : new Alt(#0)) %
-
-OneChar -> {Regex*} % delete #obj; %
-  := CHAR     % new Character(#0) %
-   | ESCAPED  % new Character(#0) %
-   | DOT      % new Dot() %
