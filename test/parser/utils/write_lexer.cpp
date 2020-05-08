@@ -21,7 +21,7 @@ int main() {
           { "STRLIT", "std::string", NONE, Assoc::NONE, "#str.substr(1, #str.size() - 2)", "", R"("([^"]|\\")*")" },
           { "NUMBER", "int", NONE, Assoc::NONE, "std::stoi(std::string(#str))", "", "[1-9][0-9]*" },
           { "IDENT", "std::string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*" },
-          { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n][ \t\n]*" },
+          { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n]+" },
       },
       {},
       {}

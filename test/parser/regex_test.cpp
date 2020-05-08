@@ -31,6 +31,8 @@ void testParse() {
   RgxPtr r5 = RgxPtr(parse("[1-9]"));
   RgxPtr r6 = RgxPtr(parse("[1-9]*"));
   RgxPtr r7 = RgxPtr(parse("\\[^([^\\]]|\\\\.)*\\]"));
+  RgxPtr r8 = RgxPtr(parse("(a|b)+"));
+  RgxPtr r9 = RgxPtr(parse("(ab)?"));
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
@@ -40,6 +42,8 @@ void testParse() {
   TESTER.assertEquals(RgxType::RANGE, r5->getType());
   TESTER.assertEquals(RgxType::STAR, r6->getType());
   TESTER.assertEquals(RgxType::CONCAT, r7->getType());
+  TESTER.assertEquals(RgxType::CONCAT, r8->getType());
+  TESTER.assertEquals(RgxType::ALT, r9->getType());
 
   // No conflicts
   TESTER.assertEquals("", errBuffer.str());

@@ -42,7 +42,7 @@ GrammarData CONFIG_GRAMMAR = {
       { "type", "std::string", NONE, Assoc::NONE, "rmEnclosure(#str)", "", "{[^}]*}" },
       { "string literal", "std::string", NONE, Assoc::NONE, "extractString(#str, '\"')", "", R"("([^"]|\\")*")" },
       { "code block", "std::string", NONE, Assoc::NONE, "extractString(#str, '%')", "", R"(%([^%]|\\%)*%)" },
-      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n][ \t\n]*" },
+      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n]+" },
   },
   {},
   {}

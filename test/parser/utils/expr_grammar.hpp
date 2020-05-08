@@ -36,7 +36,7 @@ GrammarData GRAMMAR_DATA = {
         "[1-9][0-9]*" },
       { "PLUS", "", 1, Assoc::LEFT, "", "", "\\+" },
       { "STAR", "", 2, Assoc::LEFT, "", "", "\\*" },
-      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n][ \t\n]*" },
+      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n]+" },
   },
 
   /* concretes */
@@ -65,7 +65,7 @@ GrammarData BAD_GRAMMAR_DATA = {
         "[1-9][0-9]*" },
       { "PLUS", "", NONE, Assoc::LEFT, "", "", "\\+" },
       { "STAR", "", NONE, Assoc::LEFT, "", "", "\\*" },
-      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n][ \t\n]*" },
+      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n]+" },
   },
 
   /* concretes */

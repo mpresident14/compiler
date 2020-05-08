@@ -15,7 +15,7 @@
 #tokens
 INT  "[1-9][0-9]*" -> {int} % stoi(string(#str)) %
                           % cerr << "INT deleter called" << endl; %
-PLUS "+"
+PLUS "\+"
 MINUS "-"
 STAR "\*"
 FSLASH "/"
