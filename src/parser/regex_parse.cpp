@@ -179,11 +179,11 @@ namespace {
    * STACK_OBJ *
    *************/
 
-  // TODO: Copy fixed code to generate.cpp
   struct Start {
     Start(Regex* r) : r_(r) {}
     Regex* r_;
   };
+
 
   class StackObj {
   public:
@@ -394,8 +394,7 @@ namespace {
   int tryReduce(
       const CondensedNode* node,
       int nextToken,
-      const vector<StackObj>& stk,
-      const vector<Token>& tokens) {
+      const vector<StackObj>& stk) {
     const RuleData& ruleData = node->getValue();
 
     // No reducible rule, so try shifting
@@ -436,7 +435,7 @@ namespace {
     // - precedence of rule is higher than that of next token
     // - precedence of rule is the same of that of next token and the rule's
     //   last token is left-associative
-    int shiftPrecedence = tokens[tokenToFromIndex(nextToken)].precedence;
+    int shiftPrecedence = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].precedence;
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
@@ -519,7 +518,7 @@ namespace {
 
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
       int concrete =
-          tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
+          tryReduce(currentNode, nextInputToken, stk);
       // Reduce
       if (concrete != NONE) {
         // Construct the new object, pop the arguments off the stack,

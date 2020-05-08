@@ -17,8 +17,6 @@
 using namespace std;
 using namespace src::parser::config_lexer;
 
-// TODO: Use consistent signed/unsigned vars for prec, varType, symbol, etc.
-
 
 namespace {
   string addlHppCode;
@@ -83,12 +81,7 @@ namespace {
     return *strPtr;
   }
 
-
-  // TODO: move() all strings from tokens instead of copying
   // TODO: Use a class so we don't have to pass around tokens and pos everywhere
-  // TODO: Need to check to make sure things aren't empty,
-  // e.g., at least one token and grammar variable
-
   void parseHeader(vector<StackObj>& tokens, size_t& pos) {
     consume(HEADER, tokens, pos);
     addlHppCode = consumeString(CODE, tokens, pos);
@@ -124,7 +117,7 @@ namespace {
 
     gdToken.name = *name;
     // Keep track of the index for this name so that we can use it when parsing #prec
-    tokenNameToIndex.emplace(*name, gdTokens.size() - 1);
+    tokenNameToIndex.emplace(move(*name), gdTokens.size() - 1);
     // An arrow signifies that the token holds data
     if (maybeConsume(ARROW, tokens, pos)) {
       gdToken.type = consumeString(IDENT, tokens, pos);
@@ -167,7 +160,7 @@ namespace {
       auto iter = tokenNameToIndex.find(*name);
       if (iter == tokenNameToIndex.end()) {
         // This is not an actual token, just a placeholder to override a rule's precedence
-        precNameToPrec.emplace(*name, prec);
+        precNameToPrec.emplace(move(*name), prec);
         continue;
       }
 
@@ -196,7 +189,7 @@ namespace {
     gdVariables.push_back(Variable());
     Variable& gdVariable = gdVariables.back();
     gdVariable.name = *name;
-    varNameToIndex.emplace(*name, gdVariables.size() - 1);
+    varNameToIndex.emplace(move(*name), gdVariables.size() - 1);
     consume(ARROW, tokens, pos);
     gdVariable.type = consumeString(IDENT, tokens, pos);
     string* dtor = maybeConsumeString(CODE, tokens, pos);
@@ -275,7 +268,7 @@ namespace {
       Concrete& concrete = gdConcretes[i];
       size_t len = concrete.argSymbols.size();
       for (size_t j = 0; j < len; ++j) {
-        string symbolName = *(string*) concrete.argSymbols[j];
+        const string& symbolName = *(string*) concrete.argSymbols[j];
 
         // Check if it is a token first
         auto tokIter = tokenNameToIndex.find(symbolName);
@@ -311,6 +304,13 @@ ParseInfo parseConfig(const string& fileName) {
   parseTokens(tokens, pos);
   parsePrecs(tokens, pos);
   parseGrammar(tokens, pos);
+
+  if (gdTokens.empty()) {
+    throw runtime_error("No tokens were provided.");
+  }
+  if (gdVariables.empty()) {
+    throw runtime_error("No grammar variables were provided.");
+  }
 
   return { grammarData, addlHppCode, addlCppCode };
 }

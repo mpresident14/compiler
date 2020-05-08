@@ -544,8 +544,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << R"(int tryReduce(
         const parser::Node* node,
         int nextToken,
-        vector<StackObj>& stk,
-        const vector<Token>& tokens) {
+        vector<StackObj>& stk) {
       const RuleData& ruleData = node->v_;
       if (!ruleData.reducibleRule.has_value()) {
         return NONE;
@@ -566,7 +565,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       if (!node->ts_.contains(nextToken)) {
         return ruleData.reducibleRule->concrete;
       }
-      int shiftPrecedence = tokens[tokenToFromIndex(nextToken)].precedence;
+      int shiftPrecedence = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].precedence;
       if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
         return NONE;
       }
@@ -601,7 +600,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
           int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
           int concrete =
-              tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
+              tryReduce(currentNode, nextInputToken, stk);
           if (concrete != NONE) {
             size_t reduceStart =
                 stk.size() - currentNode->v_.reducibleRule->symbols.size();

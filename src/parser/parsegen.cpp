@@ -5,7 +5,6 @@
 
 using namespace std;
 
-// TODO: Add namespaces to all code
 
 int main(int argc, char** argv) {
   // TODO: Use getopt here, make sure file as .gp extension
