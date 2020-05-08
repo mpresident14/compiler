@@ -27,7 +27,7 @@ RPAREN "\)"
 #prec
 PLUS MINUS #left
 STAR FSLASH #left
-TILDE NEG #nonassoc
+TILDE NEG #right
 
 #grammar
 Expr -> Expr* % delete #obj; %

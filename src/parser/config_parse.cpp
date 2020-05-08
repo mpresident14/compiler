@@ -144,7 +144,7 @@ namespace {
       return false;
     }
 
-    // Figure out the associativity (which is required)
+    // Figure out the associativity (which is required if precedence is specified)
     Assoc assoc;
     if (maybeConsume(LEFTASSOC, tokens, pos)) {
       assoc = Assoc::LEFT;

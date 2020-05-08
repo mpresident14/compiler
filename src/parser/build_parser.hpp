@@ -12,7 +12,6 @@
 struct RuleData {
   std::optional<DFARule> reducibleRule;
   int precedence;
-  Assoc assoc;
 
   bool operator==(const RuleData rhs) const noexcept {
     return reducibleRule == rhs.reducibleRule;

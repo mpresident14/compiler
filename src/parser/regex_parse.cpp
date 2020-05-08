@@ -391,10 +391,44 @@ namespace {
   }
 
 
+  void parseError(
+    vector<StackObj>& stk,
+    const vector<StackObj>& inputTokens,
+    size_t tokenPos) {
+
+    // Need StackObjs to deep delete their objects
+    for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
+
+    ostringstream errMsg;
+    vector<string> stkSymbolNames;
+    vector<string> remainingTokenNames;
+    auto stkObjToName = [](const StackObj& stkObj) {
+      if (isToken(stkObj.getSymbol())) {
+        return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.getSymbol())].name;
+      }
+      return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
+    };
+
+    transform(
+        stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
+    transform(
+        inputTokens.begin() + tokenPos,
+        inputTokens.end(),
+        back_inserter(remainingTokenNames),
+        stkObjToName);
+
+    errMsg << "No parse:\n\tStack: " << stkSymbolNames
+           << "\n\tRemaining tokens: " << remainingTokenNames;
+    throw invalid_argument(errMsg.str());
+  }
+
+
   int tryReduce(
       const CondensedNode* node,
       int nextToken,
-      const vector<StackObj>& stk) {
+      vector<StackObj>& stk,
+      const vector<StackObj>& inputTokens,
+      size_t tokenPos) {
     const RuleData& ruleData = node->getValue();
 
     // No reducible rule, so try shifting
@@ -428,23 +462,36 @@ namespace {
       return ruleData.reducibleRule->concrete;
     }
 
-    // TODO: Handle nonassociativity, e.g. --3 and 3 < 4 < 5 should be syntax errors
-    // if these operators are nonassociative
+    // If both are options, then we resolve ambiguities in the following manner
+    // (from https://www.haskell.org/happy/doc/html/sec-Precedences.html):
+    // - If the precedence of the rule is higher, then the conflict is resolved as a reduce.
+    // - If the precedence of the lookahead token is higher, then the conflict is resolved as a shift.
+    // - If the precedences are equal, then
+    //    ~ If the token is left-associative, then reduce
+    //    ~ If the token is right-associative, then shift
+    //    ~ If the token is non-associative, then fail
+    // - If neither the rule nor the token have precedence, then the default is to shift and a
+    //   conflict will have been reported by findConflicts() in build_parser.cpp
+    //   (note that this criterion differs slightly from Happy)
 
-    // If both are options, then reduce if one of the following is true:
-    // - precedence of rule is higher than that of next token
-    // - precedence of rule is the same of that of next token and the rule's
-    //   last token is left-associative
-    int shiftPrecedence = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].precedence;
+    const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
+    int shiftPrecedence = nextTokenObj.precedence;
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
     if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
       return NONE;
     }
 
-    if (ruleData.precedence > shiftPrecedence
-        || (ruleData.precedence == shiftPrecedence && ruleData.assoc == Assoc::LEFT)) {
+    if (ruleData.precedence > shiftPrecedence) {
       return ruleData.reducibleRule->concrete;
+    }
+    if (ruleData.precedence == shiftPrecedence) {
+      if (nextTokenObj.assoc == Assoc::LEFT) {
+        return ruleData.reducibleRule->concrete;
+      }
+      if (nextTokenObj.assoc == Assoc::NOT) {
+        parseError(stk, inputTokens, tokenPos);
+      }
     }
 
     // shift precedence is higher, or same and not left-associative, so shift
@@ -459,38 +506,6 @@ namespace {
   //     deleteObj(stackObjs[i]);
   //   }
   // }
-
-
-  void parseError(
-      vector<StackObj>& stk,
-      const vector<StackObj>& inputTokens,
-      size_t tokenPos) {
-
-    // Need StackObjs to deep delete their objects
-    for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
-
-    ostringstream errMsg;
-    vector<string> stkSymbolNames;
-    vector<string> remainingTokenNames;
-    auto stkObjToName = [](const StackObj& stkObj) {
-      if (isToken(stkObj.getSymbol())) {
-        return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.getSymbol())].name;
-      }
-      return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
-    };
-
-    transform(
-        stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
-    transform(
-        inputTokens.begin() + tokenPos,
-        inputTokens.end(),
-        back_inserter(remainingTokenNames),
-        stkObjToName);
-
-    errMsg << "No parse:\n\tStack: " << stkSymbolNames
-           << "\n\tRemaining tokens: " << remainingTokenNames;
-    throw invalid_argument(errMsg.str());
-  }
 
 
   Regex* shiftReduce(vector<StackObj>& inputTokens) {
@@ -518,7 +533,7 @@ namespace {
 
       int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
       int concrete =
-          tryReduce(currentNode, nextInputToken, stk);
+          tryReduce(currentNode, nextInputToken, stk, inputTokens, i);
       // Reduce
       if (concrete != NONE) {
         // Construct the new object, pop the arguments off the stack,

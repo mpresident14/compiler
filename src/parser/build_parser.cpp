@@ -233,10 +233,9 @@ void reduceReduceConflict(const DFARule& reduceRule1, const DFARule& reduceRule2
 }
 
 
-void findConflicts(
+void findShiftReduceConflicts(
     const DFARule& reducibleRule,
     int rulePrecedence,
-    Assoc lastTokenAssoc,
     const DFARuleSet& ruleSet,
     const GrammarData& grammarData) {
 
@@ -247,7 +246,7 @@ void findConflicts(
       continue;
     }
     int nextSymbol = rule.nextSymbol();
-    // No conflicts for variables
+    // Shift-reduce conflicts not possible for variables
     if (!isToken(nextSymbol)) {
       continue;
     }
@@ -257,13 +256,8 @@ void findConflicts(
       continue;
     }
 
-    int shiftPrecedence = tokens[nextTokenIndex].precedence;
     // Unspecified precedence -> shift-reduce conflict! (Will be resolved by shifting)
-    if (rulePrecedence == NONE && shiftPrecedence == NONE) {
-      shiftReduceConflict(reducibleRule, rule, grammarData);
-    } else if (rulePrecedence == shiftPrecedence && lastTokenAssoc == Assoc::NONE) {
-      // Same precedence and unspecified associativity -> shift-reduce conflict!
-      // (Will be resolved by shifting)
+    if (rulePrecedence == NONE && tokens[nextTokenIndex].precedence == NONE) {
       shiftReduceConflict(reducibleRule, rule, grammarData);
     }
   }
@@ -288,7 +282,7 @@ RuleData condenseRuleSet(
 
   // No reducible rules
   if (reducibleRule == nullptr) {
-    return RuleData{ {}, NONE, Assoc::NONE };
+    return RuleData{ {}, NONE };
   }
 
   // Find the last token, if any
@@ -303,21 +297,18 @@ RuleData condenseRuleSet(
   }
 
   // Check for shift-reduce conflicts
-  Assoc lastTokenAssoc = lastToken == NONE ? Assoc::NONE : grammarData.tokens[tokenToFromIndex(lastToken)].assoc;
-  findConflicts(*reducibleRule, rulePrecedence, lastTokenAssoc, ruleSet, grammarData);
+  findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, grammarData);
 
   // Reducible rule contains no tokens
   if (lastToken == NONE) {
-    return RuleData{ optional(*reducibleRule), rulePrecedence, Assoc::NONE };
+    return RuleData{ optional(*reducibleRule), rulePrecedence };
   }
 
   // If there is rule precedence, get associativity
   if (rulePrecedence == NONE) {
-    return RuleData{ optional(*reducibleRule), NONE, Assoc::NONE };
+    return RuleData{ optional(*reducibleRule), NONE };
   } else {
-    return RuleData{ optional(*reducibleRule),
-                     rulePrecedence,
-                     lastTokenAssoc };
+    return RuleData{ optional(*reducibleRule), rulePrecedence};
   }
 }
 
@@ -353,10 +344,7 @@ namespace {
     }
 
     // RuleData::precedence
-    code << to_string(ruleData.precedence) << ',';
-
-    // RuleData::assoc
-    code << "Assoc::" << ruleData.assoc << '}';
+    code << to_string(ruleData.precedence) << '}';
 
     return code.str();
   }

@@ -13,22 +13,25 @@ namespace {
    * TO CODE *
    ***********/
 
+  inline void toCode(ostream& out, const string& str);
+  inline void toCode(ostream& out, int n);
+  inline void toCode(ostream& out, Assoc assoc);
   template <typename T>
-  void toCode(ostream& out, const vector<T>& v);
-  void toCode(ostream& out, const string& str);
-  void toCode(ostream& out, int n);
-  void toCode(ostream& out, const Token& token);
-  void toCode(ostream& out, const Concrete& concrete);
-  void toCode(ostream& out, const Variable& var);
-  void toCode(ostream& out, const GrammarData& grammarData);
+  inline void toCode(ostream& out, const vector<T>& v);
+  inline void toCode(ostream& out, const Token& token);
+  inline void toCode(ostream& out, const Concrete& concrete);
+  inline void toCode(ostream& out, const Variable& var);
+  inline void toCode(ostream& out, const GrammarData& grammarData);
 
 
-  void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
+  inline void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
 
-  void toCode(ostream& out, int n) { out << to_string(n); }
+  inline void toCode(ostream& out, int n) { out << to_string(n); }
+
+  inline void toCode(ostream& out, Assoc assoc) { out << "Assoc::" << assoc; }
 
   template <typename T>
-  void toCode(ostream& out, const vector<T>& v) {
+  inline void toCode(ostream& out, const vector<T>& v) {
     out << '{';
     for_each(v.cbegin(), v.cend(), [&out](const T& item) {
       toCode(out, item);
@@ -37,25 +40,27 @@ namespace {
     out << '}';
   }
 
-  void toCode(ostream& out, const Token& token) {
+  inline void toCode(ostream& out, const Token& token) {
     out << '{';
     toCode(out, token.name);
     out << ',';
     toCode(out, token.type);
     out << ',';
     toCode(out, token.precedence);
+    out << ',';
+    toCode(out, token.assoc);
     out << '}';
     // Other fields not needed for shift-reducing
   }
 
-  void toCode(ostream& out, const Concrete& concrete) {
+  inline void toCode(ostream& out, const Concrete& concrete) {
     out << '{';
     toCode(out, concrete.varType);
     out << '}';
     // Other fields not needed for shift-reducing
   }
 
-  void toCode(ostream& out, const Variable& var) {
+  inline void toCode(ostream& out, const Variable& var) {
     out << '{';
     toCode(out, var.name);
     out << ',';
@@ -64,7 +69,7 @@ namespace {
     // Other fields not needed for shift-reducing
   }
 
-  void toCode(ostream& out, const GrammarData& grammarData) {
+  inline void toCode(ostream& out, const GrammarData& grammarData) {
     out << '{';
     toCode(out, grammarData.tokens);
     out << ',';
@@ -124,6 +129,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       string name;
       string type;
       int precedence;
+      Assoc assoc;
     };
     )";
   }
@@ -493,7 +499,6 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << R"(struct RuleData {
       optional<DFARule> reducibleRule;
       int precedence;
-      Assoc assoc;
     };
     )";
   }
@@ -544,7 +549,9 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << R"(int tryReduce(
         const parser::Node* node,
         int nextToken,
-        vector<StackObj>& stk) {
+        vector<StackObj>& stk,
+        const vector<StackObj>& inputTokens,
+        size_t tokenPos) {
       const RuleData& ruleData = node->v_;
       if (!ruleData.reducibleRule.has_value()) {
         return NONE;
@@ -565,13 +572,24 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       if (!node->ts_.contains(nextToken)) {
         return ruleData.reducibleRule->concrete;
       }
-      int shiftPrecedence = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)].precedence;
+
+      const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
+      int shiftPrecedence = nextTokenObj.precedence;
+
       if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
         return NONE;
       }
-      if (ruleData.precedence > shiftPrecedence
-          || (ruleData.precedence == shiftPrecedence && ruleData.assoc == Assoc::LEFT)) {
+
+      if (ruleData.precedence > shiftPrecedence) {
         return ruleData.reducibleRule->concrete;
+      }
+      if (ruleData.precedence == shiftPrecedence) {
+        if (nextTokenObj.assoc == Assoc::LEFT) {
+          return ruleData.reducibleRule->concrete;
+        }
+        if (nextTokenObj.assoc == Assoc::NOT) {
+          parseError(stk, inputTokens, tokenPos);
+        }
       }
       return NONE;
     })";
@@ -600,7 +618,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
           int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
           int concrete =
-              tryReduce(currentNode, nextInputToken, stk);
+              tryReduce(currentNode, nextInputToken, stk, inputTokens, i);
           if (concrete != NONE) {
             size_t reduceStart =
                 stk.size() - currentNode->v_.reducibleRule->symbols.size();
@@ -772,6 +790,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     sInt(out);
     isTokenFn(out);
     tokenToFromIndexFn(out);
+    assocDecl(out);
     tokenDecl(out);
     concreteDecl(out);
     variableDecl(out);
@@ -783,7 +802,6 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     constructFn(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
-    assocDecl(out);
     dfaRuleDecl(out);
     ruleDataDecl(out);
     parserDFA(out, grammarData);
@@ -814,6 +832,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         << "namespace {";
     noneInt(out);
     tokenToFromIndexFn(out);
+    assocDecl(out);
     tokenDecl(out);
     concreteDecl(out);
     variableDecl(out);

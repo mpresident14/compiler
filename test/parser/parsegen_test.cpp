@@ -41,6 +41,7 @@ void testParse() {
   checkEval("3 + ??? 12", 15);
 }
 
+
 void testParse_invalidTokens() {
   ostringstream expectedErr0;
   expectedErr0 << "Lexer error on line 1 at: a * 24\n"
