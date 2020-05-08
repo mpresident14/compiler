@@ -73,8 +73,8 @@ add_custom_command(
     OUTPUT ${GEN_DIR}/gp_expr_parser.hpp ${GEN_DIR}/gp_expr_parser.cpp
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND parsegen
-        ${REL_TO_ROOT_DIR}/${UTIL_DIR}/expr.pgen
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser
+        -g ${REL_TO_ROOT_DIR}/${UTIL_DIR}/expr.pgen
+        -f ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser
     COMMAND clang-format -i
         ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser.hpp
         ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser.cpp

@@ -1,18 +1,48 @@
 #include "src/parser/generate.hpp"
 #include "src/parser/config_parse.hpp"
 
+#include <unistd.h>
 #include <iostream>
+#include <string>
+#include <string_view>
 
 using namespace std;
 
 
 int main(int argc, char** argv) {
-  // TODO: Use getopt here, make sure file as .gp extension
-  if (argc != 3) {
-    cerr << "Enter a config and destination file." << endl;
+  const char* errMsg = "Usage: parsegen -g <grammar_file> [-f <output_file_basename>]";
+
+  string outputFile;
+  string gpFile;
+  char c;
+  while ((c = getopt(argc, argv, "g:f:")) != -1) {
+    switch (c) {
+      case 'g':
+        gpFile = optarg;
+        break;
+      case 'f':
+        outputFile = optarg;
+        break;
+      default:
+        cerr << errMsg << endl;
+        return 1;
+    }
+  }
+
+  if (gpFile.empty()) {
+    cerr << errMsg << endl;
     return 1;
   }
 
-  ParseInfo parseInfo = parseConfig(argv[1]);
-  generateParserCode(argv[2], parseInfo.addlHppCode, parseInfo.addlCppCode, parseInfo.grammarData);
+  if (!gpFile.ends_with(".pgen")) {
+    cerr << "Grammar file must have a .pgen extension" << endl;
+    return 1;
+  }
+
+  if (outputFile.empty()) {
+    outputFile = gpFile.substr(0, gpFile.size() - 5) + "_parser";
+  }
+
+  ParseInfo parseInfo = parseConfig(gpFile);
+  generateParserCode(outputFile, parseInfo.addlHppCode, parseInfo.addlCppCode, parseInfo.grammarData);
 }
