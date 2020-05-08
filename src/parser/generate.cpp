@@ -159,82 +159,89 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
    * STACK OBJECT *
    ****************/
 
-  void stackObjDecl(ostream& out) {
-    out << R"(struct StackObj {
-      void* obj;
-      int symbol;
-      size_t line;
-    };
+  void stackObjDef(ostream& out, const GrammarData& grammarData) {
+    out << R"(
+      class StackObj {
+      public:
+        StackObj(int symbol, void* obj, size_t line)
+          : symbol_(symbol), obj_(obj), line_(line) {}
+        StackObj(StackObj&& other)
+          : symbol_(other.symbol_), obj_(other.obj_), line_(other.line_), released_(other.released_) {
+          other.obj_ = nullptr;
+        }
+        StackObj(const StackObj& other) = delete;
+        StackObj& operator=(const StackObj& other) = delete;
+        StackObj& operator=(StackObj&& other) = delete;
     )";
-  }
 
-  void sObjDecl(ostream& out, const GrammarData& grammarData) {
-    const char decl[] = R"(struct SObj {
-      SObj(#0* r) : r_(r) {}
-      ~SObj() { delete r_; }
-      #0* r_;
-    };
+    // Destructor
+    out << R"(
+      ~StackObj() {
+        if (!obj_) {
+          return;
+        }
+
+        switch (symbol_) {
     )";
-    replaceNumbers(
-        out,
-        decl,
-        [&grammarData](const string&){ return grammarData.variables[1].type; });
-  }
-
-
-  void deleteObjFn(ostream& out, const GrammarData& grammarData) {
-    out << R"(void deleteObj(const StackObj& s) {
-      void* obj = s.obj;
-      switch (s.symbol) {)";
-
     size_t numTokens = grammarData.tokens.size();
     // Case statement for each token with data
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
         out << "case " << tokenToFromIndex(i) << ':';
-        replaceAll(out, token.dtorStmt, "#obj", "*(" + token.type + "*) obj");
-        out << " delete (" << token.type << "*) obj; break;";
+        if (!token.dtorStmt.empty()) {
+          out << "if (!released_) {";
+          replaceAll(out, token.dtorStmt, "#obj", "*static_cast<" + token.type + "*>(obj_)");
+          out << '}';
+        }
+        out << "delete static_cast<" << token.type << "*>(obj_); break;";
       }
     }
 
-    // Case statement for each variable except S
     size_t numVars = grammarData.variables.size();
-    for (size_t i = 1; i < numVars; ++i) {
+    // Case statement for each variable
+    for (size_t i = 0; i < numVars; ++i) {
       const Variable& var = grammarData.variables[i];
       out << "case " << i << ':';
-      replaceAll(out, var.dtorStmt, "#obj", "*(" + var.type + "*) obj");
-      out << " delete (" << var.type << "*) obj; break;";
-    }
+      if (!var.dtorStmt.empty()) {
+        out << "if (!released_) {";
+        replaceAll(out, var.dtorStmt, "#obj", "*static_cast<" + var.type + "*>(obj_)");
+        out << '}';
+      }
+      out << "delete static_cast<" << var.type << "*>(obj_); break;";
 
+    }
     out << "default: return;}}";
+
+    out << R"(
+        void* releaseObj() noexcept {
+          released_ = true;
+          return obj_;
+        }
+        int getSymbol() const noexcept { return symbol_; }
+        size_t getLine() const noexcept { return line_; }
+        void* getObj() const noexcept { return obj_; }
+        void unrelease() noexcept { released_ = false; }
+
+      private:
+        const int symbol_;
+        void* obj_;
+        size_t line_;
+        bool released_ = false;
+      };
+    )";
   }
 
-
-  void deleteObjPtrFn(ostream& out, const GrammarData& grammarData) {
-    out << R"(void deleteObjPtr(const StackObj& s) {
-      void* obj = s.obj;
-      switch (s.symbol) {)";
-
-    size_t numTokens = grammarData.tokens.size();
-    // Case statement for each token with data
-    for (size_t i = 0; i < numTokens; ++i) {
-      const Token& token = grammarData.tokens[i];
-      if (!token.type.empty()) {
-        out << "case " << tokenToFromIndex(i) << ':' << " delete ("
-            << token.type << "*) obj; break;";
-      }
-    }
-
-    // Case statement for each variable except S
-    size_t numVars = grammarData.variables.size();
-    for (size_t i = 1; i < numVars; ++i) {
-      const Variable& var = grammarData.variables[i];
-      out << "case " << i << ':' << " delete (" << var.type
-          << "*) s.obj; break;";
-    }
-
-    out << "default: return;}}";
+  void startDecl(ostream& out, const GrammarData& grammarData) {
+    const char decl[] = R"(struct Start {
+      Start(#0 r) : r_(r) {}
+      #0 r_;
+    };
+    )";
+    replaceNumbers(
+        out,
+        decl,
+        [&grammarData](const string&){ return grammarData.variables[1].type; });
   }
 
 
@@ -288,27 +295,30 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
             } else {
               symbolName = grammarData.variables[argSymbol].type;
             }
-            return string("*(")
+            return string("*static_cast<")
                 .append(symbolName)
-                .append("*) args[")
+                .append("*>(args[")
                 .append(digits)
-                .append("].obj");
+                .append("].releaseObj())");
           });
 
       out << ");";
     }
 
     // Root type of grammar is the first type listed
-    out << "case 0: return new SObj((" << grammarData.variables[1].type
-        << "*)args[0].obj);";
+    out << "case 0: return new Start(move(*static_cast<" << grammarData.variables[1].type
+        << "*>(args[0].releaseObj())));";
     out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
   }
 
 
   void constructFn(ostream& out) {
-    out << R"(StackObj construct(int concrete, vector<StackObj>& stk, size_t reduceStart, int varType) {
-      size_t line = reduceStart == stk.size() ? 0 : stk[reduceStart].line;
-      return StackObj{ constructObj(concrete, &stk[reduceStart]), varType, line};
+    out << R"(StackObj construct(int concrete, vector<StackObj>& stk, size_t reduceStart) {
+      size_t line = reduceStart == stk.size() ? 0 : stk[reduceStart].getLine();
+      return StackObj(
+          GRAMMAR_DATA.concretes[concrete].varType,
+          constructObj(concrete, &stk[reduceStart]),
+          line);
     })";
   }
 
@@ -320,13 +330,13 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       if (!token.type.empty()) {
-        out << "case " << tokenToFromIndex(i) << ':' << "return { new "
-            << token.type << '(';
+        out << "case " << tokenToFromIndex(i) << ':' << "return StackObj(token, "
+            "new " << token.type << '(';
         replaceAll(out, token.ctorExpr, "#str", "str");
-        out << "), token, currentLine };break;";
+        out << "), currentLine); break;";
       }
     }
-    out << R"(default: return {nullptr, token, currentLine}; }})";
+    out << R"(default: return StackObj(token, nullptr, currentLine); }})";
   }
 
 
@@ -420,7 +430,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         while (!inputView.empty()) {
           optional<StackObj> optionalObj = getToken(inputView);
           if (optionalObj.has_value()) {
-            if (GRAMMAR_DATA.tokens[tokenToFromIndex(optionalObj->symbol)].precedence != SKIP_TOKEN) {
+            if (GRAMMAR_DATA.tokens[tokenToFromIndex(optionalObj->getSymbol())].precedence != SKIP_TOKEN) {
               tokens.push_back(move(*optionalObj));
             }
           } else {
@@ -432,10 +442,9 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
                 move(startIter),
                 tokens.cend(),
                 back_inserter(prevTokenNames),
-                [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.symbol)].name; });
+                [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.getSymbol())].name; });
             error << "Lexer error on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
-            for_each(tokens.cbegin(), tokens.cend(), deleteObj);
             throw runtime_error(error.str());
           }
 
@@ -455,7 +464,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
   }
 
   void lexerHppDecls(ostream& out) {
-    out << R"(void deleteObj(const StackObj& s);
+    out << R"(
       std::vector<StackObj> tokenize(const std::string& input);
       std::vector<StackObj> tokenize(std::istream& input);
     )";
@@ -499,36 +508,32 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
   void parseHelperFns(ostream& out) {
     out << R"(
-      void cleanPtrsFrom(const vector<StackObj>& stackObjs, size_t i) {
-        size_t size = stackObjs.size();
-        for (; i < size; ++i) {
-          deleteObj(stackObjs[i]);
-        }
-      }
-
       void parseError(
-          const vector<StackObj>& stk,
+          vector<StackObj>& stk,
           const vector<StackObj>& inputTokens,
-          size_t i) {
+          size_t tokenPos) {
+
+        for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
+
         ostringstream errMsg;
         vector<string> stkSymbolNames;
         vector<string> remainingTokenNames;
-        auto stkObjToName = [](StackObj stkObj) {
-          if (isToken(stkObj.symbol)) {
-            return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.symbol)].name;
+        auto stkObjToName = [](const StackObj& stkObj) {
+          if (isToken(stkObj.getSymbol())) {
+            return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.getSymbol())].name;
           }
-          return GRAMMAR_DATA.variables[stkObj.symbol].name;
+          return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
         };
 
         transform(
             stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
         transform(
-            inputTokens.begin() + i,
+            inputTokens.begin() + tokenPos,
             inputTokens.end(),
             back_inserter(remainingTokenNames),
             stkObjToName);
 
-        errMsg << "Parse error on line " << stk[stk.size() - 1].line << ":\n\tStack: " << stkSymbolNames
+        errMsg << "Parse error on line " << stk.back().getLine() << ":\n\tStack: " << stkSymbolNames
               << "\n\tRemaining tokens: " << remainingTokenNames;
         throw invalid_argument(errMsg.str());
       }
@@ -539,7 +544,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << R"(int tryReduce(
         const parser::Node* node,
         int nextToken,
-        const vector<StackObj>& stk,
+        vector<StackObj>& stk,
         const vector<Token>& tokens) {
       const RuleData& ruleData = node->v_;
       if (!ruleData.reducibleRule.has_value()) {
@@ -554,7 +559,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
               rule.symbols.crend(),
               stk.crbegin(),
               [](int symbol, const StackObj& stkObj) {
-        return stkObj.symbol == symbol;
+        return stkObj.getSymbol() == symbol;
       })) {
         return NONE;
       }
@@ -575,69 +580,51 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
 
   void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
-    const char code[] = R"(
-        #0 shiftReduce(vector<StackObj>& inputTokens) {
+    out << grammarData.variables[1].type
+        << R"(
+        shiftReduce(vector<StackObj>& inputTokens) {
+        vector<StackObj> stk;
         if (inputTokens.empty()) {
-          parseError({}, inputTokens, 0);
+          parseError(stk, inputTokens, 0);
         }
-        vector<StackObj> stk = { move(inputTokens[0]) };
+
+        stk.push_back(move(inputTokens[0]));
         vector<parser::Node*> dfaPath = { parser::root.get() };
         size_t i = 1;
         size_t inputSize = inputTokens.size();
-        while (!(i == inputSize && stk.size() == 1 && stk[0].symbol == S)) {
-          parser::Node* currentNode = dfaPath.back()->step(stk.back().symbol);
+        while (!(i == inputSize && stk.size() == 1 && stk[0].getSymbol() == S)) {
+          parser::Node* currentNode = dfaPath.back()->step(stk.back().getSymbol());
           if (currentNode == nullptr) {
-            cleanPtrsFrom(stk, 0);
-            cleanPtrsFrom(inputTokens, i);
             parseError(stk, inputTokens, i);
           }
           dfaPath.push_back(currentNode);
 
-          int nextInputToken = i == inputSize ? NONE : inputTokens[i].symbol;
+          int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
           int concrete =
               tryReduce(currentNode, nextInputToken, stk, GRAMMAR_DATA.tokens);
           if (concrete != NONE) {
             size_t reduceStart =
                 stk.size() - currentNode->v_.reducibleRule->symbols.size();
-            StackObj newObj = construct(
-                concrete,
-                stk,
-                reduceStart,
-                GRAMMAR_DATA.concretes[concrete].varType);
-            if (newObj.symbol == S) {
+            StackObj newObj = construct(concrete, stk, reduceStart);
+            size_t stkSize = stk.size();
+            for (size_t j = 0; j < stkSize - reduceStart; ++j) {
               stk.pop_back();
-            } else {
-              size_t stkSize = stk.size();
-              for (size_t j = 0; j < stkSize - reduceStart; ++j) {
-                deleteObjPtr(stk.back());
-                stk.pop_back();
-                dfaPath.pop_back();
-              }
+              dfaPath.pop_back();
             }
-            stk.push_back(newObj);
+            stk.push_back(move(newObj));
           } else {
-
             if (i == inputSize) {
-              cleanPtrsFrom(stk, 0);
               parseError(stk, inputTokens, i);
             }
-            StackObj token = inputTokens[i];
-            stk.push_back(move(token));
+            stk.push_back(move(inputTokens[i]));
             ++i;
           }
         }
 
-        SObj* start = (SObj*)(stk[0].obj);
-        #0 root = *start->r_;
-        delete start;
-        return root;
+        Start* start = static_cast<Start*>(stk[0].releaseObj());
+        return start->r_;
       }
     )";
-
-    replaceNumbers(
-        out,
-        code,
-        [&grammarData](const string&){ return grammarData.variables[1].type; });
   }
 
 
@@ -755,14 +742,14 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     return out.str();
   }
 
-  string lexerHppCode(const string& namespaceName, const string& headerGuard) {
+  string lexerHppCode(const string& namespaceName, const string& headerGuard, const GrammarData& grammarData) {
     stringstream out;
 
     out << "#ifndef "<< headerGuard << "\n#define " << headerGuard << '\n' << endl;
     out << generatedWarning;
     lexerHppIncludes(out);
     out << "namespace " << namespaceName << '{';
-    stackObjDecl(out);
+    stackObjDef(out, grammarData);
     lexerHppDecls(out);
     out << "}\n#endif";
 
@@ -790,11 +777,9 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     concreteDecl(out);
     variableDecl(out);
     grammarDataDecl(out, grammarData);
-    stackObjDecl(out);
-    sObjDecl(out, grammarData);
+    startDecl(out, grammarData);
+    stackObjDef(out, grammarData);
     currentLineDecl(out);
-    deleteObjPtrFn(out, grammarData);
-    deleteObjFn(out, grammarData);
     constructObjFn(out, grammarData);
     constructFn(out);
     constructTokenObjFn(out, grammarData);
@@ -838,7 +823,6 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
     out << "} namespace " << namespaceName << '{';
-    deleteObjFn(out, grammarData);
     tokenizeFn(out);
     tokenizeFileFn(out);
     out << '}';
@@ -880,7 +864,7 @@ void generateLexerCode(
 
   ofstream hppFile;
   hppFile.open(lexerFilePath + ".hpp");
-  hppFile << lexerHppCode(namespaceName, headerGuard);
+  hppFile << lexerHppCode(namespaceName, headerGuard, grammarData);
   hppFile.close();
 
   ofstream cppFile;

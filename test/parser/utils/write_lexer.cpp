@@ -18,9 +18,9 @@ int main() {
           { "H[ab]]LLO", "", NONE, Assoc::NONE, "", "", "h[ab\\]]llo" },
           { "H.LLO", "", NONE, Assoc::NONE, "", "", "h\\.llo" },
           { "H_LLO", "", NONE, Assoc::NONE, "", "", "h.llo" },
-          { "STRLIT", "string", NONE, Assoc::NONE, "#str.substr(1, #str.size() - 2)", "", R"("([^"]|\\")*")" },
-          { "NUMBER", "int", NONE, Assoc::NONE, "stoi(string(#str))", "", "[1-9][0-9]*" },
-          { "IDENT", "string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*" },
+          { "STRLIT", "std::string", NONE, Assoc::NONE, "#str.substr(1, #str.size() - 2)", "", R"("([^"]|\\")*")" },
+          { "NUMBER", "int", NONE, Assoc::NONE, "std::stoi(std::string(#str))", "", "[1-9][0-9]*" },
+          { "IDENT", "std::string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*" },
       },
       {},
       {}

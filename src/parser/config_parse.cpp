@@ -38,7 +38,7 @@ namespace {
         tokens.begin(),
         tokens.end(),
         back_inserter(tokenNames),
-        [](const StackObj& stackObj){ return symbolToString(stackObj.symbol, CONFIG_GRAMMAR); });
+        [](const StackObj& stackObj){ return symbolToString(stackObj.getSymbol(), CONFIG_GRAMMAR); });
     out << tokenNames;
   }
 
@@ -48,14 +48,14 @@ namespace {
    *******************/
   void parseError(int tokenId, const vector<StackObj>& tokens, size_t pos) {
     stringstream errMsg;
-    errMsg << "Parse error on line " << tokens[pos].line << " before tokens: ";
+    errMsg << "Parse error on line " << tokens[pos].getLine() << " before tokens: ";
     streamTokenNames(errMsg, tokens);
     errMsg << ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
     throw runtime_error(errMsg.str());
   }
 
   bool maybeConsume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
-    if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
+    if (tokens.size() == pos || tokens[pos].getSymbol() != tokenId) {
       return false;
     }
     ++pos;
@@ -68,14 +68,14 @@ namespace {
     }
   }
 
-  string* maybeConsumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
-    if (tokens.size() == pos || tokens[pos].symbol != tokenId) {
+  string* maybeConsumeString(int tokenId, vector<StackObj>& tokens, size_t& pos) {
+    if (tokens.size() == pos || tokens[pos].getSymbol() != tokenId) {
       return nullptr;
     }
-    return (string*) tokens[pos++].obj;
+    return (string*) tokens[pos++].getObj();
   }
 
-  string consumeString(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
+  string consumeString(int tokenId, vector<StackObj>& tokens, size_t& pos) {
     string* strPtr = maybeConsumeString(tokenId, tokens, pos);
     if (!strPtr) {
       parseError(tokenId, tokens, pos);
@@ -89,17 +89,17 @@ namespace {
   // TODO: Need to check to make sure things aren't empty,
   // e.g., at least one token and grammar variable
 
-  void parseHeader(const vector<StackObj>& tokens, size_t& pos) {
+  void parseHeader(vector<StackObj>& tokens, size_t& pos) {
     consume(HEADER, tokens, pos);
     addlHppCode = consumeString(CODE, tokens, pos);
   }
 
-  void parseSource(const vector<StackObj>& tokens, size_t& pos) {
+  void parseSource(vector<StackObj>& tokens, size_t& pos) {
     consume(SOURCE, tokens, pos);
     addlCppCode = consumeString(CODE, tokens, pos);
   }
 
-  bool maybeParseToken(const vector<StackObj>& tokens, size_t& pos) {
+  bool maybeParseToken(vector<StackObj>& tokens, size_t& pos) {
     bool skip = false;
     // Check for an identifier to see if there are any more tokens
     string* name = maybeConsumeString(IDENT, tokens, pos);
@@ -135,12 +135,12 @@ namespace {
   }
 
 
-  void parseTokens(const vector<StackObj>& tokens, size_t& pos) {
+  void parseTokens(vector<StackObj>& tokens, size_t& pos) {
     consume(TOKENS, tokens, pos);
     while (maybeParseToken(tokens, pos));
   }
 
-  bool maybeParsePrec(const vector<StackObj>& tokens, size_t& pos, int prec) {
+  bool maybeParsePrec(vector<StackObj>& tokens, size_t& pos, int prec) {
     vector<string*> precNames;
     // Check for an identifier to see if there are any more precedence lines
     string* precName;
@@ -179,14 +179,14 @@ namespace {
     return true;
   }
 
-  void parsePrecs(const vector<StackObj>& tokens, size_t& pos) {
+  void parsePrecs(vector<StackObj>& tokens, size_t& pos) {
     consume(PREC, tokens, pos);
     int prec = 1;
     while (maybeParsePrec(tokens, pos, prec++));
   }
 
 
-  bool maybeParseGrammarDecl(const vector<StackObj>& tokens, size_t& pos) {
+  bool maybeParseGrammarDecl(vector<StackObj>& tokens, size_t& pos) {
     // Check for an identifier to see if there are any more declarations
     string* name = maybeConsumeString(IDENT, tokens, pos);
     if (!name) {
@@ -207,7 +207,7 @@ namespace {
   }
 
   /* This must be called right after parseGrammarDecl() */
-  void parseGrammarDef(const vector<StackObj>& tokens, size_t& pos, size_t concNum) {
+  void parseGrammarDef(vector<StackObj>& tokens, size_t& pos, size_t concNum) {
     Variable& gdVariable = gdVariables.back();
     gdConcretes.push_back(Concrete());
     Concrete& gdConcrete = gdConcretes.back();
@@ -247,7 +247,7 @@ namespace {
     gdConcrete.ctorExpr = consumeString(CODE, tokens, pos);
   }
 
-  bool maybeParseGrammarVar(const vector<StackObj>& tokens, size_t& pos) {
+  bool maybeParseGrammarVar(vector<StackObj>& tokens, size_t& pos) {
     if (!maybeParseGrammarDecl(tokens, pos)) {
       return false;
     }
@@ -262,7 +262,7 @@ namespace {
   }
 
 
-  void parseGrammar(const vector<StackObj>& tokens, size_t& pos) {
+  void parseGrammar(vector<StackObj>& tokens, size_t& pos) {
     gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
     gdConcretes.push_back(Concrete{ "SCONC", S, NONE, {1}, "Start(#0)" });
     consume(GRAMMAR, tokens, pos);
@@ -312,7 +312,6 @@ ParseInfo parseConfig(const string& fileName) {
   parsePrecs(tokens, pos);
   parseGrammar(tokens, pos);
 
-  for_each(tokens.cbegin(), tokens.cend(), deleteObj);
   return { grammarData, addlHppCode, addlCppCode };
 }
 

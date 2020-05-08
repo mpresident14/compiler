@@ -180,8 +180,6 @@ namespace {
    *************/
 
   // TODO: Copy fixed code to generate.cpp
-  // TODO: For analogous code in generate.cpp, ask if type T is move-constructible with SFINAE.
-  // If so, move it. Otherwise, copy it.
   struct Start {
     Start(Regex* r) : r_(r) {}
     Regex* r_;
@@ -235,6 +233,7 @@ namespace {
       return obj_;
     }
     int getSymbol() const noexcept { return symbol_; }
+    void* getObj() const noexcept { return obj_; }
     void unrelease() noexcept { released_ = false; }
 
   private:
@@ -341,47 +340,47 @@ namespace {
   void* constructObj(int concrete, StackObj* args) {
     switch (concrete) {
       case REGEX_ALT:
-        return new Regex*(*(Regex**) args[0].releaseObj());
+        return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
       case REGEX_CONCATS:
-        return new Regex*(new Concat(move(*(RegexVector*)args[0].releaseObj())));
+        return new Regex*(new Concat(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
       case REGEX_STAR:
-        return new Regex*(new Star(*(Regex**)args[0].releaseObj()));
+        return new Regex*(new Star(*static_cast<Regex**>(args[0].releaseObj())));
       case REGEX_NOT:
-        return new Regex*(*(Regex**) args[0].releaseObj());
+        return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
       case REGEX_RANGE:
-        return new Regex*(new Range(*(char*)args[1].releaseObj(), *(char*)args[3].releaseObj()));
+        return new Regex*(new Range(*static_cast<char*>(args[1].releaseObj()), *static_cast<char*>(args[3].releaseObj())));
       case REGEX_GROUP:
-        return new Regex*(*(Regex**)args[1].releaseObj());
+        return new Regex*(*static_cast<Regex**>(args[1].releaseObj()));
       case REGEX_CHAR:
-        return new Regex*(new Character(*(char*)args[0].releaseObj()));
+        return new Regex*(new Character(*static_cast<char*>(args[0].releaseObj())));
       case REGEX_BRACKET_CHAR:
-        return new Regex*(new Character(*(char*)args[1].releaseObj()));
+        return new Regex*(new Character(*static_cast<char*>(args[1].releaseObj())));
       case REGEX_DOT:
         return new Regex*(new Dot());
       case ALT_ALTS:
-        return new Regex*(new Alt(move(*(RegexVector*)args[0].releaseObj())));
+        return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
       case ALT_BRACKET:
-        return new Regex*(new Alt(move(*(RegexVector*)args[1].releaseObj())));
+        return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[1].releaseObj()))));
       case NOT_CHAR:
-        return new Regex*(new Not(new Character(*(char*) args[2].releaseObj())));
+        return new Regex*(new Not(new Character(*static_cast<char*>(args[2].releaseObj()))));
       case NOT_CONCATS:
-        return new Regex*(new Not(new Alt(move(*(RegexVector*) args[2].releaseObj()))));
+        return new Regex*(new Not(new Alt(move(*static_cast<RegexVector*>(args[2].releaseObj())))));
       case NOT_RANGE:
-        return new Regex*(new Not(new Range(*(char*)args[2].releaseObj(), *(char*)args[4].releaseObj())));
+        return new Regex*(new Not(new Range(*static_cast<char*>(args[2].releaseObj()), *static_cast<char*>(args[4].releaseObj()))));
       case ALTS_REGEX:
         return new RegexVector(
-            RegexVector(*(Regex**)args[0].releaseObj(), *(Regex**)args[2].releaseObj()));
+            RegexVector(*static_cast<Regex**>(args[0].releaseObj()), *static_cast<Regex**>(args[2].releaseObj())));
       case ALTS_ALTS:
         return new RegexVector(RegexVector(
-            move(*(RegexVector*)args[0].releaseObj()), *(Regex**)args[2].releaseObj()));
+            move(*static_cast<RegexVector*>(args[0].releaseObj())), *static_cast<Regex**>(args[2].releaseObj())));
       case CONCATS_REGEX:
         return new RegexVector(
-            RegexVector(*(Regex**)args[0].releaseObj(), *(Regex**)args[1].releaseObj()));
+            RegexVector(*static_cast<Regex**>(args[0].releaseObj()), *static_cast<Regex**>(args[1].releaseObj())));
       case CONCATS_CONCATS:
         return new RegexVector(RegexVector(
-            move(*(RegexVector*)args[0].releaseObj()), *(Regex**)args[1].releaseObj()));
+            move(*static_cast<RegexVector*>(args[0].releaseObj())), *static_cast<Regex**>(args[1].releaseObj())));
       case SCONC:
-        return new Start(*(Regex**)args[0].releaseObj());
+        return new Start(move(*static_cast<Regex**>(args[0].releaseObj())));
       default:
         throw invalid_argument("Can't construct. Out of options.");
     }
@@ -468,8 +467,8 @@ namespace {
       const vector<StackObj>& inputTokens,
       size_t tokenPos) {
 
+    // Need StackObjs to deep delete their objects
     for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
-
 
     ostringstream errMsg;
     vector<string> stkSymbolNames;
@@ -528,10 +527,6 @@ namespace {
         size_t reduceStart =
             stk.size() - currentNode->getValue().reducibleRule->symbols.size();
         StackObj newObj = construct(concrete, &stk.data()[reduceStart]);
-
-        // // We always add the rule S -> <root_type>, so there is only one thing
-        // // on the stack if we reduced to S, and we don't want to delete the
-        // // pointer because this is the object we are returning to the caller
         size_t stkSize = stk.size();
         for (size_t j = 0; j < stkSize - reduceStart; ++j) {
           // deleteObjPtr(stk.back());
@@ -551,7 +546,7 @@ namespace {
     }
 
     // Remove the actual grammar root from the fake root we encapsulated it with
-    Start* start = (Start*)(stk[0].releaseObj());
+    Start* start = static_cast<Start*>(stk[0].releaseObj());
     // Regex* root = start->r_;
     // delete start;
     return start->r_;

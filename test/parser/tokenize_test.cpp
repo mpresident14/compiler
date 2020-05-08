@@ -24,72 +24,66 @@ constexpr static int IDENT = -8;
 void testGeneralTokenization() {
   vector<StackObj> tokens = tokenize(R"( "Hello" "Hi \"Bob\"" 123 abc123 de h]llo )");
 
-  StackObj t0 = tokens[0];
-  TESTER.assertEquals(STRLIT, t0.symbol);
-  if (t0.symbol == STRLIT) {
-    TESTER.assertEquals("Hello", *(string*) t0.obj);
+  StackObj t0 = move(tokens[0]);
+  TESTER.assertEquals(STRLIT, t0.getSymbol());
+  if (t0.getSymbol() == STRLIT) {
+    TESTER.assertEquals("Hello", *static_cast<string*>(t0.getObj()));
   }
 
-  StackObj t1 = tokens[1];
-  TESTER.assertEquals(STRLIT, t1.symbol);
-  if (t1.symbol == STRLIT) {
-    TESTER.assertEquals(R"(Hi \"Bob\")", *(string*) t1.obj);
+  StackObj t1 = move(tokens[1]);
+  TESTER.assertEquals(STRLIT, t1.getSymbol());
+  if (t1.getSymbol() == STRLIT) {
+    TESTER.assertEquals(R"(Hi \"Bob\")", *static_cast<string*>(t1.getObj()));
   }
 
-  StackObj t2 = tokens[2];
-  TESTER.assertEquals(NUMBER, t2.symbol);
-  if (t2.symbol == NUMBER) {
-    TESTER.assertEquals(123, *(int*) t2.obj);
+  StackObj t2 = move(tokens[2]);
+  TESTER.assertEquals(NUMBER, t2.getSymbol());
+  if (t2.getSymbol() == NUMBER) {
+    TESTER.assertEquals(123, *(int*) t2.getObj());
   }
 
-  StackObj t3 = tokens[3];
-  TESTER.assertEquals(IDENT, t3.symbol);
-  if (t3.symbol == IDENT) {
-    TESTER.assertEquals("abc123", *(string*) t3.obj);
+  StackObj t3 = move(tokens[3]);
+  TESTER.assertEquals(IDENT, t3.getSymbol());
+  if (t3.getSymbol() == IDENT) {
+    TESTER.assertEquals("abc123", *static_cast<string*>(t3.getObj()));
   }
 
-  StackObj t4 = tokens[4];
-  TESTER.assertEquals(DNOTABC, t4.symbol);
-  if (t4.symbol == DNOTABC) {
-    TESTER.assertEquals('e', **(char**) t4.obj);
+  StackObj t4 = move(tokens[4]);
+  TESTER.assertEquals(DNOTABC, t4.getSymbol());
+  if (t4.getSymbol() == DNOTABC) {
+    TESTER.assertEquals('e', **(char**) t4.getObj());
   }
 
-  TESTER.assertEquals(HabLLO, tokens[5].symbol);
-
-  for_each(tokens.cbegin(), tokens.cend(), deleteObj);
+  TESTER.assertEquals(HabLLO, tokens[5].getSymbol());
 }
 
 void testFirstComeFirstServed() {
   vector<StackObj> tokens = tokenize("for h.llo hello hullo hollow");
 
-  TESTER.assertEquals(FOR, tokens[0].symbol);
-  TESTER.assertEquals(HDOTLLO, tokens[1].symbol);
-  TESTER.assertEquals(H_LLO, tokens[2].symbol);
-  TESTER.assertEquals(H_LLO, tokens[3].symbol);
-  StackObj t4 = tokens[4];
-  TESTER.assertEquals(IDENT, t4.symbol);
-  if (tokens[4].symbol == IDENT) {
-    TESTER.assertEquals("hollow", *(string*) t4.obj);
+  TESTER.assertEquals(FOR, tokens[0].getSymbol());
+  TESTER.assertEquals(HDOTLLO, tokens[1].getSymbol());
+  TESTER.assertEquals(H_LLO, tokens[2].getSymbol());
+  TESTER.assertEquals(H_LLO, tokens[3].getSymbol());
+  StackObj t4 = move(tokens[4]);
+  TESTER.assertEquals(IDENT, t4.getSymbol());
+  if (t4.getSymbol() == IDENT) {
+    TESTER.assertEquals("hollow", *static_cast<string*>(t4.getObj()));
   }
-
-  for_each(tokens.cbegin(), tokens.cend(), deleteObj);
 }
 
 void testMatchLongest() {
   vector<StackObj> tokens = tokenize("forbid digit");
 
-  StackObj t0 = tokens[0];
-  TESTER.assertEquals(IDENT, t0.symbol);
-  if (t0.symbol == IDENT) {
-    TESTER.assertEquals("forbid", *(string*) t0.obj);
+  StackObj t0 = move(tokens[0]);
+  TESTER.assertEquals(IDENT, t0.getSymbol());
+  if (t0.getSymbol() == IDENT) {
+    TESTER.assertEquals("forbid", *static_cast<string*>(t0.getObj()));
   }
-  StackObj t1 = tokens[1];
-  TESTER.assertEquals(IDENT, t1.symbol);
-  if (t1.symbol == IDENT) {
-    TESTER.assertEquals("digit", *(string*) t1.obj);
+  StackObj t1 = move(tokens[1]);
+  TESTER.assertEquals(IDENT, t1.getSymbol());
+  if (t1.getSymbol() == IDENT) {
+    TESTER.assertEquals("digit", *static_cast<string*>(t1.getObj()));
   }
-
-  for_each(tokens.cbegin(), tokens.cend(), deleteObj);
 }
 
 void testNoLeaksOnError() {

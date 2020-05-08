@@ -37,9 +37,9 @@ GrammarData CONFIG_GRAMMAR = {
       { "BAR", "", NONE, Assoc::NONE, "", "", "\\|" },
       { "ARROW", "", NONE, Assoc::NONE, "", "", "->" },
       { "COMMENT", "", SKIP_TOKEN, Assoc::NONE, "", "", "//[^\n]*\n"},
-      { "IDENT", "string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*\\**&*" },
-      { "STRLIT", "string", NONE, Assoc::NONE, "extractString(#str, '\"')", "", R"("([^"]|\\")*")" },
-      { "CODE", "string", NONE, Assoc::NONE, "extractString(#str, '%')", "", R"(%([^%]|\\%)*%)" },
+      { "IDENT", "std::string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*\\**&*" },
+      { "STRLIT", "std::string", NONE, Assoc::NONE, "extractString(#str, '\"')", "", R"("([^"]|\\")*")" },
+      { "CODE", "std::string", NONE, Assoc::NONE, "extractString(#str, '%')", "", R"(%([^%]|\\%)*%)" },
   },
   {},
   {}
