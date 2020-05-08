@@ -4,7 +4,6 @@
 #include <numeric>
 #include <functional>
 #include <stdexcept>
-#include <unordered_set>
 
 using namespace std;
 
@@ -54,27 +53,27 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::CONCAT) {
-    vector<RgxPtr> &r1Vec = static_cast<Concat *>(r1.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r1Vec = static_cast<Concat *>(r1.get())->rVec_;
     vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
     // [r1s] [r2s] = [r1s + r2s]
     if (r2Type == RgxType::CONCAT) {
-      vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
+      vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_;
       copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-      return make_shared<Concat>(RegexVector(move(newVec)));
+      return make_shared<Concat>(move(newVec));
     }
     // [r1s] r2 = [r1s + r2]
     newVec.push_back(r2);
-    return make_shared<Concat>(RegexVector(move(newVec)));
+    return make_shared<Concat>(move(newVec));
   }
   // r1 [r2s] = [r1 + r2s]
   if (r2Type == RgxType::CONCAT) {
     vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_.rgxs_;
+    vector<RgxPtr> &r2Vec = static_cast<Concat *>(r2.get())->rVec_;
     copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-    return make_shared<Concat>(RegexVector(move(newVec)));
+    return make_shared<Concat>(move(newVec));
   }
 
-  return make_shared<Concat>(RegexVector({ r1, r2 }));
+  return make_shared<Concat>(vector<RgxPtr>{r1, r2});
 }
 
 
@@ -99,47 +98,45 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::ALT) {
-    vector<RgxPtr> &r1Vec = static_cast<Alt *>(r1.get())->rVec_.rgxs_;
-    vector<RgxPtr> newVec(r1Vec.cbegin(), r1Vec.cend());
+    unordered_set<RgxPtr> &r1Set = static_cast<Alt *>(r1.get())->rSet_;
+    unordered_set<RgxPtr> newSet(r1Set.cbegin(), r1Set.cend());
     // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
     if (r2Type == RgxType::ALT) {
-      vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
-      copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-      return make_shared<Alt>(RegexVector(move(newVec)));
+      unordered_set<RgxPtr> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
+      copy(r2Set.cbegin(), r2Set.cend(), inserter(newSet, newSet.end()));
+      return make_shared<Alt>(move(newSet));
     }
     // Alt [r1s] | r2 = Alt [r1s + r2]
-    newVec.push_back(r2);
-    return make_shared<Alt>(RegexVector(move(newVec)));
+    newSet.insert(r2);
+    return make_shared<Alt>(move(newSet));
   }
   // r1 | Alt [r2s] = Alt [r1 + r2s]
   if (r2Type == RgxType::ALT) {
-    vector<RgxPtr> newVec = { r1 };
-    vector<RgxPtr> &r2Vec = static_cast<Alt *>(r2.get())->rVec_.rgxs_;
-    copy(r2Vec.cbegin(), r2Vec.cend(), back_inserter(newVec));
-    return make_shared<Alt>(RegexVector(move(newVec)));
+    unordered_set<RgxPtr> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
+    unordered_set<RgxPtr> newSet(r2Set.cbegin(), r2Set.cend());
+    newSet.insert(r1);
+    return make_shared<Alt>(move(newSet));
   }
 
-  // r | r = r
-  if (r1 == r2) {
-    return r1;
-  }
-
-  return make_shared<Alt>(RegexVector({ r1, r2 }));
+  // NOTE: r1 = r2 is covered by the set itself
+  return make_shared<Alt>(unordered_set<RgxPtr>{r1, r2});
 }
 
 
 RgxPtr makeConcats(vector<RgxPtr> &&rs) {
   if (rs.empty()) {
-    return make_shared<Concat>(move(rs));
+    make_shared<Epsilon>();
   }
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
 }
 
-RgxPtr makeAlts(vector<RgxPtr> &&rs) {
+RgxPtr makeAlts(unordered_set<RgxPtr> &&rs) {
   if (rs.empty()) {
-    return make_shared<Alt>(move(rs));
+    make_shared<EmptySet>();
   }
-  return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeAlt);
+  auto iter = rs.cbegin();
+  const RgxPtr& rgx = *iter;
+  return accumulate(++iter, rs.cend(), rgx, makeAlt);
 }
 
 RgxPtr makeStar(RgxPtr r) {
@@ -220,59 +217,65 @@ void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 /***************
  * RegexVector *
  ***************/
-RegexVector::RegexVector(Regex *r1, Regex *r2)
-    : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
+// RegexVector::RegexVector(Regex *r1, Regex *r2)
+//     : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
 
-RegexVector::RegexVector(RegexVector&& rVec, Regex *r)
-    : rgxs_{ move(rVec.rgxs_) } {
-  rgxs_.push_back(RgxPtr(r));
-}
+// RegexVector::RegexVector(RegexVector&& rVec, Regex *r)
+//     : rgxs_{ move(rVec.rgxs_) } {
+//   rgxs_.push_back(RgxPtr(r));
+// }
 
-bool RegexVector::operator==(const RegexVector &other) const {
-  return equal(
-      rgxs_.cbegin(),
-      rgxs_.cend(),
-      other.rgxs_.cbegin(),
-      other.rgxs_.cend(),
-      [](const RgxPtr &rPtr1, const RgxPtr &rPtr2) {
-        return *rPtr1 == *rPtr2;
-      });
-}
+// bool RegexVector::operator==(const RegexVector &other) const {
+//   return equal(
+//       rgxs_.cbegin(),
+//       rgxs_.cend(),
+//       other.rgxs_.cbegin(),
+//       other.rgxs_.cend(),
+//       [](const RgxPtr &rPtr1, const RgxPtr &rPtr2) {
+//         return *rPtr1 == *rPtr2;
+//       });
+// }
 
-RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
+// RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
 
-size_t RegexVector::hashFn() const noexcept {
-  hash<RgxPtr> hasher;
-  size_t hashSum = 0;
-  for (const RgxPtr& rgx : rgxs_) {
-    hashSum ^= hasher(rgx) << 1;
-  }
-  return hashSum;
-}
+// size_t RegexVector::hashFn() const noexcept {
+//   hash<RgxPtr> hasher;
+//   size_t hashSum = 0;
+//   for (const RgxPtr& rgx : rgxs_) {
+//     hashSum ^= hasher(rgx) << 1;
+//   }
+//   return hashSum;
+// }
 
 /*******
  * Alt *
  *******/
-Alt::Alt(RegexVector &&rVec) : rVec_(move(rVec)) {}
-Alt::Alt(const string& charVec) : rVec_({}) {
+Alt::Alt(Regex* r1, Regex* r2) : rSet_{RgxPtr(r1), RgxPtr(r2)} {}
+Alt::Alt(std::unordered_set<RgxPtr>&& rSet, Regex* r)
+  : rSet_(move(rSet)) {
+    rSet_.emplace(r);
+}
+Alt::Alt(std::unordered_set<RgxPtr>&& rSet) : rSet_(move(rSet)) {}
+
+Alt::Alt(const string& charVec) {
   for (char c : charVec) {
-    rVec_.rgxs_.push_back(make_shared<Character>(c));
+    rSet_.insert(make_shared<Character>(c));
   }
 }
 
 bool Alt::isNullable() const {
   return any_of(
-      rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
+      rSet_.cbegin(), rSet_.cend(), [](const RgxPtr rPtr) {
         return rPtr->isNullable();
       });
 }
 
 RgxPtr Alt::getDeriv(char c) const {
-  vector<RgxPtr> derivs;
+  unordered_set<RgxPtr> derivs;
   transform(
-      rVec_.rgxs_.cbegin(),
-      rVec_.rgxs_.cend(),
-      back_inserter(derivs),
+      rSet_.cbegin(),
+      rSet_.cend(),
+      inserter(derivs, derivs.end()),
       [c](const RgxPtr rPtr) { return rPtr->getDeriv(c); });
   return makeAlts(move(derivs));
 }
@@ -280,46 +283,50 @@ RgxPtr Alt::getDeriv(char c) const {
 RgxType Alt::getType() const { return RgxType::ALT; }
 
 bool Alt::operator==(const Regex &other) const {
-  if (other.getType() != RgxType::ALT) {
-    return false;
-  }
-  const vector<RgxPtr>& otherVec = static_cast<const Alt &>(other).rVec_.rgxs_;
-  unordered_set<RgxPtr> myRgxs(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend());
-  unordered_set<RgxPtr> otherRgxs(otherVec.cbegin(), otherVec.cend());
-  return myRgxs == otherRgxs;
-  // return other.getType() == RgxType::ALT &&
-  //        static_cast<const Alt &>(other).rVec_ == rVec_;
+  return other.getType() == RgxType::ALT && rSet_ == static_cast<const Alt&>(other).rSet_;
 }
 
-size_t Alt::hashFn() const noexcept { return rVec_.hashFn(); }
+size_t Alt::hashFn() const noexcept {
+  hash<RgxPtr> hasher;
+  size_t hashSum = 0;
+  for (const RgxPtr& rgx : rSet_) {
+    hashSum ^= hasher(rgx) << 1;
+  }
+  return hashSum ^ static_cast<int>(RgxType::ALT);
+}
 
-void Alt::toStream(ostream &out) const { out << "ALT " << rVec_.rgxs_; }
+void Alt::toStream(ostream &out) const { out << "ALT " << rSet_; }
 
 
 /**********
  * Concat *
  **********/
 
-Concat::Concat(RegexVector &&rVec) : rVec_(move(rVec)) {}
+Concat::Concat(Regex* r1, Regex* r2) : rVec_{ RgxPtr(r1), RgxPtr(r2) } {}
+Concat::Concat(std::vector<RgxPtr>&& rVec, Regex* r)
+  : rVec_(move(rVec)) {
+  rVec_.push_back(RgxPtr(r));
+}
+Concat::Concat(std::vector<RgxPtr>&& rVec)  : rVec_(move(rVec)) {}
 
 bool Concat::isNullable() const {
   return all_of(
-      rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend(), [](const RgxPtr rPtr) {
+      rVec_.cbegin(), rVec_.cend(), [](const RgxPtr rPtr) {
         return rPtr->isNullable();
       });
 }
 
 
 RgxPtr Concat::getDeriv(char c) const {
-  const vector<RgxPtr> &rgxs = rVec_.rgxs_;
-  if (rgxs.empty()) {
+  if (rVec_.empty()) {
     return make_shared<EmptySet>();
   }
-  vector<RgxPtr> derivAndRest = { rgxs[0]->getDeriv(c) };
-  copy(rgxs.cbegin() + 1, rgxs.cend(), back_inserter(derivAndRest));
 
-  if (rgxs[0]->isNullable()) {
-    vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
+  vector<RgxPtr> derivAndRest = { rVec_[0]->getDeriv(c) };
+  copy(rVec_.cbegin() + 1, rVec_.cend(), back_inserter(derivAndRest));
+
+  if (rVec_[0]->isNullable()) {
+    vector<RgxPtr> rest(rVec_.cbegin() + 1, rVec_.cend());
     return makeAlt(
         makeConcats(move(rest))->getDeriv(c),
         makeConcats(move(derivAndRest)));
@@ -335,9 +342,16 @@ bool Concat::operator==(const Regex &other) const {
          static_cast<const Concat &>(other).rVec_ == rVec_;
 }
 
-size_t Concat::hashFn() const noexcept { return rVec_.hashFn(); }
+size_t Concat::hashFn() const noexcept {
+  hash<RgxPtr> hasher;
+  size_t hashSum = 0;
+  for (const RgxPtr& rgx : rVec_) {
+    hashSum ^= hasher(rgx) << 1;
+  }
+  return hashSum ^ static_cast<int>(RgxType::ALT);
+}
 
-void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_.rgxs_; }
+void Concat::toStream(ostream &out) const { out << "CONCAT " << rVec_; }
 
 
 /********

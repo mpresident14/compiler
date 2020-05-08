@@ -58,10 +58,10 @@ RPAREN          "\)"
 DOT             "\."
 ESCAPED         "\\."                   -> {char}              % escape(#str[1]) %
 CHAR            "."                     -> {char}              % #str[0] %
-RANGE           "\[(.|\\.)-(.|\\.)\]"   -> {pair<char,char>}  % getRange(escBracketStr(#str), 0) %
-NOTRANGE        "\[^(.|\\.)-(.|\\.)\]"  -> {pair<char,char>}  % getRange(escBracketStr(#str), 1) %
-NOTALTBRACKET   "\[^([^\]]|\\.)*\]"         -> {string}            % escBracketStr(#str).substr(1) %
-ALTBRACKET      "\[([^\]]|\\.)*\]"          -> {string}            % escBracketStr(#str) %
+RANGE           "\[(.|\\.)-(.|\\.)\]"   -> {pair<char,char>}   % getRange(escBracketStr(#str), 0) %
+NOTRANGE        "\[^(.|\\.)-(.|\\.)\]"  -> {pair<char,char>}   % getRange(escBracketStr(#str), 1) %
+NOTALTBRACKET   "\[^([^\]]|\\.)*\]"     -> {string}            % escBracketStr(#str).substr(1) %
+ALTBRACKET      "\[([^\]]|\\.)*\]"      -> {string}            % escBracketStr(#str) %
 
 #prec
 BAR #left
@@ -72,20 +72,20 @@ STAR #left
 
 #grammar
 Regex -> {Regex*} % delete #obj; %
-  := Concats                                 % new Concat(move(#0)) %
-   | Alts                                    % new Alt(move(#0)) %
+  := Concats                                 % #0 %
+   | Alts                                    % #0 %
    | Regex STAR                              % new Star(#0) %
    | LPAREN Regex RPAREN                     % #1 %
    | OneChar                                 % #0 %
    | Bracket                                 % #0 %
 
-Alts -> {RegexVector}
-  := Regex BAR Regex % RegexVector(#0, #2) %
-   | Alts BAR Regex  % RegexVector(move(#0), #2) %
+Alts -> {Regex*} % delete #obj; %
+  := Regex BAR Regex % new Alt(#0, #2) %
+   | Alts BAR Regex  % new Alt(move(#0), #2) %
 
-Concats -> {RegexVector}
-  := Regex Regex    #prec CONCAT % RegexVector(#0, #1) %
-   | Concats Regex  #prec CONCAT % RegexVector(move(#0), #1) %
+Concats -> {Regex*} % delete #obj; %
+  := Regex Regex    #prec CONCAT % new Concat(#0, #1) %
+   | Concats Regex  #prec CONCAT % new Concat(move(#0), #1) %
 
 Bracket -> {Regex*} % delete #obj; %
   := RANGE          % new Range(#0) %

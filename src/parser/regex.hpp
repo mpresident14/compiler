@@ -5,6 +5,7 @@
 #include <ostream>
 #include <vector>
 #include <utility>
+#include <unordered_set>
 
 #include <prez/print_stuff.hpp>
 
@@ -107,20 +108,22 @@ private:
   char c_;
 };
 
-struct RegexVector {
-public:
-  RegexVector(Regex* r1, Regex* r2);
-  RegexVector(RegexVector&& rVec, Regex* r);
-  RegexVector(std::vector<RgxPtr>&& vec);
-  bool operator==(const RegexVector& other) const;
-  size_t hashFn() const noexcept;
+// struct RegexVector {
+// public:
+//   RegexVector(Regex* r1, Regex* r2);
+//   RegexVector(RegexVector&& rVec, Regex* r);
+//   RegexVector(std::vector<RgxPtr>&& vec);
+//   bool operator==(const RegexVector& other) const;
+//   size_t hashFn() const noexcept;
 
-  std::vector<RgxPtr> rgxs_;
-};
+//   std::vector<RgxPtr> rgxs_;
+// };
 
 class Alt : public Regex {
 public:
-  Alt(RegexVector&& rVec);
+  Alt(Regex* r1, Regex* r2);
+  Alt(std::unordered_set<RgxPtr>&& rSet, Regex* r);
+  Alt(std::unordered_set<RgxPtr>&& rSet);
   Alt(const std::string& charVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
@@ -132,12 +135,14 @@ public:
   friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
 private:
-  RegexVector rVec_;
+  std::unordered_set<RgxPtr> rSet_;
 };
 
 class Concat : public Regex {
 public:
-  Concat(RegexVector&& rVec);
+  Concat(Regex* r1, Regex* r2);
+  Concat(std::vector<RgxPtr>&& rVec, Regex* r);
+  Concat(std::vector<RgxPtr>&& rVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
@@ -148,7 +153,7 @@ public:
   friend RgxPtr makeConcat(RgxPtr r1, RgxPtr r2);
 
 private:
-  RegexVector rVec_;
+  std::vector<RgxPtr> rVec_;
 };
 
 class Star : public Regex {

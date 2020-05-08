@@ -47,5 +47,7 @@ bin/
 lib/
 DartConfiguration.tcl
 
-# My generated files for testing
+# My generated files
 test/parser/generated/*
+src/parser/regex_backup.cpp
+src/parser/regex_backup.hpp
