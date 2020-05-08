@@ -197,7 +197,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         out << "case " << tokenToFromIndex(i) << ':';
         if (!token.dtorStmt.empty()) {
           out << "if (!released_) {";
-          replaceAll(out, token.dtorStmt, "#obj", "*static_cast<" + token.type + "*>(obj_)");
+          replaceAll(out, token.dtorStmt, "#obj", "(*static_cast<" + token.type + "*>(obj_))");
           out << '}';
         }
         out << "delete static_cast<" << token.type << "*>(obj_); break;";
@@ -211,7 +211,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       out << "case " << i << ':';
       if (!var.dtorStmt.empty()) {
         out << "if (!released_) {";
-        replaceAll(out, var.dtorStmt, "#obj", "*static_cast<" + var.type + "*>(obj_)");
+        replaceAll(out, var.dtorStmt, "#obj", "(*static_cast<" + var.type + "*>(obj_))");
         out << '}';
       }
       out << "delete static_cast<" << var.type << "*>(obj_); break;";
@@ -301,11 +301,11 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
             } else {
               symbolName = grammarData.variables[argSymbol].type;
             }
-            return string("*static_cast<")
+            return string("(*static_cast<")
                 .append(symbolName)
                 .append("*>(args[")
                 .append(digits)
-                .append("].releaseObj())");
+                .append("].releaseObj()))");
           });
 
       out << ");";

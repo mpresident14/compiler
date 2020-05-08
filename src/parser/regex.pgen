@@ -90,8 +90,8 @@ Concats -> {Regex*} % delete #obj; %
 Bracket -> {Regex*} % delete #obj; %
   := RANGE          % new Range(#0) %
    | NOTRANGE       % new Not(new Range(#0)) %
-   | ALTBRACKET     % new Alt(#0) %
-   | NOTALTBRACKET  % new Not(new Alt(#0)) %
+   | ALTBRACKET     % #0.size() == 1 ? new Character(#0[0]) : new Alt(#0) %
+   | NOTALTBRACKET  % new Not(#0.size() == 1 ? new Character(#0[0]) : new Alt(#0)) %
 
 OneChar -> {Regex*} % delete #obj; %
   := CHAR     % new Character(#0) %

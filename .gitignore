@@ -49,5 +49,5 @@ DartConfiguration.tcl
 
 # My generated files
 test/parser/generated/*
-src/parser/regex_backup.cpp
-src/parser/regex_backup.hpp
+src/parser/regex_parser_backup.cpp
+src/parser/regex_parser_backup.hpp
