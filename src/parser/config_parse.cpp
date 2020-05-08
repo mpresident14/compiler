@@ -30,74 +30,75 @@ namespace {
   unordered_map<string, size_t> varNameToIndex;
   unordered_map<string, int> precNameToPrec;
 
-  void streamTokenNames(ostream& out, const vector<StackObj>& tokens) {
-    vector<string> tokenNames;
-    transform(
-        tokens.begin(),
-        tokens.end(),
-        back_inserter(tokenNames),
-        [](const StackObj& stackObj){ return symbolToString(stackObj.getSymbol(), CONFIG_GRAMMAR); });
-    out << tokenNames;
-  }
 
+  class TokenStream {
+  public:
+    TokenStream(vector<StackObj>& tokens) : tokens_(tokens) {}
+    ~TokenStream() = default;
+    TokenStream(const TokenStream& other) = delete;
+    TokenStream& operator=(const TokenStream& other) = delete;
+    TokenStream(TokenStream&& other) = delete;
+    TokenStream& operator=(TokenStream&& other) = delete;
 
-  /*******************
-   * CONSUME HELPERS *
-   *******************/
-  void parseError(int tokenId, const vector<StackObj>& tokens, size_t pos) {
-    stringstream errMsg;
-    errMsg << "Parse error on line " << tokens[pos].getLine() << " before tokens: ";
-    streamTokenNames(errMsg, tokens);
-    errMsg << ".\nExpected " + symbolToString(tokenId, CONFIG_GRAMMAR);
-    throw runtime_error(errMsg.str());
-  }
-
-  bool maybeConsume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
-    if (tokens.size() == pos || tokens[pos].getSymbol() != tokenId) {
-      return false;
+    void parseError(int tokenId) {
+      stringstream errMsg;
+      errMsg << "Parse error on line " << tokens_[pos_].getLine()
+             << ". Expected " + symbolToString(tokenId, CONFIG_GRAMMAR);
+      throw runtime_error(errMsg.str());
     }
-    ++pos;
-    return true;
-  }
 
-  void consume(int tokenId, const vector<StackObj>& tokens, size_t& pos) {
-    if (!maybeConsume(tokenId, tokens, pos)) {
-      parseError(tokenId, tokens, pos);
+    bool maybeConsume(int tokenId) {
+      if (tokens_.size() == pos_ || tokens_[pos_].getSymbol() != tokenId) {
+        return false;
+      }
+      ++pos_;
+      return true;
     }
-  }
 
-  string* maybeConsumeString(int tokenId, vector<StackObj>& tokens, size_t& pos) {
-    if (tokens.size() == pos || tokens[pos].getSymbol() != tokenId) {
-      return nullptr;
+    void consume(int tokenId) {
+      if (!maybeConsume(tokenId)) {
+        parseError(tokenId);
+      }
     }
-    return (string*) tokens[pos++].getObj();
-  }
 
-  string consumeString(int tokenId, vector<StackObj>& tokens, size_t& pos) {
-    string* strPtr = maybeConsumeString(tokenId, tokens, pos);
-    if (!strPtr) {
-      parseError(tokenId, tokens, pos);
+    string* maybeConsumeString(int tokenId) {
+      if (tokens_.size() == pos_ || tokens_[pos_].getSymbol() != tokenId) {
+        return nullptr;
+      }
+      return (string*) tokens_[pos_++].getObj();
     }
-    return *strPtr;
+
+    string consumeString(int tokenId) {
+      string* strPtr = maybeConsumeString(tokenId);
+      if (!strPtr) {
+        parseError(tokenId);
+      }
+      return *strPtr;
+    }
+
+
+  private:
+    vector<StackObj>& tokens_;
+    size_t pos_ = 0;
+  };
+
+
+  void parseHeader(TokenStream& tokenStream) {
+    tokenStream.consume(HEADER);
+    addlHppCode = tokenStream.consumeString(CODE);
   }
 
-  // TODO: Use a class so we don't have to pass around tokens and pos everywhere
-  void parseHeader(vector<StackObj>& tokens, size_t& pos) {
-    consume(HEADER, tokens, pos);
-    addlHppCode = consumeString(CODE, tokens, pos);
+  void parseSource(TokenStream& tokenStream) {
+    tokenStream.consume(SOURCE);
+    addlCppCode = tokenStream.consumeString(CODE);
   }
 
-  void parseSource(vector<StackObj>& tokens, size_t& pos) {
-    consume(SOURCE, tokens, pos);
-    addlCppCode = consumeString(CODE, tokens, pos);
-  }
-
-  bool maybeParseToken(vector<StackObj>& tokens, size_t& pos) {
+  bool maybeParseToken(TokenStream& tokenStream) {
     bool skip = false;
     // Check for an identifier to see if there are any more tokens
-    string* name = maybeConsumeString(IDENT, tokens, pos);
+    string* name = tokenStream.maybeConsumeString(IDENT);
     if (!name) {
-      if (maybeConsume(SKIP, tokens, pos)) {
+      if (tokenStream.maybeConsume(SKIP)) {
         skip = true;
       } else {
         return false;
@@ -106,7 +107,7 @@ namespace {
 
     gdTokens.push_back(Token());
     Token& gdToken = gdTokens.back();
-    gdToken.regex = consumeString(STRLIT, tokens, pos);
+    gdToken.regex = tokenStream.consumeString(STRLIT);
 
     // We indicate to the lexer that the token should be skipped by setting the
     // precedence to SKIP_TOKEN (this is useful for things such as comments)
@@ -119,25 +120,25 @@ namespace {
     // Keep track of the index for this name so that we can use it when parsing #prec
     tokenNameToIndex.emplace(move(*name), gdTokens.size() - 1);
     // An arrow signifies that the token holds data
-    if (maybeConsume(ARROW, tokens, pos)) {
-      gdToken.type = consumeString(IDENT, tokens, pos);
-      gdToken.ctorExpr = consumeString(CODE, tokens, pos);
-      gdToken.dtorStmt = consumeString(CODE, tokens, pos);
+    if (tokenStream.maybeConsume(ARROW)) {
+      gdToken.type = tokenStream.consumeString(IDENT);
+      gdToken.ctorExpr = tokenStream.consumeString(CODE);
+      gdToken.dtorStmt = tokenStream.consumeString(CODE);
     }
     return true;
   }
 
 
-  void parseTokens(vector<StackObj>& tokens, size_t& pos) {
-    consume(TOKENS, tokens, pos);
-    while (maybeParseToken(tokens, pos));
+  void parseTokens(TokenStream& tokenStream) {
+    tokenStream.consume(TOKENS);
+    while (maybeParseToken(tokenStream));
   }
 
-  bool maybeParsePrec(vector<StackObj>& tokens, size_t& pos, int prec) {
+  bool maybeParsePrec(TokenStream& tokenStream, int prec) {
     vector<string*> precNames;
     // Check for an identifier to see if there are any more precedence lines
     string* precName;
-    while ((precName = maybeConsumeString(IDENT, tokens, pos))) {
+    while ((precName = tokenStream.maybeConsumeString(IDENT))) {
       precNames.push_back(precName);
     }
     if (precNames.empty()) {
@@ -146,12 +147,12 @@ namespace {
 
     // Figure out the associativity (which is required if precedence is specified)
     Assoc assoc;
-    if (maybeConsume(LEFTASSOC, tokens, pos)) {
+    if (tokenStream.maybeConsume(LEFTASSOC)) {
       assoc = Assoc::LEFT;
-    } else if (maybeConsume(RIGHTASSOC, tokens, pos)) {
+    } else if (tokenStream.maybeConsume(RIGHTASSOC)) {
       assoc = Assoc::RIGHT;
     } else {
-      consume(NONASSOC, tokens, pos);
+      tokenStream.consume(NONASSOC);
       assoc = Assoc::NOT;
     }
 
@@ -172,16 +173,16 @@ namespace {
     return true;
   }
 
-  void parsePrecs(vector<StackObj>& tokens, size_t& pos) {
-    consume(PREC, tokens, pos);
+  void parsePrecs(TokenStream& tokenStream) {
+    tokenStream.consume(PREC);
     int prec = 1;
-    while (maybeParsePrec(tokens, pos, prec++));
+    while (maybeParsePrec(tokenStream, prec++));
   }
 
 
-  bool maybeParseGrammarDecl(vector<StackObj>& tokens, size_t& pos) {
+  bool maybeParseGrammarDecl(TokenStream& tokenStream) {
     // Check for an identifier to see if there are any more declarations
-    string* name = maybeConsumeString(IDENT, tokens, pos);
+    string* name = tokenStream.maybeConsumeString(IDENT);
     if (!name) {
       return false;
     }
@@ -190,9 +191,9 @@ namespace {
     Variable& gdVariable = gdVariables.back();
     gdVariable.name = *name;
     varNameToIndex.emplace(move(*name), gdVariables.size() - 1);
-    consume(ARROW, tokens, pos);
-    gdVariable.type = consumeString(IDENT, tokens, pos);
-    string* dtor = maybeConsumeString(CODE, tokens, pos);
+    tokenStream.consume(ARROW);
+    gdVariable.type = tokenStream.consumeString(IDENT);
+    string* dtor = tokenStream.maybeConsumeString(CODE);
     if (dtor) {
       gdVariable.dtorStmt = *dtor;
     }
@@ -200,7 +201,7 @@ namespace {
   }
 
   /* This must be called right after parseGrammarDecl() */
-  void parseGrammarDef(vector<StackObj>& tokens, size_t& pos, size_t concNum) {
+  void parseGrammarDef(TokenStream& tokenStream, size_t concNum) {
     Variable& gdVariable = gdVariables.back();
     gdConcretes.push_back(Concrete());
     Concrete& gdConcrete = gdConcretes.back();
@@ -210,12 +211,12 @@ namespace {
     // Store argSymbols as string*s for now until we have seen all the
     // variables. Then, we will convert them to correct integral values.
     string* conc;
-    while ((conc = maybeConsumeString(IDENT, tokens, pos))) {
+    while ((conc = tokenStream.maybeConsumeString(IDENT))) {
       gdConcrete.argSymbols.push_back((intptr_t) conc);
     }
 
-    if (maybeConsume(PREC, tokens, pos)) {
-      string tokenName = consumeString(IDENT, tokens, pos);
+    if (tokenStream.maybeConsume(PREC)) {
+      string tokenName = tokenStream.consumeString(IDENT);
       int prec;
       // Look up the index of the token in the map
       auto iter = tokenNameToIndex.find(tokenName);
@@ -237,29 +238,29 @@ namespace {
       gdConcrete.precedence = prec;
     }
 
-    gdConcrete.ctorExpr = consumeString(CODE, tokens, pos);
+    gdConcrete.ctorExpr = tokenStream.consumeString(CODE);
   }
 
-  bool maybeParseGrammarVar(vector<StackObj>& tokens, size_t& pos) {
-    if (!maybeParseGrammarDecl(tokens, pos)) {
+  bool maybeParseGrammarVar(TokenStream& tokenStream) {
+    if (!maybeParseGrammarDecl(tokenStream)) {
       return false;
     }
 
-    consume(DEFINED, tokens, pos);
+    tokenStream.consume(DEFINED);
     size_t concNum = 0;
-    parseGrammarDef(tokens, pos, concNum++);
-    while (maybeConsume(BAR, tokens, pos)) {
-      parseGrammarDef(tokens, pos, concNum++);
+    parseGrammarDef(tokenStream, concNum++);
+    while (tokenStream.maybeConsume(BAR)) {
+      parseGrammarDef(tokenStream, concNum++);
     }
     return true;
   }
 
 
-  void parseGrammar(vector<StackObj>& tokens, size_t& pos) {
+  void parseGrammar(TokenStream& tokenStream) {
     gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
     gdConcretes.push_back(Concrete{ "SCONC", S, NONE, {1}, "Start(#0)" });
-    consume(GRAMMAR, tokens, pos);
-    while (maybeParseGrammarVar(tokens, pos));
+    tokenStream.consume(GRAMMAR);
+    while (maybeParseGrammarVar(tokenStream));
 
     // Translate the string pointers to token/variable ids now that we
     // have parsed the whole file (skip SCONC)
@@ -298,12 +299,12 @@ ParseInfo parseConfig(const string& fileName) {
     throw runtime_error("File " + fileName + " is empty.");
   }
 
-  size_t pos = 0;
-  parseHeader(tokens, pos);
-  parseSource(tokens, pos);
-  parseTokens(tokens, pos);
-  parsePrecs(tokens, pos);
-  parseGrammar(tokens, pos);
+  TokenStream tokenStream(tokens);
+  parseHeader(tokenStream);
+  parseSource(tokenStream);
+  parseTokens(tokenStream);
+  parsePrecs(tokenStream);
+  parseGrammar(tokenStream);
 
   if (gdTokens.empty()) {
     throw runtime_error("No tokens were provided.");
