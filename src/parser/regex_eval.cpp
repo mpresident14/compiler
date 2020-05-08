@@ -112,7 +112,6 @@ namespace {
       const Token& token = grammarData.tokens[i];
       #if NEW
         RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
-        cout << rgx << endl;
       #else
         RgxPtr rgx = parse(token.regex);
       #endif

@@ -1,3 +1,4 @@
+
 // #include "src/parser/regex_parse.hpp"
 #include "src/parser/regex_parser.hpp"
 #include "src/parser/regex_eval.hpp"
@@ -29,6 +30,7 @@ void testParse() {
   RgxPtr r4 = RgxPtr(parse("a|b|cd"));
   RgxPtr r5 = RgxPtr(parse("[1-9]"));
   RgxPtr r6 = RgxPtr(parse("[1-9]*"));
+  RgxPtr r7 = RgxPtr(parse("\\[^([^\\]]|\\\\.)*\\]"));
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
@@ -37,6 +39,7 @@ void testParse() {
   TESTER.assertEquals(RgxType::ALT, r4->getType());
   TESTER.assertEquals(RgxType::RANGE, r5->getType());
   TESTER.assertEquals(RgxType::STAR, r6->getType());
+  TESTER.assertEquals(RgxType::CONCAT, r7->getType());
 
   // No conflicts
   TESTER.assertEquals("", errBuffer.str());
@@ -45,7 +48,7 @@ void testParse() {
 
 void testParseError() {
   ostringstream expectedErr0;
-  expectedErr0 << "No parse:\n\tStack: "
+  expectedErr0 << "Parse error on line 1:\n\tStack: "
                << vector<string>{ "Concats", "LPAREN", "Regex" }
                << "\n\tRemaining tokens: " << vector<string>{};
 
@@ -53,7 +56,7 @@ void testParseError() {
   TESTER.assertEquals(expectedErr0.str(), err0);
 
   ostringstream expectedErr1;
-  expectedErr1 << "No parse:\n\tStack: "
+  expectedErr1 << "Parse error on line 1:\n\tStack: "
                << vector<string>{ "Regex", "BAR", "STAR" }
                << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
@@ -121,7 +124,6 @@ void testGetDeriv_brackets() {
   TESTER.assertEquals(EmptySet(), *r3->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r4->getDeriv(']'));
   TESTER.assertEquals(Epsilon(), *r4->getDeriv('a'));
-  cout << r4 << endl;
 }
 
 

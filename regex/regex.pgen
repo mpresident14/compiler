@@ -58,10 +58,10 @@ RPAREN          "\)"
 DOT             "\."
 ESCAPED         "\\."                   -> {char}              % escape(#str[1]) %
 CHAR            "."                     -> {char}              % #str[0] %
-RANGE           "\[(.|\.)-(.|\.)\]"   -> {pair<char,char>}  % getRange(escBracketStr(#str), 0) %
-NOTRANGE        "\[^(.|\.)-(.|\.)\]"  -> {pair<char,char>}  % getRange(escBracketStr(#str), 1) %
-NOTALTBRACKET   "\[^([^\]]|\.)*\]"         -> {string}            % escBracketStr(#str).substr(1) %
-ALTBRACKET      "\[([^\]]|\.)*\]"          -> {string}            % escBracketStr(#str) %
+RANGE           "\[(.|\\.)-(.|\\.)\]"   -> {pair<char,char>}  % getRange(escBracketStr(#str), 0) %
+NOTRANGE        "\[^(.|\\.)-(.|\\.)\]"  -> {pair<char,char>}  % getRange(escBracketStr(#str), 1) %
+NOTALTBRACKET   "\[^([^\]]|\\.)*\]"         -> {string}            % escBracketStr(#str).substr(1) %
+ALTBRACKET      "\[([^\]]|\\.)*\]"          -> {string}            % escBracketStr(#str) %
 
 #prec
 BAR #left

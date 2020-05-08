@@ -424,7 +424,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         string_view inputView = input;
 
         while (!inputView.empty()) {
-          bool err;
+          bool err = false;
           optional<StackObj> optStackObj = getToken(inputView, err);
           if (err) {
             ostringstream error;

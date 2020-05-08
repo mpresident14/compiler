@@ -4,6 +4,7 @@
 #include <numeric>
 #include <functional>
 #include <stdexcept>
+#include <unordered_set>
 
 using namespace std;
 
@@ -279,8 +280,15 @@ RgxPtr Alt::getDeriv(char c) const {
 RgxType Alt::getType() const { return RgxType::ALT; }
 
 bool Alt::operator==(const Regex &other) const {
-  return other.getType() == RgxType::ALT &&
-         static_cast<const Alt &>(other).rVec_ == rVec_;
+  if (other.getType() != RgxType::ALT) {
+    return false;
+  }
+  const vector<RgxPtr>& otherVec = static_cast<const Alt &>(other).rVec_.rgxs_;
+  unordered_set<RgxPtr> myRgxs(rVec_.rgxs_.cbegin(), rVec_.rgxs_.cend());
+  unordered_set<RgxPtr> otherRgxs(otherVec.cbegin(), otherVec.cend());
+  return myRgxs == otherRgxs;
+  // return other.getType() == RgxType::ALT &&
+  //        static_cast<const Alt &>(other).rVec_ == rVec_;
 }
 
 size_t Alt::hashFn() const noexcept { return rVec_.hashFn(); }
@@ -313,7 +321,7 @@ RgxPtr Concat::getDeriv(char c) const {
   if (rgxs[0]->isNullable()) {
     vector<RgxPtr> rest(rgxs.cbegin() + 1, rgxs.cend());
     return makeAlt(
-        Concat(RegexVector(move(rest))).getDeriv(c),
+        makeConcats(move(rest))->getDeriv(c),
         makeConcats(move(derivAndRest)));
   }
 

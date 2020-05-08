@@ -269,7 +269,6 @@ namespace {
     tokens.reserve(input.size());
 
     for (char c : input) {
-
       // All characters within brackets are just literals except '-' for a range and the first '^'
       if (leftBracket > 0) {
         if (escaped) {
