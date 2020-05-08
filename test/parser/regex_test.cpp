@@ -1,4 +1,5 @@
-#include "src/parser/regex_parse.hpp"
+// #include "src/parser/regex_parse.hpp"
+#include "src/parser/regex_parser.hpp"
 #include "src/parser/regex_eval.hpp"
 #include "src/parser/regex.hpp"
 #include "src/parser/dfa.hpp"
@@ -14,20 +15,20 @@
 
 using namespace std;
 using namespace prez;
-
+using src::parser::regex_parser::parse;
 
 UnitTest TESTER = UnitTest::createTester();
 
 stringstream errBuffer;
 
 void testParse() {
-  RgxPtr r0 = parse("a");
-  RgxPtr r1 = parse("ab*|b");
-  RgxPtr r2 = parse("[^a-z]");
-  RgxPtr r3 = parse("abcd*");
-  RgxPtr r4 = parse("a|b|cd");
-  RgxPtr r5 = parse("[1-9]");
-  RgxPtr r6 = parse("[1-9]*");
+  RgxPtr r0 = RgxPtr(parse("a"));
+  RgxPtr r1 = RgxPtr(parse("ab*|b"));
+  RgxPtr r2 = RgxPtr(parse("[^a-z]"));
+  RgxPtr r3 = RgxPtr(parse("abcd*"));
+  RgxPtr r4 = RgxPtr(parse("a|b|cd"));
+  RgxPtr r5 = RgxPtr(parse("[1-9]"));
+  RgxPtr r6 = RgxPtr(parse("[1-9]*"));
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
@@ -120,6 +121,7 @@ void testGetDeriv_brackets() {
   TESTER.assertEquals(EmptySet(), *r3->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r4->getDeriv(']'));
   TESTER.assertEquals(Epsilon(), *r4->getDeriv('a'));
+  cout << r4 << endl;
 }
 
 

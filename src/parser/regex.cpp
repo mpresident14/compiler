@@ -253,6 +253,11 @@ size_t RegexVector::hashFn() const noexcept {
  * Alt *
  *******/
 Alt::Alt(RegexVector &&rVec) : rVec_(move(rVec)) {}
+Alt::Alt(const string& charVec) : rVec_({}) {
+  for (char c : charVec) {
+    rVec_.rgxs_.push_back(make_shared<Character>(c));
+  }
+}
 
 bool Alt::isNullable() const {
   return any_of(
@@ -354,6 +359,7 @@ void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
  * Range *
  *********/
 Range::Range(char start, char end) : start_(start), end_(end) {}
+Range::Range(pair<char, char> range) : start_(get<0>(range)), end_(get<1>(range)) {}
 bool Range::isNullable() const { return false; }
 RgxPtr Range::getDeriv(char c) const {
   if ((start_ <= c && c <= end_)) {

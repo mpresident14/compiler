@@ -14,6 +14,8 @@
 
 using namespace std;
 
+// TODO: If we want to extend/improve our regexes later, we can just generate a parser using this
+// file as a base for the lexer.
 
 /***********
  * GRAMMAR *
@@ -246,6 +248,19 @@ namespace {
    * LEXER *
    *********/
 
+  void handleEscape(vector<StackObj>& tokens, char c) {
+    switch (c) {
+      case 'n':
+        tokens.emplace_back(CHAR, new char('\n'));
+        break;
+      case 't':
+        tokens.emplace_back(CHAR, new char('\t'));
+        break;
+      default:
+        tokens.emplace_back(CHAR, new char(c));
+    }
+  }
+
   vector<StackObj> lex(const string& input) {
     vector<StackObj> tokens;
     bool escaped = false;
@@ -258,7 +273,7 @@ namespace {
       // All characters within brackets are just literals except '-' for a range and the first '^'
       if (leftBracket > 0) {
         if (escaped) {
-          tokens.emplace_back(CHAR, new char(c));
+          handleEscape(tokens, c);
           escaped = false;
           ++leftBracket;
           continue;
@@ -286,7 +301,7 @@ namespace {
 
 
       if (escaped) {
-        tokens.emplace_back(CHAR, new char(c));
+        handleEscape(tokens, c);
         escaped = false;
         continue;
       }

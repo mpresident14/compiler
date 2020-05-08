@@ -4,6 +4,7 @@
 #include <memory>
 #include <ostream>
 #include <vector>
+#include <utility>
 
 #include <prez/print_stuff.hpp>
 
@@ -120,6 +121,7 @@ public:
 class Alt : public Regex {
 public:
   Alt(RegexVector&& rVec);
+  Alt(const std::string& charVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
@@ -168,6 +170,7 @@ private:
 class Range : public Regex {
 public:
   Range(char start, char end);
+  Range(std::pair<char, char> range);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;

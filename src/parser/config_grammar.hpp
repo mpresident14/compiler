@@ -18,8 +18,9 @@ enum TokenId {
   ARROW = -12,
   COMMENT = -13,
   IDENT = -14,
-  STRLIT = -15,
-  CODE = -16,
+  TYPE = -15,
+  STRLIT = -16,
+  CODE = -17,
 };
 
 GrammarData CONFIG_GRAMMAR = {
@@ -37,9 +38,11 @@ GrammarData CONFIG_GRAMMAR = {
       { "|", "", NONE, Assoc::NONE, "", "", "\\|" },
       { "->", "", NONE, Assoc::NONE, "", "", "->" },
       { "COMMENT", "", SKIP_TOKEN, Assoc::NONE, "", "", "//[^\n]*\n"},
-      { "identifier", "std::string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*\\**&*" },
+      { "identifier", "std::string", NONE, Assoc::NONE, "#str", "", "([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*" },
+      { "type", "std::string", NONE, Assoc::NONE, "rmEnclosure(#str)", "", "{[^}]*}" },
       { "string literal", "std::string", NONE, Assoc::NONE, "extractString(#str, '\"')", "", R"("([^"]|\\")*")" },
       { "code block", "std::string", NONE, Assoc::NONE, "extractString(#str, '%')", "", R"(%([^%]|\\%)*%)" },
+      { "whitespace", "", SKIP_TOKEN, Assoc::NONE, "", "", "[ \t\n][ \t\n]*" },
   },
   {},
   {}
@@ -48,10 +51,17 @@ GrammarData CONFIG_GRAMMAR = {
 const char ADDL_CODE[] =
     R"(
       using namespace std;
+      string rmEnclosure(string_view str) {
+        return string(str.substr(1, str.size() - 2));
+      }
+
       string extractString(string_view str, char escaped) {
-        string_view lit = str.substr(1, str.size() - 2);
-        size_t len = lit.size();
         string ret;
+        string_view lit = str.substr(1, str.size() - 2);
+        if (lit.empty()) {
+          return ret;
+        }
+        size_t len = lit.size();
         ret.reserve(len);
         for (size_t i = 0; i < len - 1; ++i) {
           char c = lit[i];
@@ -60,7 +70,7 @@ const char ADDL_CODE[] =
           }
           ret.append(1, c);
         }
-        ret.append(1, lit[len-1]);
+        ret.append(1, lit.back());
         return ret;
       }
     )";

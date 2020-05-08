@@ -43,7 +43,8 @@ namespace {
     void parseError(int tokenId) {
       stringstream errMsg;
       errMsg << "Parse error on line " << tokens_[pos_].getLine()
-             << ". Expected " + symbolToString(tokenId, CONFIG_GRAMMAR);
+             << ". Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
+             << ". Got " << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR);
       throw runtime_error(errMsg.str());
     }
 
@@ -74,6 +75,10 @@ namespace {
         parseError(tokenId);
       }
       return *strPtr;
+    }
+
+    size_t currentLine() const noexcept {
+      return pos_ == 0 ? 0 : tokens_[pos_ - 1].getLine();
     }
 
 
@@ -121,9 +126,12 @@ namespace {
     tokenNameToIndex.emplace(move(*name), gdTokens.size() - 1);
     // An arrow signifies that the token holds data
     if (tokenStream.maybeConsume(ARROW)) {
-      gdToken.type = tokenStream.consumeString(IDENT);
+      gdToken.type = tokenStream.consumeString(TYPE);
       gdToken.ctorExpr = tokenStream.consumeString(CODE);
-      gdToken.dtorStmt = tokenStream.consumeString(CODE);
+      string* dtor = tokenStream.maybeConsumeString(CODE);
+      if (dtor) {
+        gdToken.dtorStmt = move(*dtor);
+      }
     }
     return true;
   }
@@ -192,7 +200,7 @@ namespace {
     gdVariable.name = *name;
     varNameToIndex.emplace(move(*name), gdVariables.size() - 1);
     tokenStream.consume(ARROW);
-    gdVariable.type = tokenStream.consumeString(IDENT);
+    gdVariable.type = tokenStream.consumeString(TYPE);
     string* dtor = tokenStream.maybeConsumeString(CODE);
     if (dtor) {
       gdVariable.dtorStmt = *dtor;
@@ -215,6 +223,7 @@ namespace {
       gdConcrete.argSymbols.push_back((intptr_t) conc);
     }
 
+
     if (tokenStream.maybeConsume(PREC)) {
       string tokenName = tokenStream.consumeString(IDENT);
       int prec;
@@ -223,7 +232,9 @@ namespace {
       if (iter == tokenNameToIndex.end()) {
         auto precIter = precNameToPrec.find(tokenName);
         if (precIter == precNameToPrec.end()) {
-          throw runtime_error("Unknown token " + tokenName);
+          stringstream errMsg;
+            errMsg << "Parse error on line " << tokenStream.currentLine() << ": Unknown token " << tokenName;
+            throw runtime_error(errMsg.str());
         } else {
           prec = precIter->second;
         }
@@ -277,7 +288,7 @@ namespace {
           // Otherwise, check if it is a variable
           auto varIter = varNameToIndex.find(symbolName);
           if (varIter == varNameToIndex.end()) {
-            throw runtime_error("Unknown symbol " + symbolName);
+            throw runtime_error("Parse error: Unknown symbol " + symbolName);
           } else {
             concrete.argSymbols[j] = varIter->second;
           }

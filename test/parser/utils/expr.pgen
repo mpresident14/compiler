@@ -13,7 +13,7 @@
 
 
 #tokens
-INT  "[1-9][0-9]*" -> int % stoi(string(#str)) %
+INT  "[1-9][0-9]*" -> {int} % stoi(string(#str)) %
                           % cerr << "INT deleter called" << endl; %
 PLUS "+"
 MINUS "-"
@@ -22,7 +22,7 @@ FSLASH "/"
 TILDE "~"
 LPAREN "\("
 RPAREN "\)"
-#skip "???"
+#skip "[ \t\n][ \t\n]*"
 
 #prec
 PLUS MINUS #left
@@ -30,7 +30,7 @@ STAR FSLASH #left
 TILDE NEG #right
 
 #grammar
-Expr -> Expr* % delete #obj; %
+Expr -> {Expr*} % delete #obj; %
   := INT                       % new EInt(#0) %
    | Expr PLUS Expr            % new EBinOp(#0, PLUS, #2) %
    | Expr STAR Expr            % new EBinOp(#0, TIMES, #2) %
@@ -40,5 +40,5 @@ Expr -> Expr* % delete #obj; %
    | MINUS Expr #prec TILDE    % new EUOp(#1, NEG) %
    | ParenExpr                 % #0 %
 
-ParenExpr -> Expr*
+ParenExpr -> {Expr*}
   := LPAREN Expr RPAREN        % #1 %

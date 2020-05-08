@@ -330,19 +330,21 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
 
   void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
-    out << R"(StackObj constructTokenObj(int token, string_view str) {
+    out << R"(optional<StackObj> constructTokenObj(int token, string_view str) {
       switch (token) {)";
     size_t numTokens = grammarData.tokens.size();
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-      if (!token.type.empty()) {
-        out << "case " << tokenToFromIndex(i) << ':' << "return StackObj(token, "
+      if (token.precedence == SKIP_TOKEN) {
+        out << "case " << tokenToFromIndex(i) << ": return {};";
+      } else if (!token.type.empty()) {
+        out << "case " << tokenToFromIndex(i) << ':' << "return { StackObj(token, "
             "new " << token.type << '(';
         replaceAll(out, token.ctorExpr, "#str", "str");
-        out << "), currentLine); break;";
+        out << "), currentLine) }; break;";
       }
     }
-    out << R"(default: return StackObj(token, nullptr, currentLine); }})";
+    out << R"(default: return { StackObj(token, nullptr, currentLine) }; }})";
   }
 
 
@@ -372,19 +374,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
   void tokenizeFn(ostream& out) {
     out << R"(
-      void consumeWhiteSpace(string_view& input) {
-        size_t i = 0;
-        char c;
-        while (isspace((c = input[i]))) {
-          if (c == '\n') {
-            ++currentLine;
-          }
-          ++i;
-        }
-        input = input.substr(i);
-      }
-
-      optional<StackObj> getToken(string_view& input) {
+      optional<StackObj> getToken(string_view& input, bool& err) {
         size_t i = 0;
         const size_t len = input.size();
         size_t lastAcceptingPos;
@@ -413,14 +403,15 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         }
 
         if (lastAcceptingToken == NONE) {
+          err = true;
           return {};
         }
 
-        StackObj stackObj =
+        optional<StackObj> optStackObj =
             constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
         input = input.substr(lastAcceptingPos);
         currentLine += lastAcceptingNewlineCount;
-        return { move(stackObj) };
+        return optStackObj;
       }
 
 
@@ -432,14 +423,10 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         vector<StackObj> tokens;
         string_view inputView = input;
 
-        consumeWhiteSpace(inputView);
         while (!inputView.empty()) {
-          optional<StackObj> optionalObj = getToken(inputView);
-          if (optionalObj.has_value()) {
-            if (GRAMMAR_DATA.tokens[tokenToFromIndex(optionalObj->getSymbol())].precedence != SKIP_TOKEN) {
-              tokens.push_back(move(*optionalObj));
-            }
-          } else {
+          bool err;
+          optional<StackObj> optStackObj = getToken(inputView, err);
+          if (err) {
             ostringstream error;
             vector<string> prevTokenNames;
             auto startIter =
@@ -454,7 +441,9 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
             throw runtime_error(error.str());
           }
 
-          consumeWhiteSpace(inputView);
+          if (optStackObj.has_value()) {
+            tokens.push_back(move(*optStackObj));
+          }
         }
 
         return tokens;
@@ -570,7 +559,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         return NONE;
       }
       if (!node->ts_.contains(nextToken)) {
-        return ruleData.reducibleRule->concrete;
+        return rule.concrete;
       }
 
       const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
@@ -581,11 +570,11 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       }
 
       if (ruleData.precedence > shiftPrecedence) {
-        return ruleData.reducibleRule->concrete;
+        return rule.concrete;
       }
       if (ruleData.precedence == shiftPrecedence) {
         if (nextTokenObj.assoc == Assoc::LEFT) {
-          return ruleData.reducibleRule->concrete;
+          return rule.concrete;
         }
         if (nextTokenObj.assoc == Assoc::NOT) {
           parseError(stk, inputTokens, tokenPos);
@@ -702,7 +691,6 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
   void noneInt(ostream& out) {
     out << R"(
       constexpr int NONE = INT_MIN;
-      constexpr int SKIP_TOKEN = INT_MIN + 1;
     )";
   }
 

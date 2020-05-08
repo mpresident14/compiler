@@ -1,6 +1,12 @@
+#define NEW 1
+
 #include "src/parser/regex_eval.hpp"
 #include "src/parser/regex.hpp"
-#include "src/parser/regex_parse.hpp"
+#if NEW
+  #include "src/parser/regex_parser.hpp"
+#else
+  #include "src/parser/regex_parse.hpp"
+#endif
 #include "src/parser/dfa.hpp"
 
 #include <cstddef>
@@ -104,7 +110,12 @@ namespace {
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-      RgxPtr rgx = parse(token.regex);
+      #if NEW
+        RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
+        cout << rgx << endl;
+      #else
+        RgxPtr rgx = parse(token.regex);
+      #endif
       // Invalid regex
       if (!rgx) {
         throw runtime_error("Invalid regex " + token.regex);

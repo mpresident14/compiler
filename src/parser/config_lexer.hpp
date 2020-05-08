@@ -37,6 +37,9 @@ namespace src::parser::config_lexer {
         case -16:
           delete static_cast<std::string*>(obj_);
           break;
+        case -17:
+          delete static_cast<std::string*>(obj_);
+          break;
         default:
           return;
       }

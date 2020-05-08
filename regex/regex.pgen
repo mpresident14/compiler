@@ -1,0 +1,99 @@
+#header
+%
+  #include "src/parser/regex.hpp"
+%
+
+#source
+%
+  #include <iostream>
+  #include <string>
+  #include <string_view>
+  #include <utility>
+
+  using namespace std;
+
+  char escape(char c) {
+    switch (c) {
+      case 'n': return '\n';
+      case 't': return '\t';
+      default: return c;
+    }
+  }
+
+  string_view removeBrackets(string_view str) {
+    return str.substr(1, str.size() - 2);
+  }
+
+  string escBracketStr(string_view str) {
+    str = removeBrackets(str);
+    size_t len = str.size();
+    string ret;
+    ret.reserve(len);
+    size_t i = 0;
+    while (i < len - 1) {
+      char c = str[i];
+      if (c == '\\') {
+        ret.append(1, escape(str[i+1]));
+        i += 2;
+        continue;
+      }
+      ret.append(1, c);
+      ++i;
+    }
+    ret.append(1, str.back());
+    return ret;
+  }
+
+  pair<char, char> getRange(string_view str, size_t start) {
+    return { str[start], str[start + 2] };
+  }
+%
+
+
+#tokens
+BAR             "\|"
+STAR            "\*"
+LPAREN          "\("
+RPAREN          "\)"
+DOT             "\."
+ESCAPED         "\\."                   -> {char}              % escape(#str[1]) %
+CHAR            "."                     -> {char}              % #str[0] %
+RANGE           "\[(.|\.)-(.|\.)\]"   -> {pair<char,char>}  % getRange(escBracketStr(#str), 0) %
+NOTRANGE        "\[^(.|\.)-(.|\.)\]"  -> {pair<char,char>}  % getRange(escBracketStr(#str), 1) %
+NOTALTBRACKET   "\[^([^\]]|\.)*\]"         -> {string}            % escBracketStr(#str).substr(1) %
+ALTBRACKET      "\[([^\]]|\.)*\]"          -> {string}            % escBracketStr(#str) %
+
+#prec
+BAR #left
+LPAREN RPAREN DOT CHAR ESCAPED RANGE NOTRANGE ALTBRACKET NOTALTBRACKET #left
+CONCAT #left
+RBRACKET #left
+STAR #left
+
+#grammar
+Regex -> {Regex*} % delete #obj; %
+  := Concats                                 % new Concat(move(#0)) %
+   | Alts                                    % new Alt(move(#0)) %
+   | Regex STAR                              % new Star(#0) %
+   | LPAREN Regex RPAREN                     % #1 %
+   | OneChar                                 % #0 %
+   | Bracket                                 % #0 %
+
+Alts -> {RegexVector}
+  := Regex BAR Regex % RegexVector(#0, #2) %
+   | Alts BAR Regex  % RegexVector(move(#0), #2) %
+
+Concats -> {RegexVector}
+  := Regex Regex    #prec CONCAT % RegexVector(#0, #1) %
+   | Concats Regex  #prec CONCAT % RegexVector(move(#0), #1) %
+
+Bracket -> {Regex*} % delete #obj; %
+  := RANGE          % new Range(#0) %
+   | NOTRANGE       % new Not(new Range(#0)) %
+   | ALTBRACKET     % new Alt(#0) %
+   | NOTALTBRACKET  % new Not(new Alt(#0)) %
+
+OneChar -> {Regex*} % delete #obj; %
+  := CHAR     % new Character(#0) %
+   | ESCAPED  % new Character(#0) %
+   | DOT      % new Dot() %

@@ -12,7 +12,7 @@ set(REL_TO_ROOT_DIR src/parser)
 
 # So regex sources don't have to be rebuilt for each executable
 add_library(parse_lib STATIC build_parser.cpp null_first.cpp)
-add_library(regex_lib STATIC regex.cpp regex_parse.cpp regex_eval.cpp)
+add_library(regex_lib STATIC regex.cpp regex_parser.cpp regex_eval.cpp)
 target_link_libraries(regex_lib parse_lib)
 
 # Write the lexer for the .gp files

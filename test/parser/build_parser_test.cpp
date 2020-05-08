@@ -19,16 +19,16 @@ void testNumStates(const DFA<DFARuleSet, int>& dfa) {
 }
 
 void testInitState(const DFA<DFARuleSet, int>& dfa) {
-  /* lookahead = {INT, PLUS, STAR} */
+  /* lookahead = {INT, PLUS, STAR, whitespace} */
 
   const DFARuleSet& initRules = dfa.getRoot()->getValue();
-  const DFARule expected0 = { SCONC, { EXPR }, 0, { false, false, false } };
-  const DFARule expected1 = { EINT, { INT }, 0, { false, true, true } };
+  const DFARule expected0 = { SCONC, { EXPR }, 0, { false, false, false, false } };
+  const DFARule expected1 = { EINT, { INT }, 0, { false, true, true, false } };
   const DFARule expected2 = {
-    EPLUS, { EXPR, PLUS, EXPR }, 0, { false, true, true }
+    EPLUS, { EXPR, PLUS, EXPR }, 0, { false, true, true, false }
   };
   const DFARule expected3 = {
-    ETIMES, { EXPR, STAR, EXPR }, 0, { false, true, true }
+    ETIMES, { EXPR, STAR, EXPR }, 0, { false, true, true, false }
   };
 
   TESTER.assertEquals(4, initRules.size());
@@ -69,14 +69,14 @@ void testTransition(const DFA<DFARuleSet, int>& dfa) {
   const auto& transitions = dfa.getRoot()->getTransitions();
   const DFARuleSet& ruleSetInt = transitions.at(INT)->getValue();
   const DFARuleSet& ruleSetExpr = transitions.at(EXPR)->getValue();
-  const DFARule expectedInt = { EINT, { INT }, 1, { false, true, true } };
+  const DFARule expectedInt = { EINT, { INT }, 1, { false, true, true, false } };
   const DFARule expectedExpr0 = {
-    EPLUS, { EXPR, PLUS, EXPR }, 1, { false, true, true }
+    EPLUS, { EXPR, PLUS, EXPR }, 1, { false, true, true, false }
   };
   const DFARule expectedExpr1 = {
-    ETIMES, { EXPR, STAR, EXPR }, 1, { false, true, true }
+    ETIMES, { EXPR, STAR, EXPR }, 1, { false, true, true, false }
   };
-  const DFARule expectedExpr2 = { SCONC, { EXPR }, 1, { false, false, false } };
+  const DFARule expectedExpr2 = { SCONC, { EXPR }, 1, { false, false, false, false } };
 
   TESTER.assertEquals(2, transitions.size());
 
