@@ -1,0 +1,9 @@
+# Project's name
+project(assembly)
+
+set(REL_TO_ROOT_DIR src/assembly)
+
+# add_library(regalloc_lib instruction.cpp)
+
+add_executable(main main.cpp instruction.cpp)
+# target_link_libraries(main regalloc_lib)

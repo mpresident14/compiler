@@ -20,7 +20,6 @@ set(SRC ${CMAKE_SOURCE_DIR}/src)
 set(TEST ${CMAKE_SOURCE_DIR}/test)
 
 # Append these directories to compiler include path
-# I believe it also allows CMake to find these paths in CMakeLists.txt
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${LIBRARY_OUTPUT_PATH})
 include_directories(${CMAKE_BINARY_DIR})
@@ -30,6 +29,7 @@ set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g")
 
 # Add subdirectories
 add_subdirectory(${SRC}/parser)
+add_subdirectory(${SRC}/assembly)
 add_subdirectory(${TEST}/parser)
 
 
