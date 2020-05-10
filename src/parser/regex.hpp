@@ -206,7 +206,8 @@ public:
   friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
 private:
-  /* This must be a Character, Range, or Concat (enforced by lexer and parser) */
+  /* This must be a Character, Range, or Concat (enforced by lexer and parser)
+   */
   RgxPtr rgx_;
 };
 

@@ -73,7 +73,7 @@ RgxPtr makeConcat(RgxPtr r1, RgxPtr r2) {
     return make_shared<Concat>(move(newVec));
   }
 
-  return make_shared<Concat>(vector<RgxPtr>{r1, r2});
+  return make_shared<Concat>(vector<RgxPtr>{ r1, r2 });
 }
 
 
@@ -119,7 +119,7 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   // NOTE: r1 = r2 is covered by the set itself
-  return make_shared<Alt>(unordered_set<RgxPtr>{r1, r2});
+  return make_shared<Alt>(unordered_set<RgxPtr>{ r1, r2 });
 }
 
 
@@ -135,7 +135,7 @@ RgxPtr makeAlts(unordered_set<RgxPtr> &&rs) {
     make_shared<EmptySet>();
   }
   auto iter = rs.cbegin();
-  const RgxPtr& rgx = *iter;
+  const RgxPtr &rgx = *iter;
   return accumulate(++iter, rs.cend(), rgx, makeAlt);
 }
 
@@ -250,24 +250,22 @@ void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 /*******
  * Alt *
  *******/
-Alt::Alt(Regex* r1, Regex* r2) : rSet_{RgxPtr(r1), RgxPtr(r2)} {}
-Alt::Alt(std::unordered_set<RgxPtr>&& rSet, Regex* r)
-  : rSet_(move(rSet)) {
-    rSet_.emplace(r);
+Alt::Alt(Regex *r1, Regex *r2) : rSet_{ RgxPtr(r1), RgxPtr(r2) } {}
+Alt::Alt(std::unordered_set<RgxPtr> &&rSet, Regex *r) : rSet_(move(rSet)) {
+  rSet_.emplace(r);
 }
-Alt::Alt(std::unordered_set<RgxPtr>&& rSet) : rSet_(move(rSet)) {}
+Alt::Alt(std::unordered_set<RgxPtr> &&rSet) : rSet_(move(rSet)) {}
 
-Alt::Alt(const string& charVec) {
+Alt::Alt(const string &charVec) {
   for (char c : charVec) {
     rSet_.insert(make_shared<Character>(c));
   }
 }
 
 bool Alt::isNullable() const {
-  return any_of(
-      rSet_.cbegin(), rSet_.cend(), [](const RgxPtr rPtr) {
-        return rPtr->isNullable();
-      });
+  return any_of(rSet_.cbegin(), rSet_.cend(), [](const RgxPtr rPtr) {
+    return rPtr->isNullable();
+  });
 }
 
 RgxPtr Alt::getDeriv(char c) const {
@@ -283,13 +281,14 @@ RgxPtr Alt::getDeriv(char c) const {
 RgxType Alt::getType() const { return RgxType::ALT; }
 
 bool Alt::operator==(const Regex &other) const {
-  return other.getType() == RgxType::ALT && rSet_ == static_cast<const Alt&>(other).rSet_;
+  return other.getType() == RgxType::ALT &&
+         rSet_ == static_cast<const Alt &>(other).rSet_;
 }
 
 size_t Alt::hashFn() const noexcept {
   hash<RgxPtr> hasher;
   size_t hashSum = 0;
-  for (const RgxPtr& rgx : rSet_) {
+  for (const RgxPtr &rgx : rSet_) {
     hashSum ^= hasher(rgx) << 1;
   }
   return hashSum ^ static_cast<int>(RgxType::ALT);
@@ -302,18 +301,16 @@ void Alt::toStream(ostream &out) const { out << "ALT " << rSet_; }
  * Concat *
  **********/
 
-Concat::Concat(Regex* r1, Regex* r2) : rVec_{ RgxPtr(r1), RgxPtr(r2) } {}
-Concat::Concat(std::vector<RgxPtr>&& rVec, Regex* r)
-  : rVec_(move(rVec)) {
+Concat::Concat(Regex *r1, Regex *r2) : rVec_{ RgxPtr(r1), RgxPtr(r2) } {}
+Concat::Concat(std::vector<RgxPtr> &&rVec, Regex *r) : rVec_(move(rVec)) {
   rVec_.push_back(RgxPtr(r));
 }
-Concat::Concat(std::vector<RgxPtr>&& rVec)  : rVec_(move(rVec)) {}
+Concat::Concat(std::vector<RgxPtr> &&rVec) : rVec_(move(rVec)) {}
 
 bool Concat::isNullable() const {
-  return all_of(
-      rVec_.cbegin(), rVec_.cend(), [](const RgxPtr rPtr) {
-        return rPtr->isNullable();
-      });
+  return all_of(rVec_.cbegin(), rVec_.cend(), [](const RgxPtr rPtr) {
+    return rPtr->isNullable();
+  });
 }
 
 
@@ -328,8 +325,7 @@ RgxPtr Concat::getDeriv(char c) const {
   if (rVec_[0]->isNullable()) {
     vector<RgxPtr> rest(rVec_.cbegin() + 1, rVec_.cend());
     return makeAlt(
-        makeConcats(move(rest))->getDeriv(c),
-        makeConcats(move(derivAndRest)));
+        makeConcats(move(rest))->getDeriv(c), makeConcats(move(derivAndRest)));
   }
 
   return makeConcats(move(derivAndRest));
@@ -345,7 +341,7 @@ bool Concat::operator==(const Regex &other) const {
 size_t Concat::hashFn() const noexcept {
   hash<RgxPtr> hasher;
   size_t hashSum = 0;
-  for (const RgxPtr& rgx : rVec_) {
+  for (const RgxPtr &rgx : rVec_) {
     hashSum ^= hasher(rgx) << 1;
   }
   return hashSum ^ static_cast<int>(RgxType::ALT);
@@ -381,7 +377,8 @@ void Star::toStream(ostream &out) const { out << "STAR (" << rgx_ << ')'; }
  * Range *
  *********/
 Range::Range(char start, char end) : start_(start), end_(end) {}
-Range::Range(pair<char, char> range) : start_(get<0>(range)), end_(get<1>(range)) {}
+Range::Range(pair<char, char> range)
+    : start_(get<0>(range)), end_(get<1>(range)) {}
 bool Range::isNullable() const { return false; }
 RgxPtr Range::getDeriv(char c) const {
   if ((start_ <= c && c <= end_)) {
@@ -427,7 +424,8 @@ RgxPtr Not::getDeriv(char c) const {
 RgxType Not::getType() const { return RgxType::NOT; }
 
 bool Not::operator==(const Regex &other) const {
-  return other.getType() == RgxType::NOT && *static_cast<const Not &>(other).rgx_ == *rgx_;
+  return other.getType() == RgxType::NOT &&
+         *static_cast<const Not &>(other).rgx_ == *rgx_;
 }
 
 size_t Not::hashFn() const noexcept { return rgx_->hashFn(); }

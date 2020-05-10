@@ -24,7 +24,9 @@ namespace {
   inline void toCode(ostream& out, const GrammarData& grammarData);
 
 
-  inline void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
+  inline void toCode(ostream& out, const string& str) {
+    out << '"' << str << '"';
+  }
 
   inline void toCode(ostream& out, int n) { out << to_string(n); }
 
@@ -84,40 +86,37 @@ namespace {
    * STRING REPLACE *
    ******************/
   void replaceAll(
-    ostream& out,
-    string_view str,
-    const string& from,
-    const string& to) {
-
-  size_t startPos = 0;
-  size_t endPos = 0;
-  while ((endPos = str.find(from, startPos)) != string::npos) {
-    out << str.substr(startPos, endPos - startPos) << to;
-    startPos = endPos + from.length();
+      ostream& out,
+      string_view str,
+      const string& from,
+      const string& to) {
+    size_t startPos = 0;
+    size_t endPos = 0;
+    while ((endPos = str.find(from, startPos)) != string::npos) {
+      out << str.substr(startPos, endPos - startPos) << to;
+      startPos = endPos + from.length();
+    }
+    out << str.substr(startPos);
   }
-  out << str.substr(startPos);
-}
 
 
-template <
-    typename Fn,
-    enable_if_t<is_invocable_v<Fn, string>, int> = 0>
-void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
-  size_t i = 0;
-  size_t len = fmt.size();
-  while (i < len) {
-    if (fmt[i] == '#') {
-      string digits;
-      char c;
-      while (isdigit((c = fmt[++i]))) {
-        digits.push_back(c);
+  template <typename Fn, enable_if_t<is_invocable_v<Fn, string>, int> = 0>
+  void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
+    size_t i = 0;
+    size_t len = fmt.size();
+    while (i < len) {
+      if (fmt[i] == '#') {
+        string digits;
+        char c;
+        while (isdigit((c = fmt[++i]))) {
+          digits.push_back(c);
+        }
+        out << convertNum(digits);
+      } else {
+        out << fmt[i++];
       }
-      out << convertNum(digits);
-    } else {
-      out << fmt[i++];
     }
   }
-}
 
 
   /****************
@@ -197,7 +196,11 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
         out << "case " << tokenToFromIndex(i) << ':';
         if (!token.dtorStmt.empty()) {
           out << "if (!released_) {";
-          replaceAll(out, token.dtorStmt, "#obj", "(*static_cast<" + token.type + "*>(obj_))");
+          replaceAll(
+              out,
+              token.dtorStmt,
+              "#obj",
+              "(*static_cast<" + token.type + "*>(obj_))");
           out << '}';
         }
         out << "delete static_cast<" << token.type << "*>(obj_); break;";
@@ -211,11 +214,14 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       out << "case " << i << ':';
       if (!var.dtorStmt.empty()) {
         out << "if (!released_) {";
-        replaceAll(out, var.dtorStmt, "#obj", "(*static_cast<" + var.type + "*>(obj_))");
+        replaceAll(
+            out,
+            var.dtorStmt,
+            "#obj",
+            "(*static_cast<" + var.type + "*>(obj_))");
         out << '}';
       }
       out << "delete static_cast<" << var.type << "*>(obj_); break;";
-
     }
     out << "default: return;}}";
 
@@ -244,20 +250,22 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       #0 r_;
     };
     )";
-    replaceNumbers(
-        out,
-        decl,
-        [&grammarData](const string&){ return grammarData.variables[1].type; });
+    replaceNumbers(out, decl, [&grammarData](const string&) {
+      return grammarData.variables[1].type;
+    });
   }
 
 
-  void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const GrammarData& grammarData) {
+  void streamSymbolNames(
+      ostream& out,
+      const vector<intptr_t>& symbols,
+      const GrammarData& grammarData) {
     vector<string> symbolNames;
     transform(
         symbols.begin(),
         symbols.end(),
         back_inserter(symbolNames),
-        [&grammarData](int symbol){
+        [&grammarData](int symbol) {
           return symbolToString(symbol, grammarData);
         });
     out << symbolNames;
@@ -287,9 +295,10 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
               streamSymbolNames(err, argSymbols, grammarData);
               throw runtime_error(err.str());
             }
-            if ((size_t) i >= argSymbols.size()) {
+            if ((size_t)i >= argSymbols.size()) {
               stringstream err;
-              err << "Index " << i << " is greater than the number of elements in rule ";
+              err << "Index " << i
+                  << " is greater than the number of elements in rule ";
               streamSymbolNames(err, argSymbols, grammarData);
               throw runtime_error(err.str());
             }
@@ -312,8 +321,8 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     }
 
     // Root type of grammar is the first type listed
-    out << "case 0: return new Start(move(*static_cast<" << grammarData.variables[1].type
-        << "*>(args[0].releaseObj())));";
+    out << "case 0: return new Start(move(*static_cast<"
+        << grammarData.variables[1].type << "*>(args[0].releaseObj())));";
     out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
   }
 
@@ -338,8 +347,10 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
       if (token.precedence == SKIP_TOKEN) {
         out << "case " << tokenToFromIndex(i) << ": return {};";
       } else if (!token.type.empty()) {
-        out << "case " << tokenToFromIndex(i) << ':' << "return { StackObj(token, "
-            "new " << token.type << '(';
+        out << "case " << tokenToFromIndex(i) << ':'
+            << "return { StackObj(token, "
+               "new "
+            << token.type << '(';
         replaceAll(out, token.ctorExpr, "#str", "str");
         out << "), currentLine) }; break;";
       }
@@ -586,8 +597,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
 
 
   void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
-    out << grammarData.variables[1].type
-        << R"(
+    out << grammarData.variables[1].type << R"(
         shiftReduce(vector<StackObj>& inputTokens) {
         vector<StackObj> stk;
         if (inputTokens.empty()) {
@@ -731,12 +741,18 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
    * DRIVER FUNCTIONS *
    ********************/
 
-  constexpr char generatedWarning[] = "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
+  constexpr char generatedWarning[] =
+      "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
 
-  string parserHppCode(const string& namespaceName, const string& headerGuard, const string& addlHdrIncludes, const GrammarData& grammarData) {
+  string parserHppCode(
+      const string& namespaceName,
+      const string& headerGuard,
+      const string& addlHdrIncludes,
+      const GrammarData& grammarData) {
     stringstream out;
 
-    out << "#ifndef "<< headerGuard << "\n#define " << headerGuard << '\n' << endl;
+    out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
+        << endl;
     out << generatedWarning;
     out << addlHdrIncludes;
     parserHppIncludes(out);
@@ -747,10 +763,14 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     return out.str();
   }
 
-  string lexerHppCode(const string& namespaceName, const string& headerGuard, const GrammarData& grammarData) {
+  string lexerHppCode(
+      const string& namespaceName,
+      const string& headerGuard,
+      const GrammarData& grammarData) {
     stringstream out;
 
-    out << "#ifndef "<< headerGuard << "\n#define " << headerGuard << '\n' << endl;
+    out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
+        << endl;
     out << generatedWarning;
     lexerHppIncludes(out);
     out << "namespace " << namespaceName << '{';
@@ -771,8 +791,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << generatedWarning;
     out << "#include \"" << parserFilePath << ".hpp\"\n";
     cppIncludes(out);
-    out << addlCode
-        << "using namespace std;"
+    out << addlCode << "using namespace std;"
         << "namespace {";
     noneInt(out);
     sInt(out);
@@ -804,7 +823,7 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     return out.str();
   }
 
-   string lexerCppCode(
+  string lexerCppCode(
       const string& lexerFilePath,
       const string& namespaceName,
       const string& addlCode,
@@ -814,10 +833,8 @@ void replaceNumbers(ostream& out, const string& fmt, Fn&& convertNum) {
     out << generatedWarning;
     out << "#include \"" << lexerFilePath << ".hpp\"\n";
     cppIncludes(out);
-    out << addlCode
-        << "using namespace std;"
-        << "using namespace " << namespaceName << ';'
-        << "namespace {";
+    out << addlCode << "using namespace std;"
+        << "using namespace " << namespaceName << ';' << "namespace {";
     noneInt(out);
     tokenToFromIndexFn(out);
     assocDecl(out);
@@ -846,16 +863,19 @@ void generateParserCode(
     const GrammarData& grammarData) {
   string namespaceName = replaceAll(parserFilePath, '/', "::");
   string headerGuard = replaceAll(parserFilePath, '/', "_") + "_HPP";
-  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+  transform(
+      headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
   ofstream hppFile;
   hppFile.open(parserFilePath + ".hpp");
-  hppFile << parserHppCode(namespaceName, headerGuard, addlHdrIncludes, grammarData);
+  hppFile << parserHppCode(
+      namespaceName, headerGuard, addlHdrIncludes, grammarData);
   hppFile.close();
 
   ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
-  cppFile << parserCppCode(parserFilePath, namespaceName, addlCode, grammarData);
+  cppFile << parserCppCode(
+      parserFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
 }
 
@@ -866,7 +886,8 @@ void generateLexerCode(
     const GrammarData& grammarData) {
   string namespaceName = replaceAll(lexerFilePath, '/', "::");
   string headerGuard = replaceAll(lexerFilePath, '/', "_") + "_HPP";
-  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+  transform(
+      headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
   ofstream hppFile;
   hppFile.open(lexerFilePath + ".hpp");
@@ -878,4 +899,3 @@ void generateLexerCode(
   cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
   cppFile.close();
 }
-

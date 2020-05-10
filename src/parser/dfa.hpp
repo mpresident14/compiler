@@ -30,9 +30,13 @@ public:
     Node(const V& value) : value_(value) {}
     Node(V&& value) : value_(std::move(value)) {}
 
-    bool operator==(const Node& other) const noexcept { return value_ == other.value_; }
+    bool operator==(const Node& other) const noexcept {
+      return value_ == other.value_;
+    }
 
-    friend std::ostream& operator<<(std::ostream& out, const Node& node) noexcept {
+    friend std::ostream& operator<<(
+        std::ostream& out,
+        const Node& node) noexcept {
       return out << node.value_;
     }
 
@@ -199,7 +203,8 @@ public:
          << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
 
     init << R"(
-      Node* step(const )" << tranType << R"(& t) const {
+      Node* step(const )"
+         << tranType << R"(& t) const {
         auto iter = ts_.find(t);
         if (iter == ts_.end()) {
           return nullptr;

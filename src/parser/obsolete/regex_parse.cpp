@@ -14,8 +14,8 @@
 
 using namespace std;
 
-// TODO: If we want to extend/improve our regexes later, we can just generate a parser using this
-// file as a base for the lexer.
+// TODO: If we want to extend/improve our regexes later, we can just generate a
+// parser using this file as a base for the lexer.
 
 /***********
  * GRAMMAR *
@@ -40,9 +40,9 @@ using namespace std;
  *      | LBRACKET Concats RBRACKET  { new Alt(move(#1)) }
  *
  * Not { Regex* } { delete #obj; }
- * Not := LBRACKET CARET CHAR RBRACKET            { new Not(new Character(#2))) }
- *      | LBRACKET CARET Concats RBRACKET         { new Not(new Alt(move(#2))) }
- *      | LBRACKET CARET CHAR DASH CHAR RBRACKET  { new Not(new Range(#2, #4)) }
+ * Not := LBRACKET CARET CHAR RBRACKET            { new Not(new Character(#2)))
+ * } | LBRACKET CARET Concats RBRACKET         { new Not(new Alt(move(#2))) } |
+ * LBRACKET CARET CHAR DASH CHAR RBRACKET  { new Not(new Range(#2, #4)) }
  *
  * Alts { RegexVector }
  * Alts := Regex BAR Regex { RegexVector(#0, #2) }
@@ -125,7 +125,11 @@ namespace {
       { "REGEX_CONCATS", REGEX, NONE, { CONCATS }, "" },
       { "REGEX_STAR", REGEX, NONE, { REGEX, STAR }, "" },
       { "REGEX_NOT", REGEX, NONE, { NOT }, "" },
-      { "REGEX_RANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
+      { "REGEX_RANGE",
+        REGEX,
+        NONE,
+        { LBRACKET, CHAR, DASH, CHAR, RBRACKET },
+        "" },
       { "REGEX_GROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
       { "REGEX_CHAR", REGEX, NONE, { CHAR }, "" },
       { "REGEX_BRACKET_CHAR", REGEX, NONE, { LBRACKET, CHAR, RBRACKET }, "" },
@@ -134,7 +138,11 @@ namespace {
       { "ALT_BRACKET", ALT, NONE, { LBRACKET, CONCATS, RBRACKET }, "" },
       { "NOT_CHAR", NOT, NONE, { LBRACKET, CARET, CHAR, RBRACKET }, "" },
       { "NOT_CONCATS", NOT, NONE, { LBRACKET, CARET, CONCATS, RBRACKET }, "" },
-      { "NOT_RANGE", NOT, NONE, { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET }, "" },
+      { "NOT_RANGE",
+        NOT,
+        NONE,
+        { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET },
+        "" },
       { "ALTS_REGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
       { "ALTS_ALTS", ALTS, NONE, { ALTS, BAR, REGEX }, "" },
       { "CONCATS_REGEX", CONCATS, 4, { REGEX, REGEX }, "" },
@@ -144,7 +152,15 @@ namespace {
     { { "S", "", { SCONC }, "" },
       { "Regex",
         "",
-        { REGEX_ALT, REGEX_CONCATS, REGEX_STAR, REGEX_NOT, REGEX_RANGE, REGEX_GROUP, REGEX_CHAR, REGEX_BRACKET_CHAR, REGEX_DOT },
+        { REGEX_ALT,
+          REGEX_CONCATS,
+          REGEX_STAR,
+          REGEX_NOT,
+          REGEX_RANGE,
+          REGEX_GROUP,
+          REGEX_CHAR,
+          REGEX_BRACKET_CHAR,
+          REGEX_DOT },
         "" },
       { "Alt",
         "",
@@ -191,16 +207,17 @@ namespace {
   public:
     StackObj(int symbol, void* obj) : symbol_(symbol), obj_(obj) {}
     StackObj(StackObj&& other)
-      : symbol_(other.symbol_), obj_(other.obj_), released_(other.released_) {
+        : symbol_(other.symbol_), obj_(other.obj_), released_(other.released_) {
       other.obj_ = nullptr;
     }
     StackObj(const StackObj& other) = delete;
     StackObj& operator=(const StackObj& other) = delete;
     StackObj& operator=(StackObj&& other) = delete;
 
-    // A StackObj is always responsible for deleting its own pointer (unless moved).
-    // However, once a StackObj releases its object, it is no longer responsible
-    // for calling the custom deleter for that object (except in the case of a parseError).
+    // A StackObj is always responsible for deleting its own pointer (unless
+    // moved). However, once a StackObj releases its object, it is no longer
+    // responsible for calling the custom deleter for that object (except in the
+    // case of a parseError).
     ~StackObj() {
       if (!obj_) {
         return;
@@ -210,8 +227,8 @@ namespace {
         case S:
           delete static_cast<Start*>(obj_);
           break;
-        case REGEX: // Fall thru
-        case ALT:   // Fall thru
+        case REGEX:  // Fall thru
+        case ALT:    // Fall thru
         case NOT:
           if (!released_) {
             delete *static_cast<Regex**>(obj_);
@@ -269,7 +286,8 @@ namespace {
     tokens.reserve(input.size());
 
     for (char c : input) {
-      // All characters within brackets are just literals except '-' for a range and the first '^'
+      // All characters within brackets are just literals except '-' for a range
+      // and the first '^'
       if (leftBracket > 0) {
         if (escaped) {
           handleEscape(tokens, c);
@@ -282,7 +300,9 @@ namespace {
           tokens.emplace_back(CARET, nullptr);
           caret = true;
           leftBracket = 2;
-        } else if (c == '-' && ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
+        } else if (
+            c == '-' &&
+            ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
           tokens.emplace_back(DASH, nullptr);
           leftBracket = 4;
         } else if (c == '\\') {
@@ -356,43 +376,59 @@ namespace {
       case REGEX_ALT:
         return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
       case REGEX_CONCATS:
-        return new Regex*(new Concat(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
+        return new Regex*(
+            new Concat(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
       case REGEX_STAR:
-        return new Regex*(new Star(*static_cast<Regex**>(args[0].releaseObj())));
+        return new Regex*(
+            new Star(*static_cast<Regex**>(args[0].releaseObj())));
       case REGEX_NOT:
         return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
       case REGEX_RANGE:
-        return new Regex*(new Range(*static_cast<char*>(args[1].releaseObj()), *static_cast<char*>(args[3].releaseObj())));
+        return new Regex*(new Range(
+            *static_cast<char*>(args[1].releaseObj()),
+            *static_cast<char*>(args[3].releaseObj())));
       case REGEX_GROUP:
         return new Regex*(*static_cast<Regex**>(args[1].releaseObj()));
       case REGEX_CHAR:
-        return new Regex*(new Character(*static_cast<char*>(args[0].releaseObj())));
+        return new Regex*(
+            new Character(*static_cast<char*>(args[0].releaseObj())));
       case REGEX_BRACKET_CHAR:
-        return new Regex*(new Character(*static_cast<char*>(args[1].releaseObj())));
+        return new Regex*(
+            new Character(*static_cast<char*>(args[1].releaseObj())));
       case REGEX_DOT:
         return new Regex*(new Dot());
       case ALT_ALTS:
-        return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
+        return new Regex*(
+            new Alt(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
       case ALT_BRACKET:
-        return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[1].releaseObj()))));
+        return new Regex*(
+            new Alt(move(*static_cast<RegexVector*>(args[1].releaseObj()))));
       case NOT_CHAR:
-        return new Regex*(new Not(new Character(*static_cast<char*>(args[2].releaseObj()))));
+        return new Regex*(
+            new Not(new Character(*static_cast<char*>(args[2].releaseObj()))));
       case NOT_CONCATS:
-        return new Regex*(new Not(new Alt(move(*static_cast<RegexVector*>(args[2].releaseObj())))));
+        return new Regex*(new Not(
+            new Alt(move(*static_cast<RegexVector*>(args[2].releaseObj())))));
       case NOT_RANGE:
-        return new Regex*(new Not(new Range(*static_cast<char*>(args[2].releaseObj()), *static_cast<char*>(args[4].releaseObj()))));
+        return new Regex*(new Not(new Range(
+            *static_cast<char*>(args[2].releaseObj()),
+            *static_cast<char*>(args[4].releaseObj()))));
       case ALTS_REGEX:
-        return new RegexVector(
-            RegexVector(*static_cast<Regex**>(args[0].releaseObj()), *static_cast<Regex**>(args[2].releaseObj())));
+        return new RegexVector(RegexVector(
+            *static_cast<Regex**>(args[0].releaseObj()),
+            *static_cast<Regex**>(args[2].releaseObj())));
       case ALTS_ALTS:
         return new RegexVector(RegexVector(
-            move(*static_cast<RegexVector*>(args[0].releaseObj())), *static_cast<Regex**>(args[2].releaseObj())));
+            move(*static_cast<RegexVector*>(args[0].releaseObj())),
+            *static_cast<Regex**>(args[2].releaseObj())));
       case CONCATS_REGEX:
-        return new RegexVector(
-            RegexVector(*static_cast<Regex**>(args[0].releaseObj()), *static_cast<Regex**>(args[1].releaseObj())));
+        return new RegexVector(RegexVector(
+            *static_cast<Regex**>(args[0].releaseObj()),
+            *static_cast<Regex**>(args[1].releaseObj())));
       case CONCATS_CONCATS:
         return new RegexVector(RegexVector(
-            move(*static_cast<RegexVector*>(args[0].releaseObj())), *static_cast<Regex**>(args[1].releaseObj())));
+            move(*static_cast<RegexVector*>(args[0].releaseObj())),
+            *static_cast<Regex**>(args[1].releaseObj())));
       case SCONC:
         return new Start(move(*static_cast<Regex**>(args[0].releaseObj())));
       default:
@@ -401,15 +437,15 @@ namespace {
   }
 
   StackObj construct(int concrete, StackObj* args) {
-    return StackObj(GRAMMAR_DATA.concretes[concrete].varType, constructObj(concrete, args));
+    return StackObj(
+        GRAMMAR_DATA.concretes[concrete].varType, constructObj(concrete, args));
   }
 
 
   void parseError(
-    vector<StackObj>& stk,
-    const vector<StackObj>& inputTokens,
-    size_t tokenPos) {
-
+      vector<StackObj>& stk,
+      const vector<StackObj>& inputTokens,
+      size_t tokenPos) {
     // Need StackObjs to deep delete their objects
     for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
 
@@ -458,15 +494,15 @@ namespace {
     }
 
     // Check if rule matches the stack
-    // NOTE: stk is necessarily as large as the reducible rule, or we couldn't have
-    // stepped through the DFA to get to this reducible rule
+    // NOTE: stk is necessarily as large as the reducible rule, or we couldn't
+    // have stepped through the DFA to get to this reducible rule
     if (!equal(
-        rule.symbols.crbegin(),
-        rule.symbols.crend(),
-        stk.crbegin(),
-        [](int symbol, const StackObj& stkObj) {
-          return stkObj.getSymbol() == symbol;
-        })) {
+            rule.symbols.crbegin(),
+            rule.symbols.crend(),
+            stk.crbegin(),
+            [](int symbol, const StackObj& stkObj) {
+              return stkObj.getSymbol() == symbol;
+            })) {
       return NONE;
     }
 
@@ -478,17 +514,21 @@ namespace {
 
     // If both are options, then we resolve ambiguities in the following manner
     // (from https://www.haskell.org/happy/doc/html/sec-Precedences.html):
-    // - If the precedence of the rule is higher, then the conflict is resolved as a reduce.
-    // - If the precedence of the lookahead token is higher, then the conflict is resolved as a shift.
+    // - If the precedence of the rule is higher, then the conflict is resolved
+    // as a reduce.
+    // - If the precedence of the lookahead token is higher, then the conflict
+    // is resolved as a shift.
     // - If the precedences are equal, then
     //    ~ If the token is left-associative, then reduce
     //    ~ If the token is right-associative, then shift
     //    ~ If the token is non-associative, then fail
-    // - If neither the rule nor the token have precedence, then the default is to shift and a
+    // - If neither the rule nor the token have precedence, then the default is
+    // to shift and a
     //   conflict will have been reported by findConflicts() in build_parser.cpp
     //   (note that this criterion differs slightly from Happy)
 
-    const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
+    const Token& nextTokenObj =
+        GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
     int shiftPrecedence = nextTokenObj.precedence;
 
     // Unspecified precedence -> conflict! (Resolve by shifting)
@@ -537,7 +577,8 @@ namespace {
     // is the only thing on the stack
     while (!(i == inputSize && stk.size() == 1 && stk[0].getSymbol() == S)) {
       // Advance the DFA.
-      CondensedNode* currentNode = PARSER_DFA.step(dfaPath.back(), stk.back().getSymbol());
+      CondensedNode* currentNode =
+          PARSER_DFA.step(dfaPath.back(), stk.back().getSymbol());
       if (currentNode == nullptr) {
         // cleanPtrsFrom(stk, 0);
         // cleanPtrsFrom(inputTokens, i);

@@ -44,7 +44,8 @@ namespace {
       stringstream errMsg;
       errMsg << "Parse error on line " << tokens_[pos_].getLine()
              << ". Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
-             << ". Got " << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR);
+             << ". Got "
+             << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR);
       throw runtime_error(errMsg.str());
     }
 
@@ -66,7 +67,7 @@ namespace {
       if (tokens_.size() == pos_ || tokens_[pos_].getSymbol() != tokenId) {
         return nullptr;
       }
-      return (string*) tokens_[pos_++].getObj();
+      return (string*)tokens_[pos_++].getObj();
     }
 
     string consumeString(int tokenId) {
@@ -122,7 +123,8 @@ namespace {
     }
 
     gdToken.name = *name;
-    // Keep track of the index for this name so that we can use it when parsing #prec
+    // Keep track of the index for this name so that we can use it when parsing
+    // #prec
     tokenNameToIndex.emplace(move(*name), gdTokens.size() - 1);
     // An arrow signifies that the token holds data
     if (tokenStream.maybeConsume(ARROW)) {
@@ -139,7 +141,8 @@ namespace {
 
   void parseTokens(TokenStream& tokenStream) {
     tokenStream.consume(TOKENS);
-    while (maybeParseToken(tokenStream));
+    while (maybeParseToken(tokenStream))
+      ;
   }
 
   bool maybeParsePrec(TokenStream& tokenStream, int prec) {
@@ -153,7 +156,8 @@ namespace {
       return false;
     }
 
-    // Figure out the associativity (which is required if precedence is specified)
+    // Figure out the associativity (which is required if precedence is
+    // specified)
     Assoc assoc;
     if (tokenStream.maybeConsume(LEFTASSOC)) {
       assoc = Assoc::LEFT;
@@ -168,7 +172,8 @@ namespace {
       // Look up the index of the token in the map
       auto iter = tokenNameToIndex.find(*name);
       if (iter == tokenNameToIndex.end()) {
-        // This is not an actual token, just a placeholder to override a rule's precedence
+        // This is not an actual token, just a placeholder to override a rule's
+        // precedence
         precNameToPrec.emplace(move(*name), prec);
         continue;
       }
@@ -184,7 +189,8 @@ namespace {
   void parsePrecs(TokenStream& tokenStream) {
     tokenStream.consume(PREC);
     int prec = 1;
-    while (maybeParsePrec(tokenStream, prec++));
+    while (maybeParsePrec(tokenStream, prec++))
+      ;
   }
 
 
@@ -220,7 +226,7 @@ namespace {
     // variables. Then, we will convert them to correct integral values.
     string* conc;
     while ((conc = tokenStream.maybeConsumeString(IDENT))) {
-      gdConcrete.argSymbols.push_back((intptr_t) conc);
+      gdConcrete.argSymbols.push_back((intptr_t)conc);
     }
 
 
@@ -233,8 +239,9 @@ namespace {
         auto precIter = precNameToPrec.find(tokenName);
         if (precIter == precNameToPrec.end()) {
           stringstream errMsg;
-            errMsg << "Parse error on line " << tokenStream.currentLine() << ": Unknown token " << tokenName;
-            throw runtime_error(errMsg.str());
+          errMsg << "Parse error on line " << tokenStream.currentLine()
+                 << ": Unknown token " << tokenName;
+          throw runtime_error(errMsg.str());
         } else {
           prec = precIter->second;
         }
@@ -243,8 +250,10 @@ namespace {
       }
 
       if (prec == NONE) {
-        cerr << "WARNING: Token " << tokenName << " is used to override a rule's precedence, "
-            "but has no precedence set." << endl;
+        cerr << "WARNING: Token " << tokenName
+             << " is used to override a rule's precedence, "
+                "but has no precedence set."
+             << endl;
       }
       gdConcrete.precedence = prec;
     }
@@ -269,9 +278,10 @@ namespace {
 
   void parseGrammar(TokenStream& tokenStream) {
     gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
-    gdConcretes.push_back(Concrete{ "SCONC", S, NONE, {1}, "Start(#0)" });
+    gdConcretes.push_back(Concrete{ "SCONC", S, NONE, { 1 }, "Start(#0)" });
     tokenStream.consume(GRAMMAR);
-    while (maybeParseGrammarVar(tokenStream));
+    while (maybeParseGrammarVar(tokenStream))
+      ;
 
     // Translate the string pointers to token/variable ids now that we
     // have parsed the whole file (skip SCONC)
@@ -280,7 +290,7 @@ namespace {
       Concrete& concrete = gdConcretes[i];
       size_t len = concrete.argSymbols.size();
       for (size_t j = 0; j < len; ++j) {
-        const string& symbolName = *(string*) concrete.argSymbols[j];
+        const string& symbolName = *(string*)concrete.argSymbols[j];
 
         // Check if it is a token first
         auto tokIter = tokenNameToIndex.find(symbolName);
@@ -299,8 +309,7 @@ namespace {
     }
   }
 
-} // namespace
-
+}  // namespace
 
 
 ParseInfo parseConfig(const string& fileName) {
@@ -326,4 +335,3 @@ ParseInfo parseConfig(const string& fileName) {
 
   return { grammarData, addlHppCode, addlCppCode };
 }
-

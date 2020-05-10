@@ -13,22 +13,27 @@ using namespace std;
 Label::Label(string&& name) : name_(move(name)) {}
 
 Move::Move(const string& asmCode, int src, int dst)
-  : asmCode_(asmCode), src_(move(src)), dst_(move(dst)) {}
+    : asmCode_(asmCode), src_(move(src)), dst_(move(dst)) {}
 
 Operation::Operation(
     const string& asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
     optional<vector<string>>&& jumps)
-  : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)), jumps_(move(jumps)) {}
+    : asmCode_(asmCode),
+      srcs_(move(srcs)),
+      dsts_(move(dsts)),
+      jumps_(move(jumps)) {}
 
 
 InstrType Label::getType() const noexcept { return InstrType::LABEL; }
 InstrType Move::getType() const noexcept { return InstrType::MOVE; }
 InstrType Operation::getType() const noexcept { return InstrType::OPER; }
 
-Function::Function(std::string&& name, std::vector<std::unique_ptr<Instruction>>&& instrs)
- : name_(move(name)), instrs_(move(instrs)) {}
+Function::Function(
+    std::string&& name,
+    std::vector<std::unique_ptr<Instruction>>&& instrs)
+    : name_(move(name)), instrs_(move(instrs)) {}
 
 /***********
  * getVars *
@@ -43,7 +48,6 @@ void Move::getVars(vector<int>& vars) const noexcept {
   if (!isRegister(dst_)) {
     vars.push_back(dst_);
   }
-
 }
 void Operation::getVars(vector<int>& vars) const noexcept {
   for (int temp : srcs_) {
@@ -59,11 +63,9 @@ void Operation::getVars(vector<int>& vars) const noexcept {
   }
 }
 
-constexpr MachineRegs SPILL_REGS[] {R10, R11};
+constexpr MachineRegs SPILL_REGS[]{ R10, R11 };
 
-constexpr int digitToInt(char c) noexcept {
-  return c - '0';
-}
+constexpr int digitToInt(char c) noexcept { return c - '0'; }
 
 /*********
  * spill *
@@ -83,16 +85,12 @@ bool Move::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
   // Src variable from stack into register
   if (!isRegister(src_)) {
     newInstrs.push_back(make_unique<Move>(
-      asmCode_,
-      src_,
-      isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
+        asmCode_, src_, isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
   }
 
   if (!isRegister(dst_)) {
     newInstrs.push_back(make_unique<Move>(
-      asmCode_,
-      isRegister(src_) > 0 ? src_ : SPILL_REGS[0],
-      dst_));
+        asmCode_, isRegister(src_) > 0 ? src_ : SPILL_REGS[0], dst_));
   }
 
   return false;
@@ -111,10 +109,7 @@ bool Operation::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
       }
       int spillReg = SPILL_REGS[numSpilled++];
       srcs_.at(i) = spillReg;
-      newInstrs.push_back(make_unique<Move>(
-          "movq S0, D0",
-          src,
-          spillReg));
+      newInstrs.push_back(make_unique<Move>("movq S0, D0", src, spillReg));
     }
   }
 
@@ -160,10 +155,7 @@ void Function::spill() {
       vector<int>{},
       optional<vector<string>>{}));
   newInstrs.push_back(make_unique<Operation>(
-      "retq",
-      vector<int>{},
-      vector<int>{},
-      optional<vector<string>>{}));
+      "retq", vector<int>{}, vector<int>{}, optional<vector<string>>{}));
 
   instrs_ = move(newInstrs);
 }
@@ -173,7 +165,10 @@ void Function::spill() {
  * toCode *
  **********/
 
-void tempToCode(ostream& out, int temp, const unordered_map<int, size_t>& varToStackOffset) {
+void tempToCode(
+    ostream& out,
+    int temp,
+    const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
     out << static_cast<MachineRegs>(temp);
   } else {
@@ -185,7 +180,9 @@ void Label::toCode(std::ostream& out, const unordered_map<int, size_t>&) const {
   out << name_ << ":\n";
 }
 
-void Move::toCode(std::ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
+void Move::toCode(
+    std::ostream& out,
+    const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   for (char c : asmCode_) {
     if (c == 'S') {
@@ -199,17 +196,21 @@ void Move::toCode(std::ostream& out, const unordered_map<int, size_t>& varToStac
   out << '\n';
 }
 
-void Operation::toCode(std::ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
+void Operation::toCode(
+    std::ostream& out,
+    const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   size_t len = asmCode_.size();
   size_t i = 0;
   while (i < len) {
     char c = asmCode_.at(i);
     if (c == 'S') {
-      tempToCode(out, srcs_.at(digitToInt(asmCode_.at(i+1))), varToStackOffset);
+      tempToCode(
+          out, srcs_.at(digitToInt(asmCode_.at(i + 1))), varToStackOffset);
       i += 2;
     } else if (c == 'D') {
-      tempToCode(out, dsts_.at(digitToInt(asmCode_.at(i+1))), varToStackOffset);
+      tempToCode(
+          out, dsts_.at(digitToInt(asmCode_.at(i + 1))), varToStackOffset);
       i += 2;
     } else {
       out << c;
@@ -226,4 +227,3 @@ void Function::toCode(std::ostream& out) {
     instr->toCode(out, varToStackOffset_);
   }
 }
-

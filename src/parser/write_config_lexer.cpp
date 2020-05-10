@@ -10,8 +10,6 @@
 using namespace std;
 
 int main() {
-
-
   generateLexerCode("src/parser/config_lexer", ADDL_CODE, CONFIG_GRAMMAR);
 
   return 0;

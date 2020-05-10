@@ -13,7 +13,7 @@ int main() {
   unique_ptr<Instruction> moveImm = make_unique<Operation>(
       "movq $3, D0",
       vector<int>{},
-      vector<int>{RAX},
+      vector<int>{ RAX },
       optional<vector<string>>{});
   unique_ptr<Instruction> move0 = make_unique<Move>("movq S, D", RAX, 0);
   unique_ptr<Instruction> move1 = make_unique<Move>("movq S, D", 0, 1);

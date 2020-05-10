@@ -22,7 +22,8 @@ constexpr static int NUMBER = -7;
 constexpr static int IDENT = -8;
 
 void testGeneralTokenization() {
-  vector<StackObj> tokens = tokenize(R"( "Hello" "Hi \"Bob\"" 123 abc123 de h]llo )");
+  vector<StackObj> tokens =
+      tokenize(R"( "Hello" "Hi \"Bob\"" 123 abc123 de h]llo )");
 
   StackObj t0 = move(tokens[0]);
   TESTER.assertEquals(STRLIT, t0.getSymbol());
@@ -39,7 +40,7 @@ void testGeneralTokenization() {
   StackObj t2 = move(tokens[2]);
   TESTER.assertEquals(NUMBER, t2.getSymbol());
   if (t2.getSymbol() == NUMBER) {
-    TESTER.assertEquals(123, *(int*) t2.getObj());
+    TESTER.assertEquals(123, *(int*)t2.getObj());
   }
 
   StackObj t3 = move(tokens[3]);
@@ -51,7 +52,7 @@ void testGeneralTokenization() {
   StackObj t4 = move(tokens[4]);
   TESTER.assertEquals(DNOTABC, t4.getSymbol());
   if (t4.getSymbol() == DNOTABC) {
-    TESTER.assertEquals('e', **(char**) t4.getObj());
+    TESTER.assertEquals('e', **(char**)t4.getObj());
   }
 
   TESTER.assertEquals(HabLLO, tokens[5].getSymbol());
@@ -87,7 +88,7 @@ void testMatchLongest() {
 }
 
 void testNoLeaksOnError() {
-  string err = TESTER.assertThrows([](){ tokenize("dg {}"); });
+  string err = TESTER.assertThrows([]() { tokenize("dg {}"); });
   TESTER.assertNotEqual(string::npos, err.find("NOTABC"));
 }
 

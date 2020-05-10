@@ -83,7 +83,9 @@ constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-inline std::string symbolToString(int symbolId, const GrammarData& grammarData) {
+inline std::string symbolToString(
+    int symbolId,
+    const GrammarData& grammarData) {
   if (isToken(symbolId)) {
     return grammarData.tokens[tokenToFromIndex(symbolId)].name;
   }

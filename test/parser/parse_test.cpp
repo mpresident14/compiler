@@ -35,8 +35,7 @@ void testParse_invalidTokens() {
   expectedErr0 << "Lexer error on line 1 at: a * 24\n"
                << "Previous tokens were: " << vector<string>{ "INT", "PLUS" };
 
-  string err0 =
-      TESTER.assertThrows([]() { expr_parser::parse("1 + a * 24"); });
+  string err0 = TESTER.assertThrows([]() { expr_parser::parse("1 + a * 24"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
 }
 

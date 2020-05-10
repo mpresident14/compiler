@@ -18,7 +18,8 @@ public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
   virtual void getVars(std::vector<int>& vars) const noexcept = 0;
-  virtual bool spillTemps(std::vector<std::unique_ptr<Instruction>>& newInstrs) = 0;
+  virtual bool spillTemps(
+      std::vector<std::unique_ptr<Instruction>>& newInstrs) = 0;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
@@ -30,7 +31,8 @@ public:
   Label(std::string&& name);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+  virtual bool spillTemps(
+      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -44,7 +46,8 @@ public:
   Move(const std::string& asmCode, int src, int dst);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+  virtual bool spillTemps(
+      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -57,13 +60,15 @@ private:
 
 class Operation : public Instruction {
 public:
-Operation(const std::string& asmCode,
-    std::vector<int>&& srcs,
-    std::vector<int>&& dsts,
-    std::optional<std::vector<std::string>>&& jumps);
+  Operation(
+      const std::string& asmCode,
+      std::vector<int>&& srcs,
+      std::vector<int>&& dsts,
+      std::optional<std::vector<std::string>>&& jumps);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+  virtual bool spillTemps(
+      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -80,7 +85,9 @@ private:
 
 class Function {
 public:
-  Function(std::string&& name, std::vector<std::unique_ptr<Instruction>>&& instrs);
+  Function(
+      std::string&& name,
+      std::vector<std::unique_ptr<Instruction>>&& instrs);
   void toCode(std::ostream& out);
 
 private:

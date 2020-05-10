@@ -3,9 +3,9 @@
 #include "src/parser/regex_eval.hpp"
 #include "src/parser/regex.hpp"
 #if NEW
-  #include "src/parser/regex_parser.hpp"
+#include "src/parser/regex_parser.hpp"
 #else
-  #include "src/parser/regex_parse.hpp"
+#include "src/parser/regex_parse.hpp"
 #endif
 #include "src/parser/dfa.hpp"
 
@@ -110,11 +110,11 @@ namespace {
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-      #if NEW
-        RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
-      #else
-        RgxPtr rgx = parse(token.regex);
-      #endif
+#if NEW
+      RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
+#else
+      RgxPtr rgx = parse(token.regex);
+#endif
       // Invalid regex
       if (!rgx) {
         throw runtime_error("Invalid regex " + token.regex);
@@ -186,11 +186,16 @@ namespace {
   /* Value string representation */
   string charToString(char c) {
     switch (c) {
-      case '\\': return {'\'', '\\', '\\', '\''};
-      case '\'': return {'\'', '\\', '\'', '\''};
-      case '\n': return {'\'', '\\', 'n', '\''};
-      case '\t': return {'\'', '\\', 't', '\''};
-      default: return string{'\'', c, '\''};
+      case '\\':
+        return { '\'', '\\', '\\', '\'' };
+      case '\'':
+        return { '\'', '\\', '\'', '\'' };
+      case '\n':
+        return { '\'', '\\', 'n', '\'' };
+      case '\t':
+        return { '\'', '\\', 't', '\'' };
+      default:
+        return string{ '\'', c, '\'' };
     }
   }
 

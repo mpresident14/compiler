@@ -18,9 +18,7 @@ using BitSetToks = vector<bool>;
 
 namespace {
 
-  vector<bool> bitOr(
-      const vector<bool>& lhs,
-      const vector<bool>& rhs) {
+  vector<bool> bitOr(const vector<bool>& lhs, const vector<bool>& rhs) {
     size_t len = lhs.size();
     vector<bool> result(len);
     for (size_t i = 0; i < len; ++i) {
@@ -65,8 +63,8 @@ namespace {
   }
 
 
-  /* Adds possible rules to node's state (ruleSet) via epsilon transition in DFA.
-   * Ex: S -> A.B, then add all rules B -> ??? */
+  /* Adds possible rules to node's state (ruleSet) via epsilon transition in
+   * DFA. Ex: S -> A.B, then add all rules B -> ??? */
   void epsilonTransition(
       DFARuleSet& ruleSet,
       const GrammarData& grammarData,
@@ -85,8 +83,9 @@ namespace {
       auto iter = ruleSet.find(rule);
       // If rule is not yet in the set, add it
       // NOTE: We could check for duplicate rules in the queue as well (like
-      // use a set and just pop with set.begin()), but this would incur a large penalty
-      // for every add to the queue. I don't think the tradeoff would be worth it.
+      // use a set and just pop with set.begin()), but this would incur a large
+      // penalty for every add to the queue. I don't think the tradeoff would be
+      // worth it.
       if (iter == ruleSet.end()) {
         addRhses(ruleQueue, rule, grammarData, firsts);
         ruleSet.insert(move(rule));
@@ -187,7 +186,10 @@ DFA_t buildParserDFA(const GrammarData& grammarData) {
   return dfa;
 }
 
-void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& grammarData) {
+void streamRule(
+    std::ostream& out,
+    const DFARule& rule,
+    const GrammarData& grammarData) {
   const vector<Variable>& variables = grammarData.variables;
   const vector<Token>& tokens = grammarData.tokens;
 
@@ -216,7 +218,10 @@ void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gramm
   out << " :: " << lookaheadNames;
 }
 
-void shiftReduceConflict(const DFARule& reduceRule, const DFARule& shiftRule, const GrammarData& grammarData) {
+void shiftReduceConflict(
+    const DFARule& reduceRule,
+    const DFARule& shiftRule,
+    const GrammarData& grammarData) {
   cerr << "WARNING: Shift-reduce conflict for rules\n\t";
   streamRule(cerr, reduceRule, grammarData);
   cerr << "\n\t";
@@ -224,7 +229,10 @@ void shiftReduceConflict(const DFARule& reduceRule, const DFARule& shiftRule, co
   cerr << endl;
 }
 
-void reduceReduceConflict(const DFARule& reduceRule1, const DFARule& reduceRule2, const GrammarData& grammarData) {
+void reduceReduceConflict(
+    const DFARule& reduceRule1,
+    const DFARule& reduceRule2,
+    const GrammarData& grammarData) {
   cerr << "WARNING: Reduce-reduce conflict for rules\n\t";
   streamRule(cerr, reduceRule1, grammarData);
   cerr << "\n\t";
@@ -238,7 +246,6 @@ void findShiftReduceConflicts(
     int rulePrecedence,
     const DFARuleSet& ruleSet,
     const GrammarData& grammarData) {
-
   const vector<Token>& tokens = grammarData.tokens;
   for (const DFARule& rule : ruleSet) {
     // Already found reducible rules
@@ -251,12 +258,14 @@ void findShiftReduceConflicts(
       continue;
     }
     int nextTokenIndex = tokenToFromIndex(nextSymbol);
-    // No conflict if the next input token is not in the lookahead set (b/c can't reduce)
+    // No conflict if the next input token is not in the lookahead set (b/c
+    // can't reduce)
     if (!reducibleRule.lookahead[nextTokenIndex]) {
       continue;
     }
 
-    // Unspecified precedence -> shift-reduce conflict! (Will be resolved by shifting)
+    // Unspecified precedence -> shift-reduce conflict! (Will be resolved by
+    // shifting)
     if (rulePrecedence == NONE && tokens[nextTokenIndex].precedence == NONE) {
       shiftReduceConflict(reducibleRule, rule, grammarData);
     }
@@ -267,7 +276,6 @@ void findShiftReduceConflicts(
 RuleData condenseRuleSet(
     const DFARuleSet& ruleSet,
     const GrammarData& grammarData) {
-
   const DFARule* reducibleRule = nullptr;
   for (const DFARule& rule : ruleSet) {
     if (rule.atEnd()) {
@@ -286,10 +294,14 @@ RuleData condenseRuleSet(
   }
 
   // Find the last token, if any
-  int rulePrecedence = grammarData.concretes[reducibleRule->concrete].precedence;
-  auto ruleIter =
-      find_if(reducibleRule->symbols.crbegin(), reducibleRule->symbols.crend(), isToken);
-  // If no override precedence and the rule has a token, check precedence of last token
+  int rulePrecedence =
+      grammarData.concretes[reducibleRule->concrete].precedence;
+  auto ruleIter = find_if(
+      reducibleRule->symbols.crbegin(),
+      reducibleRule->symbols.crend(),
+      isToken);
+  // If no override precedence and the rule has a token, check precedence of
+  // last token
   int lastToken = NONE;
   if (rulePrecedence == NONE && ruleIter != reducibleRule->symbols.crend()) {
     lastToken = *ruleIter;
@@ -297,7 +309,8 @@ RuleData condenseRuleSet(
   }
 
   // Check for shift-reduce conflicts
-  findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, grammarData);
+  findShiftReduceConflicts(
+      *reducibleRule, rulePrecedence, ruleSet, grammarData);
 
   // Reducible rule contains no tokens
   if (lastToken == NONE) {
@@ -308,7 +321,7 @@ RuleData condenseRuleSet(
   if (rulePrecedence == NONE) {
     return RuleData{ optional(*reducibleRule), NONE };
   } else {
-    return RuleData{ optional(*reducibleRule), rulePrecedence};
+    return RuleData{ optional(*reducibleRule), rulePrecedence };
   }
 }
 
