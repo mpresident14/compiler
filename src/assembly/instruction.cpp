@@ -7,12 +7,6 @@ using namespace std;
 
 // TODO: Turn at()s into []s when all testing is complete.
 
-
-std::ostream& operator<<(std::ostream& out, const Instruction& instr) {
-  instr.toStream(out);
-  return out;
-}
-
 /****************
  * constructors *
  ****************/
@@ -65,79 +59,46 @@ void Operation::getVars(vector<int>& vars) const noexcept {
   }
 }
 
-// Spill registers are R14 and R15
 constexpr MachineRegs SPILL_REGS[] {R10, R11};
 
 constexpr int digitToInt(char c) noexcept {
   return c - '0';
 }
 
+/*********
+ * spill *
+ *********/
 
-/* Replace variable destinations with their offset on the stack */
-string Operation::replaceDsts(const unordered_map<int, size_t>& varToStackOffset) const {
-  size_t len = asmCode_.size();
-  size_t i = 0;
-  string newAssem;
-  newAssem.reserve(len);
-  while (i < len) {
-    char c = asmCode_.at(i);
-    if (asmCode_.at(i) == 'D') {
-      int temp = dsts_[digitToInt(asmCode_.at(i+1))];
-      if (!isRegister(temp)) {
-        newAssem.append(to_string(varToStackOffset.at(temp)));
-        newAssem.append("(%rsp)");
-      }
-      i += 2;
-    } else {
-      newAssem.push_back(c);
-      ++i;
-    }
+bool Label::spillTemps(vector<unique_ptr<Instruction>>&) {
+  // No variables here, so we can insert this instruction
+  return true;
+}
+
+bool Move::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
+  // No variables to spill, so insert the updated instruction
+  if (isRegister(src_) && isRegister(dst_)) {
+    return true;
   }
-  return newAssem;
-}
-
-
-/**************
- * spillTemps *
- **************/
-
-void Label::spillTemps(
-    const unordered_map<int, size_t>&,
-    vector<unique_ptr<Instruction>>& newInstrs) {
-  newInstrs.push_back(make_unique<Label>(*this));
-}
-
-void Move::spillTemps(
-    const unordered_map<int, size_t>& varToStackOffset,
-    vector<unique_ptr<Instruction>>& newInstrs) {
 
   // Src variable from stack into register
   if (!isRegister(src_)) {
-    newInstrs.emplace_back(new Operation(
-      "movq " + to_string(varToStackOffset.at(src_)) + "(%rsp), D0",
-      vector<int>{},
-      vector<int>{isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]},
-      optional<vector<string>>{}));
+    newInstrs.push_back(make_unique<Move>(
+      asmCode_,
+      src_,
+      isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
   }
 
-  // Dst from register to stack
   if (!isRegister(dst_)) {
-    newInstrs.emplace_back(new Operation(
-        "movq S0, " + to_string(varToStackOffset.at(dst_)) + "(%rsp)",
-        vector<int>{isRegister(src_) > 0 ? src_ : SPILL_REGS[0]},
-        vector<int>{},
-        optional<vector<string>>{}));
+    newInstrs.push_back(make_unique<Move>(
+      asmCode_,
+      isRegister(src_) > 0 ? src_ : SPILL_REGS[0],
+      dst_));
   }
-  // TODO: Really ugly band-aid for bad design
-  else if (isRegister(src_) && isRegister(dst_)) {
-    newInstrs.push_back(make_unique<Move>(*this));
-  }
+
+  return false;
 }
 
-void Operation::spillTemps(
-    const unordered_map<int, size_t>& varToStackOffset,
-    vector<unique_ptr<Instruction>>& newInstrs) {
-
+bool Operation::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
   // For each temporary src, if it is a var, then update it to a spill register
   // and add an instruction to move it from the stack to the spill register
   size_t numSpilled = 0;
@@ -150,35 +111,19 @@ void Operation::spillTemps(
       }
       int spillReg = SPILL_REGS[numSpilled++];
       srcs_.at(i) = spillReg;
-      newInstrs.emplace_back(new Operation(
-          "movq " + to_string(varToStackOffset.at(src)) + "(%rsp), D0",
-          vector<int>{},
-          vector<int>{spillReg},
-          optional<vector<string>>{}));
+      newInstrs.push_back(make_unique<Move>(
+          "movq S0, D0",
+          src,
+          spillReg));
     }
   }
 
-  // Remove the variables from the destination list since all variables
-  // are now on the stack)
-  vector<int> newDsts;
-  for (int dst : dsts_) {
-    if (isRegister(dst)) {
-      newDsts.push_back(dst);
-    }
-  }
-
-  // Replace the variable destinations with their stack offsets
-  string newAssem = replaceDsts(varToStackOffset);
   // Insert the updated instruction
-  newInstrs.emplace_back(new Operation(
-      newAssem,
-      move(srcs_),
-      move(newDsts),
-      move(jumps_)));
+  return true;
 }
 
 
-void Function::allocate() {
+void Function::spill() {
   // TODO: For now, assume all variables are spilled;
   /* Begin temporary code */
   vector<int> spilled;
@@ -186,55 +131,67 @@ void Function::allocate() {
     instr->getVars(spilled);
   }
 
-  unordered_map<int, size_t> varToStackOffset;
   for (int tempId : spilled) {
-    if (!varToStackOffset.contains(tempId)) {
-      varToStackOffset.emplace(tempId, 8 * (varToStackOffset.size() + 1));
+    if (!varToStackOffset_.contains(tempId)) {
+      varToStackOffset_.emplace(tempId, 8 * varToStackOffset_.size());
     }
   }
   /* End temporary code */
 
-  size_t stackSpace = (1 + varToStackOffset.size()) * 8;
+  size_t stackSpace = varToStackOffset_.size() * 8;
 
   vector<unique_ptr<Instruction>> newInstrs;
-  newInstrs.emplace_back(new Operation(
+  newInstrs.push_back(make_unique<Operation>(
       "subq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>(),
-      vector<int>(),
-      {}));
+      vector<int>{},
+      vector<int>{},
+      optional<vector<string>>{}));
 
 
-  for (const unique_ptr<Instruction>& instr : instrs_) {
-    instr->spillTemps(varToStackOffset, newInstrs);
+  for (unique_ptr<Instruction>& instr : instrs_) {
+    if (instr->spillTemps(newInstrs)) {
+      newInstrs.push_back(move(instr));
+    }
   }
 
-  newInstrs.emplace_back(new Operation(
+  newInstrs.push_back(make_unique<Operation>(
       "addq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>(),
-      vector<int>(),
-      {}));
-  newInstrs.emplace_back(new Operation(
+      vector<int>{},
+      vector<int>{},
+      optional<vector<string>>{}));
+  newInstrs.push_back(make_unique<Operation>(
       "retq",
-      vector<int>(),
-      vector<int>(),
-      {}));
+      vector<int>{},
+      vector<int>{},
+      optional<vector<string>>{}));
 
   instrs_ = move(newInstrs);
 }
 
 
+/**********
+ * toCode *
+ **********/
 
-void Label::toStream(std::ostream& out) const {
+void tempToCode(ostream& out, int temp, const unordered_map<int, size_t>& varToStackOffset) {
+  if (isRegister(temp)) {
+    out << static_cast<MachineRegs>(temp);
+  } else {
+    out << varToStackOffset.at(temp) << "(%rsp)";
+  }
+}
+
+void Label::toCode(std::ostream& out, const unordered_map<int, size_t>&) const {
   out << name_ << ":\n";
 }
 
-void Move::toStream(std::ostream& out) const {
+void Move::toCode(std::ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   for (char c : asmCode_) {
     if (c == 'S') {
-      out << regToString(src_);
+      tempToCode(out, src_, varToStackOffset);
     } else if (c == 'D') {
-      out << regToString(dst_);
+      tempToCode(out, dst_, varToStackOffset);
     } else {
       out << c;
     }
@@ -242,17 +199,17 @@ void Move::toStream(std::ostream& out) const {
   out << '\n';
 }
 
-void Operation::toStream(std::ostream& out) const {
+void Operation::toCode(std::ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   size_t len = asmCode_.size();
   size_t i = 0;
   while (i < len) {
     char c = asmCode_.at(i);
     if (c == 'S') {
-      out << regToString(srcs_.at(digitToInt(asmCode_.at(i+1))));
+      tempToCode(out, srcs_.at(digitToInt(asmCode_.at(i+1))), varToStackOffset);
       i += 2;
     } else if (c == 'D') {
-      out << regToString(dsts_.at(digitToInt(asmCode_.at(i+1))));
+      tempToCode(out, dsts_.at(digitToInt(asmCode_.at(i+1))), varToStackOffset);
       i += 2;
     } else {
       out << c;
@@ -262,11 +219,11 @@ void Operation::toStream(std::ostream& out) const {
   out << '\n';
 }
 
-std::ostream& operator<<(std::ostream& out, const Function& fn) {
-  out << fn.name_ << ":\n";
-  for (const unique_ptr<Instruction>& instr : fn.instrs_) {
-    out << *instr;
+void Function::toCode(std::ostream& out) {
+  spill();
+  out << name_ << ":\n";
+  for (const unique_ptr<Instruction>& instr : instrs_) {
+    instr->toCode(out, varToStackOffset_);
   }
-  return out;
 }
 

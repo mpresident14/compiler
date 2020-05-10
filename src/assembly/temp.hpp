@@ -31,32 +31,33 @@ enum MachineRegs {
   R15 = -15,
 };
 
-// const std::vector<int> callerSaveRegs{RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11};
+const std::vector<int> callerSaveRegs{RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11};
 
 constexpr bool isRegister(int temp) noexcept {
   return temp < 0;
 }
 
-inline std::string regToString(int machineReg) {
+inline std::ostream& operator<<(std::ostream& out, MachineRegs machineReg) {
   switch (machineReg) {
-    case RSP: return "%rsp";
-    case RBP: return "%rbp";
-    case RAX: return "%rax";
-    case RBX: return "%rbx";
-    case RCX: return "%rcx";
-    case RDX: return "%rdx";
-    case RDI: return "%rdi";
-    case RSI: return "%rsi";
-    case R8: return "%r8";
-    case R9: return "%r9";
-    case R10: return "%r10";
-    case R11: return "%r11";
-    case R12: return "%r12";
-    case R13: return "%r13";
-    case R14: return "%r14";
-    case R15: return "%r15";
+    case RSP: out << "%rsp"; break;
+    case RBP: out << "%rbp"; break;
+    case RAX: out << "%rax"; break;
+    case RBX: out << "%rbx"; break;
+    case RCX: out << "%rcx"; break;
+    case RDX: out << "%rdx"; break;
+    case RDI: out << "%rdi"; break;
+    case RSI: out << "%rsi"; break;
+    case R8: out << "%r8"; break;
+    case R9: out << "%r9"; break;
+    case R10: out << "%r10"; break;
+    case R11: out << "%r11"; break;
+    case R12: out << "%r12"; break;
+    case R13: out << "%r13"; break;
+    case R14: out << "%r14"; break;
+    case R15: out << "%r15"; break;
     default:
       throw std::invalid_argument(std::to_string(machineReg) + " is not a register.");
   }
+  return out;
 }
 #endif

@@ -47,7 +47,10 @@ bin/
 lib/
 DartConfiguration.tcl
 
-# My generated files
+# My generated parser files
 test/parser/generated/*
 src/parser/regex_parser_backup.cpp
 src/parser/regex_parser_backup.hpp
+
+# Register allocation
+prez.s
