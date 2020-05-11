@@ -4,6 +4,9 @@
 
 using namespace std;
 
+// TODO: Give errors for uninitialized variables
+// and warnings about defined but unused variables
+
 /*********
  * utils *
  *********/
@@ -25,7 +28,7 @@ void setMinus(unordered_set<int>& to, const Container<int>& from) {
 FlowGraph::FlowGraph(const vector<InstrPtr>& instrs)
     : instrs_(instrs) {
   for (const InstrPtr& instr : instrs) {
-    nodes_.emplace(instr.get(), Node{unordered_set<int>{}, unordered_set<int>{}});
+    nodes_.emplace(instr.get(), Liveness{unordered_set<int>{}, unordered_set<int>{}});
   }
 }
 
@@ -37,13 +40,13 @@ void FlowGraph::computeLiveness() {
   // For last instruction, only need to compute liveIn (liveOut is empty)
   auto iter = instrs_.crbegin();
   const Instruction* lastInstr = iter->get();
-  Node& lastNode = nodes_.at(instrs_.back().get());
+  Liveness& lastLiveness = nodes_.at(instrs_.back().get());
   switch (lastInstr->getType()) {
     case InstrType::MOVE:
-      lastNode.liveIn.insert(static_cast<const Move*>(lastInstr)->getSrc());
+      lastLiveness.liveIn.insert(static_cast<const Move*>(lastInstr)->getSrc());
       break;
     case InstrType::OPER:
-      lastNode.liveIn.insert(
+      lastLiveness.liveIn.insert(
           static_cast<const Operation*>(lastInstr)->getSrcs().cbegin(),
           static_cast<const Operation*>(lastInstr)->getSrcs().cend());
       break;
@@ -56,7 +59,7 @@ void FlowGraph::computeLiveness() {
     changed = false;
     for (; iter != instrs_.crend(); ++iter) {
       const Instruction* instr = iter->get();
-      Node& node = nodes_.at(instr);
+      Liveness& node = nodes_.at(instr);
 
       // Compute liveOut
       if (instr->getType() == InstrType::OPER
@@ -72,9 +75,9 @@ void FlowGraph::computeLiveness() {
         }
       } else {
         // Instruction falls through
-        Node& nextNode = nodes_.at(prev(iter)->get());
-        if (node.liveOut != nextNode.liveIn) {
-          node.liveOut = nextNode.liveIn;
+        Liveness& nextLiveness = nodes_.at(prev(iter)->get());
+        if (node.liveOut != nextLiveness.liveIn) {
+          node.liveOut = nextLiveness.liveIn;
           changed = true;
         }
 
@@ -104,8 +107,8 @@ void FlowGraph::computeLiveness() {
 
 std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph) {
   for (const auto& instr : fgraph.instrs_) {
-    const FlowGraph::Node& node = fgraph.nodes_.at(instr.get());
-    out << *instr << " -> IN:" << node.liveIn << " OUT:" << node.liveOut << '\n';
+    const FlowGraph::Liveness& liveness = fgraph.nodes_.at(instr.get());
+    out << *instr << " -> IN:" << liveness.liveIn << " OUT:" << liveness.liveOut << '\n';
   }
   return out;
 }
@@ -115,6 +118,6 @@ const std::vector<InstrPtr>& FlowGraph::getInstrs() const noexcept {
   return instrs_;
 }
 
-const std::unordered_map<const Instruction*, FlowGraph::Node>& FlowGraph::getNodes() const noexcept {
+const std::unordered_map<const Instruction*, FlowGraph::Liveness>& FlowGraph::getNodes() const noexcept {
   return nodes_;
 }

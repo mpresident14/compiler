@@ -12,7 +12,7 @@
  * Variables are always positive
  */
 
-enum MachineRegs {
+enum MachineReg {
   RSP = 0,
   RBP = -1,
   RAX = -2,
@@ -31,6 +31,26 @@ enum MachineRegs {
   R15 = -15,
 };
 
+/* All registers except RSP and RBP are available for variables */
+constexpr MachineReg AVAIL_REGS[] = {
+  RAX,
+  RBX,
+  RCX,
+  RDX,
+  RDI,
+  RSI,
+  R8 ,
+  R9 ,
+  R10,
+  R11,
+  R12,
+  R13,
+  R14,
+  R15,
+};
+
+constexpr size_t NUM_AVAIL_REGS = sizeof(AVAIL_REGS) / sizeof(MachineReg);
+
 const std::vector<int> callerSaveRegs{
   RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11
 };
@@ -41,7 +61,7 @@ const std::vector<int> calleeSaveRegs{
 
 constexpr bool isRegister(int temp) noexcept { return temp < 0; }
 
-inline std::ostream& operator<<(std::ostream& out, MachineRegs machineReg) {
+inline std::ostream& operator<<(std::ostream& out, MachineReg machineReg) {
   switch (machineReg) {
     case RSP:
       out << "%rsp";

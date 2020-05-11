@@ -21,8 +21,8 @@ public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
   virtual void getVars(std::vector<int>& vars) const noexcept = 0;
-  virtual bool spillTemps(
-      std::vector<InstrPtr>& newInstrs) = 0;
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
+  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) = 0;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
@@ -36,8 +36,8 @@ public:
   Label(std::string&& name);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(
-      std::vector<InstrPtr>& newInstrs) override;
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -54,8 +54,8 @@ public:
   Move(const std::string& asmCode, int src, int dst);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(
-      std::vector<InstrPtr>& newInstrs) override;
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -80,8 +80,8 @@ public:
       std::optional<std::vector<Instruction*>>&& jumps);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(
-      std::vector<InstrPtr>& newInstrs) override;
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -99,22 +99,6 @@ private:
   // No value if always falls through to next instruction,
   // empty list if jumping out of function entirely
   std::optional<std::vector<Instruction*>> jumps_;
-};
-
-
-class Function {
-public:
-  Function(
-      std::string&& name,
-      std::vector<InstrPtr>&& instrs);
-  void toCode(std::ostream& out);
-
-private:
-  void spill();
-
-  std::string name_;
-  std::vector<InstrPtr> instrs_;
-  std::unordered_map<int, size_t> varToStackOffset_;
 };
 
 

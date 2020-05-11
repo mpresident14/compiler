@@ -1,6 +1,7 @@
 #include "temp.hpp"
 #include "instruction.hpp"
 #include "flow_graph.hpp"
+#include "function.hpp"
 
 #include <iostream>
 #include <memory>
@@ -75,11 +76,6 @@ int main() {
   instrs.push_back(move(moveEq));
   instrs.push_back(move(doneLabel));
   instrs.push_back(move(callPrint));
-
-  FlowGraph fgraph(instrs);
-  fgraph.computeLiveness();
-  cout << fgraph << endl;
-
 
   Function fn("runprez", move(instrs));
 

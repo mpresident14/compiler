@@ -14,7 +14,7 @@
 
 class FlowGraph {
 public:
-  struct Node {
+  struct Liveness {
     std::unordered_set<int> liveIn;
     std::unordered_set<int> liveOut;
   };
@@ -27,18 +27,17 @@ public:
   FlowGraph& operator=(FlowGraph&& other) = delete;
   friend std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph);
 
-  std::unordered_map<size_t, MachineRegs> regAlloc();
   void computeLiveness();
 
   const std::vector<InstrPtr>& getInstrs() const noexcept;
-  const std::unordered_map<const Instruction*, Node>& getNodes() const noexcept;
+  const std::unordered_map<const Instruction*, Liveness>& getNodes() const noexcept;
 
 
 private:
   // Yes, this is a reference. To avoid unnecessary copies, the FlowGraph
   // is subject to the lifetime of the underlying instruction vector.
   const std::vector<InstrPtr>& instrs_;
-  std::unordered_map<const Instruction*, Node> nodes_;
+  std::unordered_map<const Instruction*, Liveness> nodes_;
 };
 
 #endif

@@ -30,11 +30,6 @@ InstrType Label::getType() const noexcept { return InstrType::LABEL; }
 InstrType Move::getType() const noexcept { return InstrType::MOVE; }
 InstrType Operation::getType() const noexcept { return InstrType::OPER; }
 
-Function::Function(
-    std::string&& name,
-    std::vector<InstrPtr>&& instrs)
-    : name_(move(name)), instrs_(move(instrs)) {}
-
 /***********
  * getVars *
  ***********/
@@ -63,7 +58,7 @@ void Operation::getVars(vector<int>& vars) const noexcept {
   }
 }
 
-constexpr MachineRegs SPILL_REGS[]{ R10, R11 };
+constexpr MachineReg SPILL_REGS[]{ R10, R11 };
 
 constexpr int digitToInt(char c) noexcept { return c - '0'; }
 
@@ -117,55 +112,39 @@ bool Operation::spillTemps(vector<InstrPtr>& newInstrs) {
   return true;
 }
 
+/**************
+ * assignRegs *
+ **************/
 
-void Function::spill() {
-  // TODO: For now, assume all variables are spilled;
-  /* Begin temporary code */
-  vector<int> spilled;
-  for (const InstrPtr& instr : instrs_) {
-    instr->getVars(spilled);
+void assignReg(int& temp, const std::unordered_map<int, MachineReg>& coloring) {
+  auto iter = coloring.find(temp);
+  if (iter != coloring.end()) {
+    temp = iter->second;
   }
-
-  for (int tempId : spilled) {
-    if (!varToStackOffset_.contains(tempId)) {
-      varToStackOffset_.emplace(tempId, 8 * varToStackOffset_.size());
-    }
-  }
-  /* End temporary code */
-
-  size_t stackSpace = varToStackOffset_.size() * 8;
-
-  vector<InstrPtr> newInstrs;
-  newInstrs.push_back(make_unique<Operation>(
-      "subq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>{},
-      vector<int>{},
-      optional<vector<Instruction*>>{}));
-
-
-  for (InstrPtr& instr : instrs_) {
-    if (instr->spillTemps(newInstrs)) {
-      newInstrs.push_back(move(instr));
-    }
-  }
-
-  newInstrs.push_back(make_unique<Operation>(
-      "addq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>{},
-      vector<int>{},
-      optional<vector<Instruction*>>{}));
-  newInstrs.push_back(make_unique<Operation>(
-      "retq", vector<int>{}, vector<int>{}, optional<vector<Instruction*>>{}));
-
-  instrs_ = move(newInstrs);
 }
 
+
+void Label::assignRegs(const std::unordered_map<int, MachineReg>&) {
+  return;
+}
+
+void Move::assignRegs(const std::unordered_map<int, MachineReg>& coloring) {
+  assignReg(src_, coloring);
+  assignReg(dst_, coloring);
+}
+
+void Operation::assignRegs(const std::unordered_map<int, MachineReg>& coloring) {
+  for (int& src : srcs_) {
+    assignReg(src, coloring);
+  }
+  for (int& dst : dsts_) {
+    assignReg(dst, coloring);
+  }
+}
 
 /**********
  * toCode *
  **********/
-
-// TODO: Use a different symbol b/c labels may have a capital D or S
 
 /* > for srcs, < for dsts */
 
@@ -174,7 +153,7 @@ void tempToCode(
     int temp,
     const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
-    out << static_cast<MachineRegs>(temp);
+    out << static_cast<MachineReg>(temp);
   } else {
     out << varToStackOffset.at(temp) << "(%rsp)";
   }
@@ -222,14 +201,6 @@ void Operation::toCode(
     }
   }
   out << '\n';
-}
-
-void Function::toCode(std::ostream& out) {
-  spill();
-  out << name_ << ":\n";
-  for (const InstrPtr& instr : instrs_) {
-    instr->toCode(out, varToStackOffset_);
-  }
 }
 
 
