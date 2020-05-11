@@ -1,4 +1,4 @@
-#include "instruction.hpp"
+#include "src/assembly/instruction.hpp"
 
 #include <stdexcept>
 #include <prez/print_stuff.hpp>
@@ -19,7 +19,7 @@ Operation::Operation(
     const string& asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
-    optional<vector<string>>&& jumps)
+    optional<vector<Instruction*>>&& jumps)
     : asmCode_(asmCode),
       srcs_(move(srcs)),
       dsts_(move(dsts)),
@@ -32,7 +32,7 @@ InstrType Operation::getType() const noexcept { return InstrType::OPER; }
 
 Function::Function(
     std::string&& name,
-    std::vector<std::unique_ptr<Instruction>>&& instrs)
+    std::vector<InstrPtr>&& instrs)
     : name_(move(name)), instrs_(move(instrs)) {}
 
 /***********
@@ -71,12 +71,12 @@ constexpr int digitToInt(char c) noexcept { return c - '0'; }
  * spill *
  *********/
 
-bool Label::spillTemps(vector<unique_ptr<Instruction>>&) {
+bool Label::spillTemps(vector<InstrPtr>&) {
   // No variables here, so we can insert this instruction
   return true;
 }
 
-bool Move::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
+bool Move::spillTemps(vector<InstrPtr>& newInstrs) {
   // No variables to spill, so insert the updated instruction
   if (isRegister(src_) && isRegister(dst_)) {
     return true;
@@ -96,7 +96,7 @@ bool Move::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
   return false;
 }
 
-bool Operation::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
+bool Operation::spillTemps(vector<InstrPtr>& newInstrs) {
   // For each temporary src, if it is a var, then update it to a spill register
   // and add an instruction to move it from the stack to the spill register
   size_t numSpilled = 0;
@@ -109,7 +109,7 @@ bool Operation::spillTemps(vector<unique_ptr<Instruction>>& newInstrs) {
       }
       int spillReg = SPILL_REGS[numSpilled++];
       srcs_.at(i) = spillReg;
-      newInstrs.push_back(make_unique<Move>("movq S0, D0", src, spillReg));
+      newInstrs.push_back(make_unique<Move>("movq >, <", src, spillReg));
     }
   }
 
@@ -122,7 +122,7 @@ void Function::spill() {
   // TODO: For now, assume all variables are spilled;
   /* Begin temporary code */
   vector<int> spilled;
-  for (const unique_ptr<Instruction>& instr : instrs_) {
+  for (const InstrPtr& instr : instrs_) {
     instr->getVars(spilled);
   }
 
@@ -135,15 +135,15 @@ void Function::spill() {
 
   size_t stackSpace = varToStackOffset_.size() * 8;
 
-  vector<unique_ptr<Instruction>> newInstrs;
+  vector<InstrPtr> newInstrs;
   newInstrs.push_back(make_unique<Operation>(
       "subq $" + to_string(stackSpace) + ", %rsp",
       vector<int>{},
       vector<int>{},
-      optional<vector<string>>{}));
+      optional<vector<Instruction*>>{}));
 
 
-  for (unique_ptr<Instruction>& instr : instrs_) {
+  for (InstrPtr& instr : instrs_) {
     if (instr->spillTemps(newInstrs)) {
       newInstrs.push_back(move(instr));
     }
@@ -153,9 +153,9 @@ void Function::spill() {
       "addq $" + to_string(stackSpace) + ", %rsp",
       vector<int>{},
       vector<int>{},
-      optional<vector<string>>{}));
+      optional<vector<Instruction*>>{}));
   newInstrs.push_back(make_unique<Operation>(
-      "retq", vector<int>{}, vector<int>{}, optional<vector<string>>{}));
+      "retq", vector<int>{}, vector<int>{}, optional<vector<Instruction*>>{}));
 
   instrs_ = move(newInstrs);
 }
@@ -164,6 +164,10 @@ void Function::spill() {
 /**********
  * toCode *
  **********/
+
+// TODO: Use a different symbol b/c labels may have a capital D or S
+
+/* > for srcs, < for dsts */
 
 void tempToCode(
     ostream& out,
@@ -185,9 +189,9 @@ void Move::toCode(
     const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   for (char c : asmCode_) {
-    if (c == 'S') {
+    if (c == '>') {
       tempToCode(out, src_, varToStackOffset);
-    } else if (c == 'D') {
+    } else if (c == '<') {
       tempToCode(out, dst_, varToStackOffset);
     } else {
       out << c;
@@ -204,11 +208,11 @@ void Operation::toCode(
   size_t i = 0;
   while (i < len) {
     char c = asmCode_.at(i);
-    if (c == 'S') {
+    if (c == '>') {
       tempToCode(
           out, srcs_.at(digitToInt(asmCode_.at(i + 1))), varToStackOffset);
       i += 2;
-    } else if (c == 'D') {
+    } else if (c == '<') {
       tempToCode(
           out, dsts_.at(digitToInt(asmCode_.at(i + 1))), varToStackOffset);
       i += 2;
@@ -223,7 +227,52 @@ void Operation::toCode(
 void Function::toCode(std::ostream& out) {
   spill();
   out << name_ << ":\n";
-  for (const unique_ptr<Instruction>& instr : instrs_) {
+  for (const InstrPtr& instr : instrs_) {
     instr->toCode(out, varToStackOffset_);
   }
+}
+
+
+/************
+ * toStream *
+ ************/
+
+std::ostream& operator<<(std::ostream& out, const Instruction& instr) {
+  instr.toStream(out);
+  return out;
+}
+
+void Label::toStream(std::ostream& out) const {
+  out << name_ << ':';
+}
+void Move::toStream(std::ostream& out) const {
+  out << asmCode_ << " [" << src_ << "] [" << dst_ << ']';
+}
+void Operation::toStream(std::ostream& out) const {
+  out << asmCode_ << ' ' << srcs_ << ' ' << dsts_ << ' ';
+  if (jumps_.has_value()) {
+    out << '[';
+    for (const Instruction* instr : *jumps_) {
+      out << *instr << ", ";
+    }
+    out << ']';
+  }
+}
+
+
+/***********
+ * getters *
+ ***********/
+
+const std::string& Label::getName() const noexcept { return name_; }
+
+const std::string& Move::getAsm() const noexcept { return asmCode_; }
+int Move::getSrc() const noexcept { return src_; }
+int Move::getDst() const noexcept { return dst_; }
+
+const std::string& Operation::getAsm() const noexcept { return asmCode_; }
+const std::vector<int>& Operation::getSrcs() const noexcept { return srcs_; }
+const std::vector<int>& Operation::getDsts() const noexcept { return dsts_; }
+const std::optional<std::vector<Instruction*>>& Operation::getJumps() const noexcept {
+  return jumps_;
 }

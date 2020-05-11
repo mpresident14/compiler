@@ -1,5 +1,6 @@
 #include "temp.hpp"
 #include "instruction.hpp"
+#include "flow_graph.hpp"
 
 #include <iostream>
 #include <memory>
@@ -10,28 +11,75 @@
 using namespace std;
 
 int main() {
-  unique_ptr<Instruction> moveImm = make_unique<Operation>(
-      "movq $3, D0",
+  InstrPtr moveImm0 = make_unique<Operation>(
+      "movq $1, <0",
       vector<int>{},
       vector<int>{ RAX },
-      optional<vector<string>>{});
-  unique_ptr<Instruction> move0 = make_unique<Move>("movq S, D", RAX, 0);
-  unique_ptr<Instruction> move1 = make_unique<Move>("movq S, D", 0, 1);
-  unique_ptr<Instruction> move2 = make_unique<Move>("movq S, D", 1, RCX);
-  unique_ptr<Instruction> move3 = make_unique<Move>("movq S, D", RCX, RDI);
-  unique_ptr<Instruction> callPrint = make_unique<Operation>(
-      "callq printInt",
+      optional<vector<Instruction*>>{});
+  InstrPtr moveImm1 = make_unique<Operation>(
+      "movq $5, <0",
       vector<int>{},
-      vector<int>(callerSaveRegs),
-      optional<vector<string>>{});
+      vector<int>{ 0 },
+      optional<vector<Instruction*>>{});
+  InstrPtr leaq = make_unique<Operation>(
+      "leaq (>0, >1, 2), <0",
+      vector<int>{RAX, 0},
+      vector<int>{ RAX },
+      optional<vector<Instruction*>>{});
+  InstrPtr move0 = make_unique<Move>("movq >, <", RAX, 0);
+  InstrPtr move1 = make_unique<Move>("movq >, <", 0, 1);
+  InstrPtr move2 = make_unique<Move>("movq >, <", 1, RCX);
 
-  vector<unique_ptr<Instruction>> instrs;
-  instrs.push_back(move(moveImm));
+  InstrPtr cmp = make_unique<Operation>(
+      "cmpq $11, <0",
+      vector<int>{},
+      vector<int>{ RCX },
+      optional<vector<Instruction*>>{});
+  InstrPtr eqLabel = make_unique<Label>("EQ");
+  InstrPtr doneLabel = make_unique<Label>("FIN");
+  InstrPtr moveEq = make_unique<Move>("movq >, <", RCX, RDI);
+  InstrPtr moveNeq = make_unique<Operation>(
+      "movq $-1, <0",
+      vector<int>{},
+      vector<int>{ RDI },
+      optional<vector<Instruction*>>{});
+  InstrPtr je = make_unique<Operation>(
+      "je EQ",
+      vector<int>{},
+      vector<int>{},
+      optional<vector<Instruction*>>{{eqLabel.get(), doneLabel.get()}});
+  InstrPtr jDone = make_unique<Operation>(
+      "jmp FIN",
+      vector<int>{},
+      vector<int>{},
+      optional<vector<Instruction*>>{{doneLabel.get()}});
+
+  InstrPtr callPrint = make_unique<Operation>(
+      "callq printInt",
+      vector<int>(/* caller>aveRegs */),
+      vector<int>(/* callee>aveRegs */),
+      optional<vector<Instruction*>>{});
+
+  vector<InstrPtr> instrs;
+  instrs.push_back(move(moveImm0));
+  instrs.push_back(move(moveImm1));
+  instrs.push_back(move(leaq));
   instrs.push_back(move(move0));
   instrs.push_back(move(move1));
   instrs.push_back(move(move2));
-  instrs.push_back(move(move3));
+  instrs.push_back(move(cmp));
+  instrs.push_back(move(je));
+  instrs.push_back(move(moveNeq));
+  instrs.push_back(move(jDone));
+  instrs.push_back(move(eqLabel));
+  instrs.push_back(move(moveEq));
+  instrs.push_back(move(doneLabel));
   instrs.push_back(move(callPrint));
+
+  FlowGraph fgraph(instrs);
+  fgraph.computeLiveness();
+  cout << fgraph << endl;
+
 
   Function fn("runprez", move(instrs));
 

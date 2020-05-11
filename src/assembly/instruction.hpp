@@ -13,16 +13,21 @@
 
 enum class InstrType { LABEL, MOVE, OPER };
 
+class Instruction;
+using InstrPtr = std::unique_ptr<Instruction>;
+
 class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
   virtual void getVars(std::vector<int>& vars) const noexcept = 0;
   virtual bool spillTemps(
-      std::vector<std::unique_ptr<Instruction>>& newInstrs) = 0;
+      std::vector<InstrPtr>& newInstrs) = 0;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
+  virtual void toStream(std::ostream& out) const = 0;
+  friend std::ostream& operator<<(std::ostream& out, const Instruction& instr);
 };
 
 
@@ -32,10 +37,13 @@ public:
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
   virtual bool spillTemps(
-      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+      std::vector<InstrPtr>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  virtual void toStream(std::ostream& out) const override;
+
+  const std::string& getName() const noexcept;
 
 private:
   std::string name_;
@@ -47,10 +55,15 @@ public:
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
   virtual bool spillTemps(
-      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+      std::vector<InstrPtr>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  virtual void toStream(std::ostream& out) const override;
+
+  const std::string& getAsm() const noexcept;
+  int getSrc() const noexcept;
+  int getDst() const noexcept;
 
 private:
   std::string asmCode_;
@@ -64,22 +77,28 @@ public:
       const std::string& asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
-      std::optional<std::vector<std::string>>&& jumps);
+      std::optional<std::vector<Instruction*>>&& jumps);
   virtual InstrType getType() const noexcept override;
   virtual void getVars(std::vector<int>& vars) const noexcept override;
   virtual bool spillTemps(
-      std::vector<std::unique_ptr<Instruction>>& newInstrs) override;
+      std::vector<InstrPtr>& newInstrs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  virtual void toStream(std::ostream& out) const override;
+
+  const std::string& getAsm() const noexcept;
+  const std::vector<int>& getSrcs() const noexcept;
+  const std::vector<int>& getDsts() const noexcept;
+  const std::optional<std::vector<Instruction*>>& getJumps() const noexcept;
 
 private:
   std::string asmCode_;
   std::vector<int> srcs_;
   std::vector<int> dsts_;
-  // No value if falling through to next instruction,
+  // No value if always falls through to next instruction,
   // empty list if jumping out of function entirely
-  std::optional<std::vector<std::string>> jumps_;
+  std::optional<std::vector<Instruction*>> jumps_;
 };
 
 
@@ -87,14 +106,14 @@ class Function {
 public:
   Function(
       std::string&& name,
-      std::vector<std::unique_ptr<Instruction>>&& instrs);
+      std::vector<InstrPtr>&& instrs);
   void toCode(std::ostream& out);
 
 private:
   void spill();
 
   std::string name_;
-  std::vector<std::unique_ptr<Instruction>> instrs_;
+  std::vector<InstrPtr> instrs_;
   std::unordered_map<int, size_t> varToStackOffset_;
 };
 

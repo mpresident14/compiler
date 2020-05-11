@@ -35,6 +35,10 @@ const std::vector<int> callerSaveRegs{
   RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11
 };
 
+const std::vector<int> calleeSaveRegs{
+  R12, R13, R14, R15, RBX, RSP, RBP
+};
+
 constexpr bool isRegister(int temp) noexcept { return temp < 0; }
 
 inline std::ostream& operator<<(std::ostream& out, MachineRegs machineReg) {

@@ -5,5 +5,5 @@ set(REL_TO_ROOT_DIR src/assembly)
 
 # add_library(regalloc_lib instruction.cpp)
 
-add_executable(main main.cpp instruction.cpp)
+add_executable(main main.cpp instruction.cpp flow_graph.cpp)
 # target_link_libraries(main regalloc_lib)
