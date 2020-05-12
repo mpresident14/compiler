@@ -57,8 +57,8 @@ int main() {
 
   InstrPtr callPrint = make_unique<Operation>(
       "callq printInt",
-      vector<int>(/* caller>aveRegs */),
-      vector<int>(/* callee>aveRegs */),
+      vector<int>(callerSaveRegs),
+      vector<int>(calleeSaveRegs),
       optional<vector<Instruction*>>{});
 
   vector<InstrPtr> instrs;

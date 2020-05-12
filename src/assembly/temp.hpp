@@ -35,12 +35,13 @@ enum MachineReg {
 /* All registers except RSP and RBP are available for variables */
 constexpr size_t NUM_AVAIL_REGS = 14;
 
-
-const std::vector<MachineReg> callerSaveRegs{
+// NOTE: These are not vector<MachineReg> because I'm lazy and I want
+// a syntactically succinct copy when I pass them into Instruction constructors.
+const std::vector<int> callerSaveRegs{
   RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11
 };
 
-const std::vector<MachineReg> calleeSaveRegs{
+const std::vector<int> calleeSaveRegs{
   R12, R13, R14, R15, RBX, RSP, RBP
 };
 
