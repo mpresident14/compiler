@@ -6,6 +6,7 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <bitset>
 
 /*
  * Machine registers are enumerate from 0 through -15.
@@ -13,53 +14,37 @@
  */
 
 enum MachineReg {
-  RSP = 0,
-  RBP = -1,
-  RAX = -2,
-  RBX = -3,
-  RCX = -4,
-  RDX = -5,
-  RDI = -6,
-  RSI = -7,
-  R8 = -8,
-  R9 = -9,
-  R10 = -10,
-  R11 = -11,
-  R12 = -12,
-  R13 = -13,
-  R14 = -14,
-  R15 = -15,
-};
-
-/* All registers except RSP and RBP are available for variables */
-constexpr MachineReg AVAIL_REGS[] = {
-  RAX,
+  RAX = 0,
   RBX,
   RCX,
   RDX,
   RDI,
   RSI,
-  R8 ,
-  R9 ,
+  R8,
+  R9,
   R10,
   R11,
   R12,
   R13,
   R14,
   R15,
+  RSP,
+  RBP,
 };
 
-constexpr size_t NUM_AVAIL_REGS = sizeof(AVAIL_REGS) / sizeof(MachineReg);
+/* All registers except RSP and RBP are available for variables */
+constexpr size_t NUM_AVAIL_REGS = 14;
 
-const std::vector<int> callerSaveRegs{
+
+const std::vector<MachineReg> callerSaveRegs{
   RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11
 };
 
-const std::vector<int> calleeSaveRegs{
+const std::vector<MachineReg> calleeSaveRegs{
   R12, R13, R14, R15, RBX, RSP, RBP
 };
 
-constexpr bool isRegister(int temp) noexcept { return temp < 0; }
+constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 
 inline std::ostream& operator<<(std::ostream& out, MachineReg machineReg) {
   switch (machineReg) {

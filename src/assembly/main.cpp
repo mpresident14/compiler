@@ -20,16 +20,16 @@ int main() {
   InstrPtr moveImm1 = make_unique<Operation>(
       "movq $5, <0",
       vector<int>{},
-      vector<int>{ 0 },
+      vector<int>{ -1 },
       optional<vector<Instruction*>>{});
   InstrPtr leaq = make_unique<Operation>(
       "leaq (>0, >1, 2), <0",
-      vector<int>{RAX, 0},
+      vector<int>{RAX, -1},
       vector<int>{ RAX },
       optional<vector<Instruction*>>{});
-  InstrPtr move0 = make_unique<Move>("movq >, <", RAX, 0);
-  InstrPtr move1 = make_unique<Move>("movq >, <", 0, 1);
-  InstrPtr move2 = make_unique<Move>("movq >, <", 1, RCX);
+  InstrPtr move0 = make_unique<Move>("movq >, <", RAX, -1);
+  InstrPtr move1 = make_unique<Move>("movq >, <", -1, -2);
+  InstrPtr move2 = make_unique<Move>("movq >, <", -2, RCX);
 
   InstrPtr cmp = make_unique<Operation>(
       "cmpq $11, <0",

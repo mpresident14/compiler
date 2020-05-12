@@ -166,6 +166,10 @@ void Label::toCode(std::ostream& out, const unordered_map<int, size_t>&) const {
 void Move::toCode(
     std::ostream& out,
     const unordered_map<int, size_t>& varToStackOffset) const {
+  if (src_ == dst_) {
+    return;
+  }
+
   out << '\t';
   for (char c : asmCode_) {
     if (c == '>') {

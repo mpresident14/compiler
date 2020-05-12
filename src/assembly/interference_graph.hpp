@@ -25,9 +25,8 @@ public:
   std::pair<std::unordered_map<int, MachineReg>, std::vector<int>> color() const;
 
 private:
-  auto insertIfNotExists(int temp);
-
   std::unordered_map<int, std::unordered_set<int>> graph_;
+  std::unordered_multimap<int, int> moveMultimap_;
 };
 
 #endif
