@@ -72,20 +72,8 @@ add_custom_command(
     DEPENDS parsegen ${UTIL_DIR}/expr.pgen)
 
 
-# Running Tests
-# https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
-# https://gitlab.kitware.com/cmake/community/-/wikis/doc/ctest/Testing-With-CTest
-# For testing
+# Testing
 include(CTest)
-
-add_test(NAME dfa COMMAND dfa_test)
-add_test(NAME null_first COMMAND null_first_test)
-add_test(NAME build_parser COMMAND build_parser_test)
-add_test(NAME regex COMMAND regex_test)
-add_test(NAME parse COMMAND parse_test)
-add_test(NAME tokenize COMMAND tokenize_test)
-add_test(NAME parsegen COMMAND parsegen_test)
-
 set(MYTESTS
     dfa_test
     null_first_test
@@ -94,27 +82,8 @@ set(MYTESTS
     parse_test
     tokenize_test
     parsegen_test)
-set_tests_properties(
-    dfa null_first build_parser regex parse tokenize parsegen
-    PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
-
-
-# https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
-add_custom_target(
-    check
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS ${MYTESTS})
-
-
-# Memory check tests with Valgrind
-set(CTEST_MEMORYCHECK_COMMAND "valgrind")
-set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full")
-add_custom_target(
-    valgrind_check
-    COMMAND ${CMAKE_CTEST_COMMAND} -T memcheck
-    DEPENDS ${MYTESTS})
+create_tests(parse "${MYTESTS}")
 
 
 # Remove generated files on make clean
-file(GLOB GENFILES LIST_DIRECTORIES false "${GEN_DIR}/*")
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${GENFILES}")
+remove_gen_files("${GEN_DIR}")

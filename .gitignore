@@ -43,8 +43,8 @@ bin/
 lib/
 build/
 
-# My generated parser files
-test/parser/generated/*
+# My generated files
+generated/*
 src/parser/regex_parser_backup.cpp
 src/parser/regex_parser_backup.hpp
 

@@ -29,12 +29,51 @@ include_directories(${CMAKE_BINARY_DIR})
 # Set compilation flags
 set(CMAKE_CXX_FLAGS "-std=c++20 -Wall -Wextra -pedantic -g")
 
+
+##  Helper functions ##
+
+# Create tests
+# https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
+# https://gitlab.kitware.com/cmake/community/-/wikis/doc/ctest/Testing-With-CTest
+# https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
+set(CTEST_MEMORYCHECK_COMMAND "valgrind")
+set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full")
+
+function(create_tests TARGET MYTESTS)
+  # Add the tests
+  foreach(TEST ${MYTESTS})
+    add_test(NAME ${TEST} COMMAND ${TEST})
+  endforeach()
+
+  # Custom targets to run all the tests with/without valgrind
+  add_custom_target(
+      ${TARGET}_check
+      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+      DEPENDS ${MYTESTS})
+  add_custom_target(
+      ${TARGET}_valgrind_check
+      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -T memcheck
+      DEPENDS ${MYTESTS})
+
+  # Default pass regex
+  if (NOT ${ARGV2})
+    set_tests_properties(
+      ${MYTESTS}
+      PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
+  endif()
+
+endfunction()
+
+function(remove_gen_files GEN_DIR)
+  file(GLOB GENFILES LIST_DIRECTORIES false "${GEN_DIR}/*")
+  set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${GENFILES}")
+endfunction()
+
+
+
 # Add subdirectories
 add_subdirectory(${SRC}/parser)
 add_subdirectory(${SRC}/x86gen)
 
 add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/x86gen)
-
-
-set(CTEST_OUTPUT_ON_FAILURE true)
