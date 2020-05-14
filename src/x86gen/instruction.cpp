@@ -26,37 +26,15 @@ Operation::Operation(
       jumps_(move(jumps)) {}
 
 
+/***********
+ * getType *
+ ***********/
+
 InstrType Label::getType() const noexcept { return InstrType::LABEL; }
 InstrType Move::getType() const noexcept { return InstrType::MOVE; }
 InstrType Operation::getType() const noexcept { return InstrType::OPER; }
+InstrType Return::getType() const noexcept { return InstrType::RETURN; }
 
-/***********
- * getVars *
- ***********/
-
-void Label::getVars(vector<int>&) const noexcept {}
-
-void Move::getVars(vector<int>& vars) const noexcept {
-  if (!isRegister(src_)) {
-    vars.push_back(src_);
-  }
-  if (!isRegister(dst_)) {
-    vars.push_back(dst_);
-  }
-}
-void Operation::getVars(vector<int>& vars) const noexcept {
-  for (int temp : srcs_) {
-    if (!isRegister(temp)) {
-      vars.push_back(temp);
-    }
-  }
-
-  for (int temp : dsts_) {
-    if (!isRegister(temp)) {
-      vars.push_back(temp);
-    }
-  }
-}
 
 constexpr MachineReg SPILL_REGS[]{ R10, R11 };
 
@@ -112,6 +90,11 @@ bool Operation::spillTemps(vector<InstrPtr>& newInstrs) {
   return true;
 }
 
+bool Return::spillTemps(vector<InstrPtr>&) {
+  // No variables here, so we can insert this instruction
+  return true;
+}
+
 /**************
  * assignRegs *
  **************/
@@ -140,6 +123,10 @@ void Operation::assignRegs(const std::unordered_map<int, MachineReg>& coloring) 
   for (int& dst : dsts_) {
     assignReg(dst, coloring);
   }
+}
+
+void Return::assignRegs(const std::unordered_map<int, MachineReg>&) {
+  return;
 }
 
 /**********
@@ -208,6 +195,10 @@ void Operation::toCode(
 }
 
 
+// NOTE: Function::regAlloc handles the stack deallocation
+void Return::toCode(std::ostream& out, const unordered_map<int, size_t>&) const {
+  out << "retq" << endl;
+}
 /************
  * toStream *
  ************/
@@ -220,9 +211,11 @@ std::ostream& operator<<(std::ostream& out, const Instruction& instr) {
 void Label::toStream(std::ostream& out) const {
   out << name_ << ':';
 }
+
 void Move::toStream(std::ostream& out) const {
   out << asmCode_ << " [" << src_ << "] [" << dst_ << ']';
 }
+
 void Operation::toStream(std::ostream& out) const {
   out << asmCode_ << ' ' << srcs_ << ' ' << dsts_ << ' ';
   if (jumps_.has_value()) {
@@ -234,6 +227,9 @@ void Operation::toStream(std::ostream& out) const {
   }
 }
 
+void Return::toStream(std::ostream& out) const {
+  out << "RETURN (" << (hasValue_ ? "" : "no ") << "value)" << ':';
+}
 
 /***********
  * getters *

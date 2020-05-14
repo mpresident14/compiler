@@ -44,7 +44,7 @@ lib/
 build/
 
 # My generated files
-generated/*
+**/generated/*
 src/parser/regex_parser_backup.cpp
 src/parser/regex_parser_backup.hpp
 

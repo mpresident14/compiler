@@ -75,6 +75,7 @@ void writeTest0() {
   instrs.push_back(move(moveEq));
   instrs.push_back(move(doneLabel));
   instrs.push_back(move(callPrint));
+  instrs.push_back(make_unique<Return>(false));
 
   vector<Function> fns;
   fns.emplace_back("runprez", move(instrs));

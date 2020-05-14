@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <optional>
 
-enum class InstrType { LABEL, MOVE, OPER };
+enum class InstrType { LABEL, MOVE, OPER, RETURN };
 
 class Instruction;
 using InstrPtr = std::unique_ptr<Instruction>;
@@ -20,7 +20,6 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
-  virtual void getVars(std::vector<int>& vars) const noexcept = 0;
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
   virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) = 0;
   virtual void toCode(
@@ -34,14 +33,13 @@ public:
 class Label : public Instruction {
 public:
   Label(std::string&& name);
-  virtual InstrType getType() const noexcept override;
-  virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
-  virtual void toCode(
+  InstrType getType() const noexcept override;
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
+  void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
-  virtual void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out) const override;
 
   const std::string& getName() const noexcept;
 
@@ -52,14 +50,13 @@ private:
 class Move : public Instruction {
 public:
   Move(const std::string& asmCode, int src, int dst);
-  virtual InstrType getType() const noexcept override;
-  virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
-  virtual void toCode(
+  InstrType getType() const noexcept override;
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
+  void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
-  virtual void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out) const override;
 
   const std::string& getAsm() const noexcept;
   int getSrc() const noexcept;
@@ -78,14 +75,13 @@ public:
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
       std::optional<std::vector<Instruction*>>&& jumps);
-  virtual InstrType getType() const noexcept override;
-  virtual void getVars(std::vector<int>& vars) const noexcept override;
-  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
-  virtual void toCode(
+  InstrType getType() const noexcept override;
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
+  void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
-  virtual void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out) const override;
 
   const std::string& getAsm() const noexcept;
   const std::vector<int>& getSrcs() const noexcept;
@@ -101,5 +97,20 @@ private:
   std::optional<std::vector<Instruction*>> jumps_;
 };
 
+
+class Return : public Instruction {
+public:
+  explicit constexpr Return(bool hasValue) : hasValue_(hasValue) {}
+  virtual InstrType getType() const noexcept override;
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  virtual void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
+  virtual void toCode(
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  virtual void toStream(std::ostream& out) const override;
+
+private:
+  bool hasValue_;
+};
 
 #endif

@@ -36,21 +36,24 @@ void Function::regAlloc() {
       optional<vector<Instruction*>>{}));
 
   // Update the instructions and add them
+  // TODO: Lots of virtual function calls here, either use a switch
+  // or group them together
   for (InstrPtr& instr : instrs_) {
-    instr->assignRegs(coloring);
-    if (instr->spillTemps(newInstrs)) {
+    if (instr->getType() == InstrType::RETURN) {
+      // Deallocate space on the stack for spilled variables
+      newInstrs.push_back(make_unique<Operation>(
+          "addq $" + to_string(stackSpace) + ", %rsp",
+          vector<int>{},
+          vector<int>{},
+          optional<vector<Instruction*>>{}));
       newInstrs.push_back(move(instr));
+    } else {
+      instr->assignRegs(coloring);
+      if (instr->spillTemps(newInstrs)) {
+        newInstrs.push_back(move(instr));
+      }
     }
   }
-
-  // Deallocate space on the stack for spilled variables
-  newInstrs.push_back(make_unique<Operation>(
-      "addq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>{},
-      vector<int>{},
-      optional<vector<Instruction*>>{}));
-  newInstrs.push_back(make_unique<Operation>(
-      "retq", vector<int>{}, vector<int>{}, optional<vector<Instruction*>>{}));
 
   instrs_ = move(newInstrs);
 }
