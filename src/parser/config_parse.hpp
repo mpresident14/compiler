@@ -11,6 +11,6 @@ struct ParseInfo {
   std::string addlCppCode;
 };
 
-ParseInfo parseConfig(const std::string& fileName);
+ParseInfo parseConfig(const std::string &fileName);
 
 #endif

@@ -17,7 +17,7 @@ struct EInt : Expr {
 };
 
 struct EBinOp : Expr {
-  EBinOp(Expr* e1, BinOp op, Expr* e2) : e1_(e1), e2_(e2), op_(op) {}
+  EBinOp(Expr *e1, BinOp op, Expr *e2) : e1_(e1), e2_(e2), op_(op) {}
   ~EBinOp() {
     delete e1_;
     delete e2_;
@@ -26,36 +26,36 @@ struct EBinOp : Expr {
     int x = e1_->eval();
     int y = e2_->eval();
     switch (op_) {
-      case PLUS:
-        return x + y;
-      case MINUS:
-        return x - y;
-      case TIMES:
-        return x * y;
-      case DIVIDE:
-        return x / y;
+    case PLUS:
+      return x + y;
+    case MINUS:
+      return x - y;
+    case TIMES:
+      return x * y;
+    case DIVIDE:
+      return x / y;
     }
   }
 
-  Expr* e1_;
-  Expr* e2_;
+  Expr *e1_;
+  Expr *e2_;
   BinOp op_;
 };
 
 struct EUOp : Expr {
-  EUOp(Expr* e, UOp op) : e_(e), op_(op) {}
+  EUOp(Expr *e, UOp op) : e_(e), op_(op) {}
   ~EUOp() { delete e_; }
   int eval() const override {
     int x = e_->eval();
     switch (op_) {
-      case NEG:
-        return -x;
-      case BITNEG:
-        return ~x;
+    case NEG:
+      return -x;
+    case BITNEG:
+      return ~x;
     }
   }
 
-  Expr* e_;
+  Expr *e_;
   UOp op_;
 };
 

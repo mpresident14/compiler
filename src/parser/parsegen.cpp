@@ -1,16 +1,15 @@
-#include "src/parser/generate.hpp"
 #include "src/parser/config_parse.hpp"
+#include "src/parser/generate.hpp"
 
-#include <unistd.h>
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
 using namespace std;
 
-
-int main(int argc, char** argv) {
-  const char* errMsg =
+int main(int argc, char **argv) {
+  const char *errMsg =
       "Usage: parsegen -g <grammar_file> [-f <output_file_basename>]";
 
   string outputFile;
@@ -18,15 +17,15 @@ int main(int argc, char** argv) {
   char c;
   while ((c = getopt(argc, argv, "g:f:")) != -1) {
     switch (c) {
-      case 'g':
-        gpFile = optarg;
-        break;
-      case 'f':
-        outputFile = optarg;
-        break;
-      default:
-        cerr << errMsg << endl;
-        return 1;
+    case 'g':
+      gpFile = optarg;
+      break;
+    case 'f':
+      outputFile = optarg;
+      break;
+    default:
+      cerr << errMsg << endl;
+      return 1;
     }
   }
 
@@ -45,9 +44,6 @@ int main(int argc, char** argv) {
   }
 
   ParseInfo parseInfo = parseConfig(gpFile);
-  generateParserCode(
-      outputFile,
-      parseInfo.addlHppCode,
-      parseInfo.addlCppCode,
-      parseInfo.grammarData);
+  generateParserCode(outputFile, parseInfo.addlHppCode, parseInfo.addlCppCode,
+                     parseInfo.grammarData);
 }

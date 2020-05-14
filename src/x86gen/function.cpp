@@ -1,15 +1,13 @@
 #include "src/x86gen/function.hpp"
 
-#include "src/x86gen/temp.hpp"
-#include "src/x86gen/instruction.hpp"
 #include "src/x86gen/flow_graph.hpp"
+#include "src/x86gen/instruction.hpp"
 #include "src/x86gen/interference_graph.hpp"
+#include "src/x86gen/temp.hpp"
 
 using namespace std;
 
-Function::Function(
-    std::string&& name,
-    std::vector<InstrPtr>&& instrs)
+Function::Function(std::string &&name, std::vector<InstrPtr> &&instrs)
     : name_(move(name)), instrs_(move(instrs)) {}
 
 void Function::regAlloc() {
@@ -17,8 +15,8 @@ void Function::regAlloc() {
   fgraph.computeLiveness();
   InterferenceGraph igraph(fgraph);
   auto colorPair = igraph.color();
-  const unordered_map<int, MachineReg>& coloring = colorPair.first;
-  const vector<int>& spilled = colorPair.second;
+  const unordered_map<int, MachineReg> &coloring = colorPair.first;
+  const vector<int> &spilled = colorPair.second;
 
   for (int tempId : spilled) {
     if (!varToStackOffset_.contains(tempId)) {
@@ -30,22 +28,18 @@ void Function::regAlloc() {
   size_t stackSpace = varToStackOffset_.size() * 8;
   vector<InstrPtr> newInstrs;
   newInstrs.push_back(make_unique<Operation>(
-      "subq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>{},
-      vector<int>{},
-      optional<vector<Instruction*>>{}));
+      "subq $" + to_string(stackSpace) + ", %rsp", vector<int>{}, vector<int>{},
+      optional<vector<Instruction *>>{}));
 
   // Update the instructions and add them
   // TODO: Lots of virtual function calls here, either use a switch
   // or group them together
-  for (InstrPtr& instr : instrs_) {
+  for (InstrPtr &instr : instrs_) {
     if (instr->getType() == InstrType::RETURN) {
       // Deallocate space on the stack for spilled variables
       newInstrs.push_back(make_unique<Operation>(
-          "addq $" + to_string(stackSpace) + ", %rsp",
-          vector<int>{},
-          vector<int>{},
-          optional<vector<Instruction*>>{}));
+          "addq $" + to_string(stackSpace) + ", %rsp", vector<int>{},
+          vector<int>{}, optional<vector<Instruction *>>{}));
       newInstrs.push_back(move(instr));
     } else {
       instr->assignRegs(coloring);
@@ -58,22 +52,20 @@ void Function::regAlloc() {
   instrs_ = move(newInstrs);
 }
 
-void Function::toCode(std::ostream& out) {
+void Function::toCode(std::ostream &out) {
   regAlloc();
   out << name_ << ":\n";
-  for (const InstrPtr& instr : instrs_) {
+  for (const InstrPtr &instr : instrs_) {
     instr->toCode(out, varToStackOffset_);
   }
 }
 
+Program::Program(string &&name, vector<Function> &&fns)
+    : name_(name), fns_(move(fns)) {}
 
-Program::Program(string&& name, vector<Function>&& fns)
-  : name_(name), fns_(move(fns)) {}
-
-
-void Program::toCode(ostream& out) {
+void Program::toCode(ostream &out) {
   out << ".text\n.globl runprez\n.align 16\n";
-  for (Function& fn : fns_) {
+  for (Function &fn : fns_) {
     fn.toCode(out);
   }
 }

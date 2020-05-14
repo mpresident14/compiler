@@ -1,10 +1,10 @@
+#include "src/parser/config_grammar.hpp"
 #include "src/parser/generate.hpp"
 #include "src/parser/utils.hpp"
-#include "src/parser/config_grammar.hpp"
 
-#include <iostream>
-#include <fstream>
 #include <cstddef>
+#include <fstream>
+#include <iostream>
 #include <string>
 
 using namespace std;

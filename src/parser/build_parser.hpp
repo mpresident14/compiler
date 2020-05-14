@@ -1,13 +1,12 @@
 #ifndef BUILD_PARSER_HPP
 #define BUILD_PARSER_HPP
 
+#include "src/parser/dfa.hpp"
 #include "src/parser/rules.hpp"
 #include "src/parser/utils.hpp"
-#include "src/parser/dfa.hpp"
 
 #include <optional>
 #include <ostream>
-
 
 struct RuleData {
   std::optional<DFARule> reducibleRule;
@@ -18,11 +17,10 @@ struct RuleData {
   }
 };
 
-
-DFA<DFARuleSet, int, DFARuleSetHash> buildParserDFA(const GrammarData& grammarData);
-RuleData condenseRuleSet(
-    const DFARuleSet& ruleSet,
-    const GrammarData& grammarData);
-void condensedDFAToCode(std::ostream& out, const GrammarData& grammarData);
+DFA<DFARuleSet, int, DFARuleSetHash>
+buildParserDFA(const GrammarData &grammarData);
+RuleData condenseRuleSet(const DFARuleSet &ruleSet,
+                         const GrammarData &grammarData);
+void condensedDFAToCode(std::ostream &out, const GrammarData &grammarData);
 
 #endif

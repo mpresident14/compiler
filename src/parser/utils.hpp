@@ -1,43 +1,40 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <cstddef>
-#include <vector>
-#include <unordered_map>
 #include <climits>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
-#include <cstdint>
-#include <stdexcept>
-#include <sstream>
+#include <unordered_map>
+#include <vector>
 
 #include <prez/print_stuff.hpp>
 
-
 /* Fixed for all grammars */
 enum class Assoc { NONE, LEFT, RIGHT, NOT };
-inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
+inline std::ostream &operator<<(std::ostream &out, const Assoc &assoc) {
   switch (assoc) {
-    case Assoc::LEFT:
-      return out << "LEFT";
-    case Assoc::RIGHT:
-      return out << "RIGHT";
-    case Assoc::NOT:
-      return out << "NOT";
-    default:
-      return out << "NONE";
+  case Assoc::LEFT:
+    return out << "LEFT";
+  case Assoc::RIGHT:
+    return out << "RIGHT";
+  case Assoc::NOT:
+    return out << "NOT";
+  default:
+    return out << "NONE";
   }
 }
-
 
 static constexpr int NONE = INT_MIN;
 static constexpr int SKIP_TOKEN = INT_MIN + 1;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
-
 
 struct Token {
   std::string name;
@@ -71,7 +68,6 @@ struct GrammarData {
   std::vector<Variable> variables;
 };
 
-
 constexpr bool isToken(int symbol) noexcept { return symbol < 0; }
 constexpr int tokenToFromIndex(int token) noexcept { return -token - 1; }
 constexpr int symbolIndex(int symbol, size_t numVars) noexcept {
@@ -83,14 +79,12 @@ constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-inline std::string symbolToString(
-    int symbolId,
-    const GrammarData& grammarData) {
+inline std::string symbolToString(int symbolId,
+                                  const GrammarData &grammarData) {
   if (isToken(symbolId)) {
     return grammarData.tokens[tokenToFromIndex(symbolId)].name;
   }
   return grammarData.variables[symbolId].name;
 }
-
 
 #endif

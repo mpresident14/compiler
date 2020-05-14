@@ -5,7 +5,8 @@
 using namespace std;
 
 /* To avoid having to call the default set constructor on every check */
-auto insertIfNotExists(unordered_map<int, unordered_set<int>>& theMap, int temp) {
+auto insertIfNotExists(unordered_map<int, unordered_set<int>> &theMap,
+                       int temp) {
   auto iter = theMap.find(temp);
   if (iter == theMap.end()) {
     return theMap.emplace(temp, unordered_set<int>{}).first;
@@ -14,17 +15,16 @@ auto insertIfNotExists(unordered_map<int, unordered_set<int>>& theMap, int temp)
 }
 
 auto removeNode(
-    unordered_map<int, unordered_set<int>>& graphCopy,
-    const unordered_map<int, unordered_set<int>>::const_iterator& iter) {
+    unordered_map<int, unordered_set<int>> &graphCopy,
+    const unordered_map<int, unordered_set<int>>::const_iterator &iter) {
   for (int temp : iter->second) {
     graphCopy.at(temp).erase(temp);
   }
   return graphCopy.erase(iter);
 }
 
-void buildStack(
-      unordered_map<int, unordered_set<int>>& graphCopy,
-      stack<int>& stk) {
+void buildStack(unordered_map<int, unordered_set<int>> &graphCopy,
+                stack<int> &stk) {
   size_t fewestNeighbors = SIZE_MAX;
   int tempFewestNeighbors;
   size_t origLen = graphCopy.size();
@@ -40,9 +40,9 @@ void buildStack(
 
     size_t numNeighbors = iter->second.size();
     if (numNeighbors < NUM_AVAIL_REGS) {
-      // If the variable interferes with fewer than the number of available registers,
-      // then we know we can color it, so we want it towards the bottom of the stack
-      // (i.e. colored last)
+      // If the variable interferes with fewer than the number of available
+      // registers, then we know we can color it, so we want it towards the
+      // bottom of the stack (i.e. colored last)
       stk.push(temp);
       iter = removeNode(graphCopy, iter);
     } else {
@@ -54,11 +54,11 @@ void buildStack(
   }
 
   if (origLen == graphCopy.size()) {
-    // We didn't find any variables interfering with fewer than the number of available
-    // registers
+    // We didn't find any variables interfering with fewer than the number of
+    // available registers
     if (fewestNeighbors == SIZE_MAX) {
-      // Didn't find any variables interfering with at least the number of available
-      // registers either. Only machine registers left, so all done.
+      // Didn't find any variables interfering with at least the number of
+      // available registers either. Only machine registers left, so all done.
       return;
     } else {
       // Otherwise, remove the node with the fewest neighbors
@@ -70,48 +70,50 @@ void buildStack(
   buildStack(graphCopy, stk);
 }
 
-
 /*
- * General idea: Look what I wrote to and see what is live afterward. Those temporaries
- * interfere. The only exception is that for moves, the src and dst do not interfere.
+ * General idea: Look what I wrote to and see what is live afterward. Those
+ * temporaries interfere. The only exception is that for moves, the src and dst
+ * do not interfere.
  */
-InterferenceGraph::InterferenceGraph(const FlowGraph& fgraph) {
-  for (const auto& [instr, liveness] : fgraph.getNodes()) {
+InterferenceGraph::InterferenceGraph(const FlowGraph &fgraph) {
+  for (const auto &[instr, liveness] : fgraph.getNodes()) {
     switch (instr->getType()) {
-      case InstrType::MOVE: {
-        int moveSrc = static_cast<const Move*>(instr)->getSrc();
-        int moveDst = static_cast<const Move*>(instr)->getDst();
-        unordered_set<int>& moveNeighbors = insertIfNotExists(graph_, moveDst)->second;
-        for (int temp : liveness.liveOut) {
-          if (temp != moveSrc && temp != moveDst) {
-            insertIfNotExists(graph_, temp)->second.insert(moveDst);
-            moveNeighbors.insert(temp);
-          }
+    case InstrType::MOVE: {
+      int moveSrc = static_cast<const Move *>(instr)->getSrc();
+      int moveDst = static_cast<const Move *>(instr)->getDst();
+      unordered_set<int> &moveNeighbors =
+          insertIfNotExists(graph_, moveDst)->second;
+      for (int temp : liveness.liveOut) {
+        if (temp != moveSrc && temp != moveDst) {
+          insertIfNotExists(graph_, temp)->second.insert(moveDst);
+          moveNeighbors.insert(temp);
         }
-
-        // Add to moveMultimap for biased coloring
-        moveMultimap_.emplace(moveSrc, moveDst);
-        moveMultimap_.emplace(moveDst, moveSrc);
-        break;
       }
-      case InstrType::OPER:
-        for (int opDst : static_cast<const Operation*>(instr)->getDsts()) {
-          unordered_set<int>& opNeighbors = insertIfNotExists(graph_, opDst)->second;
-          for (int temp : liveness.liveOut) {
-            if (temp != opDst) {
-              insertIfNotExists(graph_, temp)->second.insert(opDst);
-              opNeighbors.insert(temp);
-            }
+
+      // Add to moveMultimap for biased coloring
+      moveMultimap_.emplace(moveSrc, moveDst);
+      moveMultimap_.emplace(moveDst, moveSrc);
+      break;
+    }
+    case InstrType::OPER:
+      for (int opDst : static_cast<const Operation *>(instr)->getDsts()) {
+        unordered_set<int> &opNeighbors =
+            insertIfNotExists(graph_, opDst)->second;
+        for (int temp : liveness.liveOut) {
+          if (temp != opDst) {
+            insertIfNotExists(graph_, temp)->second.insert(opDst);
+            opNeighbors.insert(temp);
           }
         }
-        break;
-      default: ;
+      }
+      break;
+    default:;
     }
   }
 }
 
-
-pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color() const {
+pair<unordered_map<int, MachineReg>, vector<int>>
+InterferenceGraph::color() const {
   unordered_map<int, unordered_set<int>> graphCopy(graph_);
   stack<int> stk;
   buildStack(graphCopy, stk);
@@ -125,63 +127,64 @@ pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color() con
   }
 
   // Given these neighbors, is the color reg available?
-  auto canColor = [this, &coloring](MachineReg reg, int temp){
-    const unordered_set<int>& neighbors = graph_.at(temp);
-    return none_of(
-        neighbors.cbegin(),
-        neighbors.cend(),
-        [&coloring, &reg](int neighbor){
-          auto iter = coloring.find(neighbor);
-          return iter != coloring.end() && iter->second == reg;
-        });
+  auto canColor = [this, &coloring](MachineReg reg, int temp) {
+    const unordered_set<int> &neighbors = graph_.at(temp);
+    return none_of(neighbors.cbegin(), neighbors.cend(),
+                   [&coloring, &reg](int neighbor) {
+                     auto iter = coloring.find(neighbor);
+                     return iter != coloring.end() && iter->second == reg;
+                   });
   };
 
-  mainLoop:
-    while (!stk.empty()) {
-      int temp = stk.top();
-      stk.pop();
-      // Find a color for the variable that none of its neighbors have been assigned
+mainLoop:
+  while (!stk.empty()) {
+    int temp = stk.top();
+    stk.pop();
+    // Find a color for the variable that none of its neighbors have been
+    // assigned
 
-      // Biased coloring: if we have "movq %t1 %t2", try to put them in the same register
-      std::bitset<NUM_AVAIL_REGS> moveRegs;
-      // Get all the assigned colors of the temporaries that temp was moved to/from
-      auto movePartners = moveMultimap_.equal_range(temp);
-      for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
-        auto coloringIter = coloring.find(iter->second);
-        if (coloringIter != coloring.end()) {
-          moveRegs.set(coloringIter->second);
-        }
+    // Biased coloring: if we have "movq %t1 %t2", try to put them in the same
+    // register
+    std::bitset<NUM_AVAIL_REGS> moveRegs;
+    // Get all the assigned colors of the temporaries that temp was moved
+    // to/from
+    auto movePartners = moveMultimap_.equal_range(temp);
+    for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
+      auto coloringIter = coloring.find(iter->second);
+      if (coloringIter != coloring.end()) {
+        moveRegs.set(coloringIter->second);
       }
-
-      // First try the registers of the move partners
-      for (size_t reg = 0; reg < NUM_AVAIL_REGS; ++reg) {
-        if (moveRegs[reg]) {
-          if (canColor(static_cast<MachineReg>(reg), temp)) {
-            coloring.emplace(temp, static_cast<MachineReg>(reg));
-            goto mainLoop;
-          }
-        }
-      }
-
-      // Then try the rest
-      for (size_t reg = 0; reg < NUM_AVAIL_REGS; ++reg) {
-        if (!moveRegs[reg]) {
-          if (canColor(static_cast<MachineReg>(reg), temp)) {
-            coloring.emplace(temp, static_cast<MachineReg>(reg));
-            goto mainLoop;
-          }
-        }
-      }
-
-      // No way to assign this variable to a register, so spill it
-      spilled.push_back(temp);
     }
 
-  return { move(coloring), move(spilled) };
+    // First try the registers of the move partners
+    for (size_t reg = 0; reg < NUM_AVAIL_REGS; ++reg) {
+      if (moveRegs[reg]) {
+        if (canColor(static_cast<MachineReg>(reg), temp)) {
+          coloring.emplace(temp, static_cast<MachineReg>(reg));
+          goto mainLoop;
+        }
+      }
+    }
+
+    // Then try the rest
+    for (size_t reg = 0; reg < NUM_AVAIL_REGS; ++reg) {
+      if (!moveRegs[reg]) {
+        if (canColor(static_cast<MachineReg>(reg), temp)) {
+          coloring.emplace(temp, static_cast<MachineReg>(reg));
+          goto mainLoop;
+        }
+      }
+    }
+
+    // No way to assign this variable to a register, so spill it
+    spilled.push_back(temp);
+  }
+
+  return {move(coloring), move(spilled)};
 }
 
-std::ostream& operator<<(std::ostream& out, const InterferenceGraph& fgraph) {
-  for (const auto& [temp, neighbors] : fgraph.graph_) {
+std::ostream &operator<<(std::ostream &out, const InterferenceGraph &fgraph) {
+  for (const auto &[temp, neighbors] : fgraph.graph_) {
     out << temp << " -> " << neighbors << '\n';
   }
   return out;

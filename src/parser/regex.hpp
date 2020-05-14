@@ -3,12 +3,11 @@
 
 #include <memory>
 #include <ostream>
-#include <vector>
-#include <utility>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include <prez/print_stuff.hpp>
-
 
 enum class RgxType {
   EMPTYSET,
@@ -22,7 +21,7 @@ enum class RgxType {
   NOT
 };
 
-std::ostream& operator<<(std::ostream& out, RgxType type);
+std::ostream &operator<<(std::ostream &out, RgxType type);
 
 class Regex;
 using RgxPtr = std::shared_ptr<Regex>;
@@ -30,27 +29,27 @@ using RgxPtr = std::shared_ptr<Regex>;
 class Regex {
 public:
   virtual ~Regex(){};
-  virtual void toStream(std::ostream& out) const = 0;
+  virtual void toStream(std::ostream &out) const = 0;
   virtual RgxPtr getDeriv(char) const = 0;
   virtual bool isNullable() const = 0;
   virtual RgxType getType() const = 0;
-  virtual bool operator==(const Regex& other) const = 0;
+  virtual bool operator==(const Regex &other) const = 0;
   virtual size_t hashFn() const noexcept = 0;
 
-  friend std::ostream& operator<<(std::ostream& out, const Regex& rgx) {
+  friend std::ostream &operator<<(std::ostream &out, const Regex &rgx) {
     rgx.toStream(out);
     return out;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
+  friend std::ostream &operator<<(std::ostream &out, Regex *rgx) {
     return out << *rgx;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
+  friend std::ostream &operator<<(std::ostream &out, RgxPtr rgx) {
     return out << *rgx;
   }
 
-  friend bool operator==(const RgxPtr& r1, const RgxPtr& r2) noexcept {
+  friend bool operator==(const RgxPtr &r1, const RgxPtr &r2) noexcept {
     return *r1 == *r2;
   }
 
@@ -58,7 +57,7 @@ public:
   // Regex::PtrHash and end up with std::hash<shared_ptr<Regex>>, but
   // I didn't want to define things in namespace std.
   struct PtrHash {
-    size_t operator()(const RgxPtr& rgx) const noexcept {
+    size_t operator()(const RgxPtr &rgx) const noexcept {
       return static_cast<int>(rgx->getType()) ^ (rgx->hashFn() << 1);
     }
   };
@@ -69,8 +68,8 @@ public:
   bool isNullable() const override;
   RgxPtr getDeriv(char) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
-  void toStream(std::ostream& out) const override;
+  bool operator==(const Regex &other) const override;
+  void toStream(std::ostream &out) const override;
   size_t hashFn() const noexcept override;
 };
 
@@ -79,8 +78,8 @@ public:
   bool isNullable() const override;
   RgxPtr getDeriv(char) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
-  void toStream(std::ostream& out) const override;
+  bool operator==(const Regex &other) const override;
+  void toStream(std::ostream &out) const override;
   size_t hashFn() const noexcept override;
 };
 
@@ -89,8 +88,8 @@ public:
   bool isNullable() const override;
   RgxPtr getDeriv(char) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
-  void toStream(std::ostream& out) const override;
+  bool operator==(const Regex &other) const override;
+  void toStream(std::ostream &out) const override;
   size_t hashFn() const noexcept override;
 };
 
@@ -100,27 +99,26 @@ public:
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
-  void toStream(std::ostream& out) const override;
+  bool operator==(const Regex &other) const override;
+  void toStream(std::ostream &out) const override;
   size_t hashFn() const noexcept override;
 
 private:
   char c_;
 };
 
-
 class Alt : public Regex {
 public:
-  Alt(Regex* r1, Regex* r2);
-  Alt(std::unordered_set<RgxPtr, Regex::PtrHash>&& rSet, Regex* r);
-  Alt(std::unordered_set<RgxPtr, Regex::PtrHash>&& rSet);
-  Alt(const std::string& charVec);
+  Alt(Regex *r1, Regex *r2);
+  Alt(std::unordered_set<RgxPtr, Regex::PtrHash> &&rSet, Regex *r);
+  Alt(std::unordered_set<RgxPtr, Regex::PtrHash> &&rSet);
+  Alt(const std::string &charVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
+  bool operator==(const Regex &other) const override;
   size_t hashFn() const noexcept override;
-  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream &out) const override;
 
   friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
@@ -130,15 +128,15 @@ private:
 
 class Concat : public Regex {
 public:
-  Concat(Regex* r1, Regex* r2);
-  Concat(std::vector<RgxPtr>&& rVec, Regex* r);
-  Concat(std::vector<RgxPtr>&& rVec);
+  Concat(Regex *r1, Regex *r2);
+  Concat(std::vector<RgxPtr> &&rVec, Regex *r);
+  Concat(std::vector<RgxPtr> &&rVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
+  bool operator==(const Regex &other) const override;
   size_t hashFn() const noexcept override;
-  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream &out) const override;
 
   friend RgxPtr makeConcat(RgxPtr r1, RgxPtr r2);
 
@@ -148,19 +146,18 @@ private:
 
 class Star : public Regex {
 public:
-  Star(Regex* rgx);
+  Star(Regex *rgx);
   Star(RgxPtr rgx);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
+  bool operator==(const Regex &other) const override;
   size_t hashFn() const noexcept override;
-  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream &out) const override;
 
 private:
   RgxPtr rgx_;
 };
-
 
 class Range : public Regex {
 public:
@@ -169,9 +166,9 @@ public:
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
+  bool operator==(const Regex &other) const override;
   size_t hashFn() const noexcept override;
-  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream &out) const override;
 
 private:
   char start_;
@@ -184,14 +181,14 @@ private:
  * */
 class Not : public Regex {
 public:
-  Not(Regex* rgx);
+  Not(Regex *rgx);
   Not(RgxPtr rgx);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
   RgxType getType() const override;
-  bool operator==(const Regex& other) const override;
+  bool operator==(const Regex &other) const override;
   size_t hashFn() const noexcept override;
-  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream &out) const override;
 
   friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 

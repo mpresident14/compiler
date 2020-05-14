@@ -4,15 +4,14 @@
 #include "src/parser/utils.hpp"
 
 #include <cstddef>
+#include <numeric>
 #include <ostream>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <numeric>
 
 #include <prez/print_stuff.hpp>
-
 
 struct DFARule {
   int concrete;
@@ -37,16 +36,15 @@ struct DFARule {
     if (atEnd()) {
       throw std::invalid_argument("Out of bounds");
     }
-    return { concrete, symbols, pos + 1, lookahead };
+    return {concrete, symbols, pos + 1, lookahead};
   }
 
-
-  bool operator==(const DFARule& other) const noexcept {
+  bool operator==(const DFARule &other) const noexcept {
     return concrete == other.concrete && symbols == other.symbols &&
            pos == other.pos && lookahead == other.lookahead;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
+  friend std::ostream &operator<<(std::ostream &out, const DFARule &rule) {
     out << rule.concrete << " -> ";
     size_t len = rule.symbols.size();
     for (size_t i = 0; i < len; ++i) {
@@ -64,7 +62,7 @@ struct DFARule {
 
   /* Does not use lookahead set. See comment below */
   struct Hash {
-    size_t operator()(const DFARule& rule) const noexcept {
+    size_t operator()(const DFARule &rule) const noexcept {
       std::hash<int> intHasher;
       size_t h1 = intHasher(rule.concrete);
       size_t h2 = 0;
@@ -76,38 +74,34 @@ struct DFARule {
     }
   };
 
-  /* Nodes of the DFA. Has to be a set, not a vector, because two groups of rules
-   * should be equal if they contain the same rules (in any order).
+  /* Nodes of the DFA. Has to be a set, not a vector, because two groups of
+   * rules should be equal if they contain the same rules (in any order).
    * Individual rules in a RuleSet are not compared using the lookahead set
    * since there should never be two rules differing only by their lookahead set
-   * in the same RuleSet. However, operator== in the DFARule class still compares
-   * lookahead sets because RuleSet equality compares the rules with this
-   * operator, and two RuleSets can differ based on the lookahead sets of the
-   * rules they contain.
+   * in the same RuleSet. However, operator== in the DFARule class still
+   * compares lookahead sets because RuleSet equality compares the rules with
+   * this operator, and two RuleSets can differ based on the lookahead sets of
+   * the rules they contain.
    * */
   struct Eq {
-    bool operator()(const DFARule& left, const DFARule& right) const noexcept {
+    bool operator()(const DFARule &left, const DFARule &right) const noexcept {
       return left.concrete == right.concrete && left.symbols == right.symbols &&
-            left.pos == right.pos;
+             left.pos == right.pos;
     }
   };
 };
 
-
 using DFARuleSet = std::unordered_set<DFARule, DFARule::Hash, DFARule::Eq>;
 
-
 struct DFARuleSetHash {
-  size_t operator()(const DFARuleSet& ruleSet) const noexcept {
+  size_t operator()(const DFARuleSet &ruleSet) const noexcept {
     DFARule::Hash hasher;
     size_t h = 0;
-    for (const DFARule& rule : ruleSet) {
+    for (const DFARule &rule : ruleSet) {
       h += hasher(rule);
     }
     return h;
   }
 };
-
-
 
 #endif

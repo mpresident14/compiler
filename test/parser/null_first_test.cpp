@@ -9,7 +9,6 @@
 using namespace std;
 using namespace prez;
 
-
 UnitTest TESTER = UnitTest::createTester();
 
 void testGetNullabilities() {
@@ -17,7 +16,7 @@ void testGetNullabilities() {
   // NULLABLE(C) = true
   // NULLABLE(X) = false
   // NULLABLE(Y) = true
-  vector<bool> expected = { false, true, false, true };
+  vector<bool> expected = {false, true, false, true};
 
   TESTER.assertEquals(expected, getNullabilities(GRAMMAR_DATA));
 }
@@ -27,10 +26,10 @@ void testGetFirsts() {
   // FIRST(C) = {b, a, z}
   // FIRST(X) = {a}
   // FIRST(Y) = {b, z}
-  vector<bool> expectedS = { true, true, true, true };
-  vector<bool> expectedC = { false, true, true, true };
-  vector<bool> expectedX = { false, false, true, false };
-  vector<bool> expectedY = { false, true, false, true };
+  vector<bool> expectedS = {true, true, true, true};
+  vector<bool> expectedC = {false, true, true, true};
+  vector<bool> expectedX = {false, false, true, false};
+  vector<bool> expectedY = {false, true, false, true};
 
   vector<vector<bool>> actual = getFirsts(GRAMMAR_DATA);
   TESTER.assertEquals(expectedS, actual[S]);
