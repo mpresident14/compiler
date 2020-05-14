@@ -69,6 +69,8 @@ private:
   int dst_;
 };
 
+// TODO: jumps_ is normally empty, maybe specialize a class for jumping
+
 class Operation : public Instruction {
 public:
   Operation(const std::string &asmCode, std::vector<int> &&srcs,

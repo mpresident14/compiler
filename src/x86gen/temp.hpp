@@ -103,7 +103,7 @@ inline std::ostream &operator<<(std::ostream &out, MachineReg machineReg) {
 
 static int temp = -1;
 
-constexpr int newTemp() noexcept {
+inline int newTemp() noexcept {
   return temp--;
 }
 

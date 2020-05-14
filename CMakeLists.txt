@@ -74,6 +74,7 @@ endfunction()
 # Add subdirectories
 add_subdirectory(${SRC}/parser)
 add_subdirectory(${SRC}/x86gen)
+add_subdirectory(${SRC}/intermediate)
 
 add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/x86gen)

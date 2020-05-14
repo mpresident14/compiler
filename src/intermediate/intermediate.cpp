@@ -1,9 +1,35 @@
 #include "src/intermediate/intermediate.hpp"
 
+#include <stdexcept>
+
+
 using namespace std;
 
 namespace intermediate {
 
+
+/*********
+ * Const *
+ *********/
+
+void Const::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
+  instrs.emplace_back(new Operation(
+      string("movq $").append(to_string(n_)).append(", <0"), {}, {temp}, {}));
+}
+
+
+/*********
+ * Temp *
+ *********/
+
+void Temp::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
+  instrs.emplace_back(new Move("movq >, <", t_, temp));
+}
+
+
+/*********
+ * BinOp *
+ *********/
 
 BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, Bop bop)
   : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
@@ -15,6 +41,13 @@ void BinOp::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
     case Bop::ARSHIFT: return handleShifts("sarq", temp, instrs);
     case Bop::DIV: return handleDiv(true, temp, instrs);
     case Bop::MOD: return handleDiv(false, temp, instrs);
+    case Bop::PLUS: return handleDiv("addq", temp, instrs);
+    case Bop::MINUS: return handleDiv("subq", temp, instrs);
+    case Bop::MUL: return handleDiv("imulq", temp, instrs);
+    case Bop::AND: return handleDiv("andq", temp, instrs);
+    case Bop::OR: return handleDiv("orq", temp, instrs);
+    case Bop::XOR: return handleDiv("xorq", temp, instrs);
+    default: throw invalid_argument("Unrecognized binary operator.");
   }
 }
 
@@ -50,6 +83,19 @@ void BinOp::handleDiv(bool isDiv, int temp, std::vector<InstrPtr> &instrs) const
     // If mod, move %rdx into temp
     Temp(RDX).toInstrs(t2, instrs);
   }
+}
+
+
+void BinOp::handleOthers(std::string asmCode, int temp, std::vector<InstrPtr> &instrs) const {
+  // TODO: Specialize if expr1_ is a Const
+  // TODO: Leaq optimization
+  // TODO: Inc/deq optimization
+  int t1 = newTemp();
+  expr1_->toInstrs(t1, instrs);
+  int t2 = newTemp();
+  expr2_->toInstrs(t2, instrs);
+  instrs.emplace_back(new Operation(asmCode.append(" >, <"), {t1, t2}, {t2}, {}));
+  Temp(t2).toInstrs(temp, instrs);
 }
 
 

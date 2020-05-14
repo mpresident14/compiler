@@ -56,6 +56,7 @@ public:
 private:
   void handleShifts(std::string asmCode, int temp, std::vector<InstrPtr> &instrs) const;
   void handleDiv(bool isDiv, int temp, std::vector<InstrPtr> &instrs) const;
+  void handleOthers(std::string asmCode, int temp, std::vector<InstrPtr> &instrs) const;
 
   ExprPtr expr1_;
   ExprPtr expr2_;
@@ -77,13 +78,13 @@ private:
 
 class Temp : public Expr {
 public:
-  explicit constexpr Temp(int n) : n_(n) {}
+  explicit constexpr Temp(int t) : t_(t) {}
   constexpr ExprType getType() const noexcept override { return ExprType::TEMP; }
   void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
-  constexpr int getTemp() { return n_; }
+  constexpr int getTemp() { return t_; }
 
 private:
-  int n_;
+  int t_;
 };
 
 } // namespace intermediate
