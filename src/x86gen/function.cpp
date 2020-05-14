@@ -1,9 +1,9 @@
-#include "src/assembly/function.hpp"
+#include "src/x86gen/function.hpp"
 
-#include "src/assembly/temp.hpp"
-#include "src/assembly/instruction.hpp"
-#include "src/assembly/flow_graph.hpp"
-#include "src/assembly/interference_graph.hpp"
+#include "src/x86gen/temp.hpp"
+#include "src/x86gen/instruction.hpp"
+#include "src/x86gen/flow_graph.hpp"
+#include "src/x86gen/interference_graph.hpp"
 
 using namespace std;
 
@@ -60,5 +60,17 @@ void Function::toCode(std::ostream& out) {
   out << name_ << ":\n";
   for (const InstrPtr& instr : instrs_) {
     instr->toCode(out, varToStackOffset_);
+  }
+}
+
+
+Program::Program(string&& name, vector<Function>&& fns)
+  : name_(name), fns_(move(fns)) {}
+
+
+void Program::toCode(ostream& out) {
+  out << ".text\n.globl runprez\n.align 16\n";
+  for (Function& fn : fns_) {
+    fn.toCode(out);
   }
 }

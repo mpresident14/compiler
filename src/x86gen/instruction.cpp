@@ -1,4 +1,4 @@
-#include "src/assembly/instruction.hpp"
+#include "src/x86gen/instruction.hpp"
 
 #include <stdexcept>
 #include <prez/print_stuff.hpp>

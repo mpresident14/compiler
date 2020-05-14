@@ -1,8 +1,8 @@
 #ifndef INTERFERENCE_GRAPH_HPP
 #define INTERFERENCE_GRAPH_HPP
 
-#include "src/assembly/flow_graph.hpp"
-#include "src/assembly/temp.hpp"
+#include "src/x86gen/flow_graph.hpp"
+#include "src/x86gen/temp.hpp"
 
 #include <iostream>
 #include <cstddef>

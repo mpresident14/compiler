@@ -1,4 +1,4 @@
-#include "src/assembly/flow_graph.hpp"
+#include "src/x86gen/flow_graph.hpp"
 
 #include <prez/print_stuff.hpp>
 

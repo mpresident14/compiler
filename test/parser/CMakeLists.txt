@@ -1,10 +1,3 @@
-# Note: Env variable CXX specifies clang compiler
-# Create Makefile with "cmake . "
-# Then build executables with "make -j <threads>"
-
-# Specify the minimum version for CMake
-cmake_minimum_required(VERSION 3.17.0)
-
 # Project's name
 project(parser_test)
 
@@ -121,6 +114,3 @@ add_custom_target(
     COMMAND ${CMAKE_CTEST_COMMAND} -T memcheck
     DEPENDS ${MYTESTS})
 
-
-# Remove generated files on make clean
-set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${GEN_DIR}/*")

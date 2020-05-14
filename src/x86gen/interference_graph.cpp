@@ -1,4 +1,4 @@
-#include "src/assembly/interference_graph.hpp"
+#include "src/x86gen/interference_graph.hpp"
 
 #include <prez/print_stuff.hpp>
 
