@@ -13,7 +13,7 @@
 #include <prez/print_stuff.hpp>
 
 using namespace std;
-using DFA_t = DFA<DFARuleSet, int>;
+using DFA_t = DFA<DFARuleSet, int, DFARuleSetHash>;
 using BitSetToks = vector<bool>;
 
 namespace {

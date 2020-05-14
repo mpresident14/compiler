@@ -61,25 +61,21 @@ namespace {
   struct MergeData {
     vector<pair<RgxDFA::Node*, int>> states;
     int token;
-  };
-}  // namespace
 
-namespace std {
-  template <>
-  struct hash<MergeData> {
-    size_t operator()(const MergeData& mergeData) const noexcept {
+    struct Hash {
+      size_t operator()(const MergeData& mergeData) const noexcept {
       const vector<pair<RgxDFA::Node*, int>>& states = mergeData.states;
-      // mergeData will not be empty
       return (size_t)accumulate(
-          states.cbegin() + 1,
+          states.cbegin(),
           states.cend(),
-          (uintptr_t)states[0].first,
+          0,
           [](uintptr_t n, pair<const RgxDFA::Node*, int> node) {
             return n ^ (uintptr_t)node.first;
           });
-    }
+      }
+    };
   };
-}  // namespace std
+}  // namespace
 
 namespace {
 
@@ -87,7 +83,7 @@ namespace {
     return md1.states == md2.states;
   }
 
-  using MergedRgxDFA = DFA<MergeData, char>;
+  using MergedRgxDFA = DFA<MergeData, char, MergeData::Hash>;
 
 
   MergedRgxDFA buildMergedRgxDFA(const GrammarData& grammarData) {

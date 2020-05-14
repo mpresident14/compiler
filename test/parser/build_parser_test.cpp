@@ -14,11 +14,11 @@ using namespace test::expr_grammar;
 
 UnitTest TESTER = UnitTest::createTester();
 
-void testNumStates(const DFA<DFARuleSet, int>& dfa) {
+void testNumStates(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   TESTER.assertEquals(7, dfa.size());
 }
 
-void testInitState(const DFA<DFARuleSet, int>& dfa) {
+void testInitState(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   /* lookahead = {INT, PLUS, STAR, whitespace} */
 
   const DFARuleSet& initRules = dfa.getRoot()->getValue();
@@ -67,7 +67,7 @@ void testInitState(const DFA<DFARuleSet, int>& dfa) {
   }
 }
 
-void testTransition(const DFA<DFARuleSet, int>& dfa) {
+void testTransition(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   const auto& transitions = dfa.getRoot()->getTransitions();
   const DFARuleSet& ruleSetInt = transitions.at(INT)->getValue();
   const DFARuleSet& ruleSetExpr = transitions.at(EXPR)->getValue();

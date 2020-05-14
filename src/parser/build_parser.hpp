@@ -19,20 +19,7 @@ struct RuleData {
 };
 
 
-namespace std {
-  template <>
-  struct hash<RuleData> {
-    size_t operator()(const RuleData& ruleData) const noexcept {
-      if (!ruleData.reducibleRule.has_value()) {
-        return 0;
-      }
-      return DFARuleHash()(*ruleData.reducibleRule);
-    }
-  };
-}  // namespace std
-
-
-DFA<DFARuleSet, int> buildParserDFA(const GrammarData& grammarData);
+DFA<DFARuleSet, int, DFARuleSetHash> buildParserDFA(const GrammarData& grammarData);
 RuleData condenseRuleSet(
     const DFARuleSet& ruleSet,
     const GrammarData& grammarData);
