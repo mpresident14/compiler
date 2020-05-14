@@ -1,12 +1,6 @@
-#define NEW 1
-
 #include "src/parser/regex_eval.hpp"
 #include "src/parser/regex.hpp"
-#if NEW
 #include "src/parser/regex_parser.hpp"
-#else
-#include "src/parser/regex_parse.hpp"
-#endif
 #include "src/parser/dfa.hpp"
 
 #include <cstddef>
@@ -34,7 +28,7 @@ namespace {
       "\\0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
       "abcdefghijklmnopqrstuvwxyz{|}~\n\t";
 
-  using RgxDFA = DFA<RgxPtr, char>;
+  using RgxDFA = DFA<RgxPtr, char, Regex::PtrHash>;
 
   /* BFS with regex derivative expansion */
   RgxDFA buildRegexDFA(const RgxPtr rgx) {
@@ -110,11 +104,7 @@ namespace {
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-#if NEW
       RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
-#else
-      RgxPtr rgx = parse(token.regex);
-#endif
       // Invalid regex
       if (!rgx) {
         throw runtime_error("Invalid regex " + token.regex);

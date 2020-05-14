@@ -49,20 +49,20 @@ public:
   friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
     return out << *rgx;
   }
-};
 
-namespace std {
-  template <>
-  struct hash<RgxPtr> {
+  friend bool operator==(const RgxPtr& r1, const RgxPtr& r2) noexcept {
+    return *r1 == *r2;
+  }
+
+  // NOTE: This could be dangerous because it is easy to forget to use
+  // Regex::PtrHash and end up with std::hash<shared_ptr<Regex>>, but
+  // I didn't want to define things in namespace std.
+  struct PtrHash {
     size_t operator()(const RgxPtr& rgx) const noexcept {
       return static_cast<int>(rgx->getType()) ^ (rgx->hashFn() << 1);
     }
   };
-}  // namespace std
-
-inline bool operator==(const RgxPtr& r1, const RgxPtr& r2) {
-  return *r1 == *r2;
-}
+};
 
 class EmptySet : public Regex {
 public:
@@ -108,22 +108,12 @@ private:
   char c_;
 };
 
-// struct RegexVector {
-// public:
-//   RegexVector(Regex* r1, Regex* r2);
-//   RegexVector(RegexVector&& rVec, Regex* r);
-//   RegexVector(std::vector<RgxPtr>&& vec);
-//   bool operator==(const RegexVector& other) const;
-//   size_t hashFn() const noexcept;
-
-//   std::vector<RgxPtr> rgxs_;
-// };
 
 class Alt : public Regex {
 public:
   Alt(Regex* r1, Regex* r2);
-  Alt(std::unordered_set<RgxPtr>&& rSet, Regex* r);
-  Alt(std::unordered_set<RgxPtr>&& rSet);
+  Alt(std::unordered_set<RgxPtr, Regex::PtrHash>&& rSet, Regex* r);
+  Alt(std::unordered_set<RgxPtr, Regex::PtrHash>&& rSet);
   Alt(const std::string& charVec);
   bool isNullable() const override;
   RgxPtr getDeriv(char c) const override;
@@ -135,7 +125,7 @@ public:
   friend RgxPtr makeAlt(RgxPtr r1, RgxPtr r2);
 
 private:
-  std::unordered_set<RgxPtr> rSet_;
+  std::unordered_set<RgxPtr, Regex::PtrHash> rSet_;
 };
 
 class Concat : public Regex {

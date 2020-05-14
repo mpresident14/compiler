@@ -98,11 +98,11 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
 
   if (r1Type == RgxType::ALT) {
-    unordered_set<RgxPtr> &r1Set = static_cast<Alt *>(r1.get())->rSet_;
-    unordered_set<RgxPtr> newSet(r1Set.cbegin(), r1Set.cend());
+    unordered_set<RgxPtr, Regex::PtrHash> &r1Set = static_cast<Alt *>(r1.get())->rSet_;
+    unordered_set<RgxPtr, Regex::PtrHash> newSet(r1Set.cbegin(), r1Set.cend());
     // Alt [r1s] | Alt [r2s] = Alt [r1s + r2s]
     if (r2Type == RgxType::ALT) {
-      unordered_set<RgxPtr> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
+      unordered_set<RgxPtr, Regex::PtrHash> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
       copy(r2Set.cbegin(), r2Set.cend(), inserter(newSet, newSet.end()));
       return make_shared<Alt>(move(newSet));
     }
@@ -112,14 +112,14 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   }
   // r1 | Alt [r2s] = Alt [r1 + r2s]
   if (r2Type == RgxType::ALT) {
-    unordered_set<RgxPtr> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
-    unordered_set<RgxPtr> newSet(r2Set.cbegin(), r2Set.cend());
+    unordered_set<RgxPtr, Regex::PtrHash> &r2Set = static_cast<Alt *>(r2.get())->rSet_;
+    unordered_set<RgxPtr, Regex::PtrHash> newSet(r2Set.cbegin(), r2Set.cend());
     newSet.insert(r1);
     return make_shared<Alt>(move(newSet));
   }
 
   // NOTE: r1 = r2 is covered by the set itself
-  return make_shared<Alt>(unordered_set<RgxPtr>{ r1, r2 });
+  return make_shared<Alt>(unordered_set<RgxPtr, Regex::PtrHash>{ r1, r2 });
 }
 
 
@@ -130,7 +130,7 @@ RgxPtr makeConcats(vector<RgxPtr> &&rs) {
   return accumulate(rs.cbegin() + 1, rs.cend(), rs[0], makeConcat);
 }
 
-RgxPtr makeAlts(unordered_set<RgxPtr> &&rs) {
+RgxPtr makeAlts(unordered_set<RgxPtr, Regex::PtrHash> &&rs) {
   if (rs.empty()) {
     make_shared<EmptySet>();
   }
@@ -214,47 +214,14 @@ size_t Character::hashFn() const noexcept { return hash<char>()(c_); }
 void Character::toStream(ostream &out) const { out << "CHAR " << c_; }
 
 
-/***************
- * RegexVector *
- ***************/
-// RegexVector::RegexVector(Regex *r1, Regex *r2)
-//     : rgxs_{ RgxPtr(r1), RgxPtr(r2) } {}
-
-// RegexVector::RegexVector(RegexVector&& rVec, Regex *r)
-//     : rgxs_{ move(rVec.rgxs_) } {
-//   rgxs_.push_back(RgxPtr(r));
-// }
-
-// bool RegexVector::operator==(const RegexVector &other) const {
-//   return equal(
-//       rgxs_.cbegin(),
-//       rgxs_.cend(),
-//       other.rgxs_.cbegin(),
-//       other.rgxs_.cend(),
-//       [](const RgxPtr &rPtr1, const RgxPtr &rPtr2) {
-//         return *rPtr1 == *rPtr2;
-//       });
-// }
-
-// RegexVector::RegexVector(vector<RgxPtr> &&vec) : rgxs_{ move(vec) } {}
-
-// size_t RegexVector::hashFn() const noexcept {
-//   hash<RgxPtr> hasher;
-//   size_t hashSum = 0;
-//   for (const RgxPtr& rgx : rgxs_) {
-//     hashSum ^= hasher(rgx) << 1;
-//   }
-//   return hashSum;
-// }
-
 /*******
  * Alt *
  *******/
 Alt::Alt(Regex *r1, Regex *r2) : rSet_{ RgxPtr(r1), RgxPtr(r2) } {}
-Alt::Alt(std::unordered_set<RgxPtr> &&rSet, Regex *r) : rSet_(move(rSet)) {
+Alt::Alt(std::unordered_set<RgxPtr, Regex::PtrHash> &&rSet, Regex *r) : rSet_(move(rSet)) {
   rSet_.emplace(r);
 }
-Alt::Alt(std::unordered_set<RgxPtr> &&rSet) : rSet_(move(rSet)) {}
+Alt::Alt(std::unordered_set<RgxPtr, Regex::PtrHash> &&rSet) : rSet_(move(rSet)) {}
 
 Alt::Alt(const string &charVec) {
   for (char c : charVec) {
@@ -269,7 +236,7 @@ bool Alt::isNullable() const {
 }
 
 RgxPtr Alt::getDeriv(char c) const {
-  unordered_set<RgxPtr> derivs;
+  unordered_set<RgxPtr, Regex::PtrHash> derivs;
   transform(
       rSet_.cbegin(),
       rSet_.cend(),
@@ -286,7 +253,7 @@ bool Alt::operator==(const Regex &other) const {
 }
 
 size_t Alt::hashFn() const noexcept {
-  hash<RgxPtr> hasher;
+  Regex::PtrHash hasher;
   size_t hashSum = 0;
   for (const RgxPtr &rgx : rSet_) {
     hashSum ^= hasher(rgx) << 1;
@@ -339,7 +306,7 @@ bool Concat::operator==(const Regex &other) const {
 }
 
 size_t Concat::hashFn() const noexcept {
-  hash<RgxPtr> hasher;
+  Regex::PtrHash hasher;
   size_t hashSum = 0;
   for (const RgxPtr &rgx : rVec_) {
     hashSum ^= hasher(rgx) << 1;

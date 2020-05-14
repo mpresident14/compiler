@@ -17,10 +17,10 @@
 #include <prez/print_stuff.hpp>
 
 
-template <typename V, typename T>
+template <typename V, typename T, typename HashV = std::hash<V>, typename EqV = std::equal_to<V>, typename HashT = std::hash<T>, typename EqT = std::equal_to<T>>
 class DFA {
 public:
-  template <typename V2, typename T2>
+  template <typename V2, typename T2,  typename HashV2, typename EqV2, typename HashT2, typename EqT2>
   friend class DFA;
 
   struct Node {
@@ -42,13 +42,13 @@ public:
 
     const V& getValue() const noexcept { return value_; }
 
-    const std::unordered_map<T, Node*>& getTransitions() const noexcept {
+    const std::unordered_map<T, Node*, HashT, EqT>& getTransitions() const noexcept {
       return transitions_;
     }
 
   private:
     V value_;
-    std::unordered_map<T, Node*> transitions_;
+    std::unordered_map<T, Node*, HashT, EqT> transitions_;
   };
 
   friend struct Node;
@@ -279,13 +279,13 @@ public:
   // the corresponding Node.
   struct VPtrHash {
     size_t operator()(const V* vptr) const noexcept {
-      return std::hash<V>()(*vptr);
+      return HashV()(*vptr);
     }
   };
 
   struct VPtrEquals {
     bool operator()(const V* vptr1, const V* vptr2) const noexcept {
-      return *vptr1 == *vptr2;
+      return EqV()(*vptr1, *vptr2);
     }
   };
 

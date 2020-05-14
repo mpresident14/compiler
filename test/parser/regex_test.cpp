@@ -133,9 +133,11 @@ void testGetDeriv_brackets() {
 
 void testHashFn() {
   RgxPtr r1 = RgxPtr(parse("a"));
-  unordered_set<RgxPtr> rgxs = { r1->getDeriv('b') };
-
+  cout << "HERE" << endl;
+  unordered_set<RgxPtr, Regex::PtrHash> rgxs = { r1->getDeriv('b') };
+  cout << "HERE2" << endl;
   TESTER.assertTrue(rgxs.contains(r1->getDeriv('c')));
+  cout << "HERE3" << endl;
 }
 
 
@@ -156,7 +158,9 @@ void testRgxDFAToCode_withNullableRegex() {
 
   stringstream out;
   out.setstate(ios_base::badbit);
+  cout << "HERE4" << endl;
   rgxDFAToCode(out, grammarData);
+  cout << "HERE" << endl;
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
   errBuffer.str("");
