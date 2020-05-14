@@ -102,7 +102,7 @@ set_tests_properties(
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(
     check
-    COMMAND ${CMAKE_CTEST_COMMAND}
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     DEPENDS ${MYTESTS})
 
 
@@ -114,3 +114,7 @@ add_custom_target(
     COMMAND ${CMAKE_CTEST_COMMAND} -T memcheck
     DEPENDS ${MYTESTS})
 
+
+# Remove generated files on make clean
+file(GLOB GENFILES LIST_DIRECTORIES false "${GEN_DIR}/*")
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${GENFILES}")

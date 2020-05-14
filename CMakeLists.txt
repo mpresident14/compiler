@@ -37,3 +37,4 @@ add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/x86gen)
 
 
+set(CTEST_OUTPUT_ON_FAILURE true)

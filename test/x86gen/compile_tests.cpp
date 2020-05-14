@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <filesystem>
 
 using namespace std;
 
@@ -91,7 +90,6 @@ void writeTest0() {
 
 
 int main() {
-  cout << filesystem::current_path() << endl;
   writeTest0();
 
   return 0;

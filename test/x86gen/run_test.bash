@@ -1,3 +1,5 @@
+#!/bin/bash
+
 TEST=$1
 EXPECTED_OUTPUT=$2
 
