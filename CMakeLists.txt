@@ -1,6 +1,8 @@
-# Note: Env variable CXX specifies clang compiler
-# Create Makefile with "cmake . "
-# Then build executables with "make -j <threads>"
+# SETUP
+# mdkir build
+# cd build
+# cmake .. -DCMAKE_C_COMPILER=$(which clang) -DCMAKE_CXX_COMPILER=$(which clang++)
+# Then build executables (from build dir) with "make -j <threads>"
 
 # Specify the minimum version for CMake
 cmake_minimum_required(VERSION 3.17.0)
@@ -25,7 +27,7 @@ include_directories(${LIBRARY_OUTPUT_PATH})
 include_directories(${CMAKE_BINARY_DIR})
 
 # Set compilation flags
-set(CMAKE_CXX_FLAGS "-std=c++2a -Wall -Wextra -pedantic -g")
+set(CMAKE_CXX_FLAGS "-std=c++20 -Wall -Wextra -pedantic -g")
 
 # Add subdirectories
 add_subdirectory(${SRC}/parser)

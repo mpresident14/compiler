@@ -1,4 +1,4 @@
-#include "test/parser/generated/gp_expr_parser.hpp"
+#include "test/parser/generated/pgen_expr_parser.hpp"
 #include "test/parser/utils/expr.hpp"
 
 #include <memory>
@@ -8,7 +8,7 @@
 
 using namespace std;
 using namespace prez;
-using namespace test::parser::generated::gp_expr_parser;
+using namespace pgen_expr_parser;
 
 UnitTest TESTER = UnitTest::createTester();
 stringstream errBuffer;

@@ -722,13 +722,13 @@ namespace {
     )";
   }
 
-  string replaceAll(const string& str, char from, const string& to) {
+  string replaceAll(const string& str, char from, char to) {
     string s;
     s.reserve(str.size());
 
     for (char c : str) {
       if (c == from) {
-        s.append(to);
+        s.push_back(to);
       } else {
         s.push_back(c);
       }
@@ -861,22 +861,25 @@ void generateParserCode(
     const string& addlHdrIncludes,
     const string& addlCode,
     const GrammarData& grammarData) {
-  string namespaceName = replaceAll(parserFilePath, '/', "::");
-  string headerGuard = replaceAll(parserFilePath, '/', "_") + "_HPP";
+  string namespaceName = parserFilePath.substr(parserFilePath.find_last_of('/') + 1);
+  string headerGuard = replaceAll(parserFilePath, '/', '_') + "_HPP";
   transform(
       headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
-  ofstream hppFile;
-  hppFile.open(parserFilePath + ".hpp");
+  ofstream hppFile(parserFilePath + ".hpp");
+  if (!hppFile.is_open()) {
+    throw invalid_argument("Could not open file " + parserFilePath + ".hpp");
+  }
   hppFile << parserHppCode(
       namespaceName, headerGuard, addlHdrIncludes, grammarData);
-  hppFile.close();
 
   ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
+  if (!cppFile.is_open()) {
+    throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
+  }
   cppFile << parserCppCode(
       parserFilePath, namespaceName, addlCode, grammarData);
-  cppFile.close();
 }
 
 
@@ -884,18 +887,20 @@ void generateLexerCode(
     const string& lexerFilePath,
     const string& addlCode,
     const GrammarData& grammarData) {
-  string namespaceName = replaceAll(lexerFilePath, '/', "::");
-  string headerGuard = replaceAll(lexerFilePath, '/', "_") + "_HPP";
+  string namespaceName = lexerFilePath.substr(lexerFilePath.find_last_of('/') + 1);
+  string headerGuard = replaceAll(lexerFilePath, '/', '_') + "_HPP";
   transform(
       headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
 
-  ofstream hppFile;
-  hppFile.open(lexerFilePath + ".hpp");
+  ofstream hppFile(lexerFilePath + ".hpp");
+  if (!hppFile.is_open()) {
+    throw invalid_argument("Could not open file " + lexerFilePath + ".hpp");
+  }
   hppFile << lexerHppCode(namespaceName, headerGuard, grammarData);
-  hppFile.close();
 
-  ofstream cppFile;
-  cppFile.open(lexerFilePath + ".cpp");
+  ofstream cppFile(lexerFilePath + ".cpp");
+  if (!cppFile.is_open()) {
+    throw invalid_argument("Could not open file " + lexerFilePath + ".cpp");
+  }
   cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
-  cppFile.close();
 }

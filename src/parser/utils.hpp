@@ -27,7 +27,7 @@ inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
       return out << "RIGHT";
     case Assoc::NOT:
       return out << "NOT";
-    case Assoc::NONE:
+    default:
       return out << "NONE";
   }
 }

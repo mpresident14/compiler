@@ -15,7 +15,7 @@
 #include <prez/print_stuff.hpp>
 
 using namespace std;
-using namespace src::parser::config_lexer;
+using namespace config_lexer;
 
 
 namespace {

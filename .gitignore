@@ -39,13 +39,9 @@
 .vscode/
 
 # CMake
-CMakeCache.txt
-CMakeFiles/
-*.cmake
-Testing/
 bin/
 lib/
-DartConfiguration.tcl
+build/
 
 # My generated parser files
 test/parser/generated/*
@@ -54,3 +50,4 @@ src/parser/regex_parser_backup.hpp
 
 # Register allocation
 prez.s
+prez

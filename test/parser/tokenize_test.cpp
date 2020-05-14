@@ -8,7 +8,7 @@
 
 using namespace std;
 using namespace prez;
-using namespace test::parser::generated::random_lexer;
+using namespace random_lexer;
 
 UnitTest TESTER = UnitTest::createTester();
 

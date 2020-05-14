@@ -9,16 +9,14 @@ cmake_minimum_required(VERSION 3.17.0)
 project(parser_test)
 
 # Directory variables
-set(SRC_DIR ${SRC}/parser)
-set(REL_TO_ROOT_DIR test/parser)
-set(UTIL_DIR utils)
-set(GEN_DIR generated)
-
+set(PARSER_SRC_DIR ${SRC}/parser)
+set(UTIL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils)
+set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
 # Test executables
 add_executable(dfa_test dfa_test.cpp)
 
-add_executable(null_first_test null_first_test.cpp ${SRC_DIR}/null_first.cpp)
+add_executable(null_first_test null_first_test.cpp ${PARSER_SRC_DIR}/null_first.cpp)
 
 add_executable(build_parser_test build_parser_test.cpp)
 target_link_libraries(build_parser_test parse_lib)
@@ -37,11 +35,11 @@ add_executable(tokenize_test
 
 add_executable(parsegen_test
     parsegen_test.cpp
-    ${GEN_DIR}/gp_expr_parser.cpp)
+    ${GEN_DIR}/pgen_expr_parser.cpp)
 
 
 # Parser and lexer generation for testing
-add_executable(write_parser ${UTIL_DIR}/write_parser.cpp ${SRC_DIR}/generate.cpp)
+add_executable(write_parser ${UTIL_DIR}/write_parser.cpp ${PARSER_SRC_DIR}/generate.cpp)
 target_link_libraries(write_parser regex_lib)
 add_custom_command(
     OUTPUT
@@ -50,34 +48,34 @@ add_custom_command(
         ${GEN_DIR}/bad_expr_parser.hpp
         ${GEN_DIR}/bad_expr_parser.cpp
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMAND write_parser
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/write_parser
     COMMAND clang-format -i
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/expr_parser.hpp
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/expr_parser.cpp
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/bad_expr_parser.hpp
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/bad_expr_parser.cpp
+        ${GEN_DIR}/expr_parser.hpp
+        ${GEN_DIR}/expr_parser.cpp
+        ${GEN_DIR}/bad_expr_parser.hpp
+        ${GEN_DIR}/bad_expr_parser.cpp
     DEPENDS write_parser)
 
-add_executable(write_lexer ${UTIL_DIR}/write_lexer.cpp ${SRC_DIR}/generate.cpp)
+add_executable(write_lexer ${UTIL_DIR}/write_lexer.cpp ${PARSER_SRC_DIR}/generate.cpp)
 target_link_libraries(write_lexer regex_lib)
 add_custom_command(
     OUTPUT ${GEN_DIR}/random_lexer.hpp ${GEN_DIR}/random_lexer.cpp
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMAND write_lexer
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/write_lexer
     COMMAND clang-format -i
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/random_lexer.hpp
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/random_lexer.cpp
+        ${GEN_DIR}/random_lexer.hpp
+        ${GEN_DIR}/random_lexer.cpp
     DEPENDS write_lexer)
 
 add_custom_command(
-    OUTPUT ${GEN_DIR}/gp_expr_parser.hpp ${GEN_DIR}/gp_expr_parser.cpp
+    OUTPUT ${GEN_DIR}/pgen_expr_parser.hpp ${GEN_DIR}/pgen_expr_parser.cpp
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMAND parsegen
-        -g ${REL_TO_ROOT_DIR}/${UTIL_DIR}/expr.pgen
-        -f ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/parsegen
+        -g ${UTIL_DIR}/expr.pgen
+        -f ${GEN_DIR}/pgen_expr_parser
     COMMAND clang-format -i
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser.hpp
-        ${REL_TO_ROOT_DIR}/${GEN_DIR}/gp_expr_parser.cpp
+        ${GEN_DIR}/pgen_expr_parser.hpp
+        ${GEN_DIR}/pgen_expr_parser.cpp
     DEPENDS parsegen ${UTIL_DIR}/expr.pgen)
 
 

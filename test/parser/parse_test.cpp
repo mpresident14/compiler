@@ -9,7 +9,6 @@
 
 using namespace std;
 using namespace prez;
-using namespace test::parser::generated;
 
 UnitTest TESTER = UnitTest::createTester();
 stringstream errBuffer;
