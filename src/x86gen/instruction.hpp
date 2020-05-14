@@ -16,6 +16,7 @@ enum class InstrType { LABEL, MOVE, OPER, RETURN };
 class Instruction;
 using InstrPtr = std::unique_ptr<Instruction>;
 
+
 class Instruction {
 public:
   virtual ~Instruction() {}
