@@ -13,36 +13,31 @@ using namespace std;
 
 void writeTest0() {
   InstrPtr moveImm0 =
-      make_unique<Operation>("movq $1, <0", vector<int>{}, vector<int>{RAX},
-                             optional<vector<Instruction *>>{});
+      make_unique<Operation>("movq $1, `D0", vector<int>{}, vector<int>{RAX});
   InstrPtr moveImm1 =
-      make_unique<Operation>("movq $5, <0", vector<int>{}, vector<int>{-1},
-                             optional<vector<Instruction *>>{});
-  InstrPtr leaq = make_unique<Operation>("leaq (>0, >1, 2), <0",
-                                         vector<int>{RAX, -1}, vector<int>{RAX},
-                                         optional<vector<Instruction *>>{});
+      make_unique<Operation>("movq $5, `D0", vector<int>{}, vector<int>{-1});
+  InstrPtr leaq = make_unique<Operation>(
+      "leaq (`S0, `S1, 2), `D0", vector<int>{RAX, -1}, vector<int>{RAX});
   InstrPtr move0 = make_unique<Move>(RAX, -1);
   InstrPtr move1 = make_unique<Move>(-1, -2);
   InstrPtr move2 = make_unique<Move>(-2, RSI);
 
   InstrPtr cmp =
-      make_unique<Operation>("cmpq $11, <0", vector<int>{}, vector<int>{RSI},
-                             optional<vector<Instruction *>>{});
+      make_unique<Operation>("cmpq $11, `S0", vector<int>{RSI}, vector<int>{});
   InstrPtr eqLabel = make_unique<Label>("EQ");
   InstrPtr doneLabel = make_unique<Label>("FIN");
   InstrPtr moveEq = make_unique<Move>(RSI, RDI);
   InstrPtr moveNeq =
-      make_unique<Operation>("movq $-1, <0", vector<int>{}, vector<int>{RDI},
-                             optional<vector<Instruction *>>{});
-  InstrPtr je = make_unique<Operation>(
+      make_unique<Operation>("movq $-1, `D0", vector<int>{}, vector<int>{RDI});
+  InstrPtr je = make_unique<JumpOp>(
       "je EQ", vector<int>{}, vector<int>{},
-      optional<vector<Instruction *>>{{eqLabel.get(), doneLabel.get()}});
-  InstrPtr jDone = make_unique<Operation>(
+      vector<Instruction *>{eqLabel.get(), doneLabel.get()});
+  InstrPtr jDone = make_unique<JumpOp>(
       "jmp FIN", vector<int>{}, vector<int>{},
-      optional<vector<Instruction *>>{{doneLabel.get()}});
+      vector<Instruction *>{doneLabel.get()});
   InstrPtr callPrint = make_unique<Operation>(
       "callq printInt", vector<int>(callerSaveRegs),
-      vector<int>(calleeSaveRegs), optional<vector<Instruction *>>{});
+      vector<int>(calleeSaveRegs));
 
   vector<InstrPtr> instrs;
   instrs.push_back(move(moveImm0));

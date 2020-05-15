@@ -95,7 +95,8 @@ InterferenceGraph::InterferenceGraph(const FlowGraph &fgraph) {
       moveMultimap_.emplace(moveDst, moveSrc);
       break;
     }
-    case InstrType::OPER:
+    case InstrType::OPER: // Fall Thru
+    case InstrType::JUMP_OP:
       for (int opDst : static_cast<const Operation *>(instr)->getDsts()) {
         unordered_set<int> &opNeighbors =
             insertIfNotExists(graph_, opDst)->second;

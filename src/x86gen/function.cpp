@@ -28,8 +28,7 @@ void Function::regAlloc() {
   size_t stackSpace = varToStackOffset_.size() * 8;
   vector<InstrPtr> newInstrs;
   newInstrs.push_back(make_unique<Operation>(
-      "subq $" + to_string(stackSpace) + ", %rsp", vector<int>{}, vector<int>{},
-      optional<vector<Instruction *>>{}));
+      "subq $" + to_string(stackSpace) + ", %rsp", vector<int>{}, vector<int>{}));
 
   // Update the instructions and add them
   // TODO: Lots of virtual function calls here, either use a switch
@@ -39,7 +38,7 @@ void Function::regAlloc() {
       // Deallocate space on the stack for spilled variables
       newInstrs.push_back(make_unique<Operation>(
           "addq $" + to_string(stackSpace) + ", %rsp", vector<int>{},
-          vector<int>{}, optional<vector<Instruction *>>{}));
+          vector<int>{}));
       newInstrs.push_back(move(instr));
     } else {
       instr->assignRegs(coloring);

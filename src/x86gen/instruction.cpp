@@ -15,23 +15,22 @@ Label::Label(string &&name) : name_(move(name)) {}
 Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 
 Operation::Operation(const string &asmCode, vector<int> &&srcs,
+                     vector<int> &&dsts)
+    : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)) {}
+
+JumpOp::JumpOp(const string &asmCode, vector<int> &&srcs,
                      vector<int> &&dsts,
-                     optional<vector<Instruction *>> &&jumps)
-    : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)),
+                     vector<Instruction *> &&jumps)
+    : Operation(asmCode, move(srcs), move(dsts)),
       jumps_(move(jumps)) {}
 
-/***********
- * getType *
- ***********/
 
-InstrType Label::getType() const noexcept { return InstrType::LABEL; }
-InstrType Move::getType() const noexcept { return InstrType::MOVE; }
-InstrType Operation::getType() const noexcept { return InstrType::OPER; }
-InstrType Return::getType() const noexcept { return InstrType::RETURN; }
+namespace {
 
 constexpr MachineReg SPILL_REGS[]{R10, R11};
-
 constexpr int digitToInt(char c) noexcept { return c - '0'; }
+
+}
 
 /*********
  * spill *
@@ -92,22 +91,22 @@ bool Return::spillTemps(vector<InstrPtr> &) {
  * assignRegs *
  **************/
 
-void assignReg(int &temp, const std::unordered_map<int, MachineReg> &coloring) {
+void assignReg(int &temp, const unordered_map<int, MachineReg> &coloring) {
   auto iter = coloring.find(temp);
   if (iter != coloring.end()) {
     temp = iter->second;
   }
 }
 
-void Label::assignRegs(const std::unordered_map<int, MachineReg> &) { return; }
+void Label::assignRegs(const unordered_map<int, MachineReg> &) { return; }
 
-void Move::assignRegs(const std::unordered_map<int, MachineReg> &coloring) {
+void Move::assignRegs(const unordered_map<int, MachineReg> &coloring) {
   assignReg(src_, coloring);
   assignReg(dst_, coloring);
 }
 
 void Operation::assignRegs(
-    const std::unordered_map<int, MachineReg> &coloring) {
+    const unordered_map<int, MachineReg> &coloring) {
   for (int &src : srcs_) {
     assignReg(src, coloring);
   }
@@ -116,7 +115,7 @@ void Operation::assignRegs(
   }
 }
 
-void Return::assignRegs(const std::unordered_map<int, MachineReg> &) { return; }
+void Return::assignRegs(const unordered_map<int, MachineReg> &) { return; }
 
 /**********
  * toCode *
@@ -133,12 +132,12 @@ void tempToCode(ostream &out, int temp,
   }
 }
 
-void Label::toCode(std::ostream &out,
+void Label::toCode(ostream &out,
                    const unordered_map<int, size_t> &) const {
   out << name_ << ":\n";
 }
 
-void Move::toCode(std::ostream &out,
+void Move::toCode(ostream &out,
                   const unordered_map<int, size_t> &varToStackOffset) const {
   if (src_ == dst_) {
     return;
@@ -152,21 +151,26 @@ void Move::toCode(std::ostream &out,
 }
 
 void Operation::toCode(
-    std::ostream &out,
+    ostream &out,
     const unordered_map<int, size_t> &varToStackOffset) const {
   out << '\t';
   size_t len = asmCode_.size();
   size_t i = 0;
   while (i < len) {
     char c = asmCode_.at(i);
-    if (c == '>') {
-      tempToCode(out, srcs_.at(digitToInt(asmCode_.at(i + 1))),
-                 varToStackOffset);
-      i += 2;
-    } else if (c == '<') {
-      tempToCode(out, dsts_.at(digitToInt(asmCode_.at(i + 1))),
-                 varToStackOffset);
-      i += 2;
+    if (c == '`') {
+      c = asmCode_.at(i + 1);
+      if (c == 'S') {
+        tempToCode(out, srcs_.at(digitToInt(asmCode_.at(i + 2))),
+                  varToStackOffset);
+      } else if (c == 'D') {
+        tempToCode(out, dsts_.at(digitToInt(asmCode_.at(i + 2))),
+                  varToStackOffset);
+      } else {
+        // TODO: Remove this case when done
+        throw runtime_error("Operation::toCode: I screwed up");
+      }
+      i += 3;
     } else {
       out << c;
       ++i;
@@ -176,7 +180,7 @@ void Operation::toCode(
 }
 
 // NOTE: Function::regAlloc handles the stack deallocation
-void Return::toCode(std::ostream &out,
+void Return::toCode(ostream &out,
                     const unordered_map<int, size_t> &) const {
   out << "retq" << endl;
 }
@@ -184,29 +188,31 @@ void Return::toCode(std::ostream &out,
  * toStream *
  ************/
 
-std::ostream &operator<<(std::ostream &out, const Instruction &instr) {
+ostream &operator<<(ostream &out, const Instruction &instr) {
   instr.toStream(out);
   return out;
 }
 
-void Label::toStream(std::ostream &out) const { out << name_ << ':'; }
+void Label::toStream(ostream &out) const { out << name_ << ':'; }
 
-void Move::toStream(std::ostream &out) const {
+void Move::toStream(ostream &out) const {
   out << "MOVE" << " [" << src_ << "] [" << dst_ << ']';
 }
 
-void Operation::toStream(std::ostream &out) const {
-  out << asmCode_ << ' ' << srcs_ << ' ' << dsts_ << ' ';
-  if (jumps_.has_value()) {
-    out << '[';
-    for (const Instruction *instr : *jumps_) {
-      out << *instr << ", ";
-    }
-    out << ']';
-  }
+void Operation::toStream(ostream &out) const {
+  out << asmCode_ << ' ' << srcs_ << ' ' << dsts_;
 }
 
-void Return::toStream(std::ostream &out) const {
+void JumpOp::toStream(ostream &out) const {
+  Operation::toStream(out);
+  out << " [";
+  for (const Instruction *instr : jumps_) {
+    out << *instr << ", ";
+  }
+  out << ']';
+}
+
+void Return::toStream(ostream &out) const {
   out << "RETURN (" << (hasValue_ ? "" : "no ") << "value)" << ':';
 }
 
@@ -214,15 +220,14 @@ void Return::toStream(std::ostream &out) const {
  * getters *
  ***********/
 
-const std::string &Label::getName() const noexcept { return name_; }
+const string &Label::getName() const noexcept { return name_; }
 
 int Move::getSrc() const noexcept { return src_; }
 int Move::getDst() const noexcept { return dst_; }
 
-const std::string &Operation::getAsm() const noexcept { return asmCode_; }
-const std::vector<int> &Operation::getSrcs() const noexcept { return srcs_; }
-const std::vector<int> &Operation::getDsts() const noexcept { return dsts_; }
-const std::optional<std::vector<Instruction *>> &
-Operation::getJumps() const noexcept {
-  return jumps_;
-}
+const string &Operation::getAsm() const noexcept { return asmCode_; }
+const vector<int> &Operation::getSrcs() const noexcept { return srcs_; }
+const vector<int> &Operation::getDsts() const noexcept { return dsts_; }
+
+const vector<Instruction *> &
+JumpOp::getJumps() const noexcept { return jumps_; }

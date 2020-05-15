@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-enum class InstrType { LABEL, MOVE, OPER, RETURN };
+enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, RETURN };
 
 class Instruction;
 using InstrPtr = std::unique_ptr<Instruction>;
@@ -34,7 +34,7 @@ public:
 class Label : public Instruction {
 public:
   Label(std::string &&name);
-  InstrType getType() const noexcept override;
+  constexpr InstrType getType() const noexcept override { return InstrType::LABEL; }
   bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
   void toCode(
@@ -51,7 +51,7 @@ private:
 class Move : public Instruction {
 public:
   Move(int src, int dst);
-  InstrType getType() const noexcept override;
+  constexpr InstrType getType() const noexcept override { return InstrType::MOVE; }
   bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
   void toCode(
@@ -67,15 +67,12 @@ private:
   int dst_;
 };
 
-// TODO: jumps_ is normally empty, maybe specialize a class for jumping
-// (derive from Operation???)
 
 class Operation : public Instruction {
 public:
   Operation(const std::string &asmCode, std::vector<int> &&srcs,
-            std::vector<int> &&dsts,
-            std::optional<std::vector<Instruction *>> &&jumps);
-  InstrType getType() const noexcept override;
+            std::vector<int> &&dsts);
+  constexpr InstrType getType() const noexcept override { return InstrType::OPER; }
   bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
   void toCode(
@@ -86,21 +83,33 @@ public:
   const std::string &getAsm() const noexcept;
   const std::vector<int> &getSrcs() const noexcept;
   const std::vector<int> &getDsts() const noexcept;
-  const std::optional<std::vector<Instruction *>> &getJumps() const noexcept;
 
 private:
   std::string asmCode_;
   std::vector<int> srcs_;
   std::vector<int> dsts_;
-  // No value if always falls through to next instruction,
-  // empty list if jumping out of function entirely
-  std::optional<std::vector<Instruction *>> jumps_;
 };
+
+
+class JumpOp : public Operation {
+public:
+  JumpOp(const std::string &asmCode, std::vector<int> &&srcs,
+            std::vector<int> &&dsts,
+            std::vector<Instruction *> &&jumps);
+  constexpr InstrType getType() const noexcept override { return InstrType::JUMP_OP; }
+  virtual void toStream(std::ostream &out) const override;
+
+  const std::vector<Instruction *> &getJumps() const noexcept;
+private:
+  // If empty, then we are jumping out of the function entirely
+  std::vector<Instruction *>jumps_;
+};
+
 
 class Return : public Instruction {
 public:
   explicit constexpr Return(bool hasValue) : hasValue_(hasValue) {}
-  virtual InstrType getType() const noexcept override;
+  constexpr InstrType getType() const noexcept override { return InstrType::RETURN; }
   virtual bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   virtual void
   assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;

@@ -44,7 +44,8 @@ void FlowGraph::computeLiveness() {
   case InstrType::MOVE:
     lastLiveness.liveIn.insert(static_cast<const Move *>(lastInstr)->getSrc());
     break;
-  case InstrType::OPER:
+  case InstrType::OPER: // Fall Thru
+  case InstrType::JUMP_OP:
     lastLiveness.liveIn.insert(
         static_cast<const Operation *>(lastInstr)->getSrcs().cbegin(),
         static_cast<const Operation *>(lastInstr)->getSrcs().cend());
@@ -61,12 +62,11 @@ void FlowGraph::computeLiveness() {
       Liveness &node = nodes_.at(instr);
 
       // Compute liveOut
-      if (instr->getType() == InstrType::OPER &&
-          static_cast<const Operation *>(instr)->getJumps().has_value()) {
+      if (instr->getType() == InstrType::JUMP_OP) {
         // Instruction jumps
         unordered_set<int> newLiveOut;
         for (Instruction *jumpInstr :
-             *static_cast<const Operation *>(instr)->getJumps()) {
+             static_cast<const JumpOp *>(instr)->getJumps()) {
           setUnion(newLiveOut, nodes_.at(jumpInstr).liveIn);
         }
         if (node.liveOut != newLiveOut) {
@@ -89,7 +89,8 @@ void FlowGraph::computeLiveness() {
         newLiveIn.erase(static_cast<const Move *>(instr)->getDst());
         newLiveIn.insert(static_cast<const Move *>(instr)->getSrc());
         break;
-      case InstrType::OPER:
+      case InstrType::OPER: // Fall thru
+      case InstrType::JUMP_OP:
         setMinus<int, vector>(newLiveIn,
                               static_cast<const Operation *>(instr)->getDsts());
         setUnion(newLiveIn, static_cast<const Operation *>(instr)->getSrcs());

@@ -14,7 +14,7 @@ namespace intermediate {
 
 void Const::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
   instrs.emplace_back(new Operation(
-      string("movq $").append(to_string(n_)).append(", <0"), {}, {temp}, {}));
+      string("movq $").append(to_string(n_)).append(", `D0"), {}, {temp}, {}));
 }
 
 
@@ -59,11 +59,11 @@ void BinOp::handleShifts(string asmCode, int temp, std::vector<InstrPtr> &instrs
   if (expr2_->getType() == ExprType::CONST) {
     asmCode.append(" $");
     asmCode.append(to_string(static_cast<Const*>(expr2_.get())->getInt()));
-    asmCode.append(", <0");
+    asmCode.append(", `D0");
     instrs.emplace_back(new Operation(asmCode, {temp}, {temp}, {}));
   } else {
     expr2_->toInstrs(RCX, instrs);
-    asmCode.append(" %cl, <0");
+    asmCode.append(" %cl, `D0");
     instrs.emplace_back(new Operation(asmCode, {RCX, temp}, {temp}, {}));
   }
 }
@@ -75,7 +75,7 @@ void BinOp::handleDiv(bool isDiv, int temp, std::vector<InstrPtr> &instrs) const
   // Sign-extend %rax into %rdx
   instrs.emplace_back(new Operation("cqto", {RAX}, {RDX}, {}));
   // Divide %rax%rdx by t2, quotient in %rax, remainder in %rdx
-  instrs.emplace_back(new Operation("idivq >0", {t2, RAX, RDX}, {RAX, RDX}, {}));
+  instrs.emplace_back(new Operation("idivq `S0", {t2, RAX, RDX}, {RAX, RDX}, {}));
   if (isDiv) {
     // If division, move %rax into temp
     Temp(RAX).toInstrs(temp, instrs);
@@ -94,7 +94,7 @@ void BinOp::handleOthers(std::string asmCode, int temp, std::vector<InstrPtr> &i
   expr1_->toInstrs(t1, instrs);
   int t2 = newTemp();
   expr2_->toInstrs(t2, instrs);
-  instrs.emplace_back(new Operation(asmCode.append(" >0, <0"), {t1, t2}, {t2}, {}));
+  instrs.emplace_back(new Operation(asmCode.append(" `S0, `D0"), {t1, t2}, {t2}, {}));
   Temp(t2).toInstrs(temp, instrs);
 }
 
@@ -108,7 +108,7 @@ MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
 void MemDeref::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
   int t = newTemp();
   addr_->toInstrs(t, instrs);
-  instrs.emplace_back(new Operation("movq (>0), <0", {t}, {temp}, {}));
+  instrs.emplace_back(new Operation("movq (`S0), `D0", {t}, {temp}, {}));
 }
 
 
