@@ -21,16 +21,16 @@ void writeTest0() {
   InstrPtr leaq = make_unique<Operation>("leaq (>0, >1, 2), <0",
                                          vector<int>{RAX, -1}, vector<int>{RAX},
                                          optional<vector<Instruction *>>{});
-  InstrPtr move0 = make_unique<Move>("movq >, <", RAX, -1);
-  InstrPtr move1 = make_unique<Move>("movq >, <", -1, -2);
-  InstrPtr move2 = make_unique<Move>("movq >, <", -2, RSI);
+  InstrPtr move0 = make_unique<Move>(RAX, -1);
+  InstrPtr move1 = make_unique<Move>(-1, -2);
+  InstrPtr move2 = make_unique<Move>(-2, RSI);
 
   InstrPtr cmp =
       make_unique<Operation>("cmpq $11, <0", vector<int>{}, vector<int>{RSI},
                              optional<vector<Instruction *>>{});
   InstrPtr eqLabel = make_unique<Label>("EQ");
   InstrPtr doneLabel = make_unique<Label>("FIN");
-  InstrPtr moveEq = make_unique<Move>("movq >, <", RSI, RDI);
+  InstrPtr moveEq = make_unique<Move>(RSI, RDI);
   InstrPtr moveNeq =
       make_unique<Operation>("movq $-1, <0", vector<int>{}, vector<int>{RDI},
                              optional<vector<Instruction *>>{});

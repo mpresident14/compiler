@@ -126,7 +126,7 @@ InterferenceGraph::color() const {
     coloring.emplace(reg, static_cast<MachineReg>(reg));
   }
 
-  // Given these neighbors, is the color reg available?
+  // Is this color reg available for temp?
   auto canColor = [this, &coloring](MachineReg reg, int temp) {
     const unordered_set<int> &neighbors = graph_.at(temp);
     return none_of(neighbors.cbegin(), neighbors.cend(),
@@ -149,6 +149,8 @@ mainLoop:
     // Get all the assigned colors of the temporaries that temp was moved
     // to/from
     auto movePartners = moveMultimap_.equal_range(temp);
+    for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
+    }
     for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
       auto coloringIter = coloring.find(iter->second);
       if (coloringIter != coloring.end()) {
@@ -180,7 +182,6 @@ mainLoop:
     spilled.push_back(temp);
   }
 
-  cout << coloring << endl;
   return {move(coloring), move(spilled)};
 }
 

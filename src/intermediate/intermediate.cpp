@@ -23,7 +23,7 @@ void Const::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
  *********/
 
 void Temp::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
-  instrs.emplace_back(new Move("movq >, <", t_, temp));
+  instrs.emplace_back(new Move(t_, temp));
 }
 
 

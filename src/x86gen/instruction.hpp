@@ -50,7 +50,7 @@ private:
 
 class Move : public Instruction {
 public:
-  Move(const std::string &asmCode, int src, int dst);
+  Move(int src, int dst);
   InstrType getType() const noexcept override;
   bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
@@ -59,12 +59,10 @@ public:
       const std::unordered_map<int, size_t> &varToStackOffset) const override;
   void toStream(std::ostream &out) const override;
 
-  const std::string &getAsm() const noexcept;
   int getSrc() const noexcept;
   int getDst() const noexcept;
 
 private:
-  std::string asmCode_;
   int src_;
   int dst_;
 };

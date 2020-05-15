@@ -12,8 +12,7 @@ using namespace std;
  ****************/
 Label::Label(string &&name) : name_(move(name)) {}
 
-Move::Move(const string &asmCode, int src, int dst)
-    : asmCode_(asmCode), src_(move(src)), dst_(move(dst)) {}
+Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 
 Operation::Operation(const string &asmCode, vector<int> &&srcs,
                      vector<int> &&dsts,
@@ -52,12 +51,12 @@ bool Move::spillTemps(vector<InstrPtr> &newInstrs) {
   // Src variable from stack into register
   if (!isRegister(src_)) {
     newInstrs.push_back(make_unique<Move>(
-        asmCode_, src_, isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
+        src_, isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
   }
 
   if (!isRegister(dst_)) {
     newInstrs.push_back(make_unique<Move>(
-        asmCode_, isRegister(src_) > 0 ? src_ : SPILL_REGS[0], dst_));
+        isRegister(src_) > 0 ? src_ : SPILL_REGS[0], dst_));
   }
 
   return false;
@@ -76,7 +75,7 @@ bool Operation::spillTemps(vector<InstrPtr> &newInstrs) {
       }
       int spillReg = SPILL_REGS[numSpilled++];
       srcs_.at(i) = spillReg;
-      newInstrs.push_back(make_unique<Move>("movq >, <", src, spillReg));
+      newInstrs.push_back(make_unique<Move>(src, spillReg));
     }
   }
 
@@ -145,16 +144,10 @@ void Move::toCode(std::ostream &out,
     return;
   }
 
-  out << '\t';
-  for (char c : asmCode_) {
-    if (c == '>') {
-      tempToCode(out, src_, varToStackOffset);
-    } else if (c == '<') {
-      tempToCode(out, dst_, varToStackOffset);
-    } else {
-      out << c;
-    }
-  }
+  out << "\tmovq ";
+  tempToCode(out, src_, varToStackOffset);
+  out << ", ";
+  tempToCode(out, dst_, varToStackOffset);
   out << '\n';
 }
 
@@ -199,7 +192,7 @@ std::ostream &operator<<(std::ostream &out, const Instruction &instr) {
 void Label::toStream(std::ostream &out) const { out << name_ << ':'; }
 
 void Move::toStream(std::ostream &out) const {
-  out << asmCode_ << " [" << src_ << "] [" << dst_ << ']';
+  out << "MOVE" << " [" << src_ << "] [" << dst_ << ']';
 }
 
 void Operation::toStream(std::ostream &out) const {
@@ -223,7 +216,6 @@ void Return::toStream(std::ostream &out) const {
 
 const std::string &Label::getName() const noexcept { return name_; }
 
-const std::string &Move::getAsm() const noexcept { return asmCode_; }
 int Move::getSrc() const noexcept { return src_; }
 int Move::getDst() const noexcept { return dst_; }
 
