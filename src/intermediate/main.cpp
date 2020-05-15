@@ -18,7 +18,7 @@ int main() {
 
   ExprPtr expr1(new Const(1));
   ExprPtr expr2(new Const(3));
-  ExprPtr binop(new BinOp(move(expr1), move(expr2), Bop::AND));
+  ExprPtr binop(new BinOp(move(expr1), move(expr2), Bop::DIV));
   binop->toInstrs(R15, instrs);
 
   Function fn("runprez", move(instrs));

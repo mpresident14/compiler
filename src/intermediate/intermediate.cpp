@@ -41,12 +41,12 @@ void BinOp::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
     case Bop::ARSHIFT: return handleShifts("sarq", temp, instrs);
     case Bop::DIV: return handleDiv(true, temp, instrs);
     case Bop::MOD: return handleDiv(false, temp, instrs);
-    case Bop::PLUS: return handleDiv("addq", temp, instrs);
-    case Bop::MINUS: return handleDiv("subq", temp, instrs);
-    case Bop::MUL: return handleDiv("imulq", temp, instrs);
-    case Bop::AND: return handleDiv("andq", temp, instrs);
-    case Bop::OR: return handleDiv("orq", temp, instrs);
-    case Bop::XOR: return handleDiv("xorq", temp, instrs);
+    case Bop::PLUS: return handleOthers("addq", temp, instrs);
+    case Bop::MINUS: return handleOthers("subq", temp, instrs);
+    case Bop::MUL: return handleOthers("imulq", temp, instrs);
+    case Bop::AND: return handleOthers("andq", temp, instrs);
+    case Bop::OR: return handleOthers("orq", temp, instrs);
+    case Bop::XOR: return handleOthers("xorq", temp, instrs);
     default: throw invalid_argument("Unrecognized binary operator.");
   }
 }
@@ -78,10 +78,10 @@ void BinOp::handleDiv(bool isDiv, int temp, std::vector<InstrPtr> &instrs) const
   instrs.emplace_back(new Operation("idivq >0", {t2, RAX, RDX}, {RAX, RDX}, {}));
   if (isDiv) {
     // If division, move %rax into temp
-    Temp(RAX).toInstrs(t2, instrs);
+    Temp(RAX).toInstrs(temp, instrs);
   } else {
     // If mod, move %rdx into temp
-    Temp(RDX).toInstrs(t2, instrs);
+    Temp(RDX).toInstrs(temp, instrs);
   }
 }
 
@@ -94,7 +94,7 @@ void BinOp::handleOthers(std::string asmCode, int temp, std::vector<InstrPtr> &i
   expr1_->toInstrs(t1, instrs);
   int t2 = newTemp();
   expr2_->toInstrs(t2, instrs);
-  instrs.emplace_back(new Operation(asmCode.append(" >, <"), {t1, t2}, {t2}, {}));
+  instrs.emplace_back(new Operation(asmCode.append(" >0, <0"), {t1, t2}, {t2}, {}));
   Temp(t2).toInstrs(temp, instrs);
 }
 
