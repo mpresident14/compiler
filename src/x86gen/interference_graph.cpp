@@ -180,6 +180,7 @@ mainLoop:
     spilled.push_back(temp);
   }
 
+  cout << coloring << endl;
   return {move(coloring), move(spilled)};
 }
 

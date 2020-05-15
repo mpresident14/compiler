@@ -23,14 +23,14 @@ void writeTest0() {
                                          optional<vector<Instruction *>>{});
   InstrPtr move0 = make_unique<Move>("movq >, <", RAX, -1);
   InstrPtr move1 = make_unique<Move>("movq >, <", -1, -2);
-  InstrPtr move2 = make_unique<Move>("movq >, <", -2, RCX);
+  InstrPtr move2 = make_unique<Move>("movq >, <", -2, RSI);
 
   InstrPtr cmp =
-      make_unique<Operation>("cmpq $11, <0", vector<int>{}, vector<int>{RCX},
+      make_unique<Operation>("cmpq $11, <0", vector<int>{}, vector<int>{RSI},
                              optional<vector<Instruction *>>{});
   InstrPtr eqLabel = make_unique<Label>("EQ");
   InstrPtr doneLabel = make_unique<Label>("FIN");
-  InstrPtr moveEq = make_unique<Move>("movq >, <", RCX, RDI);
+  InstrPtr moveEq = make_unique<Move>("movq >, <", RSI, RDI);
   InstrPtr moveNeq =
       make_unique<Operation>("movq $-1, <0", vector<int>{}, vector<int>{RDI},
                              optional<vector<Instruction *>>{});
