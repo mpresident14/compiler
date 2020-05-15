@@ -43,6 +43,8 @@ namespace intermediate {
   };
 
   using ExprPtr = std::unique_ptr<Expr>;
+  using StmtPtr = std::unique_ptr<Stmt>;
+  using DeclPtr = std::unique_ptr<Decl>;
 
   enum class Bop {
     PLUS,
@@ -125,7 +127,15 @@ namespace intermediate {
     ExprPtr addr_;
   };
 
-  class DoThenEval : public Expr {};
+  class DoThenEval : public Expr {
+  public:
+    DoThenEval(std::vector<StmtPtr>&& stmts, ExprPtr expr);
+    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+
+  private:
+    std::vector<StmtPtr> stmts_;
+    ExprPtr expr_;
+  };
 
   class LabelAddr : public Expr {
   public:
