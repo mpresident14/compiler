@@ -103,7 +103,6 @@ namespace intermediate {
 
   class CondJump : public Stmt {
   public:
-    /* */
     CondJump(ExprPtr e1, ExprPtr e2, Rop rop, Label* ifTrue);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
@@ -113,6 +112,16 @@ namespace intermediate {
     Rop rop_;
     /* Owned by some MakeLabel or already in the InstrPtr vector */
     Label* ifTrue_;
+  };
+
+  class Assign : public Stmt {
+  public:
+    Assign(ExprPtr e1, ExprPtr e2);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    ExprPtr e1_;
+    ExprPtr e2_;
   };
 
 
@@ -181,6 +190,8 @@ namespace intermediate {
       return ExprType::MEM_DEREF;
     }
     void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+
+    const ExprPtr& getAddr() const { return addr_; }
 
   private:
     ExprPtr addr_;
