@@ -10,7 +10,7 @@ using namespace std;
 /****************
  * constructors *
  ****************/
-Label::Label(string &&name) : name_(move(name)) {}
+Label::Label(const string& name) : name_(name) {}
 
 Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 
@@ -215,19 +215,3 @@ void JumpOp::toStream(ostream &out) const {
 void Return::toStream(ostream &out) const {
   out << "RETURN (" << (hasValue_ ? "" : "no ") << "value)" << ':';
 }
-
-/***********
- * getters *
- ***********/
-
-const string &Label::getName() const noexcept { return name_; }
-
-int Move::getSrc() const noexcept { return src_; }
-int Move::getDst() const noexcept { return dst_; }
-
-const string &Operation::getAsm() const noexcept { return asmCode_; }
-const vector<int> &Operation::getSrcs() const noexcept { return srcs_; }
-const vector<int> &Operation::getDsts() const noexcept { return dsts_; }
-
-const vector<Instruction *> &
-JumpOp::getJumps() const noexcept { return jumps_; }

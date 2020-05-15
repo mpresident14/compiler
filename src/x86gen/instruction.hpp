@@ -28,12 +28,12 @@ public:
   toCode(std::ostream &out,
          const std::unordered_map<int, size_t> &varToStackOffset) const = 0;
   virtual void toStream(std::ostream &out) const = 0;
-  friend std::ostream &operator<<(std::ostream &out, const Instruction &instr);
+  friend std::ostream& operator<<(std::ostream &out, const Instruction &instr);
 };
 
 class Label : public Instruction {
 public:
-  Label(std::string &&name);
+  Label(const std::string& name);
   constexpr InstrType getType() const noexcept override { return InstrType::LABEL; }
   bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
   void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
@@ -42,7 +42,7 @@ public:
       const std::unordered_map<int, size_t> &varToStackOffset) const override;
   void toStream(std::ostream &out) const override;
 
-  const std::string &getName() const noexcept;
+  const std::string &getName() const noexcept { return name_; }
 
 private:
   std::string name_;
@@ -59,8 +59,8 @@ public:
       const std::unordered_map<int, size_t> &varToStackOffset) const override;
   void toStream(std::ostream &out) const override;
 
-  int getSrc() const noexcept;
-  int getDst() const noexcept;
+  int getSrc() const noexcept { return src_; }
+  int getDst() const noexcept { return dst_; }
 
 private:
   int src_;
@@ -80,9 +80,9 @@ public:
       const std::unordered_map<int, size_t> &varToStackOffset) const override;
   void toStream(std::ostream &out) const override;
 
-  const std::string &getAsm() const noexcept;
-  const std::vector<int> &getSrcs() const noexcept;
-  const std::vector<int> &getDsts() const noexcept;
+  const std::string &getAsm() const noexcept { return asmCode_; }
+  const std::vector<int> &getSrcs() const noexcept { return srcs_; }
+  const std::vector<int> &getDsts() const noexcept { return dsts_; }
 
 private:
   std::string asmCode_;
@@ -99,7 +99,7 @@ public:
   constexpr InstrType getType() const noexcept override { return InstrType::JUMP_OP; }
   virtual void toStream(std::ostream &out) const override;
 
-  const std::vector<Instruction *> &getJumps() const noexcept;
+  const std::vector<Instruction *> &getJumps() const noexcept { return jumps_; }
 private:
   // If empty, then we are jumping out of the function entirely
   std::vector<Instruction *>jumps_;

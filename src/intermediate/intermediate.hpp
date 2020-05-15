@@ -29,7 +29,7 @@ public:
 private:
 };
 
-enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF };
+enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, LABEL_ADDR };
 
 class Expr {
 public:
@@ -81,6 +81,7 @@ public:
   explicit constexpr Temp(int t) : t_(t) {}
   constexpr ExprType getType() const noexcept override { return ExprType::TEMP; }
   void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
+
   constexpr int getTemp() { return t_; }
 
 private:
@@ -97,6 +98,22 @@ public:
 private:
   ExprPtr addr_;
 };
+
+class DoThenEval : public Expr {};
+
+class LabelAddr : public Expr {
+public:
+  LabelAddr(const std::string& name);
+  constexpr ExprType getType() const noexcept override { return ExprType::LABEL_ADDR; }
+  void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
+
+  const std::string& getString() { return name_; }
+
+private:
+  std::string name_;
+
+};
+
 
 } // namespace intermediate
 
