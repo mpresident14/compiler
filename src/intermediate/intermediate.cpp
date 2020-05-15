@@ -99,4 +99,19 @@ void BinOp::handleOthers(std::string asmCode, int temp, std::vector<InstrPtr> &i
 }
 
 
+/************
+ * MemDeref *
+ ************/
+
+MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
+
+void MemDeref::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
+  int t = newTemp();
+  addr_->toInstrs(t, instrs);
+  instrs.emplace_back(new Operation("movq (>0), <0", {t}, {temp}, {}));
 }
+
+
+}
+
+

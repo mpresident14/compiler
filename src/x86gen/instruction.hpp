@@ -68,6 +68,7 @@ private:
 };
 
 // TODO: jumps_ is normally empty, maybe specialize a class for jumping
+// (derive from Operation???)
 
 class Operation : public Instruction {
 public:

@@ -29,7 +29,7 @@ public:
 private:
 };
 
-enum class ExprType { BINOP, CONST, TEMP };
+enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF };
 
 class Expr {
 public:
@@ -85,6 +85,17 @@ public:
 
 private:
   int t_;
+};
+
+
+class MemDeref : public Expr {
+public:
+  MemDeref(ExprPtr&& addr);
+  constexpr ExprType getType() const noexcept override { return ExprType::MEM_DEREF; }
+  void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
+
+private:
+  ExprPtr addr_;
 };
 
 } // namespace intermediate
