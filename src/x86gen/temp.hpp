@@ -37,10 +37,12 @@ constexpr size_t NUM_AVAIL_REGS = 14;
 
 // NOTE: These are not vector<MachineReg> because I'm lazy and I want
 // a syntactically succinct copy when I pass them into Instruction constructors.
-const std::vector<int> callerSaveRegs{RAX, RCX, RDX, RDI, RSI,
+const std::vector<int> ARG_REGS{RDI, RSI, RDX, RCX, R8,  R9};
+
+const std::vector<int> CALLER_SAVE_REGS{RAX, RCX, RDX, RDI, RSI,
                                       R8,  R9,  R10, R11};
 
-const std::vector<int> calleeSaveRegs{R12, R13, R14, R15, RBX, RSP, RBP};
+const std::vector<int> CALLEE_SAVE_REGS{R12, R13, R14, R15, RBX, RSP, RBP};
 
 constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 

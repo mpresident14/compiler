@@ -29,7 +29,7 @@ public:
 private:
 };
 
-enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, LABEL_ADDR };
+enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, LABEL_ADDR, CALL };
 
 class Expr {
 public:
@@ -107,11 +107,24 @@ public:
   constexpr ExprType getType() const noexcept override { return ExprType::LABEL_ADDR; }
   void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
 
-  const std::string& getString() { return name_; }
+  const std::string& getName() { return name_; }
 
 private:
   std::string name_;
 
+};
+
+
+class Call : public Expr {
+public:
+  Call(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
+  constexpr ExprType getType() const noexcept override { return ExprType::CALL; }
+  void toInstrs(int temp, std::vector<InstrPtr> &instrs) const override;
+
+private:
+  ExprPtr addr_;
+  std::vector<ExprPtr> params_;
+  bool hasReturnValue_;
 };
 
 

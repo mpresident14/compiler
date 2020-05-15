@@ -125,6 +125,47 @@ void LabelAddr::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
       string("leaq ").append(name_).append("(%rip), `D0"), {}, {temp}));
 }
 
+
+
+/********
+ * Call *
+ ********/
+Call::Call(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue)
+    : addr_(move(addr)), params_(move(params)), hasReturnValue_(hasReturnValue) {}
+
+
+void Call::toInstrs(int temp, std::vector<InstrPtr> &instrs) const {
+  // Move params into argument registers
+  // TODO: If more than six params, need to put onto stack
+  vector<int> srcTemps;
+  size_t numParams = params_.size();
+  if (numParams > 6) {
+    throw runtime_error("More than 6 args not implemented yet");
+  }
+  for (size_t i = 0; i < numParams; ++i) {
+    int argReg = ARG_REGS[i];
+    params_[i]->toInstrs(argReg, instrs);
+    srcTemps.push_back(argReg);
+  }
+
+  if (addr_->getType() == ExprType::LABEL_ADDR) {
+    // If we are calling a function name, just call it directly
+    instrs.emplace_back(
+        new JumpOp("callq " + static_cast<LabelAddr*>(addr_.get())->getName(), move(srcTemps), vector<int>(CALLEE_SAVE_REGS), {}));
+  } else {
+    // If we are calling an address, we need to put it in a register
+    int t = newTemp();
+    addr_->toInstrs(t, instrs);
+    srcTemps.push_back(t);
+    instrs.emplace_back(new JumpOp("callq *`S0", move(srcTemps), vector<int>(CALLEE_SAVE_REGS), {}));
+  }
+
+  // Move result from %rax to temp if needed
+  if (hasReturnValue_) {
+    instrs.emplace_back(new Move(RAX, temp));
+  }
+}
+
 }
 
 

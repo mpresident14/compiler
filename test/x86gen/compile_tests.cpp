@@ -36,8 +36,8 @@ void writeTest0() {
       "jmp FIN", vector<int>{}, vector<int>{},
       vector<Instruction *>{doneLabel.get()});
   InstrPtr callPrint = make_unique<Operation>(
-      "callq printInt", vector<int>(callerSaveRegs),
-      vector<int>(calleeSaveRegs));
+      "callq printInt", vector<int>(CALLER_SAVE_REGS),
+      vector<int>(CALLEE_SAVE_REGS));
 
   vector<InstrPtr> instrs;
   instrs.push_back(move(moveImm0));
