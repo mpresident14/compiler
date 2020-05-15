@@ -25,8 +25,9 @@ JumpOp::JumpOp(
     const string& asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
-    vector<Instruction*>&& jumps)
-    : Operation(asmCode, move(srcs), move(dsts)), jumps_(move(jumps)) {}
+    vector<Instruction*>&& jumps,
+    bool canFallThru)
+    : Operation(asmCode, move(srcs), move(dsts)), jumps_(move(jumps)), canFallThru_(canFallThru) {}
 
 
 namespace {

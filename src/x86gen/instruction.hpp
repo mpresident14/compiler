@@ -105,17 +105,21 @@ public:
       const std::string& asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
-      std::vector<Instruction*>&& jumps);
+      std::vector<Instruction*>&& jumps,
+      bool canFallThru);
   constexpr InstrType getType() const noexcept override {
     return InstrType::JUMP_OP;
   }
   virtual void toStream(std::ostream& out) const override;
 
   const std::vector<Instruction*>& getJumps() const noexcept { return jumps_; }
+  constexpr bool canFallThru() const noexcept { return canFallThru_; }
 
 private:
-  // If empty, then we are jumping out of the function entirely
+  // If empty and canFallThru is false, then we are jumping out of
+  // the function entirely
   std::vector<Instruction*> jumps_;
+  bool canFallThru_;
 };
 
 

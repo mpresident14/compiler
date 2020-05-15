@@ -23,8 +23,7 @@ namespace intermediate {
   public:
     Stmt() = default;
     virtual ~Stmt(){};
-
-    virtual void toInstrs(std::vector<InstrPtr>& instrs) const = 0;
+    virtual void toInstrs(std::vector<InstrPtr>& instrs) = 0;
 
   private:
   };
@@ -42,10 +41,6 @@ namespace intermediate {
   private:
   };
 
-  using ExprPtr = std::unique_ptr<Expr>;
-  using StmtPtr = std::unique_ptr<Stmt>;
-  using DeclPtr = std::unique_ptr<Decl>;
-
   enum class Bop {
     PLUS,
     MINUS,
@@ -59,7 +54,71 @@ namespace intermediate {
     ARSHIFT,
     XOR
   };
+
   enum class Rop { EQ, NEQ, LESS, GREATER, LESSEQ, GREATEREQ };
+
+  using ExprPtr = std::unique_ptr<Expr>;
+  using StmtPtr = std::unique_ptr<Stmt>;
+  using DeclPtr = std::unique_ptr<Decl>;
+
+  /********
+   * Stmt *
+   ********/
+
+  class Block : public Stmt {
+  public:
+    Block(std::vector<StmtPtr>&& stmts);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    std::vector<StmtPtr> stmts_;
+  };
+
+
+  class MakeLabel : public Stmt {
+  public:
+    MakeLabel(const std::string& name);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    /* Generates the instruction to create a label, stores it in the
+     * data member, returns the raw pointer to it. We basically
+     * use it so that Jumps can have an Instruction* target when they
+     * is constructed. */
+    Label* genInstr();
+
+  private:
+    std::string name_;
+    std::unique_ptr<Label> instr_ = nullptr;
+  };
+
+
+  class Jump : public Stmt {
+  public:
+    Jump(Label* label);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    /* Owned by some MakeLabel or already in the InstrPtr vector */
+    Label* label_;
+  };
+
+  class CondJump : public Stmt {
+  public:
+    /* */
+    CondJump(ExprPtr e1, ExprPtr e2, Rop rop, Label* ifTrue);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    ExprPtr e1_;
+    ExprPtr e2_;
+    Rop rop_;
+    /* Owned by some MakeLabel or already in the InstrPtr vector */
+    Label* ifTrue_;
+  };
+
+
+  /********
+   * Expr *
+   ********/
 
   class BinOp : public Expr {
   public:

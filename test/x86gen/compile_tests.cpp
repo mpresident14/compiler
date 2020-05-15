@@ -33,12 +33,14 @@ void writeTest0() {
       "je EQ",
       vector<int>{},
       vector<int>{},
-      vector<Instruction*>{ eqLabel.get(), doneLabel.get() });
+      vector<Instruction*>{ eqLabel.get() },
+      true);
   InstrPtr jDone = make_unique<JumpOp>(
       "jmp FIN",
       vector<int>{},
       vector<int>{},
-      vector<Instruction*>{ doneLabel.get() });
+      vector<Instruction*>{ doneLabel.get() },
+      false);
   InstrPtr callPrint = make_unique<Operation>(
       "callq printInt",
       vector<int>(CALLER_SAVE_REGS),

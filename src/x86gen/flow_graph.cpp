@@ -62,7 +62,8 @@ void FlowGraph::computeLiveness() {
       Liveness& node = nodes_.at(instr);
 
       // Compute liveOut
-      if (instr->getType() == InstrType::JUMP_OP) {
+      InstrType type = instr->getType();
+      if (type == InstrType::JUMP_OP) {
         // Instruction jumps
         unordered_set<int> newLiveOut;
         for (Instruction* jumpInstr :
@@ -73,7 +74,10 @@ void FlowGraph::computeLiveness() {
           node.liveOut = move(newLiveOut);
           changed = true;
         }
-      } else {
+      }
+
+      if (type != InstrType::JUMP_OP
+          || (type == InstrType::JUMP_OP && static_cast<const JumpOp*>(instr)->canFallThru())) {
         // Instruction falls through
         Liveness& nextLiveness = nodes_.at(prev(iter)->get());
         if (node.liveOut != nextLiveness.liveIn) {
