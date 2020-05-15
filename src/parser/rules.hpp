@@ -36,15 +36,15 @@ struct DFARule {
     if (atEnd()) {
       throw std::invalid_argument("Out of bounds");
     }
-    return {concrete, symbols, pos + 1, lookahead};
+    return { concrete, symbols, pos + 1, lookahead };
   }
 
-  bool operator==(const DFARule &other) const noexcept {
+  bool operator==(const DFARule& other) const noexcept {
     return concrete == other.concrete && symbols == other.symbols &&
            pos == other.pos && lookahead == other.lookahead;
   }
 
-  friend std::ostream &operator<<(std::ostream &out, const DFARule &rule) {
+  friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
     out << rule.concrete << " -> ";
     size_t len = rule.symbols.size();
     for (size_t i = 0; i < len; ++i) {
@@ -62,7 +62,7 @@ struct DFARule {
 
   /* Does not use lookahead set. See comment below */
   struct Hash {
-    size_t operator()(const DFARule &rule) const noexcept {
+    size_t operator()(const DFARule& rule) const noexcept {
       std::hash<int> intHasher;
       size_t h1 = intHasher(rule.concrete);
       size_t h2 = 0;
@@ -84,7 +84,7 @@ struct DFARule {
    * the rules they contain.
    * */
   struct Eq {
-    bool operator()(const DFARule &left, const DFARule &right) const noexcept {
+    bool operator()(const DFARule& left, const DFARule& right) const noexcept {
       return left.concrete == right.concrete && left.symbols == right.symbols &&
              left.pos == right.pos;
     }
@@ -94,10 +94,10 @@ struct DFARule {
 using DFARuleSet = std::unordered_set<DFARule, DFARule::Hash, DFARule::Eq>;
 
 struct DFARuleSetHash {
-  size_t operator()(const DFARuleSet &ruleSet) const noexcept {
+  size_t operator()(const DFARuleSet& ruleSet) const noexcept {
     DFARule::Hash hasher;
     size_t h = 0;
-    for (const DFARule &rule : ruleSet) {
+    for (const DFARule& rule : ruleSet) {
       h += hasher(rule);
     }
     return h;

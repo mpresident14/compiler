@@ -5,6 +5,6 @@
 
 #include <string>
 
-RgxPtr parse(const std::string &input);
+RgxPtr parse(const std::string& input);
 
 #endif

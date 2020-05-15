@@ -21,28 +21,30 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
-  virtual bool spillTemps(std::vector<InstrPtr> &newInstrs) = 0;
-  virtual void
-  assignRegs(const std::unordered_map<int, MachineReg> &coloring) = 0;
-  virtual void
-  toCode(std::ostream &out,
-         const std::unordered_map<int, size_t> &varToStackOffset) const = 0;
-  virtual void toStream(std::ostream &out) const = 0;
-  friend std::ostream& operator<<(std::ostream &out, const Instruction &instr);
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
+  virtual void assignRegs(
+      const std::unordered_map<int, MachineReg>& coloring) = 0;
+  virtual void toCode(
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
+  virtual void toStream(std::ostream& out) const = 0;
+  friend std::ostream& operator<<(std::ostream& out, const Instruction& instr);
 };
 
 class Label : public Instruction {
 public:
   Label(const std::string& name);
-  constexpr InstrType getType() const noexcept override { return InstrType::LABEL; }
-  bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::LABEL;
+  }
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   void toCode(
-      std::ostream &out,
-      const std::unordered_map<int, size_t> &varToStackOffset) const override;
-  void toStream(std::ostream &out) const override;
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toStream(std::ostream& out) const override;
 
-  const std::string &getName() const noexcept { return name_; }
+  const std::string& getName() const noexcept { return name_; }
 
 private:
   std::string name_;
@@ -51,13 +53,15 @@ private:
 class Move : public Instruction {
 public:
   Move(int src, int dst);
-  constexpr InstrType getType() const noexcept override { return InstrType::MOVE; }
-  bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::MOVE;
+  }
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   void toCode(
-      std::ostream &out,
-      const std::unordered_map<int, size_t> &varToStackOffset) const override;
-  void toStream(std::ostream &out) const override;
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toStream(std::ostream& out) const override;
 
   int getSrc() const noexcept { return src_; }
   int getDst() const noexcept { return dst_; }
@@ -70,19 +74,23 @@ private:
 
 class Operation : public Instruction {
 public:
-  Operation(const std::string &asmCode, std::vector<int> &&srcs,
-            std::vector<int> &&dsts);
-  constexpr InstrType getType() const noexcept override { return InstrType::OPER; }
-  bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
+  Operation(
+      const std::string& asmCode,
+      std::vector<int>&& srcs,
+      std::vector<int>&& dsts);
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::OPER;
+  }
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(const std::unordered_map<int, MachineReg>& coloring) override;
   void toCode(
-      std::ostream &out,
-      const std::unordered_map<int, size_t> &varToStackOffset) const override;
-  void toStream(std::ostream &out) const override;
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toStream(std::ostream& out) const override;
 
-  const std::string &getAsm() const noexcept { return asmCode_; }
-  const std::vector<int> &getSrcs() const noexcept { return srcs_; }
-  const std::vector<int> &getDsts() const noexcept { return dsts_; }
+  const std::string& getAsm() const noexcept { return asmCode_; }
+  const std::vector<int>& getSrcs() const noexcept { return srcs_; }
+  const std::vector<int>& getDsts() const noexcept { return dsts_; }
 
 private:
   std::string asmCode_;
@@ -93,30 +101,37 @@ private:
 
 class JumpOp : public Operation {
 public:
-  JumpOp(const std::string &asmCode, std::vector<int> &&srcs,
-            std::vector<int> &&dsts,
-            std::vector<Instruction *> &&jumps);
-  constexpr InstrType getType() const noexcept override { return InstrType::JUMP_OP; }
-  virtual void toStream(std::ostream &out) const override;
+  JumpOp(
+      const std::string& asmCode,
+      std::vector<int>&& srcs,
+      std::vector<int>&& dsts,
+      std::vector<Instruction*>&& jumps);
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::JUMP_OP;
+  }
+  virtual void toStream(std::ostream& out) const override;
 
-  const std::vector<Instruction *> &getJumps() const noexcept { return jumps_; }
+  const std::vector<Instruction*>& getJumps() const noexcept { return jumps_; }
+
 private:
   // If empty, then we are jumping out of the function entirely
-  std::vector<Instruction *>jumps_;
+  std::vector<Instruction*> jumps_;
 };
 
 
 class Return : public Instruction {
 public:
   explicit constexpr Return(bool hasValue) : hasValue_(hasValue) {}
-  constexpr InstrType getType() const noexcept override { return InstrType::RETURN; }
-  virtual bool spillTemps(std::vector<InstrPtr> &newInstrs) override;
-  virtual void
-  assignRegs(const std::unordered_map<int, MachineReg> &coloring) override;
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::RETURN;
+  }
+  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  virtual void assignRegs(
+      const std::unordered_map<int, MachineReg>& coloring) override;
   virtual void toCode(
-      std::ostream &out,
-      const std::unordered_map<int, size_t> &varToStackOffset) const override;
-  virtual void toStream(std::ostream &out) const override;
+      std::ostream& out,
+      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  virtual void toStream(std::ostream& out) const override;
 
 private:
   bool hasValue_;

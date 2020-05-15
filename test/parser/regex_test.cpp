@@ -1,7 +1,8 @@
 
 // #include "src/parser/regex_parse.hpp"
-#include "src/parser/dfa.hpp"
 #include "src/parser/regex.hpp"
+
+#include "src/parser/dfa.hpp"
 #include "src/parser/regex_eval.hpp"
 #include "src/parser/regex_parser.hpp"
 
@@ -52,7 +53,7 @@ void testParse() {
 void testParseError() {
   ostringstream expectedErr0;
   expectedErr0 << "Parse error on line 1:\n\tStack: "
-               << vector<string>{"Concats", "LPAREN", "Regex"}
+               << vector<string>{ "Concats", "LPAREN", "Regex" }
                << "\n\tRemaining tokens: " << vector<string>{};
 
   string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
@@ -60,8 +61,8 @@ void testParseError() {
 
   ostringstream expectedErr1;
   expectedErr1 << "Parse error on line 1:\n\tStack: "
-               << vector<string>{"Regex", "BAR", "STAR"}
-               << "\n\tRemaining tokens: " << vector<string>{"CHAR"};
+               << vector<string>{ "Regex", "BAR", "STAR" }
+               << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
   string err1 = TESTER.assertThrows([]() { parse("abc|*d"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
@@ -127,7 +128,7 @@ void testGetDeriv_brackets() {
 void testHashFn() {
   RgxPtr r1 = RgxPtr(parse("a"));
   cout << "HERE" << endl;
-  unordered_set<RgxPtr, Regex::PtrHash> rgxs = {r1->getDeriv('b')};
+  unordered_set<RgxPtr, Regex::PtrHash> rgxs = { r1->getDeriv('b') };
   cout << "HERE2" << endl;
   TESTER.assertTrue(rgxs.contains(r1->getDeriv('c')));
   cout << "HERE3" << endl;
@@ -135,16 +136,18 @@ void testHashFn() {
 
 void testRgxDFAToCode_withNullableRegex() {
   GrammarData grammarData = {
-      {
-          {"", "", NONE, Assoc::NONE, "", "", "a*"},
-          {"", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*"},
-          {"", "", NONE, Assoc::NONE, "", "", "for"},
-      },
-      {},
-      {}};
+    {
+        { "", "", NONE, Assoc::NONE, "", "", "a*" },
+        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" },
+        { "", "", NONE, Assoc::NONE, "", "", "for" },
+    },
+    {},
+    {}
+  };
 
-  vector<pair<string, int>> patterns = {
-      {"a*", 1}, {"[1-9][0-9]*", 2}, {"for", 3}};
+  vector<pair<string, int>> patterns = { { "a*", 1 },
+                                         { "[1-9][0-9]*", 2 },
+                                         { "for", 3 } };
 
   stringstream out;
   out.setstate(ios_base::badbit);
@@ -158,20 +161,21 @@ void testRgxDFAToCode_withNullableRegex() {
 
 void testRgxDFAToCode_withInvalidRegex() {
   GrammarData grammarData = {
-      {
-          {"", "", NONE, Assoc::NONE, "", "", "."},
-          {"", "", NONE, Assoc::NONE, "", "", "9)[0-9]*"},
-          {"", "", NONE, Assoc::NONE, "", "", "for"},
-      },
-      {},
-      {}};
+    {
+        { "", "", NONE, Assoc::NONE, "", "", "." },
+        { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" },
+        { "", "", NONE, Assoc::NONE, "", "", "for" },
+    },
+    {},
+    {}
+  };
 
   stringstream out;
   out.setstate(ios_base::badbit);
   TESTER.assertThrows(([&]() { rgxDFAToCode(out, grammarData); }));
 }
 
-int main(int, char **) {
+int main(int, char**) {
   // To test stderr output
   cerr.rdbuf(errBuffer.rdbuf());
 

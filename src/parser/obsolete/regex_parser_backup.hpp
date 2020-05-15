@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 namespace src::parser::regex_parser {
-Regex *parse(const std::string &input);
-Regex *parse(std::istream &input);
-} // namespace src::parser::regex_parser
+  Regex* parse(const std::string& input);
+  Regex* parse(std::istream& input);
+}  // namespace src::parser::regex_parser
 #endif

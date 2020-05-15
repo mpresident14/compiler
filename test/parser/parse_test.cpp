@@ -31,7 +31,7 @@ void testParse() {
 void testParse_invalidTokens() {
   ostringstream expectedErr0;
   expectedErr0 << "Lexer error on line 1 at: a * 24\n"
-               << "Previous tokens were: " << vector<string>{"INT", "PLUS"};
+               << "Previous tokens were: " << vector<string>{ "INT", "PLUS" };
 
   string err0 = TESTER.assertThrows([]() { expr_parser::parse("1 + a * 24"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
@@ -40,8 +40,8 @@ void testParse_invalidTokens() {
 void testParse_noParse() {
   ostringstream expectedErr0;
   expectedErr0 << "Parse error on line 1:\n\tStack: "
-               << vector<string>{"Expr", "PLUS", "Expr", "STAR", "PLUS"}
-               << "\n\tRemaining tokens: " << vector<string>{"INT"};
+               << vector<string>{ "Expr", "PLUS", "Expr", "STAR", "PLUS" }
+               << "\n\tRemaining tokens: " << vector<string>{ "INT" };
 
   string err0 =
       TESTER.assertThrows([]() { expr_parser::parse("123 + 24* + 5"); });
@@ -51,9 +51,9 @@ void testParse_noParse() {
   // reduce to Expr
   ostringstream expectedErr1;
   expectedErr1 << "Parse error on line 2:\n\tStack: "
-               << vector<string>{"Expr", "STAR", "INT", "INT"}
+               << vector<string>{ "Expr", "STAR", "INT", "INT" }
                << "\n\tRemaining tokens: "
-               << vector<string>{"STAR", "PLUS", "INT"};
+               << vector<string>{ "STAR", "PLUS", "INT" };
 
   string err1 =
       TESTER.assertThrows([]() { expr_parser::parse("3 * 2\n 34* + 5"); });

@@ -11,14 +11,14 @@
 
 class Function {
 public:
-  Function(std::string &&name, std::vector<InstrPtr> &&instrs);
+  Function(std::string&& name, std::vector<InstrPtr>&& instrs);
   ~Function() = default;
-  Function(const Function &) = delete;
-  Function(Function &&) = default;
-  Function &operator=(const Function &) = delete;
-  Function &operator=(Function &&) = default;
+  Function(const Function&) = delete;
+  Function(Function&&) = default;
+  Function& operator=(const Function&) = delete;
+  Function& operator=(Function&&) = default;
 
-  void toCode(std::ostream &out);
+  void toCode(std::ostream& out);
 
 private:
   void regAlloc();
@@ -30,14 +30,14 @@ private:
 
 class Program {
 public:
-  Program(std::string &&name, std::vector<Function> &&fns);
+  Program(std::string&& name, std::vector<Function>&& fns);
   ~Program() = default;
-  Program(const Program &) = delete;
-  Program(Program &&) = default;
-  Program &operator=(const Program &) = delete;
-  Program &operator=(Program &&) = default;
+  Program(const Program&) = delete;
+  Program(Program&&) = default;
+  Program& operator=(const Program&) = delete;
+  Program& operator=(Program&&) = default;
 
-  void toCode(std::ostream &out);
+  void toCode(std::ostream& out);
 
 private:
   std::string name_;

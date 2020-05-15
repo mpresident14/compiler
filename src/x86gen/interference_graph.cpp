@@ -5,8 +5,9 @@
 using namespace std;
 
 /* To avoid having to call the default set constructor on every check */
-auto insertIfNotExists(unordered_map<int, unordered_set<int>> &theMap,
-                       int temp) {
+auto insertIfNotExists(
+    unordered_map<int, unordered_set<int>>& theMap,
+    int temp) {
   auto iter = theMap.find(temp);
   if (iter == theMap.end()) {
     return theMap.emplace(temp, unordered_set<int>{}).first;
@@ -15,16 +16,17 @@ auto insertIfNotExists(unordered_map<int, unordered_set<int>> &theMap,
 }
 
 auto removeNode(
-    unordered_map<int, unordered_set<int>> &graphCopy,
-    const unordered_map<int, unordered_set<int>>::const_iterator &iter) {
+    unordered_map<int, unordered_set<int>>& graphCopy,
+    const unordered_map<int, unordered_set<int>>::const_iterator& iter) {
   for (int temp : iter->second) {
     graphCopy.at(temp).erase(iter->first);
   }
   return graphCopy.erase(iter);
 }
 
-void buildStack(unordered_map<int, unordered_set<int>> &graphCopy,
-                stack<int> &stk) {
+void buildStack(
+    unordered_map<int, unordered_set<int>>& graphCopy,
+    stack<int>& stk) {
   size_t fewestNeighbors = SIZE_MAX;
   int tempFewestNeighbors;
   size_t origLen = graphCopy.size();
@@ -75,46 +77,46 @@ void buildStack(unordered_map<int, unordered_set<int>> &graphCopy,
  * temporaries interfere. The only exception is that for moves, the src and dst
  * do not interfere.
  */
-InterferenceGraph::InterferenceGraph(const FlowGraph &fgraph) {
-  for (const auto &[instr, liveness] : fgraph.getNodes()) {
+InterferenceGraph::InterferenceGraph(const FlowGraph& fgraph) {
+  for (const auto& [instr, liveness] : fgraph.getNodes()) {
     switch (instr->getType()) {
-    case InstrType::MOVE: {
-      int moveSrc = static_cast<const Move *>(instr)->getSrc();
-      int moveDst = static_cast<const Move *>(instr)->getDst();
-      unordered_set<int> &moveNeighbors =
-          insertIfNotExists(graph_, moveDst)->second;
-      for (int temp : liveness.liveOut) {
-        if (temp != moveSrc && temp != moveDst) {
-          insertIfNotExists(graph_, temp)->second.insert(moveDst);
-          moveNeighbors.insert(temp);
-        }
-      }
-
-      // Add to moveMultimap for biased coloring
-      moveMultimap_.emplace(moveSrc, moveDst);
-      moveMultimap_.emplace(moveDst, moveSrc);
-      break;
-    }
-    case InstrType::OPER: // Fall Thru
-    case InstrType::JUMP_OP:
-      for (int opDst : static_cast<const Operation *>(instr)->getDsts()) {
-        unordered_set<int> &opNeighbors =
-            insertIfNotExists(graph_, opDst)->second;
+      case InstrType::MOVE: {
+        int moveSrc = static_cast<const Move*>(instr)->getSrc();
+        int moveDst = static_cast<const Move*>(instr)->getDst();
+        unordered_set<int>& moveNeighbors =
+            insertIfNotExists(graph_, moveDst)->second;
         for (int temp : liveness.liveOut) {
-          if (temp != opDst) {
-            insertIfNotExists(graph_, temp)->second.insert(opDst);
-            opNeighbors.insert(temp);
+          if (temp != moveSrc && temp != moveDst) {
+            insertIfNotExists(graph_, temp)->second.insert(moveDst);
+            moveNeighbors.insert(temp);
           }
         }
+
+        // Add to moveMultimap for biased coloring
+        moveMultimap_.emplace(moveSrc, moveDst);
+        moveMultimap_.emplace(moveDst, moveSrc);
+        break;
       }
-      break;
-    default:;
+      case InstrType::OPER:  // Fall Thru
+      case InstrType::JUMP_OP:
+        for (int opDst : static_cast<const Operation*>(instr)->getDsts()) {
+          unordered_set<int>& opNeighbors =
+              insertIfNotExists(graph_, opDst)->second;
+          for (int temp : liveness.liveOut) {
+            if (temp != opDst) {
+              insertIfNotExists(graph_, temp)->second.insert(opDst);
+              opNeighbors.insert(temp);
+            }
+          }
+        }
+        break;
+      default:;
     }
   }
 }
 
-pair<unordered_map<int, MachineReg>, vector<int>>
-InterferenceGraph::color() const {
+pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color()
+    const {
   unordered_map<int, unordered_set<int>> graphCopy(graph_);
   stack<int> stk;
   buildStack(graphCopy, stk);
@@ -129,12 +131,12 @@ InterferenceGraph::color() const {
 
   // Is this color reg available for temp?
   auto canColor = [this, &coloring](MachineReg reg, int temp) {
-    const unordered_set<int> &neighbors = graph_.at(temp);
-    return none_of(neighbors.cbegin(), neighbors.cend(),
-                   [&coloring, &reg](int neighbor) {
-                     auto iter = coloring.find(neighbor);
-                     return iter != coloring.end() && iter->second == reg;
-                   });
+    const unordered_set<int>& neighbors = graph_.at(temp);
+    return none_of(
+        neighbors.cbegin(), neighbors.cend(), [&coloring, &reg](int neighbor) {
+          auto iter = coloring.find(neighbor);
+          return iter != coloring.end() && iter->second == reg;
+        });
   };
 
 mainLoop:
@@ -183,11 +185,11 @@ mainLoop:
     spilled.push_back(temp);
   }
 
-  return {move(coloring), move(spilled)};
+  return { move(coloring), move(spilled) };
 }
 
-std::ostream &operator<<(std::ostream &out, const InterferenceGraph &fgraph) {
-  for (const auto &[temp, neighbors] : fgraph.graph_) {
+std::ostream& operator<<(std::ostream& out, const InterferenceGraph& fgraph) {
+  for (const auto& [temp, neighbors] : fgraph.graph_) {
     out << temp << " -> " << neighbors << '\n';
   }
   return out;

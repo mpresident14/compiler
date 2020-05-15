@@ -18,16 +18,16 @@
 
 /* Fixed for all grammars */
 enum class Assoc { NONE, LEFT, RIGHT, NOT };
-inline std::ostream &operator<<(std::ostream &out, const Assoc &assoc) {
+inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
   switch (assoc) {
-  case Assoc::LEFT:
-    return out << "LEFT";
-  case Assoc::RIGHT:
-    return out << "RIGHT";
-  case Assoc::NOT:
-    return out << "NOT";
-  default:
-    return out << "NONE";
+    case Assoc::LEFT:
+      return out << "LEFT";
+    case Assoc::RIGHT:
+      return out << "RIGHT";
+    case Assoc::NOT:
+      return out << "NOT";
+    default:
+      return out << "NONE";
   }
 }
 
@@ -79,8 +79,9 @@ constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-inline std::string symbolToString(int symbolId,
-                                  const GrammarData &grammarData) {
+inline std::string symbolToString(
+    int symbolId,
+    const GrammarData& grammarData) {
   if (isToken(symbolId)) {
     return grammarData.tokens[tokenToFromIndex(symbolId)].name;
   }

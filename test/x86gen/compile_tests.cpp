@@ -13,30 +13,35 @@ using namespace std;
 
 void writeTest0() {
   InstrPtr moveImm0 =
-      make_unique<Operation>("movq $1, `D0", vector<int>{}, vector<int>{RAX});
+      make_unique<Operation>("movq $1, `D0", vector<int>{}, vector<int>{ RAX });
   InstrPtr moveImm1 =
-      make_unique<Operation>("movq $5, `D0", vector<int>{}, vector<int>{-1});
+      make_unique<Operation>("movq $5, `D0", vector<int>{}, vector<int>{ -1 });
   InstrPtr leaq = make_unique<Operation>(
-      "leaq (`S0, `S1, 2), `D0", vector<int>{RAX, -1}, vector<int>{RAX});
+      "leaq (`S0, `S1, 2), `D0", vector<int>{ RAX, -1 }, vector<int>{ RAX });
   InstrPtr move0 = make_unique<Move>(RAX, -1);
   InstrPtr move1 = make_unique<Move>(-1, -2);
   InstrPtr move2 = make_unique<Move>(-2, RSI);
 
-  InstrPtr cmp =
-      make_unique<Operation>("cmpq $11, `S0", vector<int>{RSI}, vector<int>{});
+  InstrPtr cmp = make_unique<Operation>(
+      "cmpq $11, `S0", vector<int>{ RSI }, vector<int>{});
   InstrPtr eqLabel = make_unique<Label>("EQ");
   InstrPtr doneLabel = make_unique<Label>("FIN");
   InstrPtr moveEq = make_unique<Move>(RSI, RDI);
-  InstrPtr moveNeq =
-      make_unique<Operation>("movq $-1, `D0", vector<int>{}, vector<int>{RDI});
+  InstrPtr moveNeq = make_unique<Operation>(
+      "movq $-1, `D0", vector<int>{}, vector<int>{ RDI });
   InstrPtr je = make_unique<JumpOp>(
-      "je EQ", vector<int>{}, vector<int>{},
-      vector<Instruction *>{eqLabel.get(), doneLabel.get()});
+      "je EQ",
+      vector<int>{},
+      vector<int>{},
+      vector<Instruction*>{ eqLabel.get(), doneLabel.get() });
   InstrPtr jDone = make_unique<JumpOp>(
-      "jmp FIN", vector<int>{}, vector<int>{},
-      vector<Instruction *>{doneLabel.get()});
+      "jmp FIN",
+      vector<int>{},
+      vector<int>{},
+      vector<Instruction*>{ doneLabel.get() });
   InstrPtr callPrint = make_unique<Operation>(
-      "callq printInt", vector<int>(CALLER_SAVE_REGS),
+      "callq printInt",
+      vector<int>(CALLER_SAVE_REGS),
       vector<int>(CALLEE_SAVE_REGS));
 
   vector<InstrPtr> instrs;

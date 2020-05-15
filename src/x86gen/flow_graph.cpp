@@ -11,23 +11,23 @@ using namespace std;
  * utils *
  *********/
 template <typename T, template <typename...> class Container>
-void setUnion(unordered_set<T> &to, const Container<T> &from) {
-  for (const T &n : from) {
+void setUnion(unordered_set<T>& to, const Container<T>& from) {
+  for (const T& n : from) {
     to.insert(n);
   }
 }
 
 template <typename T, template <typename...> class Container>
-void setMinus(unordered_set<int> &to, const Container<int> &from) {
-  for (const T &n : from) {
+void setMinus(unordered_set<int>& to, const Container<int>& from) {
+  for (const T& n : from) {
     to.erase(n);
   }
 }
 
-FlowGraph::FlowGraph(const vector<InstrPtr> &instrs) : instrs_(instrs) {
-  for (const InstrPtr &instr : instrs) {
-    nodes_.emplace(instr.get(),
-                   Liveness{unordered_set<int>{}, unordered_set<int>{}});
+FlowGraph::FlowGraph(const vector<InstrPtr>& instrs) : instrs_(instrs) {
+  for (const InstrPtr& instr : instrs) {
+    nodes_.emplace(
+        instr.get(), Liveness{ unordered_set<int>{}, unordered_set<int>{} });
   }
 }
 
@@ -38,19 +38,19 @@ FlowGraph::FlowGraph(const vector<InstrPtr> &instrs) : instrs_(instrs) {
 void FlowGraph::computeLiveness() {
   // For last instruction, only need to compute liveIn (liveOut is empty)
   auto iter = instrs_.crbegin();
-  const Instruction *lastInstr = iter->get();
-  Liveness &lastLiveness = nodes_.at(instrs_.back().get());
+  const Instruction* lastInstr = iter->get();
+  Liveness& lastLiveness = nodes_.at(instrs_.back().get());
   switch (lastInstr->getType()) {
-  case InstrType::MOVE:
-    lastLiveness.liveIn.insert(static_cast<const Move *>(lastInstr)->getSrc());
-    break;
-  case InstrType::OPER: // Fall Thru
-  case InstrType::JUMP_OP:
-    lastLiveness.liveIn.insert(
-        static_cast<const Operation *>(lastInstr)->getSrcs().cbegin(),
-        static_cast<const Operation *>(lastInstr)->getSrcs().cend());
-    break;
-  default:;
+    case InstrType::MOVE:
+      lastLiveness.liveIn.insert(static_cast<const Move*>(lastInstr)->getSrc());
+      break;
+    case InstrType::OPER:  // Fall Thru
+    case InstrType::JUMP_OP:
+      lastLiveness.liveIn.insert(
+          static_cast<const Operation*>(lastInstr)->getSrcs().cbegin(),
+          static_cast<const Operation*>(lastInstr)->getSrcs().cend());
+      break;
+    default:;
   }
   ++iter;
 
@@ -58,15 +58,15 @@ void FlowGraph::computeLiveness() {
   while (changed) {
     changed = false;
     for (; iter != instrs_.crend(); ++iter) {
-      const Instruction *instr = iter->get();
-      Liveness &node = nodes_.at(instr);
+      const Instruction* instr = iter->get();
+      Liveness& node = nodes_.at(instr);
 
       // Compute liveOut
       if (instr->getType() == InstrType::JUMP_OP) {
         // Instruction jumps
         unordered_set<int> newLiveOut;
-        for (Instruction *jumpInstr :
-             static_cast<const JumpOp *>(instr)->getJumps()) {
+        for (Instruction* jumpInstr :
+             static_cast<const JumpOp*>(instr)->getJumps()) {
           setUnion(newLiveOut, nodes_.at(jumpInstr).liveIn);
         }
         if (node.liveOut != newLiveOut) {
@@ -75,7 +75,7 @@ void FlowGraph::computeLiveness() {
         }
       } else {
         // Instruction falls through
-        Liveness &nextLiveness = nodes_.at(prev(iter)->get());
+        Liveness& nextLiveness = nodes_.at(prev(iter)->get());
         if (node.liveOut != nextLiveness.liveIn) {
           node.liveOut = nextLiveness.liveIn;
           changed = true;
@@ -85,17 +85,17 @@ void FlowGraph::computeLiveness() {
       // Compute liveIn
       unordered_set<int> newLiveIn = node.liveOut;
       switch (instr->getType()) {
-      case InstrType::MOVE:
-        newLiveIn.erase(static_cast<const Move *>(instr)->getDst());
-        newLiveIn.insert(static_cast<const Move *>(instr)->getSrc());
-        break;
-      case InstrType::OPER: // Fall thru
-      case InstrType::JUMP_OP:
-        setMinus<int, vector>(newLiveIn,
-                              static_cast<const Operation *>(instr)->getDsts());
-        setUnion(newLiveIn, static_cast<const Operation *>(instr)->getSrcs());
-        break;
-      default:;
+        case InstrType::MOVE:
+          newLiveIn.erase(static_cast<const Move*>(instr)->getDst());
+          newLiveIn.insert(static_cast<const Move*>(instr)->getSrc());
+          break;
+        case InstrType::OPER:  // Fall thru
+        case InstrType::JUMP_OP:
+          setMinus<int, vector>(
+              newLiveIn, static_cast<const Operation*>(instr)->getDsts());
+          setUnion(newLiveIn, static_cast<const Operation*>(instr)->getSrcs());
+          break;
+        default:;
       }
       if (node.liveIn != newLiveIn) {
         node.liveIn = move(newLiveIn);
@@ -105,20 +105,20 @@ void FlowGraph::computeLiveness() {
   }
 }
 
-std::ostream &operator<<(std::ostream &out, const FlowGraph &fgraph) {
-  for (const auto &instr : fgraph.instrs_) {
-    const FlowGraph::Liveness &liveness = fgraph.nodes_.at(instr.get());
+std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph) {
+  for (const auto& instr : fgraph.instrs_) {
+    const FlowGraph::Liveness& liveness = fgraph.nodes_.at(instr.get());
     out << *instr << " -> IN:" << liveness.liveIn << " OUT:" << liveness.liveOut
         << '\n';
   }
   return out;
 }
 
-const std::vector<InstrPtr> &FlowGraph::getInstrs() const noexcept {
+const std::vector<InstrPtr>& FlowGraph::getInstrs() const noexcept {
   return instrs_;
 }
 
-const std::unordered_map<const Instruction *, FlowGraph::Liveness> &
+const std::unordered_map<const Instruction*, FlowGraph::Liveness>&
 FlowGraph::getNodes() const noexcept {
   return nodes_;
 }
