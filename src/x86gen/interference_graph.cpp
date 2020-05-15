@@ -18,7 +18,7 @@ auto removeNode(
     unordered_map<int, unordered_set<int>> &graphCopy,
     const unordered_map<int, unordered_set<int>>::const_iterator &iter) {
   for (int temp : iter->second) {
-    graphCopy.at(temp).erase(temp);
+    graphCopy.at(temp).erase(iter->first);
   }
   return graphCopy.erase(iter);
 }
