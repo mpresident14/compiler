@@ -29,18 +29,16 @@ void writeTest0() {
   InstrPtr moveEq = make_unique<Move>(RSI, RDI);
   InstrPtr moveNeq = make_unique<Operation>(
       "movq $-1, `D0", vector<int>{}, vector<int>{ RDI });
-  InstrPtr je = make_unique<JumpOp>(
+  InstrPtr je = make_unique<CondJumpOp>(
       "je EQ",
       vector<int>{},
       vector<int>{},
-      vector<Instruction*>{ eqLabel.get() },
-      true);
+      vector<Instruction*>{ eqLabel.get() });
   InstrPtr jDone = make_unique<JumpOp>(
       "jmp FIN",
       vector<int>{},
       vector<int>{},
-      vector<Instruction*>{ doneLabel.get() },
-      false);
+      vector<Instruction*>{ doneLabel.get() });
   InstrPtr callPrint = make_unique<Operation>(
       "callq printInt",
       vector<int>(CALLER_SAVE_REGS),

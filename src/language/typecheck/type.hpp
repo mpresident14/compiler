@@ -7,28 +7,30 @@
  * Type *
  ********/
 
-enum class TypeType { INT, BOOL, VOID };
+enum class TypeName { INT, BOOL, VOID };
 
-// TODO: Just use strings?
+// TODO: Find a different representation for types so we don't have to keep
+// creating pointers for built-in types
+
 class Type {
 public:
   virtual ~Type() {};
-  virtual constexpr TypeType getType() const noexcept = 0;
+  virtual constexpr TypeName getType() const noexcept = 0;
 };
 
 class IntTy : public Type {
 public:
-  constexpr TypeType getType() const noexcept { return TypeType::INT; }
+  constexpr TypeName getType() const noexcept { return TypeName::INT; }
 };
 
 class BoolTy : public Type {
 public:
-  constexpr TypeType getType() const noexcept { return TypeType::BOOL; }
+  constexpr TypeName getType() const noexcept { return TypeName::BOOL; }
 };
 
 class VoidTy : public Type {
 public:
-  constexpr TypeType getType() const noexcept { return TypeType::VOID; }
+  constexpr TypeName getType() const noexcept { return TypeName::VOID; }
 };
 
 

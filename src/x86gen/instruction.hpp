@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, RETURN };
+enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, COND_JUMP_OP, RETURN };
 
 class Instruction;
 using InstrPtr = std::unique_ptr<Instruction>;
@@ -105,21 +105,28 @@ public:
       const std::string& asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
-      std::vector<Instruction*>&& jumps,
-      bool canFallThru);
+      std::vector<Instruction*>&& jumps);
   constexpr InstrType getType() const noexcept override {
     return InstrType::JUMP_OP;
   }
   virtual void toStream(std::ostream& out) const override;
 
   const std::vector<Instruction*>& getJumps() const noexcept { return jumps_; }
-  constexpr bool canFallThru() const noexcept { return canFallThru_; }
 
 private:
-  // If empty and canFallThru is false, then we are jumping out of
+  // If empty then we are jumping out of
   // the function entirely
   std::vector<Instruction*> jumps_;
-  bool canFallThru_;
+};
+
+
+/* Same as JumpOp, but might fall thru */
+class CondJumpOp : public JumpOp {
+public:
+  using JumpOp::JumpOp;
+  constexpr InstrType getType() const noexcept override {
+    return InstrType::COND_JUMP_OP;
+  }
 };
 
 

@@ -46,7 +46,7 @@ namespace im {
     XOR
   };
 
-  enum class ROp { EQ, NEQ, LESS, GREATER, LESSEQ, GREATEREQ };
+  enum class ROp { EQ, NEQ, LT, GT, LTE, GTE };
 
   using ExprPtr = std::unique_ptr<Expr>;
   using StmtPtr = std::unique_ptr<Stmt>;
@@ -94,10 +94,12 @@ namespace im {
   };
 
 
-  /* Jump if true, otherwise fall through */
+  /* Jump to appropriate label depending on result of comparison */
+  // TODO: The ifFalse will often just fall through so we will have
+  // jmp IF_FALSE followed by IF_FALSE. Optimize these out.
   class CondJump : public Stmt {
   public:
-    CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue);
+    CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue, Label* ifFalse);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
   private:
@@ -106,6 +108,7 @@ namespace im {
     ROp rop_;
     /* Owned by some MakeLabel or already in the InstrPtr vector */
     Label* ifTrue_;
+    Label* ifFalse_;
   };
 
 

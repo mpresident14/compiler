@@ -44,15 +44,15 @@ Jump::Jump(Label* label) : label_(label) {}
 
 void Jump::toInstrs(std::vector<InstrPtr>& instrs) {
   instrs.emplace_back(
-      new JumpOp("jmp " + label_->getName(), {}, {}, { label_ }, false));
+      new JumpOp("jmp " + label_->getName(), {}, {}, { label_ }));
 }
 
 
 /************
  * CondJump *
  ************/
-CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue)
-    : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue) {}
+CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue,  Label* ifFalse)
+    : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue), ifFalse_(ifFalse) {}
 
 void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
   int t1 = newTemp();
@@ -67,16 +67,16 @@ void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
     case ROp::NEQ:
       op = "jne ";
       break;
-    case ROp::LESS:
+    case ROp::LT:
       op = "jl ";
       break;
-    case ROp::GREATER:
+    case ROp::GT:
       op = "jg ";
       break;
-    case ROp::LESSEQ:
+    case ROp::LTE:
       op = "jle ";
       break;
-    case ROp::GREATEREQ:
+    case ROp::GTE:
       op = "jge ";
       break;
     default:
@@ -85,7 +85,9 @@ void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
 
   instrs.emplace_back(new Operation("cmpq `S1, `S0", { t1, t2 }, {}));
   instrs.emplace_back(
-      new JumpOp(op.append(ifTrue_->getName()), {}, {}, { ifTrue_ }, true));
+      new CondJumpOp(op.append(ifTrue_->getName()), {}, {}, { ifTrue_ }));
+  instrs.emplace_back(
+      new JumpOp("jmp " + ifFalse_->getName(), {}, {}, { ifFalse_ }));
 }
 
 

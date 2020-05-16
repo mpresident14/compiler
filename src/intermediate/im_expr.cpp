@@ -193,8 +193,7 @@ namespace im {
           "callq " + static_cast<LabelAddr*>(addr_.get())->getName(),
           move(srcTemps),
           vector<int>(CALLEE_SAVE_REGS),
-          {},
-          false));
+          {}));
     } else {
       // If we are calling an address, we need to put it in a register
       int t = newTemp();
@@ -204,8 +203,7 @@ namespace im {
           "callq *`S0",
           move(srcTemps),
           vector<int>(CALLEE_SAVE_REGS),
-          {},
-          false));
+          {}));
     }
 
     // Move result from %rax to temp if needed
