@@ -161,16 +161,16 @@ namespace intermediate {
   }
 
 
-  /********
-   * Call *
-   ********/
-  Call::Call(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue)
+  /************
+   * CallExpr *
+   ************/
+  CallExpr::CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue)
       : addr_(move(addr)),
         params_(move(params)),
         hasReturnValue_(hasReturnValue) {}
 
 
-  void Call::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void CallExpr::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
     // Move params into argument registers
     // TODO: If more than six params, need to put onto stack
     vector<int> srcTemps;

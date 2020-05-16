@@ -50,7 +50,7 @@ void Jump::toInstrs(std::vector<InstrPtr>& instrs) {
 /************
  * CondJump *
  ************/
-CondJump::CondJump(ExprPtr e1, ExprPtr e2, Rop rop, Label* ifTrue)
+CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, Rop rop, Label* ifTrue)
     : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue) {}
 
 void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
@@ -90,7 +90,7 @@ void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
  * Assign *
  **********/
 
-Assign::Assign(ExprPtr e1, ExprPtr e2) : e1_(move(e1)), e2_(move(e2)) {}
+Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
 void Assign::toInstrs(std::vector<InstrPtr>& instrs) {
   int t2 = newTemp();
@@ -107,4 +107,30 @@ void Assign::toInstrs(std::vector<InstrPtr>& instrs) {
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }
+}
+
+
+/************
+ * CallStmt *
+ ************/
+
+CallStmt::CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params)
+    : addr_(move(addr)), params_(move(params)) {}
+
+void CallStmt::toInstrs(std::vector<InstrPtr>& instrs) {
+  CallExpr(move(addr_), move(params_), false).toInstrs(0, instrs);
+}
+
+
+/**************
+ * ReturnStmt *
+ **************/
+
+ReturnStmt::ReturnStmt(ExprPtr&& retValue) : retValue_(move(retValue)) {}
+
+void ReturnStmt::toInstrs(std::vector<InstrPtr>& instrs) {
+  if (retValue_) {
+    retValue_->toInstrs(RAX, instrs);
+  }
+  instrs.emplace_back(new Return(retValue_ != nullptr));
 }

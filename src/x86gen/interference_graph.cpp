@@ -110,6 +110,7 @@ InterferenceGraph::InterferenceGraph(const FlowGraph& fgraph) {
           }
         }
         break;
+      // Nothing for InstrType::RETURN because I don't write to anything
       default:;
     }
   }

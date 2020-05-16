@@ -137,6 +137,8 @@ public:
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
   virtual void toStream(std::ostream& out) const override;
 
+  constexpr bool hasValue() const noexcept { return hasValue_; }
+
 private:
   bool hasValue_;
 };

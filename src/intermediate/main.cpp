@@ -38,7 +38,7 @@ using namespace intermediate;
 //   ExprPtr fnLabel(new LabelAddr("f"));
 //   vector<ExprPtr> params;
 //   params.emplace_back(move(binop));
-//   ExprPtr call(new Call(move(fnLabel), move(params), true));
+//   ExprPtr call(new CallExpr(move(fnLabel), move(params), true));
 //   call->toInstrs(R15, instrs);
 
 //   Function fn("runprez", move(instrs));
