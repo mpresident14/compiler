@@ -27,7 +27,7 @@ namespace im {
   class Expr {
   public:
     virtual ~Expr() {}
-    virtual ExprType getType() const noexcept = 0;
+    virtual constexpr ExprType getType() const noexcept = 0;
     /* Add instructions that put the value of this Expr into this temp */
     virtual void toInstrs(int temp, std::vector<InstrPtr>& instrs) const = 0;
   };
