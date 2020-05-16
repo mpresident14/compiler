@@ -96,7 +96,8 @@ namespace im {
 
   /* Jump to appropriate label depending on result of comparison */
   // TODO: The ifFalse will often just fall through so we will have
-  // jmp IF_FALSE followed by IF_FALSE. Optimize these out.
+  // jmp IF_FALSE followed by IF_FALSE. Optimize these out and put a
+  // comment saying we did that.
   class CondJump : public Stmt {
   public:
     CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue, Label* ifFalse);

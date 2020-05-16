@@ -23,12 +23,18 @@ If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
     : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 
-// im::StmtPtr If::toImStmts(vector<im::Stmt>& imStmts) const {
-//   im::ExprPtr imBoolE = boolE_->toImExprAssert(make_unique<BoolTy>());
-//   imStmts.push_back(new im::CondJump)
-//   ifE_->toImStmts();
-//   elseE_->toImStmts();
-// }
+im::StmtPtr If::toImStmts(vector<im::Stmt>& imStmts) const {
+  unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
+  imStmts.emplace_back(move(mkElseLabel));
+  elseE_->toImStmts(imStmts);
+  imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
+  imStmts.emplace_back(move(mkIfLabel));
+  ifE_->toImStmts(imStmts);
+  imStmts.emplace_back(move(mkDoneLabel));
+}
 
 // im::StmtPtr While::toImStmts() const {
 //   boolE_->assertType(make_unique<BoolTy>());
@@ -78,6 +84,14 @@ void Expr::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)const
       im::ROp::EQ,
       ifTrue,
       ifFalse));
+}
+
+void UnaryOp::asBool(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const {
+  // Only valid for NOT
+  if (uOp_ == UOp::NEG) {
+    typeError();
+  }
+  return e_->asBool(imStmts, ifFalse, ifTrue);
 }
 
 void BinaryOp::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)const {

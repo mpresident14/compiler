@@ -37,7 +37,8 @@ public:
 
   virtual ExprInfo toImExpr() const = 0;
   virtual im::ExprPtr toImExprAssert(TypePtr&& type) const = 0;
-
+  /* If this typechecks to a bool, add statements to jump to ifTrue it
+   * evaluates to true and ifFalse if it evaluates to false. */
   virtual void asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
 };
 
@@ -196,8 +197,6 @@ public:
   BOp getBOp() const noexcept { return bOp_; }
 
 private:
-  /* Add statements to jump to ifTrue if this BinaryOp typechecks and
-   * evaluates to true. Otherwise fall thru. */
   void asBoolComp(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const;
   void asBoolAnd(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
   void asBoolOr(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
