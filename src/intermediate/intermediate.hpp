@@ -32,7 +32,7 @@ namespace im {
     virtual void toInstrs(int temp, std::vector<InstrPtr>& instrs) const = 0;
   };
 
-  enum class Bop {
+  enum class BOp {
     PLUS,
     MINUS,
     MUL,
@@ -46,7 +46,7 @@ namespace im {
     XOR
   };
 
-  enum class Rop { EQ, NEQ, LESS, GREATER, LESSEQ, GREATEREQ };
+  enum class ROp { EQ, NEQ, LESS, GREATER, LESSEQ, GREATEREQ };
 
   using ExprPtr = std::unique_ptr<Expr>;
   using StmtPtr = std::unique_ptr<Stmt>;
@@ -56,6 +56,7 @@ namespace im {
    * Stmt *
    ********/
 
+  /* Sequence of statemnts */
   class Block : public Stmt {
   public:
     Block(std::vector<StmtPtr>&& stmts);
@@ -65,7 +66,7 @@ namespace im {
     std::vector<StmtPtr> stmts_;
   };
 
-
+  /* Write a label */
   class MakeLabel : public Stmt {
   public:
     MakeLabel(const std::string& name);
@@ -93,15 +94,16 @@ namespace im {
   };
 
 
+  /* Jump if true, otherwise fall through */
   class CondJump : public Stmt {
   public:
-    CondJump(ExprPtr&& e1, ExprPtr&& e2, Rop rop, Label* ifTrue);
+    CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
   private:
     ExprPtr e1_;
     ExprPtr e2_;
-    Rop rop_;
+    ROp rop_;
     /* Owned by some MakeLabel or already in the InstrPtr vector */
     Label* ifTrue_;
   };
@@ -118,6 +120,7 @@ namespace im {
   };
 
 
+  /* Call function and discard result */
   class CallStmt : public Stmt {
   public:
     CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params);
@@ -127,6 +130,7 @@ namespace im {
     ExprPtr addr_;
     std::vector<ExprPtr> params_;
   };
+
 
   class ReturnStmt : public Stmt {
   public:
@@ -145,7 +149,7 @@ namespace im {
 
   class BinOp : public Expr {
   public:
-    BinOp(ExprPtr&& expr1, ExprPtr&& expr2, Bop bop);
+    BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop);
     constexpr ExprType getType() const noexcept override {
       return ExprType::BINOP;
     }
@@ -164,7 +168,7 @@ namespace im {
 
     ExprPtr expr1_;
     ExprPtr expr2_;
-    Bop bop_;
+    BOp bop_;
   };
 
 
@@ -197,6 +201,7 @@ namespace im {
   };
 
 
+  /* *expr */
   class MemDeref : public Expr {
   public:
     MemDeref(ExprPtr&& addr);
@@ -221,6 +226,8 @@ namespace im {
     ExprPtr expr_;
   };
 
+
+  /* The address of a label (uses RIP-relative addressing) */
   class LabelAddr : public Expr {
   public:
     LabelAddr(const std::string& name);
@@ -236,6 +243,7 @@ namespace im {
   };
 
 
+  /* Result of a function call  */
   class CallExpr : public Expr {
   public:
     CallExpr(

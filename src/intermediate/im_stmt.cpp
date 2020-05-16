@@ -4,7 +4,7 @@ using namespace std;
 using namespace im;
 
 // TODO: Can I just use ints for labels other than actual functions???
-
+// String copying is a lot, especially b/c of SSO
 
 /*********
  * Block *
@@ -51,7 +51,7 @@ void Jump::toInstrs(std::vector<InstrPtr>& instrs) {
 /************
  * CondJump *
  ************/
-CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, Rop rop, Label* ifTrue)
+CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue)
     : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue) {}
 
 void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
@@ -61,22 +61,22 @@ void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
   e2_->toInstrs(t2, instrs);
   string op;
   switch (rop_) {
-    case Rop::EQ:
+    case ROp::EQ:
       op = "je ";
       break;
-    case Rop::NEQ:
+    case ROp::NEQ:
       op = "jne ";
       break;
-    case Rop::LESS:
+    case ROp::LESS:
       op = "jl ";
       break;
-    case Rop::GREATER:
+    case ROp::GREATER:
       op = "jg ";
       break;
-    case Rop::LESSEQ:
+    case ROp::LESSEQ:
       op = "jle ";
       break;
-    case Rop::GREATEREQ:
+    case ROp::GREATEREQ:
       op = "jge ";
       break;
     default:

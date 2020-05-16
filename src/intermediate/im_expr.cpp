@@ -31,32 +31,32 @@ namespace im {
    * BinOp *
    *********/
 
-  BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, Bop bop)
+  BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop)
       : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
 
   void BinOp::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
     switch (bop_) {
-      case Bop::LSHIFT:
+      case BOp::LSHIFT:
         return handleShifts("shlq", temp, instrs);
-      case Bop::RSHIFT:
+      case BOp::RSHIFT:
         return handleShifts("shrq", temp, instrs);
-      case Bop::ARSHIFT:
+      case BOp::ARSHIFT:
         return handleShifts("sarq", temp, instrs);
-      case Bop::DIV:
+      case BOp::DIV:
         return handleDiv(true, temp, instrs);
-      case Bop::MOD:
+      case BOp::MOD:
         return handleDiv(false, temp, instrs);
-      case Bop::PLUS:
+      case BOp::PLUS:
         return handleOthers("addq", temp, instrs);
-      case Bop::MINUS:
+      case BOp::MINUS:
         return handleOthers("subq", temp, instrs);
-      case Bop::MUL:
+      case BOp::MUL:
         return handleOthers("imulq", temp, instrs);
-      case Bop::AND:
+      case BOp::AND:
         return handleOthers("andq", temp, instrs);
-      case Bop::OR:
+      case BOp::OR:
         return handleOthers("orq", temp, instrs);
-      case Bop::XOR:
+      case BOp::XOR:
         return handleOthers("xorq", temp, instrs);
       default:
         throw invalid_argument("Unrecognized binary operator.");
