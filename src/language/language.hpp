@@ -19,7 +19,8 @@ public:
 class Stmt {
 public:
   virtual ~Stmt() {}
-  virtual im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const = 0;
+  /* If the statement typechecks, generate the corresponding intermediate statements */
+  virtual im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
   virtual void assertOk() const = 0;
 };
 
@@ -36,10 +37,10 @@ public:
   virtual ExprType getType() const noexcept = 0;
 
   virtual ExprInfo toImExpr() const = 0;
-  virtual im::ExprPtr toImExprAssert(TypePtr&& type) const = 0;
+  virtual im::ExprPtr toImExprAssert(const TypePtr& type) const = 0;
   /* If this typechecks to a bool, add statements to jump to ifTrue it
    * evaluates to true and ifFalse if it evaluates to false. */
-  virtual void asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
+  virtual void asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
 };
 
 
@@ -54,7 +55,7 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   std::vector<StmtPtr> stmts_;
@@ -64,7 +65,7 @@ private:
 class If : public Stmt {
 public:
   If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, std::unique_ptr<Block>&& elseE);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 
@@ -78,7 +79,7 @@ private:
 class While : public Stmt {
 public:
   While(ExprPtr&& boolE, std::unique_ptr<Block> body);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 private:
@@ -89,20 +90,20 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(const std::string& name, std::unique_ptr<CallExpr>&& callE);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  CallStmt(const std::string& name, std::vector<ExprPtr>&& params);
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 private:
   std::string name_;
-  std::unique_ptr<CallExpr> callE_;
+  std::vector<ExprPtr> params_;
 };
 
 
 class Return : public Stmt {
 public:
   Return(std::optional<ExprPtr>&& retValue);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 private:
@@ -113,7 +114,7 @@ private:
 class Assign : public Stmt {
 public:
   Assign(ExprPtr&& lhs, ExprPtr&& rhs);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 private:
@@ -125,7 +126,7 @@ private:
 class VarDecl : public Stmt {
 public:
   VarDecl(TypePtr&& type, const std::string& name, ExprPtr&& e);
-  im::StmtPtr toImStmts(std::vector<im::Stmt>& imStmts) const;
+  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
   void assertOk() const;
 
 private:
@@ -178,7 +179,10 @@ private:
 class UnaryOp : public Expr {
 public:
   UnaryOp(ExprPtr&& e, UOp uOp);
-  im::ExprPtr toImExpr() const override;
+  virtual ExprType getType() const noexcept override { return ExprType::UOP; };
+  virtual ExprInfo toImExpr() const override;
+  virtual im::ExprPtr toImExprAssert(TypePtr&& type) const override;
+  void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
 private:
   ExprPtr e_;
@@ -190,16 +194,16 @@ class BinaryOp : public Expr {
 public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
   im::ExprPtr toImExpr() const override;
-  void asBool(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const override;
+  void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
   const ExprPtr& getExpr1() const noexcept { return e1_; }
   const ExprPtr& getExpr2() const noexcept { return e2_; }
   BOp getBOp() const noexcept { return bOp_; }
 
 private:
-  void asBoolComp(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const;
-  void asBoolAnd(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
-  void asBoolOr(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const;
+  void asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const;
+  void asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
+  void asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
   ExprPtr e1_;
   ExprPtr e2_;
   BOp bOp_;

@@ -15,7 +15,7 @@ string newLabel() {
 
 Context ctx;
 
-void typeError();
+void typeError(string errMsg);
 
 
 
@@ -23,10 +23,11 @@ If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
     : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 
-im::StmtPtr If::toImStmts(vector<im::Stmt>& imStmts) const {
+im::StmtPtr If::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+
   boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
   imStmts.emplace_back(move(mkElseLabel));
   elseE_->toImStmts(imStmts);
@@ -36,14 +37,34 @@ im::StmtPtr If::toImStmts(vector<im::Stmt>& imStmts) const {
   imStmts.emplace_back(move(mkDoneLabel));
 }
 
-// im::StmtPtr While::toImStmts() const {
-//   boolE_->assertType(make_unique<BoolTy>());
-//   body_->toImStmts();
-// }
+im::StmtPtr While::toImStmts(vector<im::StmtPtr>& imStmts) {
+  unique_ptr<im::MakeLabel> mkBodyLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+  Label* bodyLabel = mkBodyLabel->genInstr();
+  Label* doneLabel = mkDoneLabel->genInstr();
+  // TODO: Not sure if possible (easy) b/c of uniqptrs, but don't compute this twice
+  boolE_->asBool(imStmts, bodyLabel, doneLabel);
+  imStmts.emplace_back(move(mkBodyLabel));
+  body_->toImStmts(imStmts);
+  boolE_->asBool(imStmts, bodyLabel, doneLabel);
+  imStmts.emplace_back(move(mkDoneLabel));
+}
 
-// im::StmtPtr CallStmt::toImStmts() const {
-//   ctx.lookupFn(name_);
-// }
+im::StmtPtr CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
+  // Ensure function was declared
+  const Context::FnInfo& fnInfo = ctx.lookupFn(name_);
+  // Ensure parameter types match and translate them to intermediate exprs
+  const vector<TypePtr>& paramTypes = fnInfo.paramTypes;
+  size_t numParams = params_.size();
+  if (numParams != paramTypes.size()) {
+    typeError("Wrong number of arguments for function: " + name_);
+  }
+  std::vector<im::ExprPtr> argsCode(numParams);
+  for (size_t i = 0; i < numParams; ++i) {
+    argsCode.push_back(params_[i]->toImExprAssert(paramTypes[i]));
+  }
+  imStmts.emplace_back(new im::CallStmt(make_unique<im::LabelAddr>(name_), move(argsCode)));
+}
 
 // im::StmtPtr Return::toImStmts() const {
 //   const TypePtr& retType = ctx.getReturnTy();
@@ -77,7 +98,7 @@ im::ExprPtr Var::toImExpr() const {
 }
 
 
-void Expr::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)const {
+void Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)const {
   imStmts.emplace_back(new im::CondJump(
       toImExprAssert(make_unique<BoolTy>()),
       make_unique<im::Const>(0),
@@ -86,15 +107,15 @@ void Expr::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)const
       ifFalse));
 }
 
-void UnaryOp::asBool(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void UnaryOp::asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
   // Only valid for NOT
   if (uOp_ == UOp::NEG) {
-    typeError();
+    typeError("- cannot be interpreted as a boolean");
   }
   return e_->asBool(imStmts, ifFalse, ifTrue);
 }
 
-void BinaryOp::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)const {
+void BinaryOp::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)const {
   switch (bOp_) {
     case BOp::EQ: return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::EQ);
     case BOp::NEQ: return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::NEQ);
@@ -108,14 +129,14 @@ void BinaryOp::asBool(vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse)c
   }
 }
 
-void BinaryOp::asBoolComp(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const {
+void BinaryOp::asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const {
   // Make sure we are comparing two ints
   im::ExprPtr imE1 = e1_->toImExprAssert(make_unique<IntTy>());
   im::ExprPtr imE2 = e2_->toImExprAssert(make_unique<IntTy>());
   imStmts.emplace_back(new im::CondJump(move(imE1), move(imE2), rOp, ifTrue, ifFalse));
 }
 
-void BinaryOp::asBoolAnd(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void BinaryOp::asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, midLabel, ifFalse);
@@ -123,7 +144,7 @@ void BinaryOp::asBoolAnd(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* i
   e2_->asBool(imStmts, ifTrue, ifFalse);
 }
 
-void BinaryOp::asBoolOr(std::vector<im::Stmt>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void BinaryOp::asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, ifTrue, midLabel);

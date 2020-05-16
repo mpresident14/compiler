@@ -32,7 +32,10 @@ void MakeLabel::toInstrs(std::vector<InstrPtr>& instrs) {
 }
 
 Label* MakeLabel::genInstr() {
-  instr_ = make_unique<Label>(name_);
+  // Only generate label once
+  if (!instr_) {
+    instr_ = make_unique<Label>(name_);
+  }
   return instr_.get();
 }
 
