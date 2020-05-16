@@ -5,7 +5,7 @@
 
 using namespace std;
 
-namespace intermediate {
+namespace im {
 
 
   /*********

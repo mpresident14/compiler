@@ -1,7 +1,7 @@
 #include "src/intermediate/intermediate.hpp"
 
 using namespace std;
-using namespace intermediate;
+using namespace im;
 
 // TODO: Can I just use ints for labels other than actual functions???
 

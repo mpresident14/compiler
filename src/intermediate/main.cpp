@@ -11,7 +11,7 @@
 #include <vector>
 
 using namespace std;
-using namespace intermediate;
+using namespace im;
 
 // int main() {
 //   vector<InstrPtr> instrs;

@@ -8,37 +8,28 @@
 #include <string>
 #include <vector>
 
-namespace intermediate {
+namespace im {
 
   class Decl {
   public:
-    Decl() = default;
     virtual ~Decl(){};
     virtual void toInstrs(std::vector<InstrPtr>& instrs) const = 0;
-
-  private:
   };
 
   class Stmt {
   public:
-    Stmt() = default;
     virtual ~Stmt(){};
     virtual void toInstrs(std::vector<InstrPtr>& instrs) = 0;
-
-  private:
   };
 
   enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, LABEL_ADDR, CALL };
 
   class Expr {
   public:
-    Expr() = default;
     virtual ~Expr() {}
     virtual ExprType getType() const noexcept = 0;
     /* Add instructions that put the value of this Expr into this temp */
     virtual void toInstrs(int temp, std::vector<InstrPtr>& instrs) const = 0;
-
-  private:
   };
 
   enum class Bop {
