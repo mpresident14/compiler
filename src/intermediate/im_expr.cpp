@@ -164,7 +164,10 @@ namespace intermediate {
   /************
    * CallExpr *
    ************/
-  CallExpr::CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue)
+  CallExpr::CallExpr(
+      ExprPtr&& addr,
+      std::vector<ExprPtr>&& params,
+      bool hasReturnValue)
       : addr_(move(addr)),
         params_(move(params)),
         hasReturnValue_(hasReturnValue) {}
@@ -198,7 +201,11 @@ namespace intermediate {
       addr_->toInstrs(t, instrs);
       srcTemps.push_back(t);
       instrs.emplace_back(new JumpOp(
-          "callq *`S0", move(srcTemps), vector<int>(CALLEE_SAVE_REGS), {}, false));
+          "callq *`S0",
+          move(srcTemps),
+          vector<int>(CALLEE_SAVE_REGS),
+          {},
+          false));
     }
 
     // Move result from %rax to temp if needed

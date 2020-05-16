@@ -91,8 +91,9 @@ void FlowGraph::computeLiveness() {
         }
       }
 
-      if (type != InstrType::JUMP_OP
-          || (type == InstrType::JUMP_OP && static_cast<const JumpOp*>(instr)->canFallThru())) {
+      if (type != InstrType::JUMP_OP ||
+          (type == InstrType::JUMP_OP &&
+           static_cast<const JumpOp*>(instr)->canFallThru())) {
         // Instruction falls through
         Liveness& nextLiveness = nodes_.at(prev(iter)->get());
         if (node.liveOut != nextLiveness.liveIn) {

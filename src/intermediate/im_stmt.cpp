@@ -43,7 +43,8 @@ Label* MakeLabel::genInstr() {
 Jump::Jump(Label* label) : label_(label) {}
 
 void Jump::toInstrs(std::vector<InstrPtr>& instrs) {
-  instrs.emplace_back(new JumpOp("jmp " + label_->getName(), {}, {}, {label_}, false));
+  instrs.emplace_back(
+      new JumpOp("jmp " + label_->getName(), {}, {}, { label_ }, false));
 }
 
 
@@ -78,11 +79,13 @@ void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
     case Rop::GREATEREQ:
       op = "jge ";
       break;
-    default: throw invalid_argument("Unrecognized relative operator.");
+    default:
+      throw invalid_argument("Unrecognized relative operator.");
   }
 
-  instrs.emplace_back(new Operation("cmpq `S1, `S0", {t1, t2}, {}));
-  instrs.emplace_back(new JumpOp(op.append(ifTrue_->getName()), {}, {}, {ifTrue_}, true));
+  instrs.emplace_back(new Operation("cmpq `S1, `S0", { t1, t2 }, {}));
+  instrs.emplace_back(
+      new JumpOp(op.append(ifTrue_->getName()), {}, {}, { ifTrue_ }, true));
 }
 
 
@@ -97,13 +100,13 @@ void Assign::toInstrs(std::vector<InstrPtr>& instrs) {
   e2_->toInstrs(t2, instrs);
   ExprType lhsType = e1_->getType();
   if (lhsType == ExprType::TEMP) {
-      // Move e2 into the Temp of e1
-      e2_->toInstrs(static_cast<Temp*>(e1_.get())->getTemp(), instrs);
-   } else if (lhsType == ExprType::MEM_DEREF) {
-      // Move e2 into the address of e1
-      int t1 = newTemp();
-      static_cast<MemDeref*>(e1_.get())->getAddr()->toInstrs(t1, instrs);
-      instrs.emplace_back(new Operation("movq `S1, (`S0)", {t1, t2}, {}));
+    // Move e2 into the Temp of e1
+    e2_->toInstrs(static_cast<Temp*>(e1_.get())->getTemp(), instrs);
+  } else if (lhsType == ExprType::MEM_DEREF) {
+    // Move e2 into the address of e1
+    int t1 = newTemp();
+    static_cast<MemDeref*>(e1_.get())->getAddr()->toInstrs(t1, instrs);
+    instrs.emplace_back(new Operation("movq `S1, (`S0)", { t1, t2 }, {}));
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }

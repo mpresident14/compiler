@@ -247,7 +247,10 @@ namespace intermediate {
 
   class CallExpr : public Expr {
   public:
-    CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
+    CallExpr(
+        ExprPtr&& addr,
+        std::vector<ExprPtr>&& params,
+        bool hasReturnValue);
     constexpr ExprType getType() const noexcept override {
       return ExprType::CALL;
     }
@@ -258,7 +261,6 @@ namespace intermediate {
     std::vector<ExprPtr> params_;
     bool hasReturnValue_;
   };
-
 
 
 }  // namespace intermediate

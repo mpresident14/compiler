@@ -27,7 +27,9 @@ JumpOp::JumpOp(
     vector<int>&& dsts,
     vector<Instruction*>&& jumps,
     bool canFallThru)
-    : Operation(asmCode, move(srcs), move(dsts)), jumps_(move(jumps)), canFallThru_(canFallThru) {}
+    : Operation(asmCode, move(srcs), move(dsts)),
+      jumps_(move(jumps)),
+      canFallThru_(canFallThru) {}
 
 
 namespace {

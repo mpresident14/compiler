@@ -55,7 +55,8 @@ int main() {
   ExprPtr expr1(new Const(1));
   ExprPtr expr2(new Const(3));
   unique_ptr<MakeLabel> mkTrueLabel(new MakeLabel("IF_TRUE"));
-  StmtPtr je(new CondJump(move(expr1), move(expr2), Rop::EQ, mkTrueLabel->genInstr()));
+  StmtPtr je(
+      new CondJump(move(expr1), move(expr2), Rop::EQ, mkTrueLabel->genInstr()));
   je->toInstrs(instrs);
   mkTrueLabel->toInstrs(instrs);
 
