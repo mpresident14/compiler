@@ -50,6 +50,12 @@ void FlowGraph::computeLiveness() {
           static_cast<const Operation*>(lastInstr)->getSrcs().cbegin(),
           static_cast<const Operation*>(lastInstr)->getSrcs().cend());
       break;
+    case InstrType::RETURN:
+      // %rax is a src if we are returning a value
+      if (static_cast<const Return*>(lastInstr)->hasValue()) {
+        lastLiveness.liveIn.insert(RAX);
+      }
+      break;
     default:;
   }
   ++iter;
@@ -60,9 +66,18 @@ void FlowGraph::computeLiveness() {
     for (; iter != instrs_.crend(); ++iter) {
       const Instruction* instr = iter->get();
       Liveness& node = nodes_.at(instr);
+      InstrType type = instr->getType();
+
+      // Nothing is live after a return. %rax is live before
+      // only if we return a value
+      if (type == InstrType::RETURN) {
+        if (static_cast<const Return*>(lastInstr)->hasValue()) {
+          node.liveIn.insert(RAX);
+        };
+        continue;
+      }
 
       // Compute liveOut
-      InstrType type = instr->getType();
       if (type == InstrType::JUMP_OP) {
         // Instruction jumps
         unordered_set<int> newLiveOut;
@@ -88,7 +103,7 @@ void FlowGraph::computeLiveness() {
 
       // Compute liveIn
       unordered_set<int> newLiveIn = node.liveOut;
-      switch (instr->getType()) {
+      switch (type) {
         case InstrType::MOVE:
           newLiveIn.erase(static_cast<const Move*>(instr)->getDst());
           newLiveIn.insert(static_cast<const Move*>(instr)->getSrc());

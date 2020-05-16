@@ -101,9 +101,10 @@ namespace intermediate {
     Label* label_;
   };
 
+
   class CondJump : public Stmt {
   public:
-    CondJump(ExprPtr e1, ExprPtr e2, Rop rop, Label* ifTrue);
+    CondJump(ExprPtr&& e1, ExprPtr&& e2, Rop rop, Label* ifTrue);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
   private:
@@ -114,14 +115,36 @@ namespace intermediate {
     Label* ifTrue_;
   };
 
+
   class Assign : public Stmt {
   public:
-    Assign(ExprPtr e1, ExprPtr e2);
+    Assign(ExprPtr&& e1, ExprPtr&& e2);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
   private:
     ExprPtr e1_;
     ExprPtr e2_;
+  };
+
+
+  class CallStmt : public Stmt {
+  public:
+    CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    ExprPtr addr_;
+    std::vector<ExprPtr> params_;
+  };
+
+  class ReturnStmt : public Stmt {
+  public:
+    /* retValue may be null if returning void */
+    ReturnStmt(ExprPtr&& retValue);
+    void toInstrs(std::vector<InstrPtr>& instrs) override;
+
+  private:
+    ExprPtr retValue_;
   };
 
 
@@ -222,9 +245,9 @@ namespace intermediate {
   };
 
 
-  class Call : public Expr {
+  class CallExpr : public Expr {
   public:
-    Call(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
+    CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
     constexpr ExprType getType() const noexcept override {
       return ExprType::CALL;
     }
@@ -235,6 +258,7 @@ namespace intermediate {
     std::vector<ExprPtr> params_;
     bool hasReturnValue_;
   };
+
 
 
 }  // namespace intermediate
