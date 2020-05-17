@@ -26,7 +26,24 @@ If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
 /*************
  * toImStmts *
  *************/
-im::StmtPtr If::toImStmts(vector<im::StmtPtr>& imStmts) {
+void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
+  // Keep track of variables declared in this scope
+  vector<string> newVars;
+  for (StmtPtr& stmt : stmts_) {
+    stmt->toImStmts(imStmts);
+    // TODO: Remove this and replace with StmtType
+    if (VarDecl* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
+      newVars.push_back(varDecl->getName());
+    }
+  }
+
+  // When we exit the block remove declared variables from this scope
+  for (const string& var : newVars) {
+    ctx.removeVar(var);
+  }
+}
+
+void If::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
@@ -106,16 +123,17 @@ void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
 /************
  * toImExpr *
  ************/
-im::ExprPtr ConstInt::toImExpr() const {
-  return make_unique<im::Const>(n_);
+ExprInfo ConstInt::toImExpr() const {
+  return { make_unique<im::Const>(n_), make_unique<IntTy>() };
 }
 
-im::ExprPtr ConstBool::toImExpr() const {
-  return make_unique<im::Const>(b_);
+ExprInfo ConstBool::toImExpr() const {
+  return { make_unique<im::Const>(b_), make_unique<BoolTy>() };
 }
 
-im::ExprPtr Var::toImExpr() const {
-  return make_unique<im::Temp>(ctx.lookupVar(name_).temp);
+ExprInfo Var::toImExpr() const {
+  const Context::VarInfo& varInfo = ctx.lookupVar(name_);
+  return { make_unique<im::Temp>(varInfo.temp), /* typeCopy */ };
 }
 
 

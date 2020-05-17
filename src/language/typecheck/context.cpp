@@ -7,7 +7,9 @@ using namespace std;
 
 int Context::insertVar(const std::string& name, TypePtr&& type) {
   int temp = newTemp();
-  varMap_.emplace(name, VarInfo{ move(type), temp });
+  if (!varMap_.emplace(name, VarInfo{ move(type), temp }).second) {
+    throw invalid_argument("Redefinition of variable  \"" + name + "\"");
+  }
   return temp;
 }
 
@@ -19,8 +21,14 @@ const Context::VarInfo& Context::lookupVar(const std::string& name) const {
   return iter->second;
 }
 
+void Context::removeVar(const string& name) {
+  varMap_.erase(name);
+}
+
 void Context::insertFn(const std::string& name, std::vector<TypePtr>&& paramTypes, TypePtr&& returnType) {
-  fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) });
+  if (!fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) }).second) {
+    throw invalid_argument("Redefinition of function  \"" + name + "\"");
+  }
 }
 
 const Context::FnInfo& Context::lookupFn(const std::string& name) const {

@@ -21,7 +21,6 @@ public:
   virtual ~Stmt() {}
   /* If the statement typechecks, generate the corresponding intermediate statements */
   virtual void toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
-  virtual void assertOk() const = 0;
 };
 
 enum class ExprType {CONST_INT, CONST_BOOL, VAR, UOP, BOP, CALL};
@@ -122,6 +121,8 @@ public:
   VarDecl(TypePtr&& type, const std::string& name, ExprPtr&& e);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
+  const std::string& getName() const noexcept { return name_; }
+
 
 private:
   TypePtr type_;
@@ -141,7 +142,8 @@ enum class BOp { PLUS, MUL, MINUS, DIV, EQ, NEQ, GT, LT, GTE, LTE, AND, OR, BIT_
 class ConstInt : public Expr {
 public:
   constexpr explicit ConstInt(int n) : n_(n) {}
-  im::ExprPtr toImExpr() const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
 
 private:
   int n_;
@@ -151,7 +153,8 @@ private:
 class ConstBool : public Expr {
 public:
   constexpr explicit ConstBool(bool b) : b_(b) {}
-  im::ExprPtr toImExpr() const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
 
 private:
   bool b_;
@@ -161,7 +164,8 @@ private:
 class Var : public Expr {
 public:
   Var(const std::string& name);
-  im::ExprPtr toImExpr() const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -174,8 +178,8 @@ class UnaryOp : public Expr {
 public:
   UnaryOp(ExprPtr&& e, UOp uOp);
   virtual ExprType getType() const noexcept override { return ExprType::UOP; };
-  virtual ExprInfo toImExpr() const override;
-  virtual im::ExprPtr toImExprAssert(TypePtr&& type) const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;
   void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
 private:
@@ -187,7 +191,8 @@ private:
 class BinaryOp : public Expr {
 public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
-  im::ExprPtr toImExpr() const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
   void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
   const ExprPtr& getExpr1() const noexcept { return e1_; }
@@ -207,7 +212,8 @@ private:
 class CallExpr : public Expr {
 public:
   CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
-  im::ExprPtr toImExpr() const override;
+  ExprInfo toImExpr() const override;
+  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
 
 private:
   std::string name_;

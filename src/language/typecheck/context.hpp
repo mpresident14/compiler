@@ -41,6 +41,8 @@ public:
   int insertVar(const std::string& name, TypePtr&& type);
   const VarInfo& lookupVar(const std::string& name) const;
 
+  void removeVar(const std::string& name);
+
   void insertFn(const std::string& name, std::vector<TypePtr>&& paramTypes, TypePtr&& returnType);
   const FnInfo& lookupFn(const std::string& name) const;
 
