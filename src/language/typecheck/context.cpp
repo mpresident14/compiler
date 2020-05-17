@@ -43,9 +43,9 @@ const Context::FnInfo& Context::lookupFn(const std::string& name) const {
 }
 
 
-/* If either of these two error, it's a programming mistake */
-int Context::insertTemp(int temp, const Type& type) {
-  tempMap_.emplace(temp, type);
-}
+// /* If either of these two error, it's a programming mistake */
+// int Context::insertTemp(int temp, const Type& type) {
+//   tempMap_.emplace(temp, type);
+// }
 
-const Type& Context::lookupTemp(int temp) const { return tempMap_.at(temp); }
+// const Type& Context::lookupTemp(int temp) const { return tempMap_.at(temp); }

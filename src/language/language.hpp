@@ -204,18 +204,17 @@ namespace language {
 
 
   /* Temporary created by me for convenience. */
-  class Temp : public Expr {
-  public:
-    explicit constexpr Temp(int temp) : temp_(temp) {}
-    ExprType getType() const noexcept override { return ExprType::TEMP; }
-    ExprInfo toImExpr() override;
+  // class Temp : public Expr {
+  // public:
+  //   explicit constexpr Temp(int temp) : temp_(temp) {}
+  //   ExprType getType() const noexcept override { return ExprType::TEMP; }
+  //   ExprInfo toImExpr() override;
 
+  //   int getTemp() const noexcept { return temp_; }
 
-    const std::string& getName() const noexcept { return temp_; }
-
-  private:
-    int temp_;
-  };
+  // private:
+  //   int temp_;
+  // };
 
 
   class UnaryOp : public Expr {

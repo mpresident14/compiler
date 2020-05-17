@@ -136,9 +136,9 @@ namespace language {
     return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
   }
 
-  ExprInfo Temp::toImExpr() {
-    return { make_unique<im::Temp>(temp_), ctx.lookupTemp(temp_) };
-  }
+  // ExprInfo Temp::toImExpr() {
+  //   return { make_unique<im::Temp>(temp_), ctx.lookupTemp(temp_) };
+  // }
 
   ExprInfo UnaryOp::toImExpr() {
     switch (uOp_) {
