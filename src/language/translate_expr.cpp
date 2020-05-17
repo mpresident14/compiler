@@ -23,6 +23,9 @@ If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
     : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 
+/*************
+ * toImStmts *
+ *************/
 im::StmtPtr If::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
@@ -37,7 +40,7 @@ im::StmtPtr If::toImStmts(vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(move(mkDoneLabel));
 }
 
-im::StmtPtr While::toImStmts(vector<im::StmtPtr>& imStmts) {
+void While::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkBodyLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
   Label* bodyLabel = mkBodyLabel->genInstr();
@@ -50,7 +53,7 @@ im::StmtPtr While::toImStmts(vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(move(mkDoneLabel));
 }
 
-im::StmtPtr CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
+void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   // Ensure function was declared
   const Context::FnInfo& fnInfo = ctx.lookupFn(name_);
   // Ensure parameter types match and translate them to intermediate exprs
@@ -66,25 +69,43 @@ im::StmtPtr CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(new im::CallStmt(make_unique<im::LabelAddr>(name_), move(argsCode)));
 }
 
-// im::StmtPtr Return::toImStmts() const {
-//   const TypePtr& retType = ctx.getReturnTy();
-//   if (retValue_.has_value()) {
-//     (*retValue_)->assertType(retType);
-//   } else if (retType->getType() != TypeName::VOID) {
-//       typeError();
-//   }
-// }
+void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
+  const TypePtr& retType = ctx.getReturnTy();
+  if (!retValue_.has_value()) {
+    // Make sure the function return type is void
+    if (retType->getType() != TypeName::VOID) {
+      typeError("Should return void");
+    }
+    imStmts.emplace_back(new im::ReturnStmt(nullptr));
+  } else {
+    // Make sure the function return type matches and translate the returned expression
+    imStmts.emplace_back(new im::ReturnStmt((*retValue_)->toImExprAssert(retType)));
+  }
+}
 
-// im::StmtPtr Assign::toImStmts() const {
-//   if (lhs_->getType() != ExprType::VAR) {
-//     typeError();
-//   }
+void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
+  if (lhs_->getType() != ExprType::VAR) {
+    typeError("Only variables can be assigned");
+  }
 
-//   const Context::VarInfo& varInfo = ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName());
-//   rhs_->assertType(varInfo.type);
-// }
+  const Context::VarInfo& varInfo = ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName());
+  imStmts.emplace_back(new im::Assign(
+      make_unique<im::Temp>(varInfo.temp),
+      rhs_->toImExprAssert(varInfo.type)));
+}
+
+void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
+  // Make sure the right side has the correct type and translate it
+  im::ExprPtr rhs = e_->toImExprAssert(type_);
+  // Insert the variable into the context
+  int temp = ctx.insertVar(name_, move(type_));
+  imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
+}
 
 
+/************
+ * toImExpr *
+ ************/
 im::ExprPtr ConstInt::toImExpr() const {
   return make_unique<im::Const>(n_);
 }

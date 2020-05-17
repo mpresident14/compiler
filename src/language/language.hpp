@@ -20,7 +20,7 @@ class Stmt {
 public:
   virtual ~Stmt() {}
   /* If the statement typechecks, generate the corresponding intermediate statements */
-  virtual im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
+  virtual void toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
   virtual void assertOk() const = 0;
 };
 
@@ -55,7 +55,7 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   std::vector<StmtPtr> stmts_;
@@ -65,9 +65,7 @@ private:
 class If : public Stmt {
 public:
   If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, std::unique_ptr<Block>&& elseE);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
-
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   ExprPtr boolE_;
@@ -79,8 +77,7 @@ private:
 class While : public Stmt {
 public:
   While(ExprPtr&& boolE, std::unique_ptr<Block> body);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   ExprPtr boolE_;
@@ -91,8 +88,7 @@ class CallExpr;
 class CallStmt : public Stmt {
 public:
   CallStmt(const std::string& name, std::vector<ExprPtr>&& params);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   std::string name_;
@@ -103,8 +99,7 @@ private:
 class Return : public Stmt {
 public:
   Return(std::optional<ExprPtr>&& retValue);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   std::optional<ExprPtr> retValue_;
@@ -114,8 +109,7 @@ private:
 class Assign : public Stmt {
 public:
   Assign(ExprPtr&& lhs, ExprPtr&& rhs);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
   ExprPtr lhs_;
@@ -126,8 +120,8 @@ private:
 class VarDecl : public Stmt {
 public:
   VarDecl(TypePtr&& type, const std::string& name, ExprPtr&& e);
-  im::StmtPtr toImStmts(std::vector<im::StmtPtr>& imStmts);
-  void assertOk() const;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts);
+
 
 private:
   TypePtr type_;
