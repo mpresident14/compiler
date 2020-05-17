@@ -1,7 +1,7 @@
-#ifndef INSTRUCTION_HPP
-#define INSTRUCTION_HPP
+#ifndef ASSEMBLY_HPP
+#define ASSEMBLY_HPP
 
-#include "temp.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace x86_64 {
+namespace assem {
 
 
 enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, COND_JUMP_OP, RETURN };
@@ -195,4 +195,4 @@ private:
 
 }
 
-#endif
+#endif // ASSEMBLY_HPP

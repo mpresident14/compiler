@@ -1,8 +1,9 @@
-#include "src/x86gen/flow_graph.hpp"
+#include "src/assembly/reg_alloc/flow_graph.hpp"
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
+using namespace assem;
 
 // TODO: Give errors for uninitialized variables
 // and warnings about defined but unused variables

@@ -1,8 +1,8 @@
 #ifndef INTERMEDIATE_HPP
 #define INTERMEDIATE_HPP
 
-#include "src/x86gen/instruction.hpp"
-#include "src/x86gen/temp.hpp"
+#include "src/assembly/assembly.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <memory>
 #include <string>
@@ -13,13 +13,13 @@ namespace im {
   class Decl {
   public:
     virtual ~Decl(){};
-    void toX8664Decls(std::vector<x86_64::DeclPtr>& decls) const override;
+    virtual assem::DeclPtr toAssemDecl() const = 0;
   };
 
   class Stmt {
   public:
     virtual ~Stmt(){};
-    virtual void toInstrs(std::vector<InstrPtr>& instrs) = 0;
+    virtual void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) = 0;
   };
 
   enum class ExprType {
@@ -37,7 +37,7 @@ namespace im {
     virtual ~Expr() {}
     virtual constexpr ExprType getType() const noexcept = 0;
     /* Add instructions that put the value of this Expr into this temp */
-    virtual void toInstrs(int temp, std::vector<InstrPtr>& instrs) const = 0;
+    virtual void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const = 0;
   };
 
   enum class BOp {
@@ -65,19 +65,16 @@ namespace im {
    ********/
 
   struct Program {
-    x86_64::Program toInstrProg() const;
+    assem::Program toInstrProg() const;
 
     std::string name;
     std::vector<DeclPtr> decls;
   };
 
-  class Func {
-  public:
-    Func(std::vector<StmtPtr>&& stmts);
-    void toX8664Decls(std::vector<x86_64::DeclPtr>& decls) const override;
+  struct Func : public Decl {
+    assem::DeclPtr toAssemDecl() const override;
 
-  private:
-    std::vector<StmtPtr> stmts_;
+    std::vector<StmtPtr> stmts;
   };
 
 
@@ -89,7 +86,7 @@ namespace im {
   class Block : public Stmt {
   public:
     Block(std::vector<StmtPtr>&& stmts);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
     std::vector<StmtPtr> stmts_;
@@ -99,27 +96,27 @@ namespace im {
   class MakeLabel : public Stmt {
   public:
     MakeLabel(const std::string& name);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
     /* Generates the instruction to create a label, stores it in the
      * data member, returns the raw pointer to it. We basically
      * use it so that Jumps can have an Instruction* target when they
      * is constructed. */
-    Label* genInstr();
+    assem::Label* genInstr();
 
   private:
     std::string name_;
-    std::unique_ptr<Label> instr_ = nullptr;
+    std::unique_ptr<assem::Label> instr_ = nullptr;
   };
 
 
   class Jump : public Stmt {
   public:
-    Jump(Label* label);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    Jump(assem::Label* label);
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
-    /* Owned by some MakeLabel or already in the InstrPtr vector */
-    Label* label_;
+    /* Owned by some MakeLabel or already in the assem::InstrPtr vector */
+    assem::Label* label_;
   };
 
 
@@ -133,24 +130,24 @@ namespace im {
         ExprPtr&& e1,
         ExprPtr&& e2,
         ROp rop,
-        Label* ifTrue,
-        Label* ifFalse);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+        assem::Label* ifTrue,
+        assem::Label* ifFalse);
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
     ExprPtr e1_;
     ExprPtr e2_;
     ROp rop_;
-    /* Owned by some MakeLabel or already in the InstrPtr vector */
-    Label* ifTrue_;
-    Label* ifFalse_;
+    /* Owned by some MakeLabel or already in the assem::InstrPtr vector */
+    assem::Label* ifTrue_;
+    assem::Label* ifFalse_;
   };
 
 
   class Assign : public Stmt {
   public:
     Assign(ExprPtr&& e1, ExprPtr&& e2);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
     ExprPtr e1_;
@@ -162,7 +159,7 @@ namespace im {
   class CallStmt : public Stmt {
   public:
     CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
     ExprPtr addr_;
@@ -174,7 +171,7 @@ namespace im {
   public:
     /* retValue may be null if returning void */
     ReturnStmt(ExprPtr&& retValue);
-    void toInstrs(std::vector<InstrPtr>& instrs) override;
+    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   private:
     ExprPtr retValue_;
@@ -191,18 +188,18 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::BINOP;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
   private:
     void handleShifts(
         std::string asmCode,
         int temp,
-        std::vector<InstrPtr>& instrs) const;
-    void handleDiv(bool isDiv, int temp, std::vector<InstrPtr>& instrs) const;
+        std::vector<assem::InstrPtr>& instrs) const;
+    void handleDiv(bool isDiv, int temp, std::vector<assem::InstrPtr>& instrs) const;
     void handleOthers(
         std::string asmCode,
         int temp,
-        std::vector<InstrPtr>& instrs) const;
+        std::vector<assem::InstrPtr>& instrs) const;
 
     ExprPtr expr1_;
     ExprPtr expr2_;
@@ -216,7 +213,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::CONST;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
     constexpr int getInt() { return n_; }
 
   private:
@@ -230,7 +227,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::TEMP;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
     constexpr int getTemp() { return t_; }
 
@@ -246,7 +243,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::MEM_DEREF;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
     const ExprPtr& getAddr() const { return addr_; }
 
@@ -260,7 +257,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::DO_THEN_EVAL;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
   private:
     std::vector<StmtPtr> stmts_;
@@ -275,7 +272,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::LABEL_ADDR;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
     const std::string& getName() { return name_; }
 
@@ -294,7 +291,7 @@ namespace im {
     constexpr ExprType getType() const noexcept override {
       return ExprType::CALL;
     }
-    void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
+    void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
 
   private:
     ExprPtr addr_;

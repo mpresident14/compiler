@@ -1,14 +1,14 @@
-#include "src/x86gen/flow_graph.hpp"
-#include "src/x86gen/instruction.hpp"
-#include "src/x86gen/interference_graph.hpp"
-#include "src/x86gen/temp.hpp"
+#include "src/assembly/reg_alloc/flow_graph.hpp"
+#include "src/assembly/assembly.hpp"
+#include "src/assembly/reg_alloc/interference_graph.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <fstream>
 #include <stdexcept>
 
 using namespace std;
 
-namespace x86_64 {
+namespace assem {
 
 
 Function::Function(const std::string& name, std::vector<InstrPtr>&& instrs)

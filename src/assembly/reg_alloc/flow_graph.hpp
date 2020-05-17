@@ -1,8 +1,8 @@
 #ifndef FLOW_GRAPH_HPP
 #define FLOW_GRAPH_HPP
 
-#include "src/x86gen/instruction.hpp"
-#include "src/x86gen/temp.hpp"
+#include "src/assembly/instruction.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <cstddef>
 #include <iostream>

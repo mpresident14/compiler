@@ -1,6 +1,6 @@
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/language.hpp"
-#include "src/x86gen/flow_graph.hpp"
+#include "src/x86gen/reg_alloc/flow_graph.hpp"
 #include "src/x86gen/function.hpp"
 #include "src/x86gen/instruction.hpp"
 #include "src/x86gen/temp.hpp"

@@ -1,10 +1,11 @@
-#include "src/x86gen/interference_graph.hpp"
+#include "src/assembly/reg_alloc/interference_graph.hpp"
 
 #include <prez/print_stuff.hpp>
 
 // TODO: Move this and related files to x86gen/regalloc folder
 
 using namespace std;
+using namespace assem;
 
 /* To avoid having to call the default set constructor on every check */
 auto insertIfNotExists(

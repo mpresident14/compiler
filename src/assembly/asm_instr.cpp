@@ -1,10 +1,12 @@
-#include "src/x86gen/instruction.hpp"
+#include "src/assembly/assembly.hpp"
 
 #include <stdexcept>
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
+
+namespace assem {
 
 // TODO: Turn at()s into []s when all testing is complete.
 
@@ -219,4 +221,7 @@ void JumpOp::toStream(ostream& out) const {
 
 void Return::toStream(ostream& out) const {
   out << "RETURN (" << (hasValue_ ? "" : "no ") << "value)" << ':';
+}
+
+
 }
