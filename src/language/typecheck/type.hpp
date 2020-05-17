@@ -20,9 +20,9 @@ inline bool operator==(const Type& t1, const Type& t2) noexcept {
 }
 
 
-const Type intType = {TypeName::INT, ""};
-const Type boolType = {TypeName::BOOL, ""};
-const Type voidType = {TypeName::VOID, ""};
+const Type intType = { TypeName::INT, "" };
+const Type boolType = { TypeName::BOOL, "" };
+const Type voidType = { TypeName::VOID, "" };
 
 
-#endif // TYPE_HPP
+#endif  // TYPE_HPP

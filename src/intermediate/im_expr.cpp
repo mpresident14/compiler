@@ -200,10 +200,7 @@ namespace im {
       addr_->toInstrs(t, instrs);
       srcTemps.push_back(t);
       instrs.emplace_back(new JumpOp(
-          "callq *`S0",
-          move(srcTemps),
-          vector<int>(CALLEE_SAVE_REGS),
-          {}));
+          "callq *`S0", move(srcTemps), vector<int>(CALLEE_SAVE_REGS), {}));
     }
 
     // Move result from %rax to temp if needed
@@ -212,4 +209,4 @@ namespace im {
     }
   }
 
-}  // namespace intermediate
+}  // namespace im

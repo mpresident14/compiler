@@ -22,7 +22,15 @@ namespace im {
     virtual void toInstrs(std::vector<InstrPtr>& instrs) = 0;
   };
 
-  enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, DO_THEN_EVAL, LABEL_ADDR, CALL };
+  enum class ExprType {
+    BINOP,
+    CONST,
+    TEMP,
+    MEM_DEREF,
+    DO_THEN_EVAL,
+    LABEL_ADDR,
+    CALL
+  };
 
   class Expr {
   public:
@@ -100,7 +108,12 @@ namespace im {
   // comment saying we did that.
   class CondJump : public Stmt {
   public:
-    CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue, Label* ifFalse);
+    CondJump(
+        ExprPtr&& e1,
+        ExprPtr&& e2,
+        ROp rop,
+        Label* ifTrue,
+        Label* ifFalse);
     void toInstrs(std::vector<InstrPtr>& instrs) override;
 
   private:
@@ -269,6 +282,6 @@ namespace im {
   };
 
 
-}  // namespace intermediate
+}  // namespace im
 
 #endif  // INTERMEDIATE_HPP

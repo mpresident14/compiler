@@ -1,4 +1,5 @@
 #include "src/language/typecheck/context.hpp"
+
 #include "src/x86gen/temp.hpp"
 
 #include <stdexcept>
@@ -21,12 +22,14 @@ const Context::VarInfo& Context::lookupVar(const std::string& name) const {
   return iter->second;
 }
 
-void Context::removeVar(const string& name) {
-  varMap_.erase(name);
-}
+void Context::removeVar(const string& name) { varMap_.erase(name); }
 
-void Context::insertFn(const std::string& name, std::vector<Type>&& paramTypes, const Type& returnType) {
-  if (!fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) }).second) {
+void Context::insertFn(
+    const std::string& name,
+    std::vector<Type>&& paramTypes,
+    const Type& returnType) {
+  if (!fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) })
+           .second) {
     throw invalid_argument("Redefinition of function  \"" + name + "\"");
   }
 }
@@ -45,6 +48,4 @@ int Context::insertTemp(int temp, const Type& type) {
   tempMap_.emplace(temp, type);
 }
 
-const Type& Context::lookupTemp(int temp) const {
-  return tempMap_.at(temp);
-}
+const Type& Context::lookupTemp(int temp) const { return tempMap_.at(temp); }

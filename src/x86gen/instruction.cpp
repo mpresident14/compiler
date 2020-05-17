@@ -26,8 +26,7 @@ JumpOp::JumpOp(
     vector<int>&& srcs,
     vector<int>&& dsts,
     vector<Instruction*>&& jumps)
-    : Operation(asmCode, move(srcs), move(dsts)),
-      jumps_(move(jumps)) {}
+    : Operation(asmCode, move(srcs), move(dsts)), jumps_(move(jumps)) {}
 
 
 namespace {

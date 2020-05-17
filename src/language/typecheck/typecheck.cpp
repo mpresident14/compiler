@@ -4,9 +4,4 @@
 
 using namespace std;
 
-namespace language {
-
-
-
-
-}
+namespace language {}

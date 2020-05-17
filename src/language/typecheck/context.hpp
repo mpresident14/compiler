@@ -3,8 +3,8 @@
 
 #include "src/language/typecheck/type.hpp"
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 
 class Context {
@@ -34,15 +34,16 @@ public:
     return fnMap_;
   }
 
-  const Type& getReturnTy() const noexcept {
-    return returnType_;
-  }
+  const Type& getReturnTy() const noexcept { return returnType_; }
 
   int insertVar(const std::string& name, const Type& type);
   const VarInfo& lookupVar(const std::string& name) const;
   void removeVar(const std::string& name);
 
-  void insertFn(const std::string& name, std::vector<Type>&& paramTypes, const Type& returnType);
+  void insertFn(
+      const std::string& name,
+      std::vector<Type>&& paramTypes,
+      const Type& returnType);
   const FnInfo& lookupFn(const std::string& name) const;
 
   int insertTemp(int temp, const Type& type);
@@ -51,10 +52,11 @@ public:
 
 private:
   std::unordered_map<std::string, VarInfo> varMap_;
-  /* Temporaries I create. Make sure they don't interfere with any program vars */
+  /* Temporaries I create. Make sure they don't interfere with any program vars
+   */
   std::unordered_map<int, Type> tempMap_;
   std::unordered_map<std::string, FnInfo> fnMap_;
   Type returnType_;
 };
 
-#endif // CONTEXT_HPP
+#endif  // CONTEXT_HPP

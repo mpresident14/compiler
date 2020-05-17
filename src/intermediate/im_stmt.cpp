@@ -54,8 +54,17 @@ void Jump::toInstrs(std::vector<InstrPtr>& instrs) {
 /************
  * CondJump *
  ************/
-CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, Label* ifTrue,  Label* ifFalse)
-    : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue), ifFalse_(ifFalse) {}
+CondJump::CondJump(
+    ExprPtr&& e1,
+    ExprPtr&& e2,
+    ROp rop,
+    Label* ifTrue,
+    Label* ifFalse)
+    : e1_(move(e1)),
+      e2_(move(e2)),
+      rop_(rop),
+      ifTrue_(ifTrue),
+      ifFalse_(ifFalse) {}
 
 void CondJump::toInstrs(std::vector<InstrPtr>& instrs) {
   int t1 = newTemp();
