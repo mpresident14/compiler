@@ -24,5 +24,6 @@ const Type intType = { TypeName::INT, "" };
 const Type boolType = { TypeName::BOOL, "" };
 const Type voidType = { TypeName::VOID, "" };
 
+void typeError(string errMsg);
 
 #endif  // TYPE_HPP

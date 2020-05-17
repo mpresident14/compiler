@@ -2,6 +2,7 @@
 #define LANGUAGE_HPP
 
 #include "src/intermediate/intermediate.hpp"
+#include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
 
 #include <memory>
@@ -14,7 +15,8 @@ namespace language {
   class Decl {
   public:
     virtual ~Decl() {}
-    virtual std::vector<im::StmtPtr> toImStmts() const = 0;
+    virtual void toImDecls(std::vector<DeclPtr>&) const = 0;
+    virtual void addToContext(Context& ctx) const = 0;
   };
 
   class Stmt {
@@ -54,10 +56,40 @@ namespace language {
     asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse);
   };
 
-
   using ExprPtr = std::unique_ptr<Expr>;
   using StmtPtr = std::unique_ptr<Stmt>;
   using DeclPtr = std::unique_ptr<Decl>;
+
+
+  /********
+   * Decl *
+   ********/
+
+  struct Program {
+    im::Program toImStmts() const;
+
+    std::string name;
+    std::vector<DeclPtr> decls;
+  };
+
+  class Block;
+  class Func : public Decl {
+  public:
+    Func(
+        Type returnType,
+        const std::string& name,
+        std::vector<std::pair<std::string, Type>>&& params,
+        std::unique_ptr<Block>&& body);
+    void toImStmts(std::vector<im::StmtPtr>& imStmts) const override;
+    void addToContext(Context& ctx) const override;
+
+  private:
+    Type returnType_;
+    std::string name_;
+    std::vector<Type> paramTypes_;
+    std::vector<std::string> paramNames_;
+    std::unique_ptr<Block> body_;
+  };
 
   /********
    * Stmt *
@@ -75,13 +107,13 @@ namespace language {
 
   class If : public Stmt {
   public:
-    If(ExprPtr&& boolE, StmtPtr&& ifE, StmtPtr&& elseE);
+    If(ExprPtr&& boolE, StmtPtr&& ifE, std::unique_ptr<Block>&& elseE);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
     ExprPtr boolE_;
-    StmtPtr ifE_;
-    StmtPtr elseE_;
+    std::unique_ptr<Block> ifE_;
+    std::unique_ptr<Block> elseE_;
   };
 
 
@@ -291,6 +323,13 @@ namespace language {
     std::vector<ExprPtr> params_;
   };
 
+
+  std::string newLabel();
+  std::pair<std::vector<im::ExprPtr>, Type> argsToImExprs(
+      const string& fnName,
+      const vector<ExprPtr>& params);
+
 }  // namespace language
+
 
 #endif  // LANGUAGE_HPP

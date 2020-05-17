@@ -37,14 +37,24 @@ constexpr size_t NUM_AVAIL_REGS = 14;
 
 // NOTE: These are not vector<MachineReg> because I'm lazy and I want
 // a syntactically succinct copy when I pass them into Instruction constructors.
-const std::vector<int> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
+const std::vector<MachineReg> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
 
 /* Not preserved across function calls */
-const std::vector<int> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI,
-                                         R8,  R9,  R10, R11 };
+const std::vector<MachineReg> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI,
+                                                R8,  R9,  R10, R11 };
 
 /* Preserved across function calls */
-const std::vector<int> CALLEE_SAVE_REGS{ R12, R13, R14, R15, RBX, RBP, RSP };
+const std::vector<MachineReg> CALLEE_SAVE_REGS{ R12, R13, R14, R15,
+                                                RBX, RBP, RSP };
+
+inline std::vector<int> regsAsInts(const std::vector<MachineReg>& regs) {
+  std::vector<int> ints;
+  transform(
+      regs.cbegin(), regs.cend(), back_inserter(ints), [](MachineReg reg) {
+        return static_cast<int>(reg);
+      });
+  return ints;
+}
 
 constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 

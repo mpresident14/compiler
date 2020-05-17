@@ -19,7 +19,11 @@ public:
     Type returnType;
   };
 
-  Context() = default;
+  static Context& getContext() {
+    static Context ctx;
+    return ctx;
+  }
+
   ~Context() = default;
   Context(const Context&) = delete;
   Context(Context&&) = delete;
@@ -37,6 +41,7 @@ public:
   const Type& getReturnTy() const noexcept { return returnType_; }
 
   int insertVar(const std::string& name, const Type& type);
+  void insertParam(const std::string& name, const Type& type, MachineReg reg);
   const VarInfo& lookupVar(const std::string& name) const;
   void removeVar(const std::string& name);
 
@@ -51,6 +56,8 @@ public:
 
 
 private:
+  Context() = default;
+
   std::unordered_map<std::string, VarInfo> varMap_;
   /* Temporaries I create. Make sure they don't interfere with any program vars
    */

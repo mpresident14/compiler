@@ -192,7 +192,7 @@ namespace im {
       instrs.emplace_back(new JumpOp(
           "callq " + static_cast<LabelAddr*>(addr_.get())->getName(),
           move(srcTemps),
-          vector<int>(CALLEE_SAVE_REGS),
+          regsAsInts(CALLEE_SAVE_REGS),
           {}));
     } else {
       // If we are calling an address, we need to put it in a register
@@ -200,7 +200,7 @@ namespace im {
       addr_->toInstrs(t, instrs);
       srcTemps.push_back(t);
       instrs.emplace_back(new JumpOp(
-          "callq *`S0", move(srcTemps), vector<int>(CALLEE_SAVE_REGS), {}));
+          "callq *`S0", move(srcTemps), regsAsInts(CALLEE_SAVE_REGS), {}));
     }
 
     // Move result from %rax to temp if needed

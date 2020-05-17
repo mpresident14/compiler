@@ -41,8 +41,8 @@ void writeTest0() {
       vector<Instruction*>{ doneLabel.get() });
   InstrPtr callPrint = make_unique<Operation>(
       "callq printInt",
-      vector<int>(CALLER_SAVE_REGS),
-      vector<int>(CALLEE_SAVE_REGS));
+      regsAsInts(CALLER_SAVE_REGS),
+      regsAsInts(CALLEE_SAVE_REGS));
 
   vector<InstrPtr> instrs;
   instrs.push_back(move(moveImm0));

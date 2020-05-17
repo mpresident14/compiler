@@ -7,6 +7,10 @@ using namespace std;
 // TODO: Give errors for uninitialized variables
 // and warnings about defined but unused variables
 
+// TODO(all files): Try to replace switch statements with virtual functions
+// where possible (possibly add another layer of abstraction like we did
+// for Operation, JumpOp and CondJumpOp)
+
 /*********
  * utils *
  *********/

@@ -2,6 +2,8 @@
 
 #include <prez/print_stuff.hpp>
 
+// TODO: Move this and related files to x86gen/regalloc folder
+
 using namespace std;
 
 /* To avoid having to call the default set constructor on every check */

@@ -11,6 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
+namespace x86_64 {
+
+
 enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, COND_JUMP_OP, RETURN };
 
 class Instruction;
@@ -30,6 +33,45 @@ public:
   virtual void toStream(std::ostream& out) const = 0;
   friend std::ostream& operator<<(std::ostream& out, const Instruction& instr);
 };
+
+class Decl {
+public:
+  virtual ~Decl() {}
+  virtual void toX86_64(std::ostream& out);
+private:
+  std::vector<InstrPtr> instrs_;
+};
+
+using DeclPtr = std::unique_ptr<Decl>;
+
+
+struct Program {
+  void toX86_64(const std::string& fileName);
+
+  std::string fileName_;
+  std::vector<DeclPtr> decls;
+};
+
+/********
+ * Decl *
+ ********/
+
+class Function : public Decl {
+public:
+  Function(const std::string& name, std::vector<InstrPtr>&& instrs);
+  void toX86_64(std::ostream& out) override;
+
+private:
+  void regAlloc();
+
+  std::string name_;
+  std::vector<InstrPtr> instrs_;
+  std::unordered_map<int, size_t> varToStackOffset_;
+};
+
+/***************
+ * Instruction *
+ ***************/
 
 class Label : public Instruction {
 public:
@@ -149,5 +191,8 @@ public:
 private:
   bool hasValue_;
 };
+
+
+}
 
 #endif

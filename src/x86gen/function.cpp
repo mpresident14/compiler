@@ -1,14 +1,18 @@
-#include "src/x86gen/function.hpp"
-
 #include "src/x86gen/flow_graph.hpp"
 #include "src/x86gen/instruction.hpp"
 #include "src/x86gen/interference_graph.hpp"
 #include "src/x86gen/temp.hpp"
 
+#include <fstream>
+#include <stdexcept>
+
 using namespace std;
 
-Function::Function(std::string&& name, std::vector<InstrPtr>&& instrs)
-    : name_(move(name)), instrs_(move(instrs)) {}
+namespace x86_64 {
+
+
+Function::Function(const std::string& name, std::vector<InstrPtr>&& instrs)
+    : name_(name), instrs_(move(instrs)) {}
 
 void Function::regAlloc() {
   FlowGraph fgraph(instrs_);
@@ -54,7 +58,8 @@ void Function::regAlloc() {
   instrs_ = move(newInstrs);
 }
 
-void Function::toCode(std::ostream& out) {
+
+void Function::toX86_64(std::ostream& out) {
   regAlloc();
   out << name_ << ":\n";
   for (const InstrPtr& instr : instrs_) {
@@ -62,12 +67,18 @@ void Function::toCode(std::ostream& out) {
   }
 }
 
-Program::Program(string&& name, vector<Function>&& fns)
-    : name_(name), fns_(move(fns)) {}
 
-void Program::toCode(ostream& out) {
-  out << ".text\n.globl runprez\n.align 16\n";
-  for (Function& fn : fns_) {
-    fn.toCode(out);
+void Program::toX86_64(const std::string& fileName) {
+  ofstream asmFile(fileName);
+  if (!asmFile.is_open()) {
+    throw invalid_argument("Could not open file " + fileName);
   }
+
+  asmFile << ".text\n.globl runprez\n.align 16\n";
+  for (DeclPtr& decl : decls) {
+    decl->toX86_64(asmFile);
+  }
+}
+
+
 }

@@ -13,7 +13,7 @@ namespace im {
   class Decl {
   public:
     virtual ~Decl(){};
-    virtual void toInstrs(std::vector<InstrPtr>& instrs) const = 0;
+    void toX8664Decls(std::vector<x86_64::DeclPtr>& decls) const override;
   };
 
   class Stmt {
@@ -59,6 +59,27 @@ namespace im {
   using ExprPtr = std::unique_ptr<Expr>;
   using StmtPtr = std::unique_ptr<Stmt>;
   using DeclPtr = std::unique_ptr<Decl>;
+
+  /********
+   * Decl *
+   ********/
+
+  struct Program {
+    x86_64::Program toInstrProg() const;
+
+    std::string name;
+    std::vector<DeclPtr> decls;
+  };
+
+  class Func {
+  public:
+    Func(std::vector<StmtPtr>&& stmts);
+    void toX8664Decls(std::vector<x86_64::DeclPtr>& decls) const override;
+
+  private:
+    std::vector<StmtPtr> stmts_;
+  };
+
 
   /********
    * Stmt *

@@ -14,6 +14,15 @@ int Context::insertVar(const std::string& name, const Type& type) {
   return temp;
 }
 
+void Context::insertParam(
+    const std::string& name,
+    const Type& type,
+    MachineReg reg) {
+  if (!varMap_.emplace(name, VarInfo{ move(type), reg }).second) {
+    throw invalid_argument("Redefinition of variable  \"" + name + "\"");
+  }
+}
+
 const Context::VarInfo& Context::lookupVar(const std::string& name) const {
   auto iter = varMap_.find(name);
   if (iter == varMap_.end()) {
@@ -23,6 +32,7 @@ const Context::VarInfo& Context::lookupVar(const std::string& name) const {
 }
 
 void Context::removeVar(const string& name) { varMap_.erase(name); }
+
 
 void Context::insertFn(
     const std::string& name,
