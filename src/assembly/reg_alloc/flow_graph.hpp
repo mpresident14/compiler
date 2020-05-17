@@ -1,7 +1,7 @@
 #ifndef FLOW_GRAPH_HPP
 #define FLOW_GRAPH_HPP
 
-#include "src/assembly/instruction.hpp"
+#include "src/assembly/assembly.hpp"
 #include "src/assembly/temp.hpp"
 
 #include <cstddef>
@@ -19,7 +19,7 @@ public:
     std::unordered_set<int> liveOut;
   };
 
-  FlowGraph(const std::vector<x86_64::InstrPtr>& instrs);
+  FlowGraph(const std::vector<assem::InstrPtr>& instrs);
   ~FlowGraph() = default;
   FlowGraph(const FlowGraph& other) = delete;
   FlowGraph(FlowGraph&& other) = delete;
@@ -29,15 +29,15 @@ public:
 
   void computeLiveness();
 
-  const std::vector<x86_64::InstrPtr>& getInstrs() const noexcept;
-  const std::unordered_map<const x86_64::Instruction*, Liveness>& getNodes()
+  const std::vector<assem::InstrPtr>& getInstrs() const noexcept;
+  const std::unordered_map<const assem::Instruction*, Liveness>& getNodes()
       const noexcept;
 
 private:
   // Yes, this is a reference. To avoid unnecessary copies, the FlowGraph
   // is subject to the lifetime of the underlying instruction vector.
-  const std::vector<x86_64::InstrPtr>& instrs_;
-  std::unordered_map<const x86_64::Instruction*, Liveness> nodes_;
+  const std::vector<assem::InstrPtr>& instrs_;
+  std::unordered_map<const assem::Instruction*, Liveness> nodes_;
 };
 
 #endif

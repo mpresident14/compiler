@@ -1,5 +1,5 @@
 #include "src/language/language.hpp"
-#include "src/x86gen/instruction.hpp"
+#include "src/assembly/assembly.hpp"
 
 #include <utility>
 
@@ -133,7 +133,7 @@ namespace language {
 
 
   void
-  Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
+  Expr::asBool(vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse) {
     imStmts.emplace_back(new im::CondJump(
         toImExprAssert(boolType),
         make_unique<im::Const>(0),
@@ -144,8 +144,8 @@ namespace language {
 
   void UnaryOp::asBool(
       std::vector<im::StmtPtr>& imStmts,
-      Label* ifTrue,
-      Label* ifFalse) {
+      assem::Label* ifTrue,
+      assem::Label* ifFalse) {
     // Only valid for NOT
     if (uOp_ == UOp::NEG) {
       typeError("- cannot be interpreted as a boolean");
@@ -155,8 +155,8 @@ namespace language {
 
   void BinaryOp::asBool(
       vector<im::StmtPtr>& imStmts,
-      Label* ifTrue,
-      Label* ifFalse) {
+      assem::Label* ifTrue,
+      assem::Label* ifFalse) {
     switch (bOp_) {
       case BOp::EQ:
         return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::EQ);
@@ -181,8 +181,8 @@ namespace language {
 
   void BinaryOp::asBoolComp(
       std::vector<im::StmtPtr>& imStmts,
-      Label* ifTrue,
-      Label* ifFalse,
+      assem::Label* ifTrue,
+      assem::Label* ifFalse,
       im::ROp rOp) {
     // Make sure we are comparing two ints
     im::ExprPtr imE1 = e1_->toImExprAssert(intType);
@@ -193,11 +193,11 @@ namespace language {
 
   void BinaryOp::asBoolAnd(
       std::vector<im::StmtPtr>& imStmts,
-      Label* ifTrue,
-      Label* ifFalse) {
+      assem::Label* ifTrue,
+      assem::Label* ifFalse) {
     unique_ptr<im::MakeLabel> mkMidLabel =
         make_unique<im::MakeLabel>(newLabel());
-    Label* midLabel = mkMidLabel->genInstr();
+    assem::Label* midLabel = mkMidLabel->genInstr();
     e1_->asBool(imStmts, midLabel, ifFalse);
     imStmts.emplace_back(move(mkMidLabel));
     e2_->asBool(imStmts, ifTrue, ifFalse);
@@ -205,11 +205,11 @@ namespace language {
 
   void BinaryOp::asBoolOr(
       std::vector<im::StmtPtr>& imStmts,
-      Label* ifTrue,
-      Label* ifFalse) {
+      assem::Label* ifTrue,
+      assem::Label* ifFalse) {
     unique_ptr<im::MakeLabel> mkMidLabel =
         make_unique<im::MakeLabel>(newLabel());
-    Label* midLabel = mkMidLabel->genInstr();
+    assem::Label* midLabel = mkMidLabel->genInstr();
     e1_->asBool(imStmts, ifTrue, midLabel);
     imStmts.emplace_back(move(mkMidLabel));
     e2_->asBool(imStmts, ifTrue, ifFalse);

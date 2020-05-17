@@ -1,7 +1,6 @@
-#include "src/x86gen/flow_graph.hpp"
-#include "src/x86gen/function.hpp"
-#include "src/x86gen/instruction.hpp"
-#include "src/x86gen/temp.hpp"
+#include "src/assembly/reg_alloc/flow_graph.hpp"
+#include "src/assembly/assembly.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -10,6 +9,7 @@
 #include <vector>
 
 using namespace std;
+using namespace assem;
 
 void writeTest0() {
   InstrPtr moveImm0 =
@@ -61,16 +61,10 @@ void writeTest0() {
   instrs.push_back(move(callPrint));
   instrs.push_back(make_unique<Return>(false));
 
-  vector<Function> fns;
-  fns.emplace_back("runprez", move(instrs));
-  Program program("test0", move(fns));
-
-  ofstream asmFile("test0.s");
-  if (!asmFile.is_open()) {
-    cout << "WAAH" << endl;
-  }
-
-  program.toCode(asmFile);
+  vector<DeclPtr> decls;
+  decls.emplace_back(new Function("runprez", move(instrs)));
+  Program program("test0", move(decls));
+  program.toCode();
 }
 
 int main() {

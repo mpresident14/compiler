@@ -15,7 +15,7 @@ namespace language {
   class Decl {
   public:
     virtual ~Decl() {}
-    virtual void toImDecls(std::vector<DeclPtr>&) const = 0;
+    virtual void toImDecls(std::vector<im::DeclPtr>&) const = 0;
     virtual void addToContext(Context& ctx) const = 0;
   };
 
@@ -53,7 +53,7 @@ namespace language {
     /* If this typechecks to a bool, add statements to jump to ifTrue it
      * evaluates to true and ifFalse if it evaluates to false. */
     virtual void
-    asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse);
+    asBool(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
   };
 
   using ExprPtr = std::unique_ptr<Expr>;
@@ -65,11 +65,14 @@ namespace language {
    * Decl *
    ********/
 
-  struct Program {
+  class Program {
+  public:
+    Program(const std::string& name, std::vector<DeclPtr>&& decls);
     im::Program toImStmts() const;
 
-    std::string name;
-    std::vector<DeclPtr> decls;
+  private:
+    std::string name_;
+    std::vector<DeclPtr> decls_;
   };
 
   class Block;
@@ -80,7 +83,7 @@ namespace language {
         const std::string& name,
         std::vector<std::pair<std::string, Type>>&& params,
         std::unique_ptr<Block>&& body);
-    void toImStmts(std::vector<im::StmtPtr>& imStmts) const override;
+    void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
     void addToContext(Context& ctx) const override;
 
   private:
@@ -257,8 +260,8 @@ namespace language {
     im::ExprPtr toImExprAssert(const Type& type) override;
     void asBool(
         std::vector<im::StmtPtr>& imStmts,
-        Label* ifTrue,
-        Label* ifFalse) override;
+        assem::Label* ifTrue,
+        assem::Label* ifFalse) override;
 
   private:
     ExprPtr e_;
@@ -274,8 +277,8 @@ namespace language {
     im::ExprPtr toImExprAssert(const Type& type) override;
     void asBool(
         std::vector<im::StmtPtr>& imStmts,
-        Label* ifTrue,
-        Label* ifFalse) override;
+        assem::Label* ifTrue,
+        assem::Label* ifFalse) override;
 
     const ExprPtr& getExpr1() const noexcept { return e1_; }
     const ExprPtr& getExpr2() const noexcept { return e2_; }
@@ -285,13 +288,13 @@ namespace language {
     ExprInfo toImExprArith(im::BOp op);
     void asBoolComp(
         std::vector<im::StmtPtr>& imStmts,
-        Label* ifTrue,
-        Label* ifFalse,
+        assem::Label* ifTrue,
+        assem::Label* ifFalse,
         im::ROp rOp);
     void
-    asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse);
+    asBoolAnd(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
     void
-    asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse);
+    asBoolOr(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
     ExprPtr e1_;
     ExprPtr e2_;
     BOp bOp_;

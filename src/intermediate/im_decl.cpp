@@ -10,7 +10,7 @@ namespace im {
 
 assem::DeclPtr Func::toAssemDecl() const {
   std::vector<assem::InstrPtr> assemInstrs;
-  for (const StmtPtr& stmt : stmts) {
+  for (const StmtPtr& stmt : stmts_) {
     stmt->toAssemInstrs(assemInstrs);
   }
   return make_unique<assem::Decl>(move(assemInstrs));
@@ -19,10 +19,10 @@ assem::DeclPtr Func::toAssemDecl() const {
 
 assem::Program Program::toInstrProg() const {
   std::vector<assem::DeclPtr> assemDecls;
-  for (const DeclPtr& decl : decls) {
+  for (const DeclPtr& decl : decls_) {
     assemDecls.push_back(decl->toAssemDecl());
   }
-  return assem::Program{ name, move(assemDecls) };
+  return assem::Program(name_, move(assemDecls));
 }
 
 

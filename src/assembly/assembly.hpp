@@ -37,7 +37,7 @@ public:
 class Decl {
 public:
   virtual ~Decl() {}
-  virtual void toX86_64(std::ostream& out);
+  virtual void toCode(std::ostream& out);
 private:
   std::vector<InstrPtr> instrs_;
 };
@@ -45,9 +45,12 @@ private:
 using DeclPtr = std::unique_ptr<Decl>;
 
 
-struct Program {
-  void toX86_64(const std::string& fileName);
+class Program {
+public:
+  Program(const std::string& name, std::vector<DeclPtr>&& decls);
+  void toCode();
 
+private:
   std::string fileName_;
   std::vector<DeclPtr> decls;
 };
@@ -59,7 +62,7 @@ struct Program {
 class Function : public Decl {
 public:
   Function(const std::string& name, std::vector<InstrPtr>&& instrs);
-  void toX86_64(std::ostream& out) override;
+  void toCode(std::ostream& out) override;
 
 private:
   void regAlloc();

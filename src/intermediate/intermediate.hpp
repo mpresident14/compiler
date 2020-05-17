@@ -64,17 +64,23 @@ namespace im {
    * Decl *
    ********/
 
-  struct Program {
+  class Program {
+  public:
+    Program(const std::string& name, std::vector<DeclPtr>&& decls);
     assem::Program toInstrProg() const;
 
-    std::string name;
-    std::vector<DeclPtr> decls;
+  private:
+    std::string name_;
+    std::vector<DeclPtr> decls_;
   };
 
-  struct Func : public Decl {
+  class Func : public Decl {
+  public:
+    Func(std::vector<StmtPtr>&& stmts);
     assem::DeclPtr toAssemDecl() const override;
 
-    std::vector<StmtPtr> stmts;
+  private:
+    std::vector<StmtPtr> stmts_;
   };
 
 

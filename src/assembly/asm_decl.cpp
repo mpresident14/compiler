@@ -59,7 +59,7 @@ void Function::regAlloc() {
 }
 
 
-void Function::toX86_64(std::ostream& out) {
+void Function::toCode(std::ostream& out) {
   regAlloc();
   out << name_ << ":\n";
   for (const InstrPtr& instr : instrs_) {
@@ -68,15 +68,15 @@ void Function::toX86_64(std::ostream& out) {
 }
 
 
-void Program::toX86_64(const std::string& fileName) {
-  ofstream asmFile(fileName);
+void Program::toCode() {
+  ofstream asmFile(fileName_);
   if (!asmFile.is_open()) {
-    throw invalid_argument("Could not open file " + fileName);
+    throw invalid_argument("Could not open file " + fileName_);
   }
 
   asmFile << ".text\n.globl runprez\n.align 16\n";
   for (DeclPtr& decl : decls) {
-    decl->toX86_64(asmFile);
+    decl->toCode(asmFile);
   }
 }
 

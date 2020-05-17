@@ -12,8 +12,8 @@ namespace im {
    * Const *
    *********/
 
-  void Const::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
-    instrs.emplace_back(new Operation(
+  void Const::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
+    instrs.emplace_back(new assem::Operation(
         string("movq $").append(to_string(n_)).append(", `D0"), {}, { temp }));
   }
 
@@ -22,8 +22,8 @@ namespace im {
    * Temp *
    *********/
 
-  void Temp::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
-    instrs.emplace_back(new Move(t_, temp));
+  void Temp::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
+    instrs.emplace_back(new assem::Move(t_, temp));
   }
 
 
@@ -34,7 +34,7 @@ namespace im {
   BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop)
       : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
 
-  void BinOp::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void BinOp::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
     switch (bop_) {
       case BOp::LSHIFT:
         return handleShifts("shlq", temp, instrs);
@@ -67,38 +67,38 @@ namespace im {
   void BinOp::handleShifts(
       string asmCode,
       int temp,
-      std::vector<InstrPtr>& instrs) const {
-    expr1_->toInstrs(temp, instrs);
+      std::vector<assem::InstrPtr>& instrs) const {
+    expr1_->toAssemInstrs(temp, instrs);
 
     // If shift number (expr2_) is not an immediate, its value must be in %cl
     if (expr2_->getType() == ExprType::CONST) {
       asmCode.append(" $");
       asmCode.append(to_string(static_cast<Const*>(expr2_.get())->getInt()));
       asmCode.append(", `D0");
-      instrs.emplace_back(new Operation(asmCode, { temp }, { temp }));
+      instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
     } else {
-      expr2_->toInstrs(RCX, instrs);
+      expr2_->toAssemInstrs(RCX, instrs);
       asmCode.append(" %cl, `D0");
-      instrs.emplace_back(new Operation(asmCode, { RCX, temp }, { temp }));
+      instrs.emplace_back(new assem::Operation(asmCode, { RCX, temp }, { temp }));
     }
   }
 
-  void BinOp::handleDiv(bool isDiv, int temp, std::vector<InstrPtr>& instrs)
+  void BinOp::handleDiv(bool isDiv, int temp, std::vector<assem::InstrPtr>& instrs)
       const {
-    expr1_->toInstrs(RAX, instrs);
+    expr1_->toAssemInstrs(RAX, instrs);
     int t2 = newTemp();
-    expr2_->toInstrs(t2, instrs);
+    expr2_->toAssemInstrs(t2, instrs);
     // Sign-extend %rax into %rdx
-    instrs.emplace_back(new Operation("cqto", { RAX }, { RDX }));
+    instrs.emplace_back(new assem::Operation("cqto", { RAX }, { RDX }));
     // Divide %rax%rdx by t2, quotient in %rax, remainder in %rdx
     instrs.emplace_back(
-        new Operation("idivq `S0", { t2, RAX, RDX }, { RAX, RDX }));
+        new assem::Operation("idivq `S0", { t2, RAX, RDX }, { RAX, RDX }));
     if (isDiv) {
       // If division, move %rax into temp
-      Temp(RAX).toInstrs(temp, instrs);
+      Temp(RAX).toAssemInstrs(temp, instrs);
     } else {
       // If mod, move %rdx into temp
-      Temp(RDX).toInstrs(temp, instrs);
+      Temp(RDX).toAssemInstrs(temp, instrs);
     }
   }
 
@@ -106,17 +106,17 @@ namespace im {
   void BinOp::handleOthers(
       std::string asmCode,
       int temp,
-      std::vector<InstrPtr>& instrs) const {
+      std::vector<assem::InstrPtr>& instrs) const {
     // TODO: Specialize if expr1_ is a Const
     // TODO: Leaq optimization
     // TODO: Inc/deq optimization
     int t1 = newTemp();
-    expr1_->toInstrs(t1, instrs);
+    expr1_->toAssemInstrs(t1, instrs);
     int t2 = newTemp();
-    expr2_->toInstrs(t2, instrs);
+    expr2_->toAssemInstrs(t2, instrs);
     instrs.emplace_back(
-        new Operation(asmCode.append(" `S0, `D0"), { t1, t2 }, { t2 }));
-    Temp(t2).toInstrs(temp, instrs);
+        new assem::Operation(asmCode.append(" `S0, `D0"), { t1, t2 }, { t2 }));
+    Temp(t2).toAssemInstrs(temp, instrs);
   }
 
 
@@ -126,10 +126,10 @@ namespace im {
 
   MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
 
-  void MemDeref::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void MemDeref::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
     int t = newTemp();
-    addr_->toInstrs(t, instrs);
-    instrs.emplace_back(new Operation("movq (`S0), `D0", { t }, { temp }));
+    addr_->toAssemInstrs(t, instrs);
+    instrs.emplace_back(new assem::Operation("movq (`S0), `D0", { t }, { temp }));
   }
 
   /**************
@@ -139,11 +139,11 @@ namespace im {
   DoThenEval::DoThenEval(std::vector<StmtPtr>&& stmts, ExprPtr expr)
       : stmts_(move(stmts)), expr_(move(expr)) {}
 
-  void DoThenEval::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void DoThenEval::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
     for (const StmtPtr& stmt : stmts_) {
-      stmt->toInstrs(instrs);
+      stmt->toAssemInstrs(instrs);
     }
-    expr_->toInstrs(temp, instrs);
+    expr_->toAssemInstrs(temp, instrs);
   }
 
   /*************
@@ -152,11 +152,11 @@ namespace im {
 
   LabelAddr::LabelAddr(const string& name) : name_(name) {}
 
-  void LabelAddr::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void LabelAddr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
     // "leaq symbol(%rip), dst" looks like symbol + %rip, but actually means
     // symbol with respect to %rip. Essentially, it calculates the address of
     // symbol
-    instrs.emplace_back(new Operation(
+    instrs.emplace_back(new assem::Operation(
         string("leaq ").append(name_).append("(%rip), `D0"), {}, { temp }));
   }
 
@@ -173,7 +173,7 @@ namespace im {
         hasReturnValue_(hasReturnValue) {}
 
 
-  void CallExpr::toInstrs(int temp, std::vector<InstrPtr>& instrs) const {
+  void CallExpr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
     // Move params into argument registers
     // TODO: If more than six params, need to put onto stack
     vector<int> srcTemps;
@@ -183,13 +183,13 @@ namespace im {
     }
     for (size_t i = 0; i < numParams; ++i) {
       int argReg = ARG_REGS[i];
-      params_[i]->toInstrs(argReg, instrs);
+      params_[i]->toAssemInstrs(argReg, instrs);
       srcTemps.push_back(argReg);
     }
 
     if (addr_->getType() == ExprType::LABEL_ADDR) {
       // If we are calling a function name, just call it directly
-      instrs.emplace_back(new JumpOp(
+      instrs.emplace_back(new assem::JumpOp(
           "callq " + static_cast<LabelAddr*>(addr_.get())->getName(),
           move(srcTemps),
           regsAsInts(CALLEE_SAVE_REGS),
@@ -197,15 +197,15 @@ namespace im {
     } else {
       // If we are calling an address, we need to put it in a register
       int t = newTemp();
-      addr_->toInstrs(t, instrs);
+      addr_->toAssemInstrs(t, instrs);
       srcTemps.push_back(t);
-      instrs.emplace_back(new JumpOp(
+      instrs.emplace_back(new assem::JumpOp(
           "callq *`S0", move(srcTemps), regsAsInts(CALLEE_SAVE_REGS), {}));
     }
 
     // Move result from %rax to temp if needed
     if (hasReturnValue_) {
-      instrs.emplace_back(new Move(RAX, temp));
+      instrs.emplace_back(new assem::Move(RAX, temp));
     }
   }
 

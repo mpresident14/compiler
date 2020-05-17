@@ -1,5 +1,5 @@
 #include "src/language/language.hpp"
-#include "src/x86gen/instruction.hpp"
+#include "src/assembly/assembly.hpp"
 
 #include <utility>
 
@@ -55,8 +55,8 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts) {
       make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkDoneLabel =
       make_unique<im::MakeLabel>(newLabel());
-  Label* bodyLabel = mkBodyLabel->genInstr();
-  Label* doneLabel = mkDoneLabel->genInstr();
+  assem::Label* bodyLabel = mkBodyLabel->genInstr();
+  assem::Label* doneLabel = mkDoneLabel->genInstr();
   // TODO: Not sure if possible (easy) b/c of uniqptrs, but don't compute this
   // twice
   boolE_->asBool(imStmts, bodyLabel, doneLabel);
