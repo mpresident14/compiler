@@ -22,7 +22,7 @@ namespace im {
     virtual void toInstrs(std::vector<InstrPtr>& instrs) = 0;
   };
 
-  enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, LABEL_ADDR, CALL };
+  enum class ExprType { BINOP, CONST, TEMP, MEM_DEREF, DO_THEN_EVAL, LABEL_ADDR, CALL };
 
   class Expr {
   public:
@@ -223,6 +223,9 @@ namespace im {
   class DoThenEval : public Expr {
   public:
     DoThenEval(std::vector<StmtPtr>&& stmts, ExprPtr expr);
+    constexpr ExprType getType() const noexcept override {
+      return ExprType::DO_THEN_EVAL;
+    }
     void toInstrs(int temp, std::vector<InstrPtr>& instrs) const override;
 
   private:

@@ -40,16 +40,19 @@ public:
 
   int insertVar(const std::string& name, const Type& type);
   const VarInfo& lookupVar(const std::string& name) const;
-
   void removeVar(const std::string& name);
 
   void insertFn(const std::string& name, std::vector<Type>&& paramTypes, const Type& returnType);
   const FnInfo& lookupFn(const std::string& name) const;
 
+  int insertTemp(int temp, const Type& type);
+  const Type& lookupTemp(int temp) const;
 
 
 private:
   std::unordered_map<std::string, VarInfo> varMap_;
+  /* Temporaries I create. Make sure they don't interfere with any program vars */
+  std::unordered_map<int, Type> tempMap_;
   std::unordered_map<std::string, FnInfo> fnMap_;
   Type returnType_;
 };

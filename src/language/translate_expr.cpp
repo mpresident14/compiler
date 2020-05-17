@@ -18,8 +18,8 @@ void typeError(string errMsg);
 
 
 
-If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
-    : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
+// If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
+//     : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 
 /*************
@@ -135,6 +135,10 @@ ExprInfo Var::toImExpr() {
   return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
 }
 
+ExprInfo Temp::toImExpr() {
+  return { make_unique<im::Temp>(temp_), ctx.lookupTemp(temp_) };
+}
+
 ExprInfo UnaryOp::toImExpr() {
   switch (uOp_) {
     case UOp::NOT:
@@ -154,7 +158,7 @@ ExprInfo BinaryOp::toImExpr() {
     case BOp::DIV: return toImExprArith(im::BOp::DIV);
     default:
       return TernaryOp(
-          // TODO: If there's a memory error, could be here
+          // TODO: If there's a memory error, it could be here
           make_unique<BinaryOp>(move(*this)),
           make_unique<ConstBool>(true),
           make_unique<ConstBool>(false)).toImExpr();
@@ -169,10 +173,34 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op) {
 }
 
 
+/* This is really similar to If, but using If directy would force use to
+ * use a Temp and also do typechecking twice for one of the expressions */
+ExprInfo TernaryOp::toImExpr() {
+  // Make sure expressions are the same type
+  ExprInfo exprInfo = e1_->toImExpr();
+  im::ExprPtr imExpr2 = e2_->toImExprAssert(exprInfo.type);
+
+  unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+
+  int temp = newTemp();
+  vector<im::StmtPtr> imStmts;
+
+  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
+  imStmts.emplace_back(move(mkElseLabel));
+  imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
+  imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
+  imStmts.emplace_back(move(mkIfLabel));
+  imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
+  imStmts.emplace_back(move(mkDoneLabel));
+  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(temp)), exprInfo.type };
+}
 
 
 im::ExprPtr Expr::toImExprAssert(const Type& type) {
   ExprInfo exprInfo = toImExpr();
+  // TODO: Use isConvertible here later
   if (exprInfo.type != type) {
     typeError("TODO: Add error message");
   }
@@ -182,7 +210,7 @@ im::ExprPtr Expr::toImExprAssert(const Type& type) {
 
 
 
-void Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)const {
+void Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
   imStmts.emplace_back(new im::CondJump(
       toImExprAssert(boolType),
       make_unique<im::Const>(0),
@@ -191,7 +219,7 @@ void Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)co
       ifFalse));
 }
 
-void UnaryOp::asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void UnaryOp::asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
   // Only valid for NOT
   if (uOp_ == UOp::NEG) {
     typeError("- cannot be interpreted as a boolean");
@@ -199,7 +227,7 @@ void UnaryOp::asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* if
   return e_->asBool(imStmts, ifFalse, ifTrue);
 }
 
-void BinaryOp::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)const {
+void BinaryOp::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
   switch (bOp_) {
     case BOp::EQ: return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::EQ);
     case BOp::NEQ: return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::NEQ);
@@ -213,14 +241,14 @@ void BinaryOp::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFals
   }
 }
 
-void BinaryOp::asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const {
+void BinaryOp::asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) {
   // Make sure we are comparing two ints
   im::ExprPtr imE1 = e1_->toImExprAssert(intType);
   im::ExprPtr imE2 = e2_->toImExprAssert(intType);
   imStmts.emplace_back(new im::CondJump(move(imE1), move(imE2), rOp, ifTrue, ifFalse));
 }
 
-void BinaryOp::asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void BinaryOp::asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, midLabel, ifFalse);
@@ -228,7 +256,7 @@ void BinaryOp::asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label
   e2_->asBool(imStmts, ifTrue, ifFalse);
 }
 
-void BinaryOp::asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const {
+void BinaryOp::asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, ifTrue, midLabel);

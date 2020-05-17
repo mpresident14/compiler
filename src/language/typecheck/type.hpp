@@ -9,8 +9,6 @@
 
 enum class TypeName { INT, BOOL, VOID, CLASS };
 
-
-
 struct Type {
 public:
   TypeName type;
