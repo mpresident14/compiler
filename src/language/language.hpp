@@ -211,7 +211,7 @@ namespace language {
     ExprInfo toImExpr() override;
 
 
-    const std::string& getName() const noexcept { return name_; }
+    const std::string& getName() const noexcept { return temp_; }
 
   private:
     int temp_;

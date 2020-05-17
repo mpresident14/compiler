@@ -2,6 +2,8 @@
 #include "src/language/typecheck/context.hpp"
 #include "src/x86gen/instruction.hpp"
 
+#include <utility>
+
 using namespace std;
 
 namespace language {
@@ -15,6 +17,7 @@ namespace language {
   Context ctx;
 
   void typeError(string errMsg);
+  pair<vector<im::ExprPtr>, Type> argsToImExprs(const string& fnName);
 
 
   // If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, unique_ptr<Block>&& elseE)
@@ -75,20 +78,8 @@ namespace language {
   }
 
   void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-    // Ensure function was declared
-    const Context::FnInfo& fnInfo = ctx.lookupFn(name_);
-    // Ensure parameter types match and translate them to intermediate exprs
-    const vector<Type>& paramTypes = fnInfo.paramTypes;
-    size_t numParams = params_.size();
-    if (numParams != paramTypes.size()) {
-      typeError("Wrong number of arguments for function: " + name_);
-    }
-    std::vector<im::ExprPtr> argsCode(numParams);
-    for (size_t i = 0; i < numParams; ++i) {
-      argsCode.push_back(params_[i]->toImExprAssert(paramTypes[i]));
-    }
     imStmts.emplace_back(
-        new im::CallStmt(make_unique<im::LabelAddr>(name_), move(argsCode)));
+        new im::CallStmt(make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_).first));
   }
 
   void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
@@ -227,6 +218,19 @@ namespace language {
              exprInfo.type };
   }
 
+  ExprInfo CallExpr::toImExpr() {
+    pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_);
+    return {
+        make_unique<im::CallExpr>(
+            make_unique<im::LabelAddr>(name_),
+            move(argCodes.first),
+            argCodes.second != voidType),
+        argCodes.second};
+  }
+
+
+
+
 
   im::ExprPtr Expr::toImExprAssert(const Type& type) {
     ExprInfo exprInfo = toImExpr();
@@ -321,5 +325,20 @@ namespace language {
     e2_->asBool(imStmts, ifTrue, ifFalse);
   }
 
+  pair<vector<im::ExprPtr>, Type> argsToImExprs(const string& fnName, const vector<ExprPtr>& params) {
+    // Ensure function was declared
+    const Context::FnInfo& fnInfo = ctx.lookupFn(fnName);
+    // Ensure parameter types match and translate them to intermediate exprs
+    const vector<Type>& paramTypes = fnInfo.paramTypes;
+    size_t numParams = params.size();
+    if (numParams != paramTypes.size()) {
+      typeError("Wrong number of arguments for function: " + fnName);
+    }
+    std::vector<im::ExprPtr> argsCode(numParams);
+    for (size_t i = 0; i < numParams; ++i) {
+      argsCode.push_back(params[i]->toImExprAssert(paramTypes[i]));
+    }
+    return { argsCode, fnInfo.returnType };
+  }
 
 }  // namespace language
