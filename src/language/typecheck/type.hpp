@@ -7,34 +7,24 @@
  * Type *
  ********/
 
-enum class TypeName { INT, BOOL, VOID };
+enum class TypeName { INT, BOOL, VOID, CLASS };
 
-// TODO: Find a different representation for types so we don't have to keep
-// creating pointers for built-in types
 
-class Type {
+
+struct Type {
 public:
-  virtual ~Type() {};
-  virtual constexpr TypeName getType() const noexcept = 0;
+  TypeName type;
+  std::string className;
 };
 
-class IntTy : public Type {
-public:
-  constexpr TypeName getType() const noexcept { return TypeName::INT; }
-};
-
-class BoolTy : public Type {
-public:
-  constexpr TypeName getType() const noexcept { return TypeName::BOOL; }
-};
-
-class VoidTy : public Type {
-public:
-  constexpr TypeName getType() const noexcept { return TypeName::VOID; }
-};
+inline bool operator==(const Type& t1, const Type& t2) noexcept {
+  return t1.type == t2.type && t1.className == t2.className;
+}
 
 
-using TypePtr = std::unique_ptr<Type>;
+const Type intType = {TypeName::INT, ""};
+const Type boolType = {TypeName::BOOL, ""};
+const Type voidType = {TypeName::VOID, ""};
 
 
 #endif // TYPE_HPP

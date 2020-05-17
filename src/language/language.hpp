@@ -2,6 +2,7 @@
 #define LANGUAGE_HPP
 
 #include "src/intermediate/intermediate.hpp"
+#include "src/language/typecheck/type.hpp"
 
 #include <vector>
 #include <memory>
@@ -23,11 +24,11 @@ public:
   virtual void toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
 };
 
-enum class ExprType {CONST_INT, CONST_BOOL, VAR, UOP, BOP, CALL};
+enum class ExprType {CONST_INT, CONST_BOOL, VAR, UNARY_OP, BINARY_OP, TERNARY_OP, CALL};
 
 struct ExprInfo {
   im::ExprPtr imExpr;
-  TypePtr type;
+  Type type;
 };
 
 class Expr {
@@ -35,11 +36,11 @@ public:
   virtual ~Expr() {}
   virtual ExprType getType() const noexcept = 0;
 
-  virtual ExprInfo toImExpr() const = 0;
-  virtual im::ExprPtr toImExprAssert(const TypePtr& type) const = 0;
+  virtual ExprInfo toImExpr() = 0;
+  virtual im::ExprPtr toImExprAssert(const Type& type);
   /* If this typechecks to a bool, add statements to jump to ifTrue it
    * evaluates to true and ifFalse if it evaluates to false. */
-  virtual void asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
+  virtual void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
 };
 
 
@@ -118,14 +119,14 @@ private:
 
 class VarDecl : public Stmt {
 public:
-  VarDecl(TypePtr&& type, const std::string& name, ExprPtr&& e);
+  VarDecl(const Type& type, const std::string& name, ExprPtr&& e);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   const std::string& getName() const noexcept { return name_; }
 
 
 private:
-  TypePtr type_;
+  Type type_; // TODO Have a reference here???
   std::string name_;
   ExprPtr e_;
 };
@@ -136,14 +137,15 @@ private:
  ********/
 
 enum class UOp { NEG, NOT };
-enum class BOp { PLUS, MUL, MINUS, DIV, EQ, NEQ, GT, LT, GTE, LTE, AND, OR, BIT_AND, BIT_OR, XOR};
+enum class BOp { PLUS, MUL, MINUS, DIV, EQ, NEQ, GT, LT, GTE, LTE, AND, OR/* TODO: , BIT_AND, BIT_OR, XOR */};
 
 
 class ConstInt : public Expr {
 public:
   constexpr explicit ConstInt(int n) : n_(n) {}
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
+  ExprType getType() const noexcept override { return ExprType::CONST_INT; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
 
 private:
   int n_;
@@ -153,8 +155,9 @@ private:
 class ConstBool : public Expr {
 public:
   constexpr explicit ConstBool(bool b) : b_(b) {}
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
+  ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
 
 private:
   bool b_;
@@ -164,8 +167,9 @@ private:
 class Var : public Expr {
 public:
   Var(const std::string& name);
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
+  ExprType getType() const noexcept override { return ExprType::VAR; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -177,9 +181,9 @@ private:
 class UnaryOp : public Expr {
 public:
   UnaryOp(ExprPtr&& e, UOp uOp);
-  virtual ExprType getType() const noexcept override { return ExprType::UOP; };
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;
+  ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
   void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
 private:
@@ -191,8 +195,9 @@ private:
 class BinaryOp : public Expr {
 public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
+  ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
   void asBool(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const override;
 
   const ExprPtr& getExpr1() const noexcept { return e1_; }
@@ -200,6 +205,7 @@ public:
   BOp getBOp() const noexcept { return bOp_; }
 
 private:
+  ExprInfo toImExprArith(im::BOp op);
   void asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const;
   void asBoolAnd(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
   void asBoolOr(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse) const;
@@ -209,11 +215,25 @@ private:
 };
 
 
+class TernaryOp : public Expr {
+public:
+  TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
+  ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
+
+private:
+  ExprPtr boolE_;
+  ExprPtr e1_;
+  ExprPtr e2_;
+};
+
+
 class CallExpr : public Expr {
 public:
   CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
-  ExprInfo toImExpr() const override;
-  im::ExprPtr toImExprAssert(const TypePtr& type) const override;;
+  ExprInfo toImExpr() override;
+  im::ExprPtr toImExprAssert(const Type& type) override;
 
 private:
   std::string name_;

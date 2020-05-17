@@ -1,6 +1,5 @@
 #include "src/language/language.hpp"
 #include "src/language/typecheck/context.hpp"
-#include "src/language/typecheck/type.hpp"
 #include "src/x86gen/instruction.hpp"
 
 using namespace std;
@@ -74,7 +73,7 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   // Ensure function was declared
   const Context::FnInfo& fnInfo = ctx.lookupFn(name_);
   // Ensure parameter types match and translate them to intermediate exprs
-  const vector<TypePtr>& paramTypes = fnInfo.paramTypes;
+  const vector<Type>& paramTypes = fnInfo.paramTypes;
   size_t numParams = params_.size();
   if (numParams != paramTypes.size()) {
     typeError("Wrong number of arguments for function: " + name_);
@@ -87,10 +86,10 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
 }
 
 void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  const TypePtr& retType = ctx.getReturnTy();
+  const Type& retType = ctx.getReturnTy();
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
-    if (retType->getType() != TypeName::VOID) {
+    if (retType.type != TypeName::VOID) {
       typeError("Should return void");
     }
     imStmts.emplace_back(new im::ReturnStmt(nullptr));
@@ -123,23 +122,69 @@ void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
 /************
  * toImExpr *
  ************/
-ExprInfo ConstInt::toImExpr() const {
-  return { make_unique<im::Const>(n_), make_unique<IntTy>() };
+ExprInfo ConstInt::toImExpr() {
+  return { make_unique<im::Const>(n_), intType };
 }
 
-ExprInfo ConstBool::toImExpr() const {
-  return { make_unique<im::Const>(b_), make_unique<BoolTy>() };
+ExprInfo ConstBool::toImExpr() {
+  return { make_unique<im::Const>(b_), boolType };
 }
 
-ExprInfo Var::toImExpr() const {
+ExprInfo Var::toImExpr() {
   const Context::VarInfo& varInfo = ctx.lookupVar(name_);
-  return { make_unique<im::Temp>(varInfo.temp), /* typeCopy */ };
+  return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
 }
+
+ExprInfo UnaryOp::toImExpr() {
+  switch (uOp_) {
+    case UOp::NOT:
+      // !b = b ^ 1
+      return { make_unique<im::BinOp>(e_->toImExprAssert(intType), im::Const(1), im::BOp::XOR), intType};
+    case UOp::NEG:
+      return { make_unique<im::BinOp>(im::Const(0), e_->toImExprAssert(boolType), im::BOp::MINUS), boolType};
+    default: throw invalid_argument("Unrecognized Uop");
+  }
+}
+
+ExprInfo BinaryOp::toImExpr() {
+  switch (bOp_) {
+    case BOp::PLUS: return toImExprArith(im::BOp::PLUS);
+    case BOp::MINUS: return toImExprArith(im::BOp::MINUS);
+    case BOp::MUL: return toImExprArith(im::BOp::MUL);
+    case BOp::DIV: return toImExprArith(im::BOp::DIV);
+    default:
+      return TernaryOp(
+          // TODO: If there's a memory error, could be here
+          make_unique<BinaryOp>(move(*this)),
+          make_unique<ConstBool>(true),
+          make_unique<ConstBool>(false)).toImExpr();
+  }
+}
+
+ExprInfo BinaryOp::toImExprArith(im::BOp op) {
+  return { make_unique<im::BinOp>(
+      e1_->toImExprAssert(intType),
+      e2_->toImExprAssert(intType),
+      op), intType };
+}
+
+
+
+
+im::ExprPtr Expr::toImExprAssert(const Type& type) {
+  ExprInfo exprInfo = toImExpr();
+  if (exprInfo.type != type) {
+    typeError("TODO: Add error message");
+  }
+  return move(exprInfo.imExpr);
+}
+
+
 
 
 void Expr::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse)const {
   imStmts.emplace_back(new im::CondJump(
-      toImExprAssert(make_unique<BoolTy>()),
+      toImExprAssert(boolType),
       make_unique<im::Const>(0),
       im::ROp::EQ,
       ifTrue,
@@ -170,8 +215,8 @@ void BinaryOp::asBool(vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFals
 
 void BinaryOp::asBoolComp(std::vector<im::StmtPtr>& imStmts, Label* ifTrue, Label* ifFalse, im::ROp rOp) const {
   // Make sure we are comparing two ints
-  im::ExprPtr imE1 = e1_->toImExprAssert(make_unique<IntTy>());
-  im::ExprPtr imE2 = e2_->toImExprAssert(make_unique<IntTy>());
+  im::ExprPtr imE1 = e1_->toImExprAssert(intType);
+  im::ExprPtr imE2 = e2_->toImExprAssert(intType);
   imStmts.emplace_back(new im::CondJump(move(imE1), move(imE2), rOp, ifTrue, ifFalse));
 }
 

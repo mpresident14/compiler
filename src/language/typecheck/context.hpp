@@ -10,13 +10,13 @@
 class Context {
 public:
   struct VarInfo {
-    TypePtr type;
+    Type type;
     int temp;
   };
 
   struct FnInfo {
-    std::vector<TypePtr> paramTypes;
-    TypePtr returnType;
+    std::vector<Type> paramTypes;
+    Type returnType;
   };
 
   Context() = default;
@@ -34,16 +34,16 @@ public:
     return fnMap_;
   }
 
-  const TypePtr& getReturnTy() const noexcept {
+  const Type& getReturnTy() const noexcept {
     return returnType_;
   }
 
-  int insertVar(const std::string& name, TypePtr&& type);
+  int insertVar(const std::string& name, const Type& type);
   const VarInfo& lookupVar(const std::string& name) const;
 
   void removeVar(const std::string& name);
 
-  void insertFn(const std::string& name, std::vector<TypePtr>&& paramTypes, TypePtr&& returnType);
+  void insertFn(const std::string& name, std::vector<Type>&& paramTypes, const Type& returnType);
   const FnInfo& lookupFn(const std::string& name) const;
 
 
@@ -51,7 +51,7 @@ public:
 private:
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_map<std::string, FnInfo> fnMap_;
-  TypePtr returnType_;
+  Type returnType_;
 };
 
 #endif // CONTEXT_HPP
