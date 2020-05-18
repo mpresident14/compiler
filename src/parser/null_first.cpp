@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 namespace {
   using namespace std;
@@ -64,9 +65,10 @@ namespace {
       for (size_t i = 0; i < numVariables; ++i) {
         const UnionEquation& unionEq = equations[i];
         // Take union of all the bitsets
+        // TODO: Don't need to orEqual the token set every time
         BitSetToks newValue = unionEq.tokenSet;
-        for (const BitSetToks* bitset : unionEq.bitSetTokRefs) {
-          bitOrEquals(newValue, *bitset);
+        for (const BitSetToks* bitsetRef : unionEq.bitSetTokRefs) {
+          bitOrEquals(newValue, *bitsetRef);
         }
         if (newValue != firsts[i]) {
           firsts[i] = move(newValue);
@@ -115,7 +117,18 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
   return nullabilities;
 }
 
-std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
+void printNullabilities(std::ostream& out, const BitSetVars& nullabilities, const GrammarData& gd) {
+  vector<string> nullVarNames;
+  for (size_t j = 0; j < nullabilities.size(); ++j) {
+    if (nullabilities[j]) {
+      nullVarNames.push_back(gd.variables[j].name);
+    }
+  }
+  out << "NULLABILITIES:\n\n" << nullVarNames << "\n\n";
+}
+
+std::pair<std::vector<bool>, std::vector<std::vector<bool>>>
+getNullsAndFirsts(const GrammarData& grammarData) {
   using namespace std;
   using BitSetVars = vector<bool>;
   using BitSetToks = vector<bool>;
@@ -139,11 +152,14 @@ std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
 
   BitSetVars nullabilities = getNullabilities(grammarData);
 
+  ofstream desktop("/home/mpresident/Desktop/parse_nulls.log");
+  printNullabilities(desktop, nullabilities, grammarData);
+
   for (size_t var = 0; var < numVars; ++var) {
     UnionEquation& unionEq = equations[var];
     for (int concreteType : grammarData.variables[var].concreteTypes) {
       for (int rhsSymbol : grammarData.concretes[concreteType].argSymbols) {
-        // Tokens are never nullable, so first can only be the token
+        // Tokens are never nullable, so nothing beyond it can be first
         if (isToken(rhsSymbol)) {
           unionEq.tokenSet[tokenToFromIndex(rhsSymbol)] = true;
           break;
@@ -160,7 +176,7 @@ std::vector<std::vector<bool>> getFirsts(const GrammarData& grammarData) {
   }
 
   computeFirsts(firsts, equations);
-  return firsts;
+  return { move(nullabilities), move(firsts) };
 }
 
 void bitOrEquals(vector<bool>& bits, const vector<bool>& other) {

@@ -38,14 +38,14 @@ im::Program Program::toImProg() const {
 Func::Func(
     Type returnType,
     const string& name,
-    vector<pair<string, Type>>&& params,
+    vector<pair<Type, string>>&& params,
     unique_ptr<Block>&& body)
     : returnType_(returnType), name_(name), body_(move(body)) {
-  paramNames_.reserve(params.size());
   paramTypes_.reserve(params.size());
+  paramNames_.reserve(params.size());
   for (const auto& param : params) {
-    paramNames_.push_back(param.first);
-    paramTypes_.push_back(param.second);
+    paramTypes_.push_back(param.first);
+    paramNames_.push_back(param.second);
   }
 }
 

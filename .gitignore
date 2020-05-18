@@ -49,5 +49,5 @@ src/parser/regex_parser_backup.cpp
 src/parser/regex_parser_backup.hpp
 
 # Register allocation
-prez.s
-prez
+*.s
+*.prez

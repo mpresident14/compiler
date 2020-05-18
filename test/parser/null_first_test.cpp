@@ -32,7 +32,7 @@ void testGetFirsts() {
   vector<bool> expectedX = { false, false, true, false };
   vector<bool> expectedY = { false, true, false, true };
 
-  vector<vector<bool>> actual = getFirsts(GRAMMAR_DATA);
+  vector<vector<bool>> actual = getNullsAndFirsts(GRAMMAR_DATA).second;
   TESTER.assertEquals(expectedS, actual[S]);
   TESTER.assertEquals(expectedC, actual[C]);
   TESTER.assertEquals(expectedX, actual[X]);

@@ -35,7 +35,7 @@ namespace language {
     UNARY_OP,
     BINARY_OP,
     TERNARY_OP,
-    CALL
+    CALL_EXPR
   };
 
   struct ExprInfo {
@@ -81,7 +81,7 @@ namespace language {
     Func(
         Type returnType,
         const std::string& name,
-        std::vector<std::pair<std::string, Type>>&& params,
+        std::vector<std::pair<Type, std::string>>&& params,
         std::unique_ptr<Block>&& body);
     void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
     void addToContext(Context& ctx) const override;
@@ -301,6 +301,7 @@ namespace language {
   class CallExpr : public Expr {
   public:
     CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
+    ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
     ExprInfo toImExpr() override;
 
   private:

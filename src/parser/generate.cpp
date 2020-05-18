@@ -243,7 +243,7 @@ namespace {
 
   void startDecl(ostream& out, const GrammarData& grammarData) {
     const char decl[] = R"(struct Start {
-      Start(#0 r) : r_(r) {}
+      Start(#0&& r) : r_(move(r)) {}
       #0 r_;
     };
     )";
@@ -625,7 +625,7 @@ namespace {
         }
 
         Start* start = static_cast<Start*>(stk[0].releaseObj());
-        return start->r_;
+        return move(start->r_);
       }
     )";
   }

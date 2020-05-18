@@ -3,6 +3,7 @@
 #include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/assembly.hpp"
 #include "src/assembly/temp.hpp"
+#include "src/main/parser.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -10,8 +11,7 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-using namespace im;
+// using namespace std;
 namespace lg = language;
 
 // int main() {
@@ -49,23 +49,32 @@ namespace lg = language;
 //   fn.toCode(asmFile);
 // }
 
-void compile(const language::Program& prog, const string& fileName) {
+void compile(const lg::Program& prog, const std::string& fileName) {
   prog.toImProg().toAssemProg().toCode(fileName);
 }
 
 
+// int main() {
+//   vector<lg::StmtPtr> stmts;
+//   stmts.emplace_back(new lg::VarDecl(intType, "n", make_unique<lg::ConstInt>(1)));
+//   stmts.emplace_back(new lg::VarDecl(intType, "m", make_unique<lg::ConstInt>(2)));
+
+//   vector<lg::DeclPtr> decls;
+//   decls.emplace_back(new lg::Func(
+//     voidType,
+//     "f",
+//     std::vector<std::pair<std::string, Type>>(),
+//     unique_ptr<lg::Block>(new lg::Block(move(stmts)))));
+
+//   lg::Program prog(move(decls));
+//   compile(prog, "prez.s");
+// }
+
 int main() {
-  vector<lg::StmtPtr> stmts;
-  stmts.emplace_back(new lg::VarDecl(intType, "n", make_unique<lg::ConstInt>(1)));
-  stmts.emplace_back(new lg::VarDecl(intType, "m", make_unique<lg::ConstInt>(2)));
-
-  vector<lg::DeclPtr> decls;
-  decls.emplace_back(new lg::Func(
-    voidType,
-    "f",
-    std::vector<std::pair<std::string, Type>>(),
-    unique_ptr<lg::Block>(new lg::Block(move(stmts)))));
-
-  lg::Program prog(move(decls));
-  compile(prog, "prez.s");
+  std::ifstream in("/home/mpresident/cs/compiler/src/main/test.prez");
+  if (!in.is_open()) {
+    throw std::invalid_argument("File isn't open you dope");
+  }
+  language::Program prog = parser::parse(in);
+  compile(prog, "/home/mpresident/cs/compiler/src/main/test.s");
 }

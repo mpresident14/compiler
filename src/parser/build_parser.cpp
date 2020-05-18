@@ -10,12 +10,14 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <fstream>
 
 #include <prez/print_stuff.hpp>
 
 using namespace std;
 using DFA_t = DFA<DFARuleSet, int, DFARuleSetHash>;
 using BitSetToks = vector<bool>;
+using BitSetVar = vector<bool>;
 
 namespace {
 
@@ -34,6 +36,7 @@ namespace {
       queue<DFARule>& ruleQueue,
       const DFARule& fromRule,
       const GrammarData& grammarData,
+      const BitSetVar& nulls,
       const vector<BitSetToks>& firsts) {
     // Nothing to expand if we are at the end of the rule or if the next symbol
     // is a token
@@ -42,17 +45,42 @@ namespace {
       return;
     }
 
-    // Construct the new lookahead set, starting with the lookahead set of
-    // the rule from which we are expanding
-    BitSetToks newLookahead = fromRule.lookahead;
-    int nextNextSymbol = fromRule.nextNextSymbol();
-    if (nextNextSymbol != NONE) {
-      // FIRST() of a token is just the token
-      if (isToken(nextNextSymbol)) {
-        newLookahead[tokenToFromIndex(nextNextSymbol)] = true;
-      } else {  // Union with the first of the nextNextSymbol
-        bitOrEquals(newLookahead, firsts[nextNextSymbol]);
+    // If the next variable is nullable, we need to consider the possibility
+    // that we are on the nextNext variable
+    if (nulls[nextSymbol]) {
+      addRhses(ruleQueue, fromRule.nextStep(), grammarData, nulls, firsts);
+    }
+
+    // Construct the lookahead set for the new rules
+    BitSetToks newLookahead(grammarData.tokens.size());
+    // Start at the nextNextSymbol
+    size_t i = fromRule.pos + 1;
+    size_t ruleSize = fromRule.symbols.size();
+    while (true) {
+      // If we reached the end of the rule, then our lookahead set must
+      // include the fromRule's lookahead set.
+      if (i == ruleSize) {
+        bitOrEquals(newLookahead, fromRule.lookahead);
+        break;
       }
+
+      int symbol = fromRule.symbols[i];
+
+      // Tokens are never nullable, so add it to the lookahead set and stop
+      if (isToken(symbol)) {
+        newLookahead[tokenToFromIndex(symbol)] = true;
+        break;
+      }
+
+      // Add FIRSTS(var) to the lookahead
+      bitOrEquals(newLookahead, firsts[symbol]);
+      // If this variable is nullable, we need to continue through the rule
+      // to see what other tokens could potentially come after this rule
+      if (!nulls[symbol]) {
+        break;
+      }
+
+      ++i;
     }
 
     for (int concreteType : grammarData.variables[nextSymbol].concreteTypes) {
@@ -68,12 +96,14 @@ namespace {
   void epsilonTransition(
       DFARuleSet& ruleSet,
       const GrammarData& grammarData,
+      const BitSetVar& nulls,
       const vector<BitSetToks>& firsts) {
     queue<DFARule> ruleQueue;
 
     // Expand variables (epsilon transition) in the initial set of rules.
     for (const DFARule& rule : ruleSet) {
-      addRhses(ruleQueue, rule, grammarData, firsts);
+      // TODO: Could be adding duplicate epsilon transitions here
+      addRhses(ruleQueue, rule, grammarData, nulls, firsts);
     }
 
     // Keep expanding variables (epsilon transition) until we've determined all
@@ -81,27 +111,29 @@ namespace {
     while (!ruleQueue.empty()) {
       DFARule& rule = ruleQueue.front();
       auto iter = ruleSet.find(rule);
-      // If rule is not yet in the set, add it
-      // NOTE: We could check for duplicate rules in the queue as well (like
+      // If rule is not yet in the set, add it.
+      // TODO: We could check for duplicate rules in the queue as well (like
       // use a set and just pop with set.begin()), but this would incur a large
       // penalty for every add to the queue. I don't think the tradeoff would be
       // worth it.
       if (iter == ruleSet.end()) {
-        addRhses(ruleQueue, rule, grammarData, firsts);
+        addRhses(ruleQueue, rule, grammarData, nulls, firsts);
         ruleSet.insert(move(rule));
-        ruleQueue.pop();
+        ruleQueue.pop();// TODO: Pop right away
         continue;
       }
 
-      // If rule is already in the set, check to see if the new rule has any new
-      // members its lookahead set. If so, replace existing rule with new one.
+      // TODO: All these bitOrs are really slow, does boost have a library
+      // that has a better vector<bool> class?
+
+      // If rule is already in the set, union their lookahead sets.
+      // If the new rule had any new members in its lookahead set, we need
+      // to epsilon-transition from the unioned rule.
       const DFARule& existingRule = *iter;
       BitSetToks unionToks = bitOr(rule.lookahead, existingRule.lookahead);
       if (existingRule.lookahead != unionToks) {
         existingRule.lookahead = move(unionToks);
-        // Only add RHSes if we insert the rule into the set because everything
-        // in the set has already been expanded
-        addRhses(ruleQueue, rule, grammarData, firsts);
+        addRhses(ruleQueue, existingRule, grammarData, nulls, firsts);
       }
 
       ruleQueue.pop();
@@ -114,6 +146,7 @@ namespace {
       DFA_t& dfa,
       DFA_t::Node* node,
       const GrammarData& grammarData,
+      const BitSetVar& nulls,
       const vector<BitSetToks>& firsts) {
     // Get all the valid transition symbols and map each of them to a new set of
     // rules
@@ -137,7 +170,7 @@ namespace {
       if (transitionRules.empty()) {
         continue;
       }
-      epsilonTransition(transitionRules, grammarData, firsts);
+      epsilonTransition(transitionRules, grammarData, nulls, firsts);
       DFA_t::Node* newNode = dfa.addTransition(
           node, indexToSymbol(i, numVars), move(transitionRules));
       if (newNode) {
@@ -150,22 +183,44 @@ namespace {
   /* Constructs the starting node of the DFA */
   DFA_t initDFA(
       const GrammarData& grammarData,
+      const BitSetVar& nulls,
       const vector<BitSetToks>& firsts) {
     int rootType = grammarData.variables[S].concreteTypes[0];
     DFARuleSet firstSet = { DFARule{ SCONC,
                                      grammarData.concretes[rootType].argSymbols,
                                      0,
                                      BitSetToks(grammarData.tokens.size()) } };
-    epsilonTransition(firstSet, grammarData, firsts);
+    epsilonTransition(firstSet, grammarData, nulls, firsts);
     DFA_t dfa(move(firstSet));
     return dfa;
   }
 }  // namespace
 
+
+// TODO: Integrate this
+void printFirsts(std::ostream& out, const vector<BitSetToks>& firsts, const GrammarData& gd) {
+  out << "FIRSTS" << endl;
+  for (size_t i = 0; i < firsts.size(); ++i) {
+    vector<string> lookaheadNames;
+    for (size_t j = 0; j < firsts[i].size(); ++j) {
+      if (firsts[i][j]) {
+        lookaheadNames.push_back(gd.tokens[j].name);
+      }
+    }
+    out << gd.variables[i].name << ": " << lookaheadNames << "\n\n";
+  }
+}
+
+
 /* Build the DFA */
 DFA_t buildParserDFA(const GrammarData& grammarData) {
-  vector<BitSetToks> firsts = getFirsts(grammarData);
-  DFA_t dfa = initDFA(grammarData, firsts);
+  auto nullFirstsPair = getNullsAndFirsts(grammarData);
+  const vector<BitSetToks>& firsts = nullFirstsPair.second;
+  const BitSetVar& nulls = nullFirstsPair.first;
+  ofstream desktop("/home/mpresident/Desktop/parse_firsts.log");
+  // TODO: Print nulls here in same file
+  printFirsts(desktop, firsts, grammarData);
+  DFA_t dfa = initDFA(grammarData, nulls, firsts);
   queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
@@ -173,7 +228,7 @@ DFA_t buildParserDFA(const GrammarData& grammarData) {
     DFA_t::Node* node = q.front();
     q.pop();
     vector<DFA_t::Node*> addedNodes =
-        createTransitions(dfa, node, grammarData, firsts);
+        createTransitions(dfa, node, grammarData, nulls, firsts);
     for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
@@ -356,9 +411,46 @@ namespace {
   }
 }  // namespace
 
+
+// TODO: Integrate this more nicely and add transitions
+void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
+  using Node = DFA_t::Node;
+
+  unordered_map<const Node*, size_t> nodeNumMap;
+
+  std::queue<const Node*> q;
+  q.push(dfa.getRoot());
+  std::unordered_set<const Node*> visited = { dfa.getRoot() };
+  size_t stateNum = 0;
+  nodeNumMap.emplace(dfa.getRoot(), stateNum++);
+  while (!q.empty()) {
+    const Node* node = q.front();
+    q.pop();
+    out << "--------------\n";
+    out << "STATE " << nodeNumMap.at(node) << '\n';
+    out << "--------------\n";
+    for (const DFARule& rule : node->getValue()) {
+      streamRule(out, rule, gd);
+      out << "\n\n";
+    }
+    out << '\n';
+    for (const auto& [trans, successor] : node->getTransitions()) {
+      if (!visited.contains(successor)) {
+        nodeNumMap.emplace(successor, stateNum++);
+        q.push(successor);
+        visited.insert(successor);
+      }
+      out << '[' << symbolToString(trans, gd) << "] -> State " << nodeNumMap.at(successor) << '\n';
+    }
+    out << "\n\n";
+  }
+}
+
 void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
-  buildParserDFA(grammarData)
-      .streamAsCode(
+  auto dfa = buildParserDFA(grammarData);
+  ofstream desktop("/home/mpresident/Desktop/parse.log");
+  printDfa(desktop, dfa, grammarData);
+      dfa.streamAsCode(
           out,
           "RuleData",
           "int",

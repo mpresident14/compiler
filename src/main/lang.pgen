@@ -12,6 +12,13 @@
 
   using namespace std;
   using namespace language;
+
+  template<typename T>
+  vector<T> singletonVec(T&& item) {
+    vector<T> v;
+    v.push_back(move(item));
+    return v;
+  }
 %
 
 
@@ -42,6 +49,7 @@ BANG        "!"
 SEMI        ";"
 COMMA       ","
 COLON       ":"
+QMARK       "\?"
 EQ          "="
 
 LBRACE      "{"
@@ -56,41 +64,101 @@ VOID        "void"
 INT         "int"
 BOOL        "bool"
 
-INT         "[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
+NUM         "[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*" -> { string } % #str %
 
 #prec
+
+// Not an actual operator, just so that
+// we can push_back instead of push_front
+// for Params and Exprs
+COMMA                   #left
+REDUCE                  #left
+
+QMARK                   #right
 OR                      #left
 AND                     #left
 EQEQ NEQ LT GT LTE GTE  #nonassoc
 PLUS MINUS              #left
 STAR FSLASH             #left
-UNARY_MINUS BANG        #nonassoc
+UMINUS BANG        #nonassoc
 
 
 #grammar
 
-Program -> { Program }
+Program -> { language::Program }
   := Decls  % Program(move(#0)) %
 
 Decls -> { vector<DeclPtr> }
-  :=             % {} %
-   | Decls Decl  % (#0.push_back(move(#1)), #0) %
+  :=             % vector<DeclPtr>() %
+   | Decl        % singletonVec(move(#0)) %
+   | Decls Decl  % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
-  := Type IDENT Params Block    % make_unique<Func>(#0, #1, move(#2), move(#3)) %
+  := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(#0, #1, move(#3), move(#5)) %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1)) %
 
 Stmts -> { vector<StmtPtr> }
-  :=               % {} %
-   | Stmts Stmt    % (#0.push_back(move(#1)), #0) %
+  :=               % vector<StmtPtr>() %
+   | Stmt          % singletonVec(move(#0)) %
+   | Stmts Stmt    % (#0.push_back(move(#1)), move(#0)) %
 
 Stmt -> { StmtPtr }
   := IF LPAREN Expr RPAREN Block              % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>())) %
    | IF LPAREN Expr RPAREN Block ELSE Stmt    % make_unique<If>(move(#2), move(#4), move(#6)) %
-   | WHILE LPAREN Expr RPAREN Block           % make_unique<While>(move(#2), move(#4))
-   | IDENT LPAREN Params RPAREN               % make_unique<CallExpr>(#0, move(#2)) %
+   | WHILE LPAREN Expr RPAREN Block           % make_unique<While>(move(#2), move(#4)) %
+   | IDENT LPAREN Exprs RPAREN SEMI           % make_unique<CallStmt>(#0, move(#2)) %
    | RETURN SEMI                              % make_unique<Return>(optional<ExprPtr>()) %
-   | RETURN EXPR SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1))) %
+   | RETURN Expr SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1))) %
+   | LValue EQ Expr SEMI                      % make_unique<Assign>(move(#0), move(#2)) %
+   | Type IDENT EQ Expr SEMI                  % make_unique<VarDecl>(#0, #1, move(#3)) %
+
+Expr -> { ExprPtr }
+  := NUM                                      % make_unique<ConstInt>(#0) %
+   | TRUE                                     % make_unique<ConstBool>(true) %
+   | FALSE                                    % make_unique<ConstBool>(false) %
+   | MINUS Expr   #prec UMINUS                % make_unique<UnaryOp>(move(#1), UOp::NEG) %
+   | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT) %
+   | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
+   | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
+   | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
+   | Expr FSLASH Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
+   | Expr AND Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
+   | Expr OR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
+   | Expr EQEQ Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %
+   | Expr NEQ Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::NEQ) %
+   | Expr LT Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::LT) %
+   | Expr GT Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::GT) %
+   | Expr LTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
+   | Expr GTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
+   | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
+   | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(#0, move(#2)) %
+
+LValue -> { ExprPtr }
+  := IDENT   % make_unique<Var>(#0) %
+
+Exprs -> { vector<ExprPtr> }
+  :=          % vector<ExprPtr>() %
+   | Exprz    % move(#0) %
+
+Exprz -> { vector<ExprPtr> }
+  := Expr                           % singletonVec<ExprPtr>(move(#0)) %
+   | Exprz COMMA Expr               % (#0.push_back(move(#2)), move(#0)) %
+
+Params -> { vector<pair<Type, string>> }
+  :=          % vector<pair<Type, string>>() %
+   | Paramz   % move(#0) %
+
+Paramz -> { vector<pair<Type, string>> }
+  := Param                            % singletonVec<pair<Type, string>>(move(#0)) %
+   | Paramz COMMA Param               % (#0.push_back(move(#2)), move(#0)) %
+
+Param -> { pair<Type, string> }
+  := Type IDENT         % { #0, #1 } %
+
+Type -> { Type }
+  := INT   % intType %
+   | BOOL  % boolType %
+   | VOID  % voidType %

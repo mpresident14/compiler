@@ -40,5 +40,5 @@ Expr -> {Expr*} % delete #obj; %
    | MINUS Expr #prec TILDE    % new EUOp(#1, NEG) %
    | ParenExpr                 % #0 %
 
-ParenExpr -> {Expr*}
+ParenExpr -> {Expr*} % delete #obj; %
   := LPAREN Expr RPAREN        % #1 %
