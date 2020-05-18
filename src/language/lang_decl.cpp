@@ -51,6 +51,8 @@ Func::Func(
 
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
+  ctx.setCurrentFn(name_);
+  ctx.setReturnTy(returnType_);
   // Insert all the parameters as variables
   size_t numParams = paramTypes_.size();
   for (size_t i = 0; i < numParams; ++i) {

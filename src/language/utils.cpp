@@ -2,6 +2,8 @@
 
 using namespace std;
 
+// TODO(everywhere): Provide more informative errors and with line #s
+
 namespace language {
 
 Context& ctx = Context::getContext();

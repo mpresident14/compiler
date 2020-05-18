@@ -39,6 +39,9 @@ public:
     return fnMap_;
   }
 
+  void setCurrentFn(const std::string& fnName) { currentFn_ = fnName; }
+  void setReturnTy(const Type& type) { returnType_ = type; }
+  const std::string& getCurrentFn() const noexcept { return currentFn_; }
   const Type& getReturnTy() const noexcept { return returnType_; }
 
   int insertVar(const std::string& name, const Type& type);
@@ -64,6 +67,7 @@ private:
    */
   // std::unordered_map<int, Type> tempMap_;
   std::unordered_map<std::string, FnInfo> fnMap_;
+  std::string currentFn_;
   Type returnType_;
 };
 

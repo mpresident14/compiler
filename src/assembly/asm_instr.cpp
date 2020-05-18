@@ -188,7 +188,7 @@ void Operation::toCode(
 
 // NOTE: Function::regAlloc handles the stack deallocation
 void Return::toCode(ostream& out, const unordered_map<int, size_t>&) const {
-  out << "retq" << endl;
+  out << "\tretq" << endl;
 }
 /************
  * toStream *
