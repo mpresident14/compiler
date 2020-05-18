@@ -37,7 +37,7 @@ public:
 class Decl {
 public:
   virtual ~Decl() {}
-  virtual void toCode(std::ostream& out);
+  virtual void toCode(std::ostream& out) = 0;
 private:
   std::vector<InstrPtr> instrs_;
 };
@@ -47,12 +47,11 @@ using DeclPtr = std::unique_ptr<Decl>;
 
 class Program {
 public:
-  Program(const std::string& name, std::vector<DeclPtr>&& decls);
-  void toCode();
+  Program(std::vector<DeclPtr>&& decls);
+  void toCode(const std::string& fileName);
 
 private:
-  std::string fileName_;
-  std::vector<DeclPtr> decls;
+  std::vector<DeclPtr> decls_;
 };
 
 /********

@@ -2,13 +2,21 @@
 
 using namespace std;
 
+namespace {
+  Context& ctx = Context::getContext();
+}
+
 namespace language {
 
+/***********
+ * Program *
+ ***********/
 
-Context& ctx = Context::getContext();
+Program::Program(vector<DeclPtr>&& decls)
+    : decls_(move(decls)) {}
 
 
-im::Program Program::toImStmts() const {
+im::Program Program::toImProg() const {
   // First go through all the declarations and add them to the context so that
   // we don't have to support forward declarations.
   for (const DeclPtr& decl : decls_) {
@@ -19,11 +27,30 @@ im::Program Program::toImStmts() const {
   for (const DeclPtr& decl : decls_) {
     decl->toImDecls(imDecls);
   }
-  return im::Program(name_, move(imDecls));
+  return im::Program(move(imDecls));
 }
 
 
-void Func::toImDecls(std::vector<im::DeclPtr>& imDecls) const {
+/********
+ * Func *
+ ********/
+
+Func::Func(
+    Type returnType,
+    const string& name,
+    vector<pair<string, Type>>&& params,
+    unique_ptr<Block>&& body)
+    : returnType_(returnType), name_(name), body_(move(body)) {
+  paramNames_.reserve(params.size());
+  paramTypes_.reserve(params.size());
+  for (const auto& param : params) {
+    paramNames_.push_back(param.first);
+    paramTypes_.push_back(param.second);
+  }
+}
+
+
+void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
   // Insert all the parameters as variables
   size_t numParams = paramTypes_.size();
   for (size_t i = 0; i < numParams; ++i) {
@@ -36,7 +63,7 @@ void Func::toImDecls(std::vector<im::DeclPtr>& imDecls) const {
   for (const string& param : paramNames_) {
     ctx.removeVar(param);
   }
-  imDecls.emplace_back(new im::Func(move(imStmts)));
+  imDecls.emplace_back(new im::Func(name_, move(imStmts)));
 }
 
 void Func::addToContext(Context& ctx) const {
@@ -44,4 +71,4 @@ void Func::addToContext(Context& ctx) const {
 }
 
 
-}
+}  // namespace language

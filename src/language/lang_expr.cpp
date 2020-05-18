@@ -5,48 +5,80 @@
 
 using namespace std;
 
+namespace {
+  Context& ctx = Context::getContext();
+}
+
 namespace language {
 
-  Context& ctx = Context::getContext();
-
-
   /************
-   * toImExpr *
+   * ConstInt *
    ************/
   ExprInfo ConstInt::toImExpr() {
     return { make_unique<im::Const>(n_), intType };
   }
 
+  /*************
+   * ConstBool *
+   *************/
   ExprInfo ConstBool::toImExpr() {
     return { make_unique<im::Const>(b_), boolType };
   }
+
+  /*******
+   * Var *
+   *******/
+
+  Var::Var(const std::string& name)
+      : name_(name) {}
 
   ExprInfo Var::toImExpr() {
     const Context::VarInfo& varInfo = ctx.lookupVar(name_);
     return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
   }
 
-  // ExprInfo Temp::toImExpr() {
-  //   return { make_unique<im::Temp>(temp_), ctx.lookupTemp(temp_) };
-  // }
+  /***********
+   * UnaryOp *
+   ***********/
+
+  UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp)
+      : e_(move(e)), uOp_(uOp) {}
 
   ExprInfo UnaryOp::toImExpr() {
     switch (uOp_) {
       case UOp::NOT:
         // !b = b ^ 1
         return { make_unique<im::BinOp>(
-                     e_->toImExprAssert(intType), im::Const(1), im::BOp::XOR),
+                     e_->toImExprAssert(intType), make_unique<im::Const>(1), im::BOp::XOR),
                  intType };
       case UOp::NEG:
         return {
           make_unique<im::BinOp>(
-              im::Const(0), e_->toImExprAssert(boolType), im::BOp::MINUS),
+              make_unique<im::Const>(0), e_->toImExprAssert(boolType), im::BOp::MINUS),
           boolType
         };
       default:
         throw invalid_argument("Unrecognized Uop");
     }
   }
+
+  void UnaryOp::asBool(
+      std::vector<im::StmtPtr>& imStmts,
+      assem::Label* ifTrue,
+      assem::Label* ifFalse) {
+    // Only valid for NOT
+    if (uOp_ == UOp::NEG) {
+      typeError("- cannot be interpreted as a boolean");
+    }
+    return e_->asBool(imStmts, ifFalse, ifTrue);
+  }
+
+
+  /************
+   * BinaryOp *
+   ************/
+  BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp)
+      : e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
 
   ExprInfo BinaryOp::toImExpr() {
     switch (bOp_) {
@@ -74,83 +106,6 @@ namespace language {
           e1_->toImExprAssert(intType), e2_->toImExprAssert(intType), op),
       intType
     };
-  }
-
-
-  /* This is really similar to If, but using If directy would force use to
-   * use a Temp and also do typechecking twice for one of the expressions */
-  ExprInfo TernaryOp::toImExpr() {
-    // Make sure expressions are the same type
-    ExprInfo exprInfo = e1_->toImExpr();
-    im::ExprPtr imExpr2 = e2_->toImExprAssert(exprInfo.type);
-
-    unique_ptr<im::MakeLabel> mkIfLabel =
-        make_unique<im::MakeLabel>(newLabel());
-    unique_ptr<im::MakeLabel> mkElseLabel =
-        make_unique<im::MakeLabel>(newLabel());
-    unique_ptr<im::MakeLabel> mkDoneLabel =
-        make_unique<im::MakeLabel>(newLabel());
-
-    int temp = newTemp();
-    vector<im::StmtPtr> imStmts;
-
-    boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
-    imStmts.emplace_back(move(mkElseLabel));
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
-    imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
-    imStmts.emplace_back(move(mkIfLabel));
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
-    imStmts.emplace_back(move(mkDoneLabel));
-    return { make_unique<im::DoThenEval>(
-                 move(imStmts), make_unique<im::Temp>(temp)),
-             exprInfo.type };
-  }
-
-  ExprInfo CallExpr::toImExpr() {
-    pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_);
-    return {
-        make_unique<im::CallExpr>(
-            make_unique<im::LabelAddr>(name_),
-            move(argCodes.first),
-            argCodes.second != voidType),
-        argCodes.second};
-  }
-
-
-
-
-
-  im::ExprPtr Expr::toImExprAssert(const Type& type) {
-    ExprInfo exprInfo = toImExpr();
-    // TODO: Use isConvertible here later
-    if (exprInfo.type != type) {
-      typeError("TODO: Add error message");
-    }
-    return move(exprInfo.imExpr);
-  }
-
-
-  void
-  Expr::asBool(vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse) {
-    imStmts.emplace_back(new im::CondJump(
-        toImExprAssert(boolType),
-        make_unique<im::Const>(0),
-        im::ROp::EQ,
-        ifTrue,
-        ifFalse));
-  }
-
-  void UnaryOp::asBool(
-      std::vector<im::StmtPtr>& imStmts,
-      assem::Label* ifTrue,
-      assem::Label* ifFalse) {
-    // Only valid for NOT
-    if (uOp_ == UOp::NEG) {
-      typeError("- cannot be interpreted as a boolean");
-    }
-    return e_->asBool(imStmts, ifFalse, ifTrue);
   }
 
   void BinaryOp::asBool(
@@ -214,5 +169,87 @@ namespace language {
     imStmts.emplace_back(move(mkMidLabel));
     e2_->asBool(imStmts, ifTrue, ifFalse);
   }
+
+
+  /*************
+   * TernaryOp *
+   *************/
+  TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
+      : boolE_(move(boolE)), e1_(move(e1)), e2_(move(e2)) {}
+
+  /* This is really similar to If, but using If directy would force use to
+   * use a Temp and also do typechecking twice for one of the expressions */
+  ExprInfo TernaryOp::toImExpr() {
+    // Make sure expressions are the same type
+    ExprInfo exprInfo = e1_->toImExpr();
+    im::ExprPtr imExpr2 = e2_->toImExprAssert(exprInfo.type);
+
+    unique_ptr<im::MakeLabel> mkIfLabel =
+        make_unique<im::MakeLabel>(newLabel());
+    unique_ptr<im::MakeLabel> mkElseLabel =
+        make_unique<im::MakeLabel>(newLabel());
+    unique_ptr<im::MakeLabel> mkDoneLabel =
+        make_unique<im::MakeLabel>(newLabel());
+
+    int temp = newTemp();
+    vector<im::StmtPtr> imStmts;
+
+    boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
+    imStmts.emplace_back(move(mkElseLabel));
+    imStmts.emplace_back(
+        new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
+    imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
+    imStmts.emplace_back(move(mkIfLabel));
+    imStmts.emplace_back(
+        new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
+    imStmts.emplace_back(move(mkDoneLabel));
+    return { make_unique<im::DoThenEval>(
+                 move(imStmts), make_unique<im::Temp>(temp)),
+             exprInfo.type };
+  }
+
+
+  /************
+   * CallExpr *
+   ************/
+
+  CallExpr::CallExpr(const std::string& name, std::vector<ExprPtr>&& params)
+      : name_(name), params_(move(params)) {}
+
+  ExprInfo CallExpr::toImExpr() {
+    pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_);
+    return {
+        make_unique<im::CallExpr>(
+            make_unique<im::LabelAddr>(name_),
+            move(argCodes.first),
+            argCodes.second != voidType),
+        argCodes.second};
+  }
+
+
+  /********
+   * Expr *
+   ********/
+
+  im::ExprPtr Expr::toImExprAssert(const Type& type) {
+    ExprInfo exprInfo = toImExpr();
+    // TODO: Use isConvertible here later
+    if (exprInfo.type != type) {
+      typeError("TODO: Add error message");
+    }
+    return move(exprInfo.imExpr);
+  }
+
+
+  void
+  Expr::asBool(vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse) {
+    imStmts.emplace_back(new im::CondJump(
+        toImExprAssert(boolType),
+        make_unique<im::Const>(0),
+        im::ROp::EQ,
+        ifTrue,
+        ifFalse));
+  }
+
 
 }  // namespace language

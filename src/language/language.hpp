@@ -49,11 +49,12 @@ namespace language {
     virtual ExprType getType() const noexcept = 0;
 
     virtual ExprInfo toImExpr() = 0;
-    virtual im::ExprPtr toImExprAssert(const Type& type);
     /* If this typechecks to a bool, add statements to jump to ifTrue it
      * evaluates to true and ifFalse if it evaluates to false. */
     virtual void
     asBool(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
+
+    im::ExprPtr toImExprAssert(const Type& type);
   };
 
   using ExprPtr = std::unique_ptr<Expr>;
@@ -67,11 +68,10 @@ namespace language {
 
   class Program {
   public:
-    Program(const std::string& name, std::vector<DeclPtr>&& decls);
-    im::Program toImStmts() const;
+    Program(std::vector<DeclPtr>&& decls);
+    im::Program toImProg() const;
 
   private:
-    std::string name_;
     std::vector<DeclPtr> decls_;
   };
 
@@ -110,7 +110,7 @@ namespace language {
 
   class If : public Stmt {
   public:
-    If(ExprPtr&& boolE, StmtPtr&& ifE, std::unique_ptr<Block>&& elseE);
+    If(ExprPtr&& boolE, std::vector<StmtPtr>&& ifE, std::vector<StmtPtr>&& elseE);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -204,7 +204,6 @@ namespace language {
     constexpr explicit ConstInt(int n) : n_(n) {}
     ExprType getType() const noexcept override { return ExprType::CONST_INT; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
 
   private:
     int n_;
@@ -216,7 +215,6 @@ namespace language {
     constexpr explicit ConstBool(bool b) : b_(b) {}
     ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
 
   private:
     bool b_;
@@ -229,7 +227,6 @@ namespace language {
     Var(const std::string& name);
     ExprType getType() const noexcept override { return ExprType::VAR; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
 
     const std::string& getName() const noexcept { return name_; }
 
@@ -238,26 +235,13 @@ namespace language {
   };
 
 
-  /* Temporary created by me for convenience. */
-  // class Temp : public Expr {
-  // public:
-  //   explicit constexpr Temp(int temp) : temp_(temp) {}
-  //   ExprType getType() const noexcept override { return ExprType::TEMP; }
-  //   ExprInfo toImExpr() override;
-
-  //   int getTemp() const noexcept { return temp_; }
-
-  // private:
-  //   int temp_;
-  // };
-
 
   class UnaryOp : public Expr {
   public:
     UnaryOp(ExprPtr&& e, UOp uOp);
     ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
+
     void asBool(
         std::vector<im::StmtPtr>& imStmts,
         assem::Label* ifTrue,
@@ -274,7 +258,7 @@ namespace language {
     BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
     ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
+
     void asBool(
         std::vector<im::StmtPtr>& imStmts,
         assem::Label* ifTrue,
@@ -306,7 +290,6 @@ namespace language {
     TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
     ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
 
   private:
     ExprPtr boolE_;
@@ -319,7 +302,6 @@ namespace language {
   public:
     CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
     ExprInfo toImExpr() override;
-    im::ExprPtr toImExprAssert(const Type& type) override;
 
   private:
     std::string name_;
@@ -329,8 +311,8 @@ namespace language {
 
   std::string newLabel();
   std::pair<std::vector<im::ExprPtr>, Type> argsToImExprs(
-      const string& fnName,
-      const vector<ExprPtr>& params);
+      const std::string& fnName,
+      const std::vector<ExprPtr>& params);
 
 }  // namespace language
 

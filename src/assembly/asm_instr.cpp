@@ -207,7 +207,13 @@ void Move::toStream(ostream& out) const {
 }
 
 void Operation::toStream(ostream& out) const {
-  out << asmCode_ << ' ' << srcs_ << ' ' << dsts_;
+  out << asmCode_;
+  // Operators should be defined in the same namespace as the class so they
+  // can be found via ADL. Unfortunately, you can't add stuff to the std
+  // namespace, so we get this nonsense
+  detail::printContainerHelper(out, srcs_);
+  out << ' ';
+  detail::printContainerHelper(out, srcs_);
 }
 
 void JumpOp::toStream(ostream& out) const {

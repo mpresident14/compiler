@@ -1,9 +1,9 @@
 # Project's name
-project(x86gen)
+project(assembly)
 
-add_library(x86gen_lib
-    instruction.cpp
-    flow_graph.cpp
-    interference_graph.cpp
-    function.cpp)
+add_library(asm_lib
+    asm_decl.cpp
+    asm_instr.cpp
+    reg_alloc/flow_graph.cpp
+    reg_alloc/interference_graph.cpp)
 

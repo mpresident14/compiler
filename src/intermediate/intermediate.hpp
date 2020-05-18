@@ -66,20 +66,20 @@ namespace im {
 
   class Program {
   public:
-    Program(const std::string& name, std::vector<DeclPtr>&& decls);
-    assem::Program toInstrProg() const;
+    Program(std::vector<DeclPtr>&& decls);
+    assem::Program toAssemProg() const;
 
   private:
-    std::string name_;
     std::vector<DeclPtr> decls_;
   };
 
   class Func : public Decl {
   public:
-    Func(std::vector<StmtPtr>&& stmts);
+    Func(const std::string& name, std::vector<StmtPtr>&& stmts);
     assem::DeclPtr toAssemDecl() const override;
 
   private:
+    std::string name_;
     std::vector<StmtPtr> stmts_;
   };
 

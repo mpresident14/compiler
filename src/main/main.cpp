@@ -49,13 +49,23 @@ namespace lg = language;
 //   fn.toCode(asmFile);
 // }
 
+void compile(const language::Program& prog, const string& fileName) {
+  prog.toImProg().toAssemProg().toCode(fileName);
+}
+
 
 int main() {
-  // lg::If ifStmt(
-  //     lg::BinaryOp(lg::ConstInt(1), lg::ConstInt(2), lg::BOp::LT),
-  //     make_unique<lg::Block>(vector<lg::StmtPtr{make_unique<})
-  // )
-  vector<im::StmtPtr> imStmts;
-  lg::VarDecl varDecl(intType, "n", make_unique<lg::ConstInt>(1));
-  varDecl.toImStmts(imStmts);
+  vector<lg::StmtPtr> stmts;
+  stmts.emplace_back(new lg::VarDecl(intType, "n", make_unique<lg::ConstInt>(1)));
+  stmts.emplace_back(new lg::VarDecl(intType, "m", make_unique<lg::ConstInt>(2)));
+
+  vector<lg::DeclPtr> decls;
+  decls.emplace_back(new lg::Func(
+    voidType,
+    "f",
+    std::vector<std::pair<std::string, Type>>(),
+    unique_ptr<lg::Block>(new lg::Block(move(stmts)))));
+
+  lg::Program prog(move(decls));
+  compile(prog, "prez.s");
 }

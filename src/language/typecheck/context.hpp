@@ -2,6 +2,7 @@
 #define CONTEXT_HPP
 
 #include "src/language/typecheck/type.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <unordered_map>
 #include <vector>

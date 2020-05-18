@@ -1,6 +1,6 @@
 #include "src/language/typecheck/context.hpp"
 
-#include "src/x86gen/temp.hpp"
+#include "src/assembly/temp.hpp"
 
 #include <stdexcept>
 

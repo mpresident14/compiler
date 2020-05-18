@@ -25,7 +25,7 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(const string& fnName, const vector
   for (size_t i = 0; i < numParams; ++i) {
     argsCode.push_back(params[i]->toImExprAssert(paramTypes[i]));
   }
-  return { argsCode, fnInfo.returnType };
+  return { move(argsCode), fnInfo.returnType };
 }
 
 }

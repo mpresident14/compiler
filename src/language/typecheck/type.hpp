@@ -24,6 +24,7 @@ const Type intType = { TypeName::INT, "" };
 const Type boolType = { TypeName::BOOL, "" };
 const Type voidType = { TypeName::VOID, "" };
 
-void typeError(string errMsg);
+// TODO: Implement
+inline void typeError(std::string) {}
 
 #endif  // TYPE_HPP

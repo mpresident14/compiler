@@ -10,9 +10,41 @@ using namespace std;
 
 namespace assem {
 
+/***********
+ * Program *
+ ***********/
+Program::Program(std::vector<DeclPtr>&& decls)
+    : decls_(move(decls)) {}
 
+
+void Program::toCode(const string& fileName) {
+  ofstream asmFile(fileName);
+  if (!asmFile.is_open()) {
+    throw invalid_argument("Could not open file " + fileName);
+  }
+
+  asmFile << ".text\n.globl runprez\n.align 16\n";
+  for (DeclPtr& decl : decls_) {
+    decl->toCode(asmFile);
+  }
+}
+
+
+/********
+ * Func *
+ ********/
 Function::Function(const std::string& name, std::vector<InstrPtr>&& instrs)
     : name_(name), instrs_(move(instrs)) {}
+
+
+void Function::toCode(std::ostream& out) {
+  regAlloc();
+  out << name_ << ":\n";
+  for (const InstrPtr& instr : instrs_) {
+    instr->toCode(out, varToStackOffset_);
+  }
+}
+
 
 void Function::regAlloc() {
   FlowGraph fgraph(instrs_);
@@ -56,28 +88,6 @@ void Function::regAlloc() {
   }
 
   instrs_ = move(newInstrs);
-}
-
-
-void Function::toCode(std::ostream& out) {
-  regAlloc();
-  out << name_ << ":\n";
-  for (const InstrPtr& instr : instrs_) {
-    instr->toCode(out, varToStackOffset_);
-  }
-}
-
-
-void Program::toCode() {
-  ofstream asmFile(fileName_);
-  if (!asmFile.is_open()) {
-    throw invalid_argument("Could not open file " + fileName_);
-  }
-
-  asmFile << ".text\n.globl runprez\n.align 16\n";
-  for (DeclPtr& decl : decls) {
-    decl->toCode(asmFile);
-  }
 }
 
 
