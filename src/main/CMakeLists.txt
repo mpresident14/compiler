@@ -20,4 +20,4 @@ add_custom_command(
     # COMMAND cp ${RUNTIME_OUTPUT_DIRECTORY}/parsegen ${CMAKE_CURRENT_SOURCE_DIR}/parsegen_copy
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/parsegen -g lang.pgen -f parser
     COMMAND clang-format -i parser.hpp parser.cpp
-    DEPENDS parsegen)
+    DEPENDS parsegen ${CMAKE_CURRENT_SOURCE_DIR}/lang.pgen)

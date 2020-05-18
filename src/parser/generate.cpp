@@ -584,19 +584,32 @@ namespace {
   }
 
   void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
-    out << grammarData.variables[1].type << R"(
-        shiftReduce(vector<StackObj>& inputTokens) {
-        vector<StackObj> stk;
-        if (inputTokens.empty()) {
-          parseError(stk, inputTokens, 0);
-        }
+    out << grammarData.variables[1].type
+        << R"(shiftReduce(vector<StackObj>& inputTokens) {
+        // vector<StackObj> stk;
+        // if (inputTokens.empty()) {
+        //   parseError(stk, inputTokens, 0);
+        // }
 
-        stk.push_back(move(inputTokens[0]));
-        vector<parser::Node*> dfaPath = { parser::root.get() };
-        size_t i = 1;
+        // stk.push_back(move(inputTokens[0]));
+        // vector<parser::Node*> dfaPath = { parser::root.get() };
+        // size_t i = 1;
+        // size_t inputSize = inputTokens.size();
+
+
+
+
+
+        vector<StackObj> stk;
+        vector<parser::Node*> dfaPath;
+        size_t i = 0;
         size_t inputSize = inputTokens.size();
+
         while (!(i == inputSize && stk.size() == 1 && stk[0].getSymbol() == S)) {
-          parser::Node* currentNode = dfaPath.back()->step(stk.back().getSymbol());
+          parser::Node* currentNode =
+              stk.empty()
+                  ? parser::root.get()
+                  : dfaPath.back()->step(stk.back().getSymbol());
           if (currentNode == nullptr) {
             parseError(stk, inputTokens, i);
           }
@@ -616,7 +629,7 @@ namespace {
             }
             stk.push_back(move(newObj));
           } else {
-            if (i == inputSize) {
+            if (nextInputToken == NONE) {
               parseError(stk, inputTokens, i);
             }
             stk.push_back(move(inputTokens[i]));
