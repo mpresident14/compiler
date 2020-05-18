@@ -81,9 +81,9 @@ namespace {
     out << '}';
   }
 
-  /******************
-   * STRING REPLACE *
-   ******************/
+  /*********************
+   * STRING OPERATIONS *
+   *********************/
   void replaceAll(
       ostream& out,
       string_view str,
@@ -115,6 +115,33 @@ namespace {
       }
     }
   }
+
+  string replaceAll(string_view str, char from, char to) {
+    string s;
+    s.reserve(str.size());
+
+    for (char c : str) {
+      if (c == from) {
+        s.push_back(to);
+      } else {
+        s.push_back(c);
+      }
+    }
+    return s;
+  }
+
+  pair<string, string> getNamespaceAndGuard(string_view filePath) {
+    string_view namespaceName =
+        filePath.substr(filePath.find_last_of('/') + 1);
+
+    string headerGuard = replaceAll(namespaceName, '/', '_');
+    transform(
+        headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+    return { string(namespaceName), move(headerGuard.append("_HPP")) };
+  }
+
+
+
 
   /****************
    * GRAMMAR DATA *
@@ -720,19 +747,6 @@ namespace {
     )";
   }
 
-  string replaceAll(const string& str, char from, char to) {
-    string s;
-    s.reserve(str.size());
-
-    for (char c : str) {
-      if (c == from) {
-        s.push_back(to);
-      } else {
-        s.push_back(c);
-      }
-    }
-    return s;
-  }
 
   /********************
    * DRIVER FUNCTIONS *
@@ -857,11 +871,9 @@ void generateParserCode(
     const string& addlHdrIncludes,
     const string& addlCode,
     const GrammarData& grammarData) {
-  string namespaceName =
-      parserFilePath.substr(parserFilePath.find_last_of('/') + 1);
-  string headerGuard = replaceAll(parserFilePath, '/', '_') + "_HPP";
-  transform(
-      headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+  auto thePair = getNamespaceAndGuard(parserFilePath);
+  const string& namespaceName = thePair.first;
+  const string& headerGuard = thePair.second;
 
   ofstream hppFile(parserFilePath + ".hpp");
   if (!hppFile.is_open()) {
@@ -883,11 +895,9 @@ void generateLexerCode(
     const string& lexerFilePath,
     const string& addlCode,
     const GrammarData& grammarData) {
-  string namespaceName =
-      lexerFilePath.substr(lexerFilePath.find_last_of('/') + 1);
-  string headerGuard = replaceAll(lexerFilePath, '/', '_') + "_HPP";
-  transform(
-      headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+  auto thePair = getNamespaceAndGuard(lexerFilePath);
+  const string& namespaceName = thePair.first;
+  const string& headerGuard = thePair.second;
 
   ofstream hppFile(lexerFilePath + ".hpp");
   if (!hppFile.is_open()) {

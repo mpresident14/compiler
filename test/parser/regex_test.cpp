@@ -17,7 +17,7 @@
 
 using namespace std;
 using namespace prez;
-using src::parser::regex_parser::parse;
+using regex_parser::parse;
 
 UnitTest TESTER = UnitTest::createTester();
 

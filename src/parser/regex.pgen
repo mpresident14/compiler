@@ -25,14 +25,15 @@
   }
 
   string escBracketStr(string_view str) {
+    cout << "BEFORE: " << str << endl;
     str = removeBrackets(str);
     size_t len = str.size();
     string ret;
     ret.reserve(len);
     size_t i = 0;
-    while (i < len - 1) {
+    while (i < len) {
       char c = str[i];
-      if (c == '\\') {
+      if (c == '\\' && i != len) {
         ret.append(1, escape(str[i+1]));
         i += 2;
         continue;
@@ -40,7 +41,7 @@
       ret.append(1, c);
       ++i;
     }
-    ret.append(1, str.back());
+    cout << "AFTER: " << ret << endl;
     return ret;
   }
 

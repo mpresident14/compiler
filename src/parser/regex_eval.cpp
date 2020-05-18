@@ -98,7 +98,7 @@ namespace {
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-      RgxPtr rgx = RgxPtr(src::parser::regex_parser::parse(token.regex));
+      RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
       // Invalid regex
       if (!rgx) {
         throw runtime_error("Invalid regex " + token.regex);
