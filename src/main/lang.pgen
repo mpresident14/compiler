@@ -1,0 +1,96 @@
+#header
+%
+  #include "src/language/language.hpp"
+%
+
+
+#source
+%
+  #include <memory>
+  #include <vector>
+
+
+  using namespace std;
+  using namespace language;
+%
+
+
+#tokens
+
+#skip       "//[^\n]*\n"
+#skip       "[ \t\n]+"
+
+IF          "if"
+ELSE        "else"
+WHILE       "while"
+RETURN      "return"
+
+PLUS        "\+"
+MINUS       "-"
+STAR        "\*"
+FSLASH      "/"
+AND         "&&"
+OR          "\|\|"
+EQEQ        "=="
+NEQ         "!="
+LT          "<"
+GT          ">"
+LTE         "<="
+GTE         ">="
+BANG        "!"
+
+SEMI        ";"
+COMMA       ","
+COLON       ":"
+EQ          "="
+
+LBRACE      "{"
+RBRACE      "}"
+LPAREN      "\("
+RPAREN      "\)"
+
+TRUE        "true"
+FALSE       "false"
+
+VOID        "void"
+INT         "int"
+BOOL        "bool"
+
+INT         "[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
+IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*" -> { string } % #str %
+
+#prec
+OR                      #left
+AND                     #left
+EQEQ NEQ LT GT LTE GTE  #nonassoc
+PLUS MINUS              #left
+STAR FSLASH             #left
+UNARY_MINUS BANG        #nonassoc
+
+
+#grammar
+
+Program -> { Program }
+  := Decls  % Program(move(#0)) %
+
+Decls -> { vector<DeclPtr> }
+  :=             % {} %
+   | Decls Decl  % (#0.push_back(move(#1)), #0) %
+
+Decl -> { DeclPtr }
+  := Type IDENT Params Block    % make_unique<Func>(#0, #1, move(#2), move(#3)) %
+
+Block -> { std::unique_ptr<Block> }
+  := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1)) %
+
+Stmts -> { vector<StmtPtr> }
+  :=               % {} %
+   | Stmts Stmt    % (#0.push_back(move(#1)), #0) %
+
+Stmt -> { StmtPtr }
+  := IF LPAREN Expr RPAREN Block              % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>())) %
+   | IF LPAREN Expr RPAREN Block ELSE Stmt    % make_unique<If>(move(#2), move(#4), move(#6)) %
+   | WHILE LPAREN Expr RPAREN Block           % make_unique<While>(move(#2), move(#4))
+   | IDENT LPAREN Params RPAREN               % make_unique<CallExpr>(#0, move(#2)) %
+   | RETURN SEMI                              % make_unique<Return>(optional<ExprPtr>()) %
+   | RETURN EXPR SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1))) %

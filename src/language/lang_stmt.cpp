@@ -40,8 +40,8 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
  * If *
  ******/
 
-If::If(ExprPtr&& boolE, std::vector<StmtPtr>&& ifE, std::vector<StmtPtr>&& elseE)
-      : boolE_(move(boolE)), ifE_(make_unique<Block>(move(ifE))), elseE_(make_unique<Block>(move(elseE))) {}
+If::If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE)
+      : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkIfLabel =

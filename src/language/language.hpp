@@ -110,13 +110,13 @@ namespace language {
 
   class If : public Stmt {
   public:
-    If(ExprPtr&& boolE, std::vector<StmtPtr>&& ifE, std::vector<StmtPtr>&& elseE);
+    If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
     ExprPtr boolE_;
     std::unique_ptr<Block> ifE_;
-    std::unique_ptr<Block> elseE_;
+    StmtPtr elseE_;
   };
 
 
