@@ -3,7 +3,7 @@
 #include "src/parser/regex.hpp"
 
 #include "src/parser/dfa.hpp"
-#include "src/parser/regex_eval.hpp"
+#include "src/parser/regex_merge.hpp"
 #include "src/parser/regex_parser.hpp"
 
 #include <cstddef>
@@ -152,7 +152,7 @@ void testRgxDFAToCode_withNullableRegex() {
   stringstream out;
   out.setstate(ios_base::badbit);
   cout << "HERE4" << endl;
-  rgxDFAToCode(out, grammarData);
+  mergedRgxDFAToCode(out, grammarData);
   cout << "HERE" << endl;
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
@@ -172,7 +172,7 @@ void testRgxDFAToCode_withInvalidRegex() {
 
   stringstream out;
   out.setstate(ios_base::badbit);
-  TESTER.assertThrows(([&]() { rgxDFAToCode(out, grammarData); }));
+  TESTER.assertThrows(([&]() { mergedRgxDFAToCode(out, grammarData); }));
 }
 
 int main(int, char**) {

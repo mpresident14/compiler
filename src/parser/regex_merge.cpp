@@ -1,4 +1,4 @@
-#include "src/parser/regex_eval.hpp"
+#include "src/parser/regex_merge.hpp"
 
 #include "src/parser/dfa.hpp"
 #include "src/parser/regex.hpp"
@@ -99,10 +99,6 @@ namespace {
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
       RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
-      // Invalid regex
-      if (!rgx) {
-        throw runtime_error("Invalid regex " + token.regex);
-      }
       RgxDFA rgxDfa = buildRegexDFA(move(rgx));
       initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {
@@ -184,7 +180,7 @@ namespace {
 
 }  // namespace
 
-void rgxDFAToCode(ostream& out, const GrammarData& grammarData) {
+void mergedRgxDFAToCode(ostream& out, const GrammarData& grammarData) {
   buildMergedRgxDFA(grammarData)
       .streamAsCode(
           out,

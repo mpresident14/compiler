@@ -93,7 +93,7 @@ Decls -> { vector<DeclPtr> }
    | Decls Decl                  % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
-  := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(#0, #2, move(#3), move(#5)) %
+  := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(#0, #1, move(#3), move(#5)) %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1)) %

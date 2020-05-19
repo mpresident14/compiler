@@ -1,7 +1,7 @@
 #include "src/parser/generate.hpp"
 
 #include "src/parser/build_parser.hpp"
-#include "src/parser/regex_eval.hpp"
+#include "src/parser/regex_merge.hpp"
 #include "src/misc/errors.hpp"
 
 #include <cstddef>
@@ -296,7 +296,7 @@ namespace {
   }
 
 
-  void constructObjFn(ostream& out, const GrammarData& grammarData, const string& fileName, const vector<size_t>& concreteLines) {
+  void constructObjFn(ostream& out, const GrammarData& grammarData, const vector<size_t>& concreteLines) {
     stringstream errors;
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
@@ -310,17 +310,17 @@ namespace {
       replaceNumbers(
           out,
           concrete.ctorExpr,
-          [&concrete, i, &grammarData, &fileName, &concreteLines, &errors](const string& digits) -> string {
+          [&concrete, i, &grammarData, &concreteLines, &errors](const string& digits) -> string {
             const vector<intptr_t>& argSymbols = concrete.argSymbols;
             int argIndex = stoi(digits);
             // These are user-provided numbers, so check the bounds
             if (argIndex < 0) {
-              errors << fileName << errorColored << " on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
+              errors << errorColored << " on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
               streamSymbolNames(errors, argSymbols, grammarData);
               return "";
             }
             if ((size_t)argIndex >= argSymbols.size()) {
-              errors << fileName << errorColored << " on line " << concreteLines[i] << ": Index " << argIndex
+              errors << errorColored << " on line " << concreteLines[i] << ": Index " << argIndex
                   << " is greater than the number of elements in rule ";
               streamSymbolNames(errors, argSymbols, grammarData);
               return "";
@@ -331,7 +331,7 @@ namespace {
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
               if (symbolName.empty()) {
-                errors << fileName << errorColored << " on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
+                errors << errorColored << " on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
                     << " is passed as an argument, but has no data associated with it.";
                 return "";
               }
@@ -391,7 +391,7 @@ namespace {
    ********/
   void lexerDFA(ostream& out, const GrammarData grammarData) {
     out << "namespace lexer {";
-    rgxDFAToCode(out, grammarData);
+    mergedRgxDFAToCode(out, grammarData);
     out << '}';
   }
 
@@ -824,7 +824,7 @@ namespace {
     startDecl(out, grammarData);
     stackObjDef(out, grammarData);
     currentLineDecl(out);
-    constructObjFn(out, grammarData, parseInfo.fileName, parseInfo.concreteLines);
+    constructObjFn(out, grammarData, parseInfo.concreteLines);
     constructFn(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);

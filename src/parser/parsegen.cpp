@@ -47,6 +47,6 @@ int main(int argc, char** argv) {
     ParseInfo parseInfo = parseConfig(gpFile);
     generateParserCode(outputFile, parseInfo);
   } catch (exception& e) {
-    cerr << e.what() << endl;
+    cerr << gpFile << ":\n"<< e.what() << endl;
   }
 }

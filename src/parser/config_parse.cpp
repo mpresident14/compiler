@@ -34,7 +34,6 @@ namespace {
   unordered_map<string, int> precNameToPrec;
   unordered_map<const string*, int> symbolToLineMap;
   stringstream errors;
-  string globFileName;
 
 
   class TokenStream {
@@ -47,7 +46,7 @@ namespace {
     TokenStream& operator=(TokenStream&& other) = delete;
 
     void parseError(int tokenId) {
-      errors << globFileName << errorColored << " on line " << tokens_[pos_].getLine()
+      errors  << errorColored << " on line " << tokens_[pos_].getLine()
              << ". Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
              << ". Got "
              << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR) << '\n';
@@ -127,7 +126,7 @@ namespace {
     }
 
     if (tokenNameToIndex.contains(*name)) {
-      errors << globFileName << errorColored << " on line " << tokenStream.currentLine()
+      errors  << errorColored << " on line " << tokenStream.currentLine()
               << ": Duplicate token " << *name;
     }
 
@@ -247,7 +246,7 @@ namespace {
       if (iter == tokenNameToIndex.end()) {
         auto precIter = precNameToPrec.find(tokenName);
         if (precIter == precNameToPrec.end()) {
-          errors << globFileName << errorColored << " on line " << tokenStream.currentLine()
+          errors  << errorColored << " on line " << tokenStream.currentLine()
                  << ": Unknown token " << tokenName << '\n';
         } else {
           prec = precIter->second;
@@ -257,7 +256,7 @@ namespace {
       }
 
       if (prec == NONE) {
-        errors << globFileName << warningColored << " on line " << tokenStream.currentLine()
+        errors  << warningColored << " on line " << tokenStream.currentLine()
              << ": Token " << tokenName
              << " is used to override a rule's precedence, "
                 "but has no precedence set.\n"
@@ -304,7 +303,7 @@ namespace {
           // Otherwise, check if it is a variable
           auto varIter = varNameToIndex.find(symbolName);
           if (varIter == varNameToIndex.end()) {
-            errors << globFileName << errorColored << " on line " << symbolToLineMap.at(&symbolName)
+            errors  << errorColored << " on line " << symbolToLineMap.at(&symbolName)
                    << ": Unknown symbol " << symbolName << '\n';
           } else {
             concrete.argSymbols[j] = varIter->second;
@@ -320,11 +319,10 @@ namespace {
 
 
 ParseInfo parseConfig(const string& fileName) {
-  globFileName = fileName + ": ";
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    errors << globFileName << errorColored << ": File " + fileName + " is empty.\n";
+    errors  << errorColored << ": File " + fileName + " is empty.\n";
   }
 
   TokenStream tokenStream(tokens);
@@ -335,13 +333,13 @@ ParseInfo parseConfig(const string& fileName) {
   parseGrammar(tokenStream);
 
   if (gdTokens.empty()) {
-    errors << globFileName << errorColored << ": No tokens were provided.\n";
+    errors  << errorColored << ": No tokens were provided.\n";
   }
   if (gdVariables.empty()) {
-    errors << globFileName << errorColored << ": No grammar variables were provided.\n";
+    errors  << errorColored << ": No grammar variables were provided.\n";
   }
 
   throwIfError(errors);
 
-  return { grammarData, addlHppCode, addlCppCode, globFileName, concreteLines };
+  return { grammarData, addlHppCode, addlCppCode, concreteLines };
 }

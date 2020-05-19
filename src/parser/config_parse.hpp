@@ -10,7 +10,6 @@ struct ParseInfo {
   GrammarData grammarData;
   std::string addlHppCode;
   std::string addlCppCode;
-  std::string fileName;
   std::vector<size_t> concreteLines;
 };
 
