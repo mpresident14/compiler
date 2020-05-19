@@ -80,7 +80,7 @@ AND                     #left
 EQEQ NEQ LT GT LTE GTE  #nonassoc
 PLUS MINUS              #left
 STAR FSLASH             #left
-UMINUS BANG        #nonassoc
+UNARY_MINUS BANG        #nonassoc
 
 
 #grammar
@@ -116,7 +116,7 @@ Expr -> { ExprPtr }
   := NUM                                      % make_unique<ConstInt>(#0) %
    | TRUE                                     % make_unique<ConstBool>(true) %
    | FALSE                                    % make_unique<ConstBool>(false) %
-   | MINUS Expr   #prec UMINUS                % make_unique<UnaryOp>(move(#1), UOp::NEG) %
+   | MINUS Expr   #prec UNARY_MINUS                % make_unique<UnaryOp>(move(#1), UOp::NEG) %
    | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT) %
    | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
    | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %

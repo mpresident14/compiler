@@ -294,7 +294,7 @@ namespace {
     out << symbolNames;
   }
 
-  void constructObjFn(ostream& out, const GrammarData& grammarData) {
+  void constructObjFn(ostream& out, const GrammarData& grammarData, const vector<size_t>& concreteLines) {
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
     size_t numConcretes = grammarData.concretes.size();
@@ -307,28 +307,34 @@ namespace {
       replaceNumbers(
           out,
           concrete.ctorExpr,
-          [&concrete, &grammarData](const string& digits) {
+          [&concrete, i, &grammarData, &concreteLines](const string& digits) {
             const vector<intptr_t>& argSymbols = concrete.argSymbols;
-            int i = stoi(digits);
+            int argIndex = stoi(digits);
             // These are user-provided numbers, so check the bounds
-            if (i < 0) {
+            if (argIndex < 0) {
               stringstream err;
-              err << "Index " << i << " is < 0 for rule ";
+              err << "Error on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
               streamSymbolNames(err, argSymbols, grammarData);
               throw runtime_error(err.str());
             }
-            if ((size_t)i >= argSymbols.size()) {
+            if ((size_t)argIndex >= argSymbols.size()) {
               stringstream err;
-              err << "Index " << i
+              err << "Error on line " << concreteLines[i] << ": Index " << argIndex
                   << " is greater than the number of elements in rule ";
               streamSymbolNames(err, argSymbols, grammarData);
               throw runtime_error(err.str());
             }
 
-            int argSymbol = argSymbols[i];
+            int argSymbol = argSymbols[argIndex];
             string symbolName;
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
+              if (symbolName.empty()) {
+                stringstream err;
+                err << "Error on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
+                    << " is passed as an argument, but has no data associated with it.";
+                throw runtime_error(err.str());
+              }
             } else {
               symbolName = grammarData.variables[argSymbol].type;
             }
@@ -796,7 +802,8 @@ namespace {
       const string& parserFilePath,
       const string& namespaceName,
       const string& addlCode,
-      const GrammarData& grammarData) {
+      const GrammarData& grammarData,
+      const vector<size_t> concreteLines) {
     stringstream out;
 
     out << generatedWarning;
@@ -816,7 +823,7 @@ namespace {
     startDecl(out, grammarData);
     stackObjDef(out, grammarData);
     currentLineDecl(out);
-    constructObjFn(out, grammarData);
+    constructObjFn(out, grammarData, concreteLines);
     constructFn(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
@@ -868,9 +875,7 @@ namespace {
 
 void generateParserCode(
     const string& parserFilePath,
-    const string& addlHdrIncludes,
-    const string& addlCode,
-    const GrammarData& grammarData) {
+    const ParseInfo& parseInfo) {
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
@@ -880,7 +885,7 @@ void generateParserCode(
     throw invalid_argument("Could not open file " + parserFilePath + ".hpp");
   }
   hppFile << parserHppCode(
-      namespaceName, headerGuard, addlHdrIncludes, grammarData);
+      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.grammarData);
 
   ofstream cppFile;
   cppFile.open(parserFilePath + ".cpp");
@@ -888,7 +893,7 @@ void generateParserCode(
     throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
   }
   cppFile << parserCppCode(
-      parserFilePath, namespaceName, addlCode, grammarData);
+      parserFilePath, namespaceName, parseInfo.addlCppCode, parseInfo.grammarData, parseInfo.concreteLines);
 }
 
 void generateLexerCode(

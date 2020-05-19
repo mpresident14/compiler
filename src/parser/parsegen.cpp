@@ -44,9 +44,5 @@ int main(int argc, char** argv) {
   }
 
   ParseInfo parseInfo = parseConfig(gpFile);
-  generateParserCode(
-      outputFile,
-      parseInfo.addlHppCode,
-      parseInfo.addlCppCode,
-      parseInfo.grammarData);
+  generateParserCode(outputFile, parseInfo);
 }

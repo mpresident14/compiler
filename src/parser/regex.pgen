@@ -25,7 +25,6 @@
   }
 
   string escBracketStr(string_view str) {
-    cout << "BEFORE: " << str << endl;
     str = removeBrackets(str);
     size_t len = str.size();
     string ret;
@@ -41,7 +40,6 @@
       ret.append(1, c);
       ++i;
     }
-    cout << "AFTER: " << ret << endl;
     return ret;
   }
 

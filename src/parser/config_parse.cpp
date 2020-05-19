@@ -21,6 +21,8 @@ using namespace config_lexer;
 namespace {
   string addlHppCode;
   string addlCppCode;
+  // Concrete #0 is S, so skip it
+  vector<size_t> concreteLines = {0};
   GrammarData grammarData;
   vector<Token>& gdTokens = grammarData.tokens;
   vector<Concrete>& gdConcretes = grammarData.concretes;
@@ -29,6 +31,7 @@ namespace {
   unordered_map<string, size_t> tokenNameToIndex;
   unordered_map<string, size_t> varNameToIndex;
   unordered_map<string, int> precNameToPrec;
+  unordered_map<const string*, int> symbolToLineMap;
 
   class TokenStream {
   public:
@@ -108,6 +111,7 @@ namespace {
       }
     }
 
+
     gdTokens.push_back(Token());
     Token& gdToken = gdTokens.back();
     gdToken.regex = tokenStream.consumeString(STRLIT);
@@ -117,6 +121,13 @@ namespace {
     if (skip) {
       gdToken.precedence = SKIP_TOKEN;
       return true;
+    }
+
+    if (tokenNameToIndex.contains(*name)) {
+      stringstream errMsg;
+      errMsg << "Parse error on line " << tokenStream.currentLine()
+              << ": Duplicate token " << *name;
+      throw runtime_error(errMsg.str());
     }
 
     gdToken.name = *name;
@@ -217,11 +228,14 @@ namespace {
     gdVariable.concreteTypes.push_back(gdConcretes.size() - 1);
     gdConcrete.name = gdVariable.name + to_string(concNum);
     gdConcrete.varType = gdVariables.size() - 1;
+    concreteLines.push_back(tokenStream.currentLine());
     // Store argSymbols as string*s for now until we have seen all the
     // variables. Then, we will convert them to correct integral values.
-    string* conc;
-    while ((conc = tokenStream.maybeConsumeString(IDENT))) {
-      gdConcrete.argSymbols.push_back((intptr_t)conc);
+    // Also store the line number in a map for error checking
+    string* argSymbol;
+    while ((argSymbol = tokenStream.maybeConsumeString(IDENT))) {
+      gdConcrete.argSymbols.push_back((intptr_t)argSymbol);
+      symbolToLineMap.emplace(argSymbol, tokenStream.currentLine());
     }
 
     if (tokenStream.maybeConsume(PREC)) {
@@ -273,8 +287,7 @@ namespace {
     gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
     gdConcretes.push_back(Concrete{ "SCONC", S, NONE, { 1 }, "Start(#0)" });
     tokenStream.consume(GRAMMAR);
-    while (maybeParseGrammarVar(tokenStream))
-      ;
+    while (maybeParseGrammarVar(tokenStream));
 
     // Translate the string pointers to token/variable ids now that we
     // have parsed the whole file (skip SCONC)
@@ -291,7 +304,10 @@ namespace {
           // Otherwise, check if it is a variable
           auto varIter = varNameToIndex.find(symbolName);
           if (varIter == varNameToIndex.end()) {
-            throw runtime_error("Parse error: Unknown symbol " + symbolName);
+            stringstream errMsg;
+            errMsg << "Parse error on line " << symbolToLineMap.at(&symbolName)
+                   << ": Unknown symbol " << symbolName;
+            throw runtime_error(errMsg.str());
           } else {
             concrete.argSymbols[j] = varIter->second;
           }
@@ -325,5 +341,5 @@ ParseInfo parseConfig(const string& fileName) {
     throw runtime_error("No grammar variables were provided.");
   }
 
-  return { grammarData, addlHppCode, addlCppCode };
+  return { grammarData, addlHppCode, addlCppCode, concreteLines };
 }

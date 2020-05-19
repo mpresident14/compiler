@@ -4,11 +4,13 @@
 #include "src/parser/utils.hpp"
 
 #include <string>
+#include <vector>
 
 struct ParseInfo {
   GrammarData grammarData;
   std::string addlHppCode;
   std::string addlCppCode;
+  std::vector<size_t> concreteLines;
 };
 
 ParseInfo parseConfig(const std::string& fileName);
