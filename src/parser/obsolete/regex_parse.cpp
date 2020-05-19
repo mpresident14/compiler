@@ -15,9 +15,6 @@
 
 using namespace std;
 
-// TODO: If we want to extend/improve our regexes later, we can just generate a
-// parser using this file as a base for the lexer.
-
 /***********
  * GRAMMAR *
  ***********/
@@ -104,7 +101,6 @@ namespace {
   };
 
   // NOTE: These must be in same order as the constants above.
-  // TODO: Fix when we get {[<int>] = <value>} initialization
   struct GrammarData GRAMMAR_DATA = {
     /* tokens */ {
         { "BAR", "", 1, Assoc::LEFT, "", "", "" },

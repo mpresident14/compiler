@@ -119,7 +119,7 @@ namespace {
       if (iter == ruleSet.end()) {
         addRhses(ruleQueue, rule, grammarData, nulls, firsts);
         ruleSet.insert(move(rule));
-        ruleQueue.pop();// TODO: Pop right away
+        ruleQueue.pop();
         continue;
       }
 

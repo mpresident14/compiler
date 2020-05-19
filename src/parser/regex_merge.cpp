@@ -3,6 +3,7 @@
 #include "src/parser/dfa.hpp"
 #include "src/parser/regex.hpp"
 #include "src/parser/regex_parser.hpp"
+#include "src/misc/errors.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -85,6 +86,8 @@ namespace {
   using MergedRgxDFA = DFA<MergeData, char, MergeData::Hash>;
 
   MergedRgxDFA buildMergedRgxDFA(const GrammarData& grammarData) {
+    // Store the errors so we can throw them all at once.
+    stringstream regexErrs;
     // We need the regex DFAs to be live long enough to create the merged DFA,
     // so we store them in this vector. Afterwards, all the pointers inside the
     // merged DFA will be deleted, but we will no longer need them.
@@ -98,20 +101,32 @@ namespace {
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
       const Token& token = grammarData.tokens[i];
-      RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
-      RgxDFA rgxDfa = buildRegexDFA(move(rgx));
-      initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
-      if (rgxDfa.getRoot()->getValue()->isNullable()) {
-        // Accepting the empty string will likely result in an infinite loop
-        cerr << "WARNING: The regex \"" << token.regex
-             << "\" accepts the empty string" << endl;
-        // Multiple regex DFAs accept the empty string. We pick the regex that
-        // was listed first.
-        if (stateToken == NONE) {
-          stateToken = tokenToFromIndex(i);
+      try {
+        RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
+        RgxDFA rgxDfa = buildRegexDFA(move(rgx));
+        initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
+        if (rgxDfa.getRoot()->getValue()->isNullable()) {
+          // Accepting the empty string will likely result in an infinite loop
+          cerr << "WARNING: The regex \"" << token.regex
+              << "\" accepts the empty string" << endl;
+          // Multiple regex DFAs accept the empty string. We pick the regex that
+          // was listed first.
+          if (stateToken == NONE) {
+            stateToken = tokenToFromIndex(i);
+          }
         }
+        rgxDfas.push_back(move(rgxDfa));
+      } catch (const regex_parser::ParseException& e) {
+        string err(e.what());
+        regexErrs << errorColored << " for regex \"" << token.regex << "\":\n" << err.substr(err.find_first_of('\n') + 1) << '\n';
       }
-      rgxDfas.push_back(move(rgxDfa));
+    }
+
+    {
+      const string& errs = regexErrs.str();
+      if (!errs.empty()) {
+        throw regex_parser::ParseException(errs);
+      }
     }
 
     MergedRgxDFA mergedDfa(MergeData{ move(initialStates), stateToken });

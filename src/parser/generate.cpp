@@ -1,6 +1,7 @@
 #include "src/parser/generate.hpp"
 
 #include "src/parser/build_parser.hpp"
+#include "src/parser/regex_parser.hpp"
 #include "src/parser/regex_merge.hpp"
 #include "src/misc/errors.hpp"
 
@@ -11,6 +12,8 @@
 using namespace std;
 
 namespace {
+  stringstream errors;
+
   /***********
    * TO CODE *
    ***********/
@@ -297,7 +300,6 @@ namespace {
 
 
   void constructObjFn(ostream& out, const GrammarData& grammarData, const vector<size_t>& concreteLines) {
-    stringstream errors;
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
     size_t numConcretes = grammarData.concretes.size();
@@ -310,7 +312,7 @@ namespace {
       replaceNumbers(
           out,
           concrete.ctorExpr,
-          [&concrete, i, &grammarData, &concreteLines, &errors](const string& digits) -> string {
+          [&concrete, i, &grammarData, &concreteLines](const string& digits) -> string {
             const vector<intptr_t>& argSymbols = concrete.argSymbols;
             int argIndex = stoi(digits);
             // These are user-provided numbers, so check the bounds
@@ -347,13 +349,13 @@ namespace {
 
       out << ");";
 
-      throwIfError(errors);
+
     }
 
     // Root type of grammar is the first type listed
     out << "case 0: return new Start(move(*static_cast<"
         << grammarData.variables[1].type << "*>(args[0].releaseObj())));";
-    out << R"(default: throw invalid_argument("Can't construct. Out of options.");}})";
+    out << R"(default: throw ParseException("Can't construct object. Parser programmer error.");}})";
   }
 
   void constructFn(ostream& out) {
@@ -391,7 +393,11 @@ namespace {
    ********/
   void lexerDFA(ostream& out, const GrammarData grammarData) {
     out << "namespace lexer {";
-    mergedRgxDFAToCode(out, grammarData);
+    try {
+      mergedRgxDFAToCode(out, grammarData);
+    } catch (const regex_parser::ParseException& e) {
+      errors << e.what();
+    }
     out << '}';
   }
 
@@ -473,9 +479,9 @@ namespace {
                 tokens.cend(),
                 back_inserter(prevTokenNames),
                 [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.getSymbol())].name; });
-            error << "Lexer error on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
+            error << "Lexer \033[1;31merror\033[0m on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
-            throw runtime_error(error.str());
+            throw ParseException(error.str());
           }
 
           if (optStackObj.has_value()) {
@@ -495,7 +501,7 @@ namespace {
     )";
   }
 
-  void lexerHppDecls(ostream& out) {
+  void tokenizeDecl(ostream& out) {
     out << R"(
       std::vector<StackObj> tokenize(const std::string& input);
       std::vector<StackObj> tokenize(std::istream& input);
@@ -534,6 +540,20 @@ namespace {
         << " parse(std::istream& input);";
   }
 
+  void parseExceptionDecl(ostream& out) {
+    out << R"(class ParseException : public std::exception {
+      public:
+        ParseException(const std::string& errMsg) : errMsg_(errMsg) {}
+        ParseException(const char* errMsg) : errMsg_(errMsg) {}
+        const char* what() const noexcept override {
+          return errMsg_.c_str();
+        }
+      private:
+        std::string errMsg_;
+      };
+      )";
+  }
+
   void parseHelperFns(ostream& out) {
     out << R"(
       void parseError(
@@ -561,9 +581,9 @@ namespace {
             back_inserter(remainingTokenNames),
             stkObjToName);
 
-        errMsg << "Parse error on line " << stk.back().getLine() << ":\n\tStack: " << stkSymbolNames
+        errMsg << "Parse \033[1;31merror\033[0m on line " << stk.back().getLine() << ":\n\tStack: " << stkSymbolNames
               << "\n\tRemaining tokens: " << remainingTokenNames;
-        throw invalid_argument(errMsg.str());
+        throw ParseException(errMsg.str());
       }
     )";
   }
@@ -777,6 +797,7 @@ namespace {
     parserHppIncludes(out);
     out << "namespace " << namespaceName << '{';
     parseDecl(out, grammarData);
+    parseExceptionDecl(out);
     out << "}\n#endif";
 
     return out.str();
@@ -794,7 +815,8 @@ namespace {
     lexerHppIncludes(out);
     out << "namespace " << namespaceName << '{';
     stackObjDef(out, grammarData);
-    lexerHppDecls(out);
+    tokenizeDecl(out);
+    parseExceptionDecl(out);
     out << "}\n#endif";
 
     return out.str();
@@ -811,6 +833,7 @@ namespace {
     out << "#include \"" << parserFilePath << ".hpp\"\n";
     cppIncludes(out);
     out << parseInfo.addlCppCode << "using namespace std;"
+        << "using namespace " << namespaceName << ";"
         << "namespace {";
     noneInt(out);
     sInt(out);
@@ -853,6 +876,7 @@ namespace {
     out << "#include \"" << lexerFilePath << ".hpp\"\n";
     cppIncludes(out);
     out << addlCode << "using namespace std;"
+        << "using namespace " << namespaceName << ";"
         << "using namespace " << namespaceName << ';' << "namespace {";
     noneInt(out);
     tokenToFromIndexFn(out);
@@ -885,16 +909,16 @@ void generateParserCode(
   if (!hppFile.is_open()) {
     throw invalid_argument("Could not open file " + parserFilePath + ".hpp");
   }
-  hppFile << parserHppCode(
-      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.grammarData);
-
-  ofstream cppFile;
-  cppFile.open(parserFilePath + ".cpp");
+  ofstream cppFile(parserFilePath + ".cpp");
   if (!cppFile.is_open()) {
     throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
   }
+
+  hppFile << parserHppCode(
+      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.grammarData);
   cppFile << parserCppCode(
       parserFilePath, namespaceName, parseInfo);
+  throwIfError(errors);
 }
 
 
@@ -910,11 +934,12 @@ void generateLexerCode(
   if (!hppFile.is_open()) {
     throw invalid_argument("Could not open file " + lexerFilePath + ".hpp");
   }
-  hppFile << lexerHppCode(namespaceName, headerGuard, grammarData);
-
   ofstream cppFile(lexerFilePath + ".cpp");
   if (!cppFile.is_open()) {
     throw invalid_argument("Could not open file " + lexerFilePath + ".cpp");
   }
+
+  hppFile << lexerHppCode(namespaceName, headerGuard, grammarData);
   cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
+  throwIfError(errors);
 }
