@@ -43,6 +43,10 @@ int main(int argc, char** argv) {
     outputFile = gpFile.substr(0, gpFile.size() - 5) + "_parser";
   }
 
-  ParseInfo parseInfo = parseConfig(gpFile);
-  generateParserCode(outputFile, parseInfo);
+  try {
+    ParseInfo parseInfo = parseConfig(gpFile);
+    generateParserCode(outputFile, parseInfo);
+  } catch (exception& e) {
+    cerr << e.what() << endl;
+  }
 }

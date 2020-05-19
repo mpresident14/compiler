@@ -88,4 +88,5 @@ inline std::string symbolToString(
   return grammarData.variables[symbolId].name;
 }
 
+
 #endif

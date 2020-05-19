@@ -2,6 +2,7 @@
 
 #include "src/parser/config_grammar.hpp"
 #include "src/parser/config_lexer.hpp"
+#include "src/misc/errors.hpp"
 
 #include <cctype>
 #include <cstdint>
@@ -32,6 +33,9 @@ namespace {
   unordered_map<string, size_t> varNameToIndex;
   unordered_map<string, int> precNameToPrec;
   unordered_map<const string*, int> symbolToLineMap;
+  stringstream errors;
+  string globFileName;
+
 
   class TokenStream {
   public:
@@ -43,12 +47,10 @@ namespace {
     TokenStream& operator=(TokenStream&& other) = delete;
 
     void parseError(int tokenId) {
-      stringstream errMsg;
-      errMsg << "Parse error on line " << tokens_[pos_].getLine()
+      errors << globFileName << errorColored << " on line " << tokens_[pos_].getLine()
              << ". Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
              << ". Got "
-             << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR);
-      throw runtime_error(errMsg.str());
+             << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR) << '\n';
     }
 
     bool maybeConsume(int tokenId) {
@@ -89,6 +91,7 @@ namespace {
     size_t pos_ = 0;
   };
 
+
   void parseHeader(TokenStream& tokenStream) {
     tokenStream.consume(HEADER);
     addlHppCode = tokenStream.consumeString(CODE);
@@ -124,10 +127,8 @@ namespace {
     }
 
     if (tokenNameToIndex.contains(*name)) {
-      stringstream errMsg;
-      errMsg << "Parse error on line " << tokenStream.currentLine()
+      errors << globFileName << errorColored << " on line " << tokenStream.currentLine()
               << ": Duplicate token " << *name;
-      throw runtime_error(errMsg.str());
     }
 
     gdToken.name = *name;
@@ -240,16 +241,14 @@ namespace {
 
     if (tokenStream.maybeConsume(PREC)) {
       string tokenName = tokenStream.consumeString(IDENT);
-      int prec;
+      int prec = -1;
       // Look up the index of the token in the map
       auto iter = tokenNameToIndex.find(tokenName);
       if (iter == tokenNameToIndex.end()) {
         auto precIter = precNameToPrec.find(tokenName);
         if (precIter == precNameToPrec.end()) {
-          stringstream errMsg;
-          errMsg << "Parse error on line " << tokenStream.currentLine()
-                 << ": Unknown token " << tokenName;
-          throw runtime_error(errMsg.str());
+          errors << globFileName << errorColored << " on line " << tokenStream.currentLine()
+                 << ": Unknown token " << tokenName << '\n';
         } else {
           prec = precIter->second;
         }
@@ -258,9 +257,10 @@ namespace {
       }
 
       if (prec == NONE) {
-        cerr << "WARNING: Token " << tokenName
+        errors << globFileName << warningColored << " on line " << tokenStream.currentLine()
+             << ": Token " << tokenName
              << " is used to override a rule's precedence, "
-                "but has no precedence set."
+                "but has no precedence set.\n"
              << endl;
       }
       gdConcrete.precedence = prec;
@@ -304,10 +304,8 @@ namespace {
           // Otherwise, check if it is a variable
           auto varIter = varNameToIndex.find(symbolName);
           if (varIter == varNameToIndex.end()) {
-            stringstream errMsg;
-            errMsg << "Parse error on line " << symbolToLineMap.at(&symbolName)
-                   << ": Unknown symbol " << symbolName;
-            throw runtime_error(errMsg.str());
+            errors << globFileName << errorColored << " on line " << symbolToLineMap.at(&symbolName)
+                   << ": Unknown symbol " << symbolName << '\n';
           } else {
             concrete.argSymbols[j] = varIter->second;
           }
@@ -320,11 +318,13 @@ namespace {
 
 }  // namespace
 
+
 ParseInfo parseConfig(const string& fileName) {
+  globFileName = fileName + ": ";
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    throw runtime_error("File " + fileName + " is empty.");
+    errors << globFileName << errorColored << ": File " + fileName + " is empty.\n";
   }
 
   TokenStream tokenStream(tokens);
@@ -335,10 +335,15 @@ ParseInfo parseConfig(const string& fileName) {
   parseGrammar(tokenStream);
 
   if (gdTokens.empty()) {
-    throw runtime_error("No tokens were provided.");
+    errors << globFileName << errorColored << ": No tokens were provided.\n";
   }
   if (gdVariables.empty()) {
-    throw runtime_error("No grammar variables were provided.");
+    errors << globFileName << errorColored << ": No grammar variables were provided.\n";
+  }
+
+  const string& errStr = errors.str();
+  if (!errStr.empty()) {
+    throw runtime_error(errStr.c_str());
   }
 
   return { grammarData, addlHppCode, addlCppCode, concreteLines };
