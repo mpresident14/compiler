@@ -341,10 +341,7 @@ ParseInfo parseConfig(const string& fileName) {
     errors << globFileName << errorColored << ": No grammar variables were provided.\n";
   }
 
-  const string& errStr = errors.str();
-  if (!errStr.empty()) {
-    throw runtime_error(errStr.c_str());
-  }
+  throwIfError(errors);
 
-  return { grammarData, addlHppCode, addlCppCode, concreteLines };
+  return { grammarData, addlHppCode, addlCppCode, globFileName, concreteLines };
 }

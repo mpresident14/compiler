@@ -2,6 +2,7 @@
 
 #include "src/parser/build_parser.hpp"
 #include "src/parser/regex_eval.hpp"
+#include "src/misc/errors.hpp"
 
 #include <cstddef>
 #include <fstream>
@@ -294,7 +295,9 @@ namespace {
     out << symbolNames;
   }
 
-  void constructObjFn(ostream& out, const GrammarData& grammarData, const vector<size_t>& concreteLines) {
+
+  void constructObjFn(ostream& out, const GrammarData& grammarData, const string& fileName, const vector<size_t>& concreteLines) {
+    stringstream errors;
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
     size_t numConcretes = grammarData.concretes.size();
@@ -307,22 +310,20 @@ namespace {
       replaceNumbers(
           out,
           concrete.ctorExpr,
-          [&concrete, i, &grammarData, &concreteLines](const string& digits) {
+          [&concrete, i, &grammarData, &fileName, &concreteLines, &errors](const string& digits) -> string {
             const vector<intptr_t>& argSymbols = concrete.argSymbols;
             int argIndex = stoi(digits);
             // These are user-provided numbers, so check the bounds
             if (argIndex < 0) {
-              stringstream err;
-              err << "Error on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
-              streamSymbolNames(err, argSymbols, grammarData);
-              throw runtime_error(err.str());
+              errors << fileName << errorColored << " on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
+              streamSymbolNames(errors, argSymbols, grammarData);
+              return "";
             }
             if ((size_t)argIndex >= argSymbols.size()) {
-              stringstream err;
-              err << "Error on line " << concreteLines[i] << ": Index " << argIndex
+              errors << fileName << errorColored << " on line " << concreteLines[i] << ": Index " << argIndex
                   << " is greater than the number of elements in rule ";
-              streamSymbolNames(err, argSymbols, grammarData);
-              throw runtime_error(err.str());
+              streamSymbolNames(errors, argSymbols, grammarData);
+              return "";
             }
 
             int argSymbol = argSymbols[argIndex];
@@ -330,10 +331,9 @@ namespace {
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
               if (symbolName.empty()) {
-                stringstream err;
-                err << "Error on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
+                errors << fileName << errorColored << " on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
                     << " is passed as an argument, but has no data associated with it.";
-                throw runtime_error(err.str());
+                return "";
               }
             } else {
               symbolName = grammarData.variables[argSymbol].type;
@@ -346,6 +346,8 @@ namespace {
           });
 
       out << ");";
+
+      throwIfError(errors);
     }
 
     // Root type of grammar is the first type listed
@@ -801,15 +803,14 @@ namespace {
   string parserCppCode(
       const string& parserFilePath,
       const string& namespaceName,
-      const string& addlCode,
-      const GrammarData& grammarData,
-      const vector<size_t> concreteLines) {
+      const ParseInfo& parseInfo) {
     stringstream out;
+    const GrammarData& grammarData = parseInfo.grammarData;
 
     out << generatedWarning;
     out << "#include \"" << parserFilePath << ".hpp\"\n";
     cppIncludes(out);
-    out << addlCode << "using namespace std;"
+    out << parseInfo.addlCppCode << "using namespace std;"
         << "namespace {";
     noneInt(out);
     sInt(out);
@@ -823,7 +824,7 @@ namespace {
     startDecl(out, grammarData);
     stackObjDef(out, grammarData);
     currentLineDecl(out);
-    constructObjFn(out, grammarData, concreteLines);
+    constructObjFn(out, grammarData, parseInfo.fileName, parseInfo.concreteLines);
     constructFn(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
@@ -893,8 +894,9 @@ void generateParserCode(
     throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
   }
   cppFile << parserCppCode(
-      parserFilePath, namespaceName, parseInfo.addlCppCode, parseInfo.grammarData, parseInfo.concreteLines);
+      parserFilePath, namespaceName, parseInfo);
 }
+
 
 void generateLexerCode(
     const string& lexerFilePath,
