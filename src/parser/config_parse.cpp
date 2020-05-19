@@ -22,8 +22,6 @@ using namespace config_lexer;
 namespace {
   string addlHppCode;
   string addlCppCode;
-  // Concrete #0 is S, so skip it
-  vector<size_t> concreteLines = {0};
   GrammarData grammarData;
   vector<Token>& gdTokens = grammarData.tokens;
   vector<Concrete>& gdConcretes = grammarData.concretes;
@@ -117,6 +115,7 @@ namespace {
     gdTokens.push_back(Token());
     Token& gdToken = gdTokens.back();
     gdToken.regex = tokenStream.consumeString(STRLIT);
+    gdToken.declLine = tokenStream.currentLine();
 
     // We indicate to the lexer that the token should be skipped by setting the
     // precedence to SKIP_TOKEN (this is useful for things such as comments)
@@ -210,6 +209,7 @@ namespace {
     gdVariables.push_back(Variable());
     Variable& gdVariable = gdVariables.back();
     gdVariable.name = *name;
+    gdVariable.declLine = tokenStream.currentLine();
     varNameToIndex.emplace(move(*name), gdVariables.size() - 1);
     tokenStream.consume(ARROW);
     gdVariable.type = tokenStream.consumeString(TYPE);
@@ -228,7 +228,7 @@ namespace {
     gdVariable.concreteTypes.push_back(gdConcretes.size() - 1);
     gdConcrete.name = gdVariable.name + to_string(concNum);
     gdConcrete.varType = gdVariables.size() - 1;
-    concreteLines.push_back(tokenStream.currentLine());
+    gdConcrete.declLine = tokenStream.currentLine();
     // Store argSymbols as string*s for now until we have seen all the
     // variables. Then, we will convert them to correct integral values.
     // Also store the line number in a map for error checking
@@ -283,8 +283,8 @@ namespace {
   }
 
   void parseGrammar(TokenStream& tokenStream) {
-    gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" });
-    gdConcretes.push_back(Concrete{ "SCONC", S, NONE, { 1 }, "Start(#0)" });
+    gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" , 0});
+    gdConcretes.push_back(Concrete{ "SCONC", S, NONE, { 1 }, "Start(#0)" , 0});
     tokenStream.consume(GRAMMAR);
     while (maybeParseGrammarVar(tokenStream));
 
@@ -341,5 +341,5 @@ ParseInfo parseConfig(const string& fileName) {
 
   throwIfError(errors);
 
-  return { grammarData, addlHppCode, addlCppCode, concreteLines };
+  return { grammarData, addlHppCode, addlCppCode };
 }

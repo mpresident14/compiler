@@ -44,6 +44,7 @@ struct Token {
   std::string ctorExpr;
   std::string dtorStmt;
   std::string regex;
+  size_t declLine;
 };
 
 struct Concrete {
@@ -53,6 +54,7 @@ struct Concrete {
   // See parseGrammarDef() in config_parse.cpp for why this is intptr_t
   std::vector<intptr_t> argSymbols;
   std::string ctorExpr;
+  size_t declLine;
 };
 
 struct Variable {
@@ -60,6 +62,7 @@ struct Variable {
   std::string type;
   std::vector<int> concreteTypes;
   std::string dtorStmt;
+  size_t declLine;
 };
 
 struct GrammarData {

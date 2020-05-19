@@ -118,7 +118,7 @@ namespace {
         rgxDfas.push_back(move(rgxDfa));
       } catch (const regex_parser::ParseException& e) {
         string err(e.what());
-        regexErrs << errorColored << " for regex \"" << token.regex << "\":\n" << err.substr(err.find_first_of('\n') + 1) << '\n';
+        regexErrs << errorColored << " on line " << token.declLine << " for regex \"" << token.regex << "\":\n" << err.substr(err.find_first_of('\n') + 1) << '\n';
       }
     }
 

@@ -21,8 +21,7 @@ void test_parserWithConflicts() {
       ParseInfo{
           BAD_GRAMMAR_DATA,
           "#include \"test/parser/utils/expr.hpp\"\n",
-          "",
-          {}});
+          ""});
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
 }
@@ -36,8 +35,7 @@ int main() {
       ParseInfo{
           GRAMMAR_DATA,
           "#include \"test/parser/utils/expr.hpp\"\n",
-          "",
-          {}});
+          ""});
   test_parserWithConflicts();
 
   return 0;

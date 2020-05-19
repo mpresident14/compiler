@@ -299,7 +299,7 @@ namespace {
   }
 
 
-  void constructObjFn(ostream& out, const GrammarData& grammarData, const vector<size_t>& concreteLines) {
+  void constructObjFn(ostream& out, const GrammarData& grammarData) {
     out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
     size_t numConcretes = grammarData.concretes.size();
@@ -312,17 +312,17 @@ namespace {
       replaceNumbers(
           out,
           concrete.ctorExpr,
-          [&concrete, i, &grammarData, &concreteLines](const string& digits) -> string {
+          [&concrete, &grammarData](const string& digits) -> string {
             const vector<intptr_t>& argSymbols = concrete.argSymbols;
             int argIndex = stoi(digits);
             // These are user-provided numbers, so check the bounds
             if (argIndex < 0) {
-              errors << errorColored << " on line " << concreteLines[i] << ": Index" << argIndex << " is < 0 for rule ";
+              errors << errorColored << " on line " << concrete.declLine << ": Index" << argIndex << " is < 0 for rule ";
               streamSymbolNames(errors, argSymbols, grammarData);
               return "";
             }
             if ((size_t)argIndex >= argSymbols.size()) {
-              errors << errorColored << " on line " << concreteLines[i] << ": Index " << argIndex
+              errors << errorColored << " on line " << concrete.declLine << ": Index " << argIndex
                   << " is greater than the number of elements in rule ";
               streamSymbolNames(errors, argSymbols, grammarData);
               return "";
@@ -333,7 +333,7 @@ namespace {
             if (isToken(argSymbol)) {
               symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
               if (symbolName.empty()) {
-                errors << errorColored << " on line " << concreteLines[i] << ": Token " << symbolToString(argSymbol, grammarData)
+                errors << errorColored << " on line " << concrete.declLine << ": Token " << symbolToString(argSymbol, grammarData)
                     << " is passed as an argument, but has no data associated with it.";
                 return "";
               }
@@ -847,7 +847,7 @@ namespace {
     startDecl(out, grammarData);
     stackObjDef(out, grammarData);
     currentLineDecl(out);
-    constructObjFn(out, grammarData, parseInfo.concreteLines);
+    constructObjFn(out, grammarData);
     constructFn(out);
     constructTokenObjFn(out, grammarData);
     lexerDFA(out, grammarData);
