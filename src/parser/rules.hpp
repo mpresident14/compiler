@@ -16,21 +16,15 @@
 #include <prez/print_stuff.hpp>
 
 // TODO: should be a class
-struct DFARule {
-  int concrete;
-  std::vector<intptr_t> symbols;
-  size_t pos;
-  // Allows us to change lookahead while it is inside of a RuleSet, which is ok
-  // b/c lookahead is not involved in the hash function or equality for RuleSets
-  mutable boost::dynamic_bitset<> lookahead;
-
-  bool atEnd() const noexcept { return pos == symbols.size(); }
+class DFARule {
+public:
+  constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
 
   /* Given a rule "S -> A.B", returns B */
-  int nextSymbol() const noexcept { return atEnd() ? NONE : symbols[pos]; }
+  constexpr int nextSymbol() const noexcept { return atEnd() ? NONE : symbols[pos]; }
 
   /* Given a rule "S -> A.BC", returns C */
-  int nextNextSymbol() const noexcept {
+  constexpr int nextNextSymbol() const noexcept {
     return pos >= symbols.size() - 1 ? NONE : symbols[pos + 1];
   }
 
@@ -92,6 +86,15 @@ struct DFARule {
              left.pos == right.pos;
     }
   };
+
+  // NOTE: These are staying public because this was initially a simple struct and I'm too lazy to fix everything that
+  // would break if I made them private
+  int concrete;
+  std::vector<intptr_t> symbols;
+  size_t pos;
+  // Allows us to change lookahead while it is inside of a RuleSet, which is ok
+  // b/c lookahead is not involved in the hash function or equality for RuleSets
+  mutable boost::dynamic_bitset<> lookahead;
 };
 
 using DFARuleSet = std::unordered_set<DFARule, DFARule::Hash, DFARule::Eq>;
