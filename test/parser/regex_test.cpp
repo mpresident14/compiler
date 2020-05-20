@@ -137,9 +137,9 @@ void testHashFn() {
 void testRgxDFAToCode_withNullableRegex() {
   GrammarData grammarData = {
     {
-        { "", "", NONE, Assoc::NONE, "", "", "a*" },
-        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" },
-        { "", "", NONE, Assoc::NONE, "", "", "for" },
+        { "", "", NONE, Assoc::NONE, "", "", "a*",0 },
+        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" ,0},
+        { "", "", NONE, Assoc::NONE, "", "", "for",0 },
     },
     {},
     {}
@@ -162,9 +162,9 @@ void testRgxDFAToCode_withNullableRegex() {
 void testRgxDFAToCode_withInvalidRegex() {
   GrammarData grammarData = {
     {
-        { "", "", NONE, Assoc::NONE, "", "", "." },
-        { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" },
-        { "", "", NONE, Assoc::NONE, "", "", "for" },
+        { "", "", NONE, Assoc::NONE, "", "", "." ,0},
+        { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" ,0},
+        { "", "", NONE, Assoc::NONE, "", "", "for",0 },
     },
     {},
     {}
