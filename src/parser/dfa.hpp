@@ -195,25 +195,24 @@ public:
     return newDfa;
   }
 
-  template <typename F1, typename F2, typename F3>
+  template <typename F1, typename F2>
   void streamAsCode(
       std::ostream& out,
-      const std::string& valueType,
-      const std::string& tranType,
-      const F1& convertValue,
-      const F2& valueToStr,
-      const F3& tranToStr) const {
+      const std::string& newValueType,
+      const std::string& newTranType,
+      const F1& valueToStr,
+      const F2& tranToStr) const {
     std::ostringstream init;
     std::ostringstream nodeDecls;
     std::ostringstream tranStmts;
 
     init << "struct "
          << "Node {\n"
-         << "Node(" << valueType << "&& v) : v_(std::move(v)) {}\n";
+         << "Node(" << newValueType << "&& v) : v_(std::move(v)) {}\n";
 
     init << R"(
       Node* step(const )"
-         << tranType << R"(& t) const {
+         << newTranType << R"(& t) const {
         auto iter = ts_.find(t);
         if (iter == ts_.end()) {
           return nullptr;
@@ -222,8 +221,8 @@ public:
       }
     )";
 
-    init << valueType << " v_;\n"
-         << "std::unordered_map<" << tranType << ", Node*> ts_;};\n";
+    init << newValueType << " v_;\n"
+         << "std::unordered_map<" << newTranType << ", Node*> ts_;};\n";
 
     tranStmts << "auto makeDFA(){\n";
 
@@ -237,7 +236,7 @@ public:
 
       // Add node declaration
       nodeDecls << "auto n" << currentNode << "=std::make_unique<Node>("
-                << valueToStr(convertValue(currentNode->value_)) << ");\n";
+                << valueToStr(currentNode->value_) << ");\n";
 
       // Add the transitions
       tranStmts << 'n' << currentNode << "->ts_={\n";

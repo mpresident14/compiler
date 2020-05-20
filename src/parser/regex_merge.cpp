@@ -201,7 +201,6 @@ void mergedRgxDFAToCode(ostream& out, const GrammarData& grammarData) {
           out,
           "int",
           "char",
-          [](const MergeData& mergedData) { return mergedData.token; },
-          [](int n) { return to_string(n); },
+          [](const MergeData& mergedData) { return to_string(mergedData.token); },
           charToString);
 }

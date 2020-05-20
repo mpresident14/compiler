@@ -490,8 +490,7 @@ void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
           "RuleData",
           "int",
           [&grammarData](const DFARuleSet& ruleSet) {
-            return condenseRuleSet(ruleSet, grammarData);
+            return ruleDataToCode(condenseRuleSet(ruleSet, grammarData));
           },
-          ruleDataToCode,
           [](int n) { return to_string(n); });
 }
