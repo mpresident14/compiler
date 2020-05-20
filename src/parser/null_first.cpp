@@ -8,11 +8,13 @@
 #include <string>
 #include <fstream>
 
+using BitSetVars = boost::dynamic_bitset<>;
+using BitSetToks = boost::dynamic_bitset<>;
+using BitRef = typename boost::dynamic_bitset<>::reference;
+
 namespace {
   using namespace std;
-  using BitSetVars = vector<bool>;
-  using BitSetToks = vector<bool>;
-  using BitRef = typename vector<bool>::reference;
+
 
   /* Iterate to find the least fixed point */
   void computeNullabilities(
@@ -40,8 +42,8 @@ namespace {
                     return bitref;
                   });
             });
-        if (newValue != nullabilities[i]) {
-          nullabilities[i] = move(newValue);
+        if (newValue) {
+          nullabilities.set(i);
           changed = true;
         }
       }
@@ -65,13 +67,13 @@ namespace {
       for (size_t i = 0; i < numVariables; ++i) {
         const UnionEquation& unionEq = equations[i];
         // Take union of all the bitsets
-        // TODO: Don't need to orEqual the token set every time
         BitSetToks newValue = unionEq.tokenSet;
         for (const BitSetToks* bitsetRef : unionEq.bitSetTokRefs) {
-          bitOrEquals(newValue, *bitsetRef);
+          newValue |= *bitsetRef;
         }
+        // Compare to previous value and see if anything has changed
         if (newValue != firsts[i]) {
-          firsts[i] = move(newValue);
+          firsts[i] = std::move(newValue);
           changed = true;
         }
       }
@@ -82,11 +84,7 @@ namespace {
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitVarRef> */
-std::vector<bool> getNullabilities(const GrammarData& grammarData) {
-  using namespace std;
-  using BitSetVars = vector<bool>;
-  using BitRef = typename vector<bool>::reference;
-
+BitSetVars getNullabilities(const GrammarData& grammarData) {
   size_t numVars = grammarData.variables.size();
   BitSetVars nullabilities(numVars);
   vector<vector<vector<BitRef>>> equations(numVars);
@@ -109,7 +107,7 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
       for (int rhsSymbol : rule.argSymbols) {
         conjunctions.push_back(nullabilities[rhsSymbol]);
       }
-      equations[var].push_back(move(conjunctions));
+      equations[var].push_back(std::move(conjunctions));
     }
   }
 
@@ -119,12 +117,8 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
 
 
 
-std::pair<std::vector<bool>, std::vector<std::vector<bool>>>
+std::pair<BitSetVars, std::vector<BitSetToks>>
 getNullsAndFirsts(const GrammarData& grammarData) {
-  using namespace std;
-  using BitSetVars = vector<bool>;
-  using BitSetToks = vector<bool>;
-
   size_t numVars = grammarData.variables.size();
   size_t numTokens = grammarData.tokens.size();
 
@@ -165,12 +159,5 @@ getNullsAndFirsts(const GrammarData& grammarData) {
   }
 
   computeFirsts(firsts, equations);
-  return { move(nullabilities), move(firsts) };
-}
-
-void bitOrEquals(vector<bool>& bits, const vector<bool>& other) {
-  size_t len = bits.size();
-  for (size_t i = 0; i < len; ++i) {
-    bits[i] = bits[i] | other[i];
-  }
+  return { std::move(nullabilities), std::move(firsts) };
 }

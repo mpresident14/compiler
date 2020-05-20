@@ -5,12 +5,17 @@
 #include "src/parser/utils.hpp"
 #include "test/parser/utils/expr_grammar.hpp"
 
+#include <string>
+
+#include <boost/dynamic_bitset.hpp>
+
 #include <prez/print_stuff.hpp>
 #include <prez/unit_test.hpp>
 
 using namespace std;
 using namespace prez;
 using namespace test::expr_grammar;
+using namespace std::string_literals;
 
 UnitTest TESTER = UnitTest::createTester();
 
@@ -22,16 +27,12 @@ void testInitState(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   /* lookahead = {INT, PLUS, STAR, whitespace} */
 
   const DFARuleSet& initRules = dfa.getRoot()->getValue();
-  const DFARule expected0 = {
-    SCONC, { EXPR }, 0, { false, false, false, false }
-  };
-  const DFARule expected1 = { EINT, { INT }, 0, { false, true, true, false } };
+  const DFARule expected0 = { SCONC, { EXPR }, 0, boost::dynamic_bitset<>("0000"s)};
+  const DFARule expected1 = { EINT, { INT }, 0, boost::dynamic_bitset<>("0110"s) };
   const DFARule expected2 = {
-    EPLUS, { EXPR, PLUS, EXPR }, 0, { false, true, true, false }
-  };
+    EPLUS, { EXPR, PLUS, EXPR }, 0, boost::dynamic_bitset<>("0110"s)};
   const DFARule expected3 = {
-    ETIMES, { EXPR, STAR, EXPR }, 0, { false, true, true, false }
-  };
+    ETIMES, { EXPR, STAR, EXPR }, 0, boost::dynamic_bitset<>("0110"s) };
 
   TESTER.assertEquals(4, initRules.size());
 
@@ -72,16 +73,16 @@ void testTransition(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   const DFARuleSet& ruleSetInt = transitions.at(INT)->getValue();
   const DFARuleSet& ruleSetExpr = transitions.at(EXPR)->getValue();
   const DFARule expectedInt = {
-    EINT, { INT }, 1, { false, true, true, false }
+    EINT, { INT }, 1, boost::dynamic_bitset<>("0110"s)
   };
   const DFARule expectedExpr0 = {
-    EPLUS, { EXPR, PLUS, EXPR }, 1, { false, true, true, false }
+    EPLUS, { EXPR, PLUS, EXPR }, 1, boost::dynamic_bitset<>("0110"s)
   };
   const DFARule expectedExpr1 = {
-    ETIMES, { EXPR, STAR, EXPR }, 1, { false, true, true, false }
+    ETIMES, { EXPR, STAR, EXPR }, 1, boost::dynamic_bitset<>("0110"s)
   };
   const DFARule expectedExpr2 = {
-    SCONC, { EXPR }, 1, { false, false, false, false }
+    SCONC, { EXPR }, 1, boost::dynamic_bitset<>("0000"s)
   };
 
   TESTER.assertEquals(2, transitions.size());

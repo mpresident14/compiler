@@ -11,15 +11,18 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include <prez/print_stuff.hpp>
 
+// TODO: should be a class
 struct DFARule {
   int concrete;
   std::vector<intptr_t> symbols;
   size_t pos;
   // Allows us to change lookahead while it is inside of a RuleSet, which is ok
   // b/c lookahead is not involved in the hash function or equality for RuleSets
-  mutable std::vector<bool> lookahead;
+  mutable boost::dynamic_bitset<> lookahead;
 
   bool atEnd() const noexcept { return pos == symbols.size(); }
 
