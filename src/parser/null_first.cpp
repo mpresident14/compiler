@@ -117,15 +117,7 @@ std::vector<bool> getNullabilities(const GrammarData& grammarData) {
   return nullabilities;
 }
 
-void printNullabilities(std::ostream& out, const BitSetVars& nullabilities, const GrammarData& gd) {
-  vector<string> nullVarNames;
-  for (size_t j = 0; j < nullabilities.size(); ++j) {
-    if (nullabilities[j]) {
-      nullVarNames.push_back(gd.variables[j].name);
-    }
-  }
-  out << "NULLABILITIES:\n\n" << nullVarNames << "\n\n";
-}
+
 
 std::pair<std::vector<bool>, std::vector<std::vector<bool>>>
 getNullsAndFirsts(const GrammarData& grammarData) {
@@ -151,9 +143,6 @@ getNullsAndFirsts(const GrammarData& grammarData) {
   }
 
   BitSetVars nullabilities = getNullabilities(grammarData);
-
-  ofstream desktop("/home/mpresident/Desktop/parse_nulls.log");
-  printNullabilities(desktop, nullabilities, grammarData);
 
   for (size_t var = 0; var < numVars; ++var) {
     UnionEquation& unionEq = equations[var];

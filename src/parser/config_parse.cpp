@@ -13,6 +13,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include <prez/print_stuff.hpp>
 
@@ -20,8 +21,6 @@ using namespace std;
 using namespace config_lexer;
 
 namespace {
-  string addlHppCode;
-  string addlCppCode;
   GrammarData grammarData;
   vector<Token>& gdTokens = grammarData.tokens;
   vector<Concrete>& gdConcretes = grammarData.concretes;
@@ -36,7 +35,7 @@ namespace {
 
   class TokenStream {
   public:
-    TokenStream(vector<StackObj>& tokens) : tokens_(tokens) {}
+    TokenStream() = default;
     ~TokenStream() = default;
     TokenStream(const TokenStream& other) = delete;
     TokenStream& operator=(const TokenStream& other) = delete;
@@ -83,23 +82,29 @@ namespace {
       return pos_ == 0 ? 0 : tokens_[pos_ - 1].getLine();
     }
 
+    void setTokens(vector<StackObj>&& tokens) {
+      tokens_ = move(tokens);
+    }
+
   private:
-    vector<StackObj>& tokens_;
+    vector<StackObj> tokens_;
     size_t pos_ = 0;
   };
 
+  TokenStream tokenStream;
 
-  void parseHeader(TokenStream& tokenStream) {
+
+  string parseHeader() {
     tokenStream.consume(HEADER);
-    addlHppCode = tokenStream.consumeString(CODE);
+    return tokenStream.consumeString(CODE);
   }
 
-  void parseSource(TokenStream& tokenStream) {
+  string parseSource() {
     tokenStream.consume(SOURCE);
-    addlCppCode = tokenStream.consumeString(CODE);
+    return tokenStream.consumeString(CODE);
   }
 
-  bool maybeParseToken(TokenStream& tokenStream) {
+  bool maybeParseToken() {
     bool skip = false;
     // Check for an identifier to see if there are any more tokens
     string* name = tokenStream.maybeConsumeString(IDENT);
@@ -145,13 +150,13 @@ namespace {
     return true;
   }
 
-  void parseTokens(TokenStream& tokenStream) {
+  void parseTokens() {
     tokenStream.consume(TOKENS);
-    while (maybeParseToken(tokenStream))
+    while (maybeParseToken())
       ;
   }
 
-  bool maybeParsePrec(TokenStream& tokenStream, int prec) {
+  bool maybeParsePrec(int prec) {
     vector<string*> precNames;
     // Check for an identifier to see if there are any more precedence lines
     string* precName;
@@ -192,14 +197,14 @@ namespace {
     return true;
   }
 
-  void parsePrecs(TokenStream& tokenStream) {
+  void parsePrecs() {
     tokenStream.consume(PREC);
     int prec = 1;
-    while (maybeParsePrec(tokenStream, prec++))
+    while (maybeParsePrec(prec++))
       ;
   }
 
-  bool maybeParseGrammarDecl(TokenStream& tokenStream) {
+  bool maybeParseGrammarDecl() {
     // Check for an identifier to see if there are any more declarations
     string* name = tokenStream.maybeConsumeString(IDENT);
     if (!name) {
@@ -221,7 +226,7 @@ namespace {
   }
 
   /* This must be called right after parseGrammarDecl() */
-  void parseGrammarDef(TokenStream& tokenStream, size_t concNum) {
+  void parseGrammarDef(size_t concNum) {
     Variable& gdVariable = gdVariables.back();
     gdConcretes.push_back(Concrete());
     Concrete& gdConcrete = gdConcretes.back();
@@ -268,25 +273,25 @@ namespace {
     gdConcrete.ctorExpr = tokenStream.consumeString(CODE);
   }
 
-  bool maybeParseGrammarVar(TokenStream& tokenStream) {
-    if (!maybeParseGrammarDecl(tokenStream)) {
+  bool maybeParseGrammarVar() {
+    if (!maybeParseGrammarDecl()) {
       return false;
     }
 
     tokenStream.consume(DEFINED);
     size_t concNum = 0;
-    parseGrammarDef(tokenStream, concNum++);
+    parseGrammarDef(concNum++);
     while (tokenStream.maybeConsume(BAR)) {
-      parseGrammarDef(tokenStream, concNum++);
+      parseGrammarDef(concNum++);
     }
     return true;
   }
 
-  void parseGrammar(TokenStream& tokenStream) {
+  void parseGrammar() {
     gdVariables.push_back(Variable{ "S", "Start", { SCONC }, "" , 0});
     gdConcretes.push_back(Concrete{ "SCONC", S, NONE, { 1 }, "Start(#0)" , 0});
     tokenStream.consume(GRAMMAR);
-    while (maybeParseGrammarVar(tokenStream));
+    while (maybeParseGrammarVar());
 
     // Translate the string pointers to token/variable ids now that we
     // have parsed the whole file (skip SCONC)
@@ -324,13 +329,13 @@ ParseInfo parseConfig(const string& fileName) {
   if (tokens.empty()) {
     errors  << errorColored << ": File " + fileName + " is empty.\n";
   }
+  tokenStream.setTokens(move(tokens));
 
-  TokenStream tokenStream(tokens);
-  parseHeader(tokenStream);
-  parseSource(tokenStream);
-  parseTokens(tokenStream);
-  parsePrecs(tokenStream);
-  parseGrammar(tokenStream);
+  string addlHppCode = parseHeader();
+  string addlCppCode = parseSource();
+  parseTokens();
+  parsePrecs();
+  parseGrammar();
 
   if (gdTokens.empty()) {
     errors  << errorColored << ": No tokens were provided.\n";
@@ -341,5 +346,5 @@ ParseInfo parseConfig(const string& fileName) {
 
   throwIfError(errors);
 
-  return { grammarData, addlHppCode, addlCppCode };
+  return { move(grammarData), move(addlHppCode), move(addlCppCode) };
 }

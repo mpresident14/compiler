@@ -72,7 +72,7 @@ IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*" -> { string } % #str %
 // Not an actual operator, just so that
 // we can push_back instead of push_front
 // for Params and Exprs
-EPSILON                  #left
+EPSILON                 #left
 
 QMARK                   #right
 OR                      #left
@@ -116,9 +116,9 @@ Expr -> { ExprPtr }
   := NUM                                      % make_unique<ConstInt>(#0) %
    | TRUE                                     % make_unique<ConstBool>(true) %
    | FALSE                                    % make_unique<ConstBool>(false) %
-   | MINUS Expr   #prec UNARY_MINUS                % make_unique<UnaryOp>(move(#1), UOp::NEG) %
+   | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG) %
    | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT) %
-   | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
+   | Expr PLUS Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
    | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
    | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
    | Expr FSLASH Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %

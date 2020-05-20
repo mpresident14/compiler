@@ -32,7 +32,7 @@ namespace {
   using RgxDFA = DFA<RgxPtr, char, Regex::PtrHash>;
 
   /* BFS with regex derivative expansion */
-  RgxDFA buildRegexDFA(const RgxPtr rgx) {
+  RgxDFA buildRegexDFA(const RgxPtr& rgx) {
     RgxDFA dfa(rgx);
     queue<RgxDFA::Node*> q;
     q.push(dfa.getRoot());
@@ -107,7 +107,7 @@ namespace {
         initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
         if (rgxDfa.getRoot()->getValue()->isNullable()) {
           // Accepting the empty string will likely result in an infinite loop
-          cerr << "WARNING: The regex \"" << token.regex
+          cerr << warningColored << ": The regex \"" << token.regex
               << "\" accepts the empty string" << endl;
           // Multiple regex DFAs accept the empty string. We pick the regex that
           // was listed first.

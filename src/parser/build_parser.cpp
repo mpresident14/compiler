@@ -17,7 +17,7 @@
 using namespace std;
 using DFA_t = DFA<DFARuleSet, int, DFARuleSetHash>;
 using BitSetToks = vector<bool>;
-using BitSetVar = vector<bool>;
+using BitSetVars = vector<bool>;
 
 namespace {
 
@@ -30,13 +30,46 @@ namespace {
     return result;
   }
 
+  void streamRule(
+      std::ostream& out,
+      const DFARule& rule,
+      const GrammarData& grammarData) {
+    const vector<Variable>& variables = grammarData.variables;
+    const vector<Token>& tokens = grammarData.tokens;
+
+    out << grammarData.concretes[rule.concrete].name << " -> ";
+    size_t len = rule.symbols.size();
+    for (size_t i = 0; i < len; ++i) {
+      if (i == rule.pos) {
+        out << '.';
+      }
+      int symbol = rule.symbols[i];
+      if (isToken(symbol)) {
+        out << tokens[tokenToFromIndex(symbol)].name << ' ';
+      } else {
+        out << variables[symbol].name << ' ';
+      }
+    }
+    if (rule.pos == len) {
+      out << '.';
+    }
+    vector<string> lookaheadNames;
+    for (size_t i = 0; i < rule.lookahead.size(); ++i) {
+      if (rule.lookahead[i]) {
+        lookaheadNames.push_back(tokens[i].name);
+      }
+    }
+    out << " :: " << lookaheadNames;
+  }
+
+
   /* Given a rule "A -> .BC", add all "B -> .<rhs>" rules to rule queue,
    * updating the lookahead set */
   void addRhses(
       queue<DFARule>& ruleQueue,
       const DFARule& fromRule,
       const GrammarData& grammarData,
-      const BitSetVar& nulls,
+      const BitSetVars& nulls,
       const vector<BitSetToks>& firsts) {
     // Nothing to expand if we are at the end of the rule or if the next symbol
     // is a token
@@ -96,26 +129,32 @@ namespace {
   void epsilonTransition(
       DFARuleSet& ruleSet,
       const GrammarData& grammarData,
-      const BitSetVar& nulls,
+      const BitSetVars& nulls,
       const vector<BitSetToks>& firsts) {
     queue<DFARule> ruleQueue;
 
     // Expand variables (epsilon transition) in the initial set of rules.
     for (const DFARule& rule : ruleSet) {
       // TODO: Could be adding duplicate epsilon transitions here
+      // TODO: Don't add to queue if the rule exists in ruleSet and has a subset of
+      // the tokens of the equivalent rule in the ruleSet. Should be handled in
+      // addRhses. Define a method: bool isNewRule(queue<Rule>, set<Rule>);
       addRhses(ruleQueue, rule, grammarData, nulls, firsts);
     }
 
     // Keep expanding variables (epsilon transition) until we've determined all
     // the possible rule positions we could be in.
+    cout << "-----------------------------------------" << endl;
+    // TODO: HERE IS THE BOTTLENECK, WE ARE GOING THRU THIS LOOP 100s to 1000s of times.
     while (!ruleQueue.empty()) {
       DFARule& rule = ruleQueue.front();
+      streamRule(cout, rule, grammarData);
+      cout << '\n' << endl;
       auto iter = ruleSet.find(rule);
       // If rule is not yet in the set, add it.
-      // TODO: We could check for duplicate rules in the queue as well (like
-      // use a set and just pop with set.begin()), but this would incur a large
-      // penalty for every add to the queue. I don't think the tradeoff would be
-      // worth it.
+      // TODO: Don't add to queue if the rule exists in ruleSet and has a subset of
+      // the tokens of the equivalent rule in the ruleSet. Should be handled in
+      // addRhses
       if (iter == ruleSet.end()) {
         addRhses(ruleQueue, rule, grammarData, nulls, firsts);
         ruleSet.insert(move(rule));
@@ -124,7 +163,7 @@ namespace {
       }
 
       // TODO: All these bitOrs are really slow, does boost have a library
-      // that has a better vector<bool> class?
+      // that has a better vector<bool> class? EDIT: YES boost::dynamic_bitset
 
       // If rule is already in the set, union their lookahead sets.
       // If the new rule had any new members in its lookahead set, we need
@@ -146,7 +185,7 @@ namespace {
       DFA_t& dfa,
       DFA_t::Node* node,
       const GrammarData& grammarData,
-      const BitSetVar& nulls,
+      const BitSetVars& nulls,
       const vector<BitSetToks>& firsts) {
     // Get all the valid transition symbols and map each of them to a new set of
     // rules
@@ -183,7 +222,7 @@ namespace {
   /* Constructs the starting node of the DFA */
   DFA_t initDFA(
       const GrammarData& grammarData,
-      const BitSetVar& nulls,
+      const BitSetVars& nulls,
       const vector<BitSetToks>& firsts) {
     int rootType = grammarData.variables[S].concreteTypes[0];
     DFARuleSet firstSet = { DFARule{ SCONC,
@@ -198,6 +237,16 @@ namespace {
 
 
 // TODO: Integrate this
+void printNullabilities(std::ostream& out, const BitSetVars& nullabilities, const GrammarData& gd) {
+  vector<string> nullVarNames;
+  for (size_t j = 0; j < nullabilities.size(); ++j) {
+    if (nullabilities[j]) {
+      nullVarNames.push_back(gd.variables[j].name);
+    }
+  }
+  out << "NULLABILITIES:\n\n" << nullVarNames << "\n\n";
+}
+
 void printFirsts(std::ostream& out, const vector<BitSetToks>& firsts, const GrammarData& gd) {
   out << "FIRSTS" << endl;
   for (size_t i = 0; i < firsts.size(); ++i) {
@@ -214,16 +263,20 @@ void printFirsts(std::ostream& out, const vector<BitSetToks>& firsts, const Gram
 
 /* Build the DFA */
 DFA_t buildParserDFA(const GrammarData& grammarData) {
+  cout << "COMPUTE NULLS AND FIRSTS" << endl;
   auto nullFirstsPair = getNullsAndFirsts(grammarData);
   const vector<BitSetToks>& firsts = nullFirstsPair.second;
-  const BitSetVar& nulls = nullFirstsPair.first;
-  ofstream desktop("/home/mpresident/Desktop/parse_firsts.log");
-  // TODO: Print nulls here in same file
-  printFirsts(desktop, firsts, grammarData);
+  const BitSetVars& nulls = nullFirstsPair.first;
+
+  // ofstream desktop("/home/mpresident/Desktop/parse_info.log");
+  // printNullabilities(desktop, nullabilities, grammarData);
+  // printFirsts(desktop, firsts, grammarData);
+  cout << "INIT DFA" << endl;
   DFA_t dfa = initDFA(grammarData, nulls, firsts);
   queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
+  cout << "BUILD DFA" << endl;
   while (!q.empty()) {
     DFA_t::Node* node = q.front();
     q.pop();
@@ -237,37 +290,6 @@ DFA_t buildParserDFA(const GrammarData& grammarData) {
   return dfa;
 }
 
-void streamRule(
-    std::ostream& out,
-    const DFARule& rule,
-    const GrammarData& grammarData) {
-  const vector<Variable>& variables = grammarData.variables;
-  const vector<Token>& tokens = grammarData.tokens;
-
-  out << grammarData.concretes[rule.concrete].name << " -> ";
-  size_t len = rule.symbols.size();
-  for (size_t i = 0; i < len; ++i) {
-    if (i == rule.pos) {
-      out << '.';
-    }
-    int symbol = rule.symbols[i];
-    if (isToken(symbol)) {
-      out << tokens[tokenToFromIndex(symbol)].name << ' ';
-    } else {
-      out << variables[symbol].name << ' ';
-    }
-  }
-  if (rule.pos == len) {
-    out << '.';
-  }
-  vector<string> lookaheadNames;
-  for (size_t i = 0; i < rule.lookahead.size(); ++i) {
-    if (rule.lookahead[i]) {
-      lookaheadNames.push_back(tokens[i].name);
-    }
-  }
-  out << " :: " << lookaheadNames;
-}
 
 void shiftReduceConflict(
     const DFARule& reduceRule,
@@ -447,9 +469,11 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
 }
 
 void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
+  cout << "START BUILD" << endl;
   auto dfa = buildParserDFA(grammarData);
-  ofstream desktop("/home/mpresident/Desktop/parse.log");
-  printDfa(desktop, dfa, grammarData);
+  // ofstream desktop("/home/mpresident/Desktop/parse.log");
+  // printDfa(desktop, dfa, grammarData);
+  cout << "START STREAM" << endl;
       dfa.streamAsCode(
           out,
           "RuleData",
@@ -459,4 +483,5 @@ void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
           },
           ruleDataToCode,
           [](int n) { return to_string(n); });
+  cout << "END STREAM" << endl;
 }
