@@ -1,8 +1,12 @@
 # Project's name
 project(parser)
 
+# Tells CMake to find the appropriate thread package for this platform
+find_package( Threads )
+
 # So regex sources don't have to be rebuilt for each executable
 add_library(parse_lib STATIC build_parser.cpp null_first.cpp)
+target_link_libraries(parse_lib ${CMAKE_THREAD_LIBS_INIT})
 add_library(regex_lib STATIC regex.cpp regex_parser.cpp regex_merge.cpp)
 target_link_libraries(regex_lib parse_lib)
 
