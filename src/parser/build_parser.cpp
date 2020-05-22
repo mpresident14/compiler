@@ -63,7 +63,7 @@ void streamRule(
   out << " :: " << lookaheadNames;
 }
 
-// TODO: Integrate this
+
 void printNullabilities(
     std::ostream& out,
     const BitSetVars& nullabilities,
@@ -99,7 +99,6 @@ void printFirsts(
 }
 
 
-// TODO: Integrate this more nicely and add transitions
 void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
   using Node = DFA_t::Node;
 

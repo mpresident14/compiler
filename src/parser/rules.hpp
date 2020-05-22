@@ -15,8 +15,8 @@
 
 #include <prez/print_stuff.hpp>
 
-// TODO: should be a class
-class DFARule {
+
+struct DFARule {
 public:
   constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
 
