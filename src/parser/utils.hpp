@@ -91,5 +91,9 @@ inline std::string symbolToString(
   return grammarData.variables[symbolId].name;
 }
 
+struct ParseFlags {
+  std::string parserFilePath;
+  std::string logFile;
+};
 
 #endif

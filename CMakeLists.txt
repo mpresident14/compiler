@@ -13,6 +13,7 @@ project(compiler)
 # Set the output folder where your program will be created
 set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set(LOG_DIRECTORY ${CMAKE_SOURCE_DIR}/log)
 # These two are supposedly deprecated in favor of the two above,
 # but those don't seem to be working
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)

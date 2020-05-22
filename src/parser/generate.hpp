@@ -7,9 +7,7 @@
 #include <ostream>
 #include <string>
 
-void generateParserCode(
-    const std::string& parserFilePath,
-    const ParseInfo& parseInfo);
+void generateParserCode(const ParseInfo& parseInfo, const ParseFlags& parseFlags);
 
 void generateLexerCode(
     const std::string& lexerFilePath,

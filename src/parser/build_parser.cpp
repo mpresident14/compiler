@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include "src/misc/errors.hpp"
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
@@ -73,14 +74,18 @@ void printNullabilities(
       nullVarNames.push_back(gd.variables[j].name);
     }
   }
-  out << "NULLABILITIES:\n\n" << nullVarNames << "\n\n";
+  out << "*************\n"
+      << "* NULLABLES *\n"
+      << "*************\n" << nullVarNames << "\n\n\n";
 }
 
 void printFirsts(
     std::ostream& out,
     const vector<BitSetToks>& firsts,
     const GrammarData& gd) {
-  out << "FIRSTS" << endl;
+  out << "**********\n"
+      << "* FIRSTS *\n"
+      << "**********\n";
   for (size_t i = 0; i < firsts.size(); ++i) {
     vector<string> lookaheadNames;
     for (size_t j = 0; j < firsts[i].size(); ++j) {
@@ -90,6 +95,7 @@ void printFirsts(
     }
     out << gd.variables[i].name << ": " << lookaheadNames << "\n\n";
   }
+  out << '\n';
 }
 
 
@@ -97,8 +103,11 @@ void printFirsts(
 void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
   using Node = DFA_t::Node;
 
-  unordered_map<const Node*, size_t> nodeNumMap;
+  out << "**********\n"
+      << "* STATES *\n"
+      << "**********\n\n";
 
+  unordered_map<const Node*, size_t> nodeNumMap;
   std::queue<const Node*> q;
   q.push(dfa.getRoot());
   std::unordered_set<const Node*> visited = { dfa.getRoot() };
@@ -107,9 +116,9 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
   while (!q.empty()) {
     const Node* node = q.front();
     q.pop();
-    out << "--------------\n";
-    out << "STATE " << nodeNumMap.at(node) << '\n';
-    out << "--------------\n";
+    out << "-----------\n";
+    out << "- State " << nodeNumMap.at(node) << '\n';
+    out << "-----------\n";
     for (const DFARule& rule : node->getValue()) {
       streamRule(out, rule, gd);
       out << "\n\n";
@@ -121,10 +130,10 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
         q.push(successor);
         visited.insert(successor);
       }
-      out << '[' << symbolToString(trans, gd) << "] -> State "
+      out << "[" << symbolToString(trans, gd) << "] -> State "
           << nodeNumMap.at(successor) << '\n';
     }
-    out << "\n\n";
+    out << "\n\n\n";
   }
 }
 
@@ -327,14 +336,11 @@ DFA_t initDFA(
 
 
 /* Build the DFA */
-DFA_t buildParserDFA(const GrammarData& grammarData) {
+DFA_t buildParserDFA(const GrammarData& grammarData, const ParseFlags& parseFlags) {
   auto nullFirstsPair = getNullsAndFirsts(grammarData);
   const vector<BitSetToks>& firsts = nullFirstsPair.second;
   const BitSetVars& nulls = nullFirstsPair.first;
 
-  // ofstream desktop("/home/mpresident/Desktop/parse_info.log");
-  // printNullabilities(desktop, nullabilities, grammarData);
-  // printFirsts(desktop, firsts, grammarData);
   DFA_t dfa = initDFA(grammarData, nulls, firsts);
   queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
@@ -346,6 +352,17 @@ DFA_t buildParserDFA(const GrammarData& grammarData) {
         createTransitions(dfa, node, grammarData, nulls, firsts);
     for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
+    }
+  }
+
+  if (!parseFlags.logFile.empty()) {
+    ofstream logStream(parseFlags.logFile);
+    if (logStream.is_open()) {
+      printNullabilities(logStream, nulls, grammarData);
+      printFirsts(logStream, firsts, grammarData);
+      printDfa(logStream, dfa, grammarData);
+    } else {
+      cerr << warningColored << ": could not open " << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
     }
   }
 
@@ -519,10 +536,9 @@ string ruleDataToCode(const RuleData& ruleData) {
 }  // namespace
 
 
-void condensedDFAToCode(ostream& out, const GrammarData& grammarData) {
-  auto dfa = buildParserDFA(grammarData);
-  // ofstream desktop("/home/mpresident/Desktop/parse.log");
-  // printDfa(desktop, dfa, grammarData);
+void condensedDFAToCode(ostream& out, const GrammarData& grammarData, const ParseFlags& parseFlags) {
+  auto dfa = buildParserDFA(grammarData, parseFlags);
+
   dfa.streamAsCode(
       out,
       "RuleData",

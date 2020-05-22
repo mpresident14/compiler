@@ -391,7 +391,7 @@ namespace {
   /********
    * DFAs *
    ********/
-  void lexerDFA(ostream& out, const GrammarData grammarData) {
+  void lexerDFA(ostream& out, const GrammarData& grammarData) {
     out << "namespace lexer {";
     try {
       mergedRgxDFAToCode(out, grammarData);
@@ -401,9 +401,9 @@ namespace {
     out << '}';
   }
 
-  void parserDFA(ostream& out, const GrammarData grammarData) {
+  void parserDFA(ostream& out, const GrammarData& grammarData, const ParseFlags& parseFlags) {
     out << "namespace parser {";
-    condensedDFAToCode(out, grammarData);
+    condensedDFAToCode(out, grammarData, parseFlags);
     out << '}';
   }
 
@@ -823,14 +823,14 @@ namespace {
   }
 
   string parserCppCode(
-      const string& parserFilePath,
+      const ParseFlags& parseFlags,
       const string& namespaceName,
       const ParseInfo& parseInfo) {
     stringstream out;
     const GrammarData& grammarData = parseInfo.grammarData;
 
     out << generatedWarning;
-    out << "#include \"" << parserFilePath << ".hpp\"\n";
+    out << "#include \"" << parseFlags.parserFilePath << ".hpp\"\n";
     cppIncludes(out);
     out << parseInfo.addlCppCode << "using namespace std;"
         << "using namespace " << namespaceName << ";"
@@ -853,7 +853,7 @@ namespace {
     lexerDFA(out, grammarData);
     dfaRuleDecl(out);
     ruleDataDecl(out);
-    parserDFA(out, grammarData);
+    parserDFA(out, grammarData, parseFlags);
     tokenizeFn(out);
     parseHelperFns(out);
     tryReduceFn(out);
@@ -898,9 +898,9 @@ namespace {
 
 }  // namespace
 
-void generateParserCode(
-    const string& parserFilePath,
-    const ParseInfo& parseInfo) {
+void generateParserCode(const ParseInfo& parseInfo, const ParseFlags& parseFlags) {
+  const string& parserFilePath = parseFlags.parserFilePath;
+
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
@@ -917,7 +917,7 @@ void generateParserCode(
   hppFile << parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.grammarData);
   cppFile << parserCppCode(
-      parserFilePath, namespaceName, parseInfo);
+      parseFlags, namespaceName, parseInfo);
   throwIfError(errors);
 }
 

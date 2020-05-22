@@ -10,18 +10,22 @@ using namespace std;
 
 int main(int argc, char** argv) {
   const char* errMsg =
-      "Usage: parsegen -g <grammar_file> [-f <output_file_basename>]";
+      "Usage: parsegen -g <grammar_file> [-f <output_file_base>] [-l <log_file>]";
 
-  string outputFile;
-  string gpFile;
+  string pgenFile;
+  string parserFilePath;
+  string logFile;
   char c;
-  while ((c = getopt(argc, argv, "g:f:")) != -1) {
+  while ((c = getopt(argc, argv, "g:f:l:")) != -1) {
     switch (c) {
       case 'g':
-        gpFile = optarg;
+        pgenFile = optarg;
         break;
       case 'f':
-        outputFile = optarg;
+        parserFilePath = optarg;
+        break;
+      case 'l':
+        logFile = optarg;
         break;
       default:
         cerr << errMsg << endl;
@@ -29,24 +33,24 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (gpFile.empty()) {
+  if (pgenFile.empty()) {
     cerr << errMsg << endl;
     return 1;
   }
 
-  if (!gpFile.ends_with(".pgen")) {
+  if (!pgenFile.ends_with(".pgen")) {
     cerr << "Grammar file must have a .pgen extension" << endl;
     return 1;
   }
 
-  if (outputFile.empty()) {
-    outputFile = gpFile.substr(0, gpFile.size() - 5) + "_parser";
+  if (parserFilePath.empty()) {
+    parserFilePath = pgenFile.substr(0, pgenFile.size() - 5) + "_parser";
   }
 
   try {
-    ParseInfo parseInfo = parseConfig(gpFile);
-    generateParserCode(outputFile, parseInfo);
+    ParseInfo parseInfo = parseConfig(pgenFile);
+    generateParserCode(parseInfo, { parserFilePath, logFile });
   } catch (exception& e) {
-    cerr << gpFile << ":\n"<< e.what() << endl;
+    cerr << pgenFile << ":\n"<< e.what() << endl;
   }
 }

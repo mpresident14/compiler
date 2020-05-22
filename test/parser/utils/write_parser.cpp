@@ -1,4 +1,5 @@
 #include "src/parser/generate.hpp"
+#include "src/parser/utils.hpp"
 #include "test/parser/utils/expr_grammar.hpp"
 #include "src/parser/config_parse.hpp"
 
@@ -17,11 +18,10 @@ stringstream errBuffer;
 
 void test_parserWithConflicts() {
   generateParserCode(
-      "test/parser/generated/bad_expr_parser",
       ParseInfo{
           BAD_GRAMMAR_DATA,
           "#include \"test/parser/utils/expr.hpp\"\n",
-          ""});
+          ""}, ParseFlags{"test/parser/generated/bad_expr_parser", ""});
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
 }
@@ -31,11 +31,10 @@ int main() {
   cerr.rdbuf(errBuffer.rdbuf());
 
   generateParserCode(
-      "test/parser/generated/expr_parser",
       ParseInfo{
           GRAMMAR_DATA,
           "#include \"test/parser/utils/expr.hpp\"\n",
-          ""});
+          ""}, ParseFlags{"test/parser/generated/expr_parser", ""});
   test_parserWithConflicts();
 
   return 0;
