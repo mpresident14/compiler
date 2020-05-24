@@ -111,9 +111,6 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
 void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  cout << "RAN" << endl;
-  int t2 = newTemp();
-  e2_->toAssemInstrs(t2, instrs);
   ExprType lhsType = e1_->getType();
   if (lhsType == ExprType::TEMP) {
     // Move e2 into the Temp of e1
@@ -121,6 +118,8 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   } else if (lhsType == ExprType::MEM_DEREF) {
     // Move e2 into the address of e1
     int t1 = newTemp();
+    int t2 = newTemp();
+    e2_->toAssemInstrs(t2, instrs);
     static_cast<MemDeref*>(e1_.get())->getAddr()->toAssemInstrs(t1, instrs);
     instrs.emplace_back(new assem::Operation("movq `S1, (`S0)", { t1, t2 }, {}));
   } else {
