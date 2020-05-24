@@ -60,7 +60,7 @@ public:
 
 
 private:
-  Context() = default;
+  Context();
 
   std::unordered_map<std::string, VarInfo> varMap_;
   /* Temporaries I create. Make sure they don't interfere with any program vars

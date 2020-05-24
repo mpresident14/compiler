@@ -6,4 +6,5 @@ add_library(lang_lib
     lang_stmt.cpp
     lang_expr.cpp
     typecheck/context.cpp
+    typecheck/type.cpp
     utils.cpp)

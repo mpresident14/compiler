@@ -2,6 +2,7 @@
 #include "src/assembly/assembly.hpp"
 
 #include <utility>
+#include <sstream>
 
 using namespace std;
 
@@ -235,7 +236,9 @@ namespace language {
     ExprInfo exprInfo = toImExpr();
     // TODO: Use isConvertible here later
     if (exprInfo.type != type) {
-      typeError("TODO: Add error message");
+      stringstream err;
+      err << "Expected expression of type " << type << ", got " << exprInfo.type;
+      typeError(err.str());
     }
     return move(exprInfo.imExpr);
   }

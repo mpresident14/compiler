@@ -89,7 +89,7 @@ namespace im {
    ********/
 
   /* Sequence of statemnts */
-  // TODO: Remove
+  // TODO: Remove when we are sure we don't need it
   // class Block : public Stmt {
   // public:
   //   Block(std::vector<StmtPtr>&& stmts);

@@ -59,3 +59,8 @@ const Context::FnInfo& Context::lookupFn(const std::string& name) const {
 // }
 
 // const Type& Context::lookupTemp(int temp) const { return tempMap_.at(temp); }
+
+// TODO: Remove this when we add a print() to the language
+Context::Context() {
+  fnMap_.emplace("printInt", FnInfo{vector<Type>{{TypeName::INT, ""}}, {TypeName::VOID, ""} });
+}
