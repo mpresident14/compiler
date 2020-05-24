@@ -7,4 +7,3 @@ add_library(lang_lib
     lang_expr.cpp
     typecheck/context.cpp
     utils.cpp)
-target_link_libraries(lang_lib im_lib)

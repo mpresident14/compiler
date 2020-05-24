@@ -10,13 +10,13 @@ namespace im {
 /*********
  * Block *
  *********/
-Block::Block(std::vector<StmtPtr>&& stmts) : stmts_(move(stmts)) {}
+// Block::Block(std::vector<StmtPtr>&& stmts) : stmts_(move(stmts)) {}
 
-void Block::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  for (const StmtPtr& stmt : stmts_) {
-    stmt->toAssemInstrs(instrs);
-  }
-}
+// void Block::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
+//   for (const StmtPtr& stmt : stmts_) {
+//     stmt->toAssemInstrs(instrs);
+//   }
+// }
 
 /*************
  * MakeLabel *
@@ -111,6 +111,7 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
 void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
+  cout << "RAN" << endl;
   int t2 = newTemp();
   e2_->toAssemInstrs(t2, instrs);
   ExprType lhsType = e1_->getType();

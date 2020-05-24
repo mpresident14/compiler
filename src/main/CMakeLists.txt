@@ -2,7 +2,7 @@
 project(main)
 
 add_library(my_parser_lib parser.cpp)
-target_link_libraries(my_parser_lib lang_lib)
+# target_link_libraries(my_parser_lib lang_lib)
 # add_custom_target(parser.cpp
 #     PRE_BUILD
 #     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -11,7 +11,7 @@ target_link_libraries(my_parser_lib lang_lib)
 #     COMMAND clang-format -i parser.hpp parser.cpp)
 
 add_executable(main main.cpp)
-target_link_libraries(main my_parser_lib)
+target_link_libraries(main my_parser_lib lang_lib im_lib asm_lib)
 
 
 add_custom_command(

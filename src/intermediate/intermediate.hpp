@@ -89,14 +89,15 @@ namespace im {
    ********/
 
   /* Sequence of statemnts */
-  class Block : public Stmt {
-  public:
-    Block(std::vector<StmtPtr>&& stmts);
-    void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
+  // TODO: Remove
+  // class Block : public Stmt {
+  // public:
+  //   Block(std::vector<StmtPtr>&& stmts);
+  //   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-  private:
-    std::vector<StmtPtr> stmts_;
-  };
+  // private:
+  //   std::vector<StmtPtr> stmts_;
+  // };
 
   /* Write a label */
   class MakeLabel : public Stmt {

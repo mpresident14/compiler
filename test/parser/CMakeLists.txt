@@ -15,7 +15,7 @@ add_executable(build_parser_test build_parser_test.cpp)
 target_link_libraries(build_parser_test parse_lib)
 
 add_executable(regex_test regex_test.cpp)
-target_link_libraries(regex_test regex_lib)
+target_link_libraries(regex_test regex_lib parse_lib)
 
 add_executable(parse_test
     parse_test.cpp
@@ -33,7 +33,7 @@ add_executable(parsegen_test
 
 # Parser and lexer generation for testing
 add_executable(write_parser ${UTIL_DIR}/write_parser.cpp ${PARSER_SRC_DIR}/generate.cpp)
-target_link_libraries(write_parser regex_lib)
+target_link_libraries(write_parser regex_lib parse_lib)
 add_custom_command(
     OUTPUT
         ${GEN_DIR}/expr_parser.hpp
@@ -50,7 +50,7 @@ add_custom_command(
     DEPENDS write_parser)
 
 add_executable(write_lexer ${UTIL_DIR}/write_lexer.cpp ${PARSER_SRC_DIR}/generate.cpp)
-target_link_libraries(write_lexer regex_lib)
+target_link_libraries(write_lexer regex_lib parse_lib)
 add_custom_command(
     OUTPUT ${GEN_DIR}/random_lexer.hpp ${GEN_DIR}/random_lexer.cpp
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
