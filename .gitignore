@@ -54,6 +54,6 @@ src/main/parser.hpp
 src/main/parser.cpp
 
 
-# Register allocation
-*.s
-*.prez
+# Playground files
+src/main/test.prez
+src/main/test.s

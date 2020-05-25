@@ -1,0 +1,16 @@
+void runprez() {
+
+  int i = 1;
+  int sum = 0;
+  int product = 1;
+  while (i <= 5) {
+    sum = sum + i;
+    product = product * i;
+    i = i + 1;
+  }
+
+  printInt(sum);
+  printInt(product);
+
+  return;
+}

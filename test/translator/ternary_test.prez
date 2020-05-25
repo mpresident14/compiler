@@ -1,0 +1,8 @@
+void runprez() {
+  printInt(3 < 4 ? 8 + 2 : -1);
+
+  int a = 4;
+  int b = 5;
+  printInt(a == b ? a : b * 2);
+  return;
+}

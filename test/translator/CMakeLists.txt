@@ -42,6 +42,8 @@ include(CTest)
 make_test(arith_test "6,16,8,32,2,4,7,27,-2,9,-9")
 make_test(comp_test "1,2,3,4,5,6,7,8")
 make_test(while_test "15,120")
+make_test(ternary_test "10,10")
+make_test(function_test "1,2")
 
 message(${MY_TESTS})
 message(${MY_TEST_EXES})

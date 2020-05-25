@@ -1,0 +1,47 @@
+void runprez() {
+  if (false) {
+    printInt(-1);
+  } else {
+    printInt(1);
+  }
+
+  bool b = 3 < 4;
+  if (b) {
+    printInt(2);
+  }
+
+  int n = 5;
+  if (n == 8) {
+    printInt(-1);
+  } else if (n < 8) {
+    printInt(3);
+  } else {
+    printInt(-2);
+  }
+
+  if (5 > 4) {
+    printInt(4);
+  }
+
+  int m = 5;
+  n = 3;
+  if (m != n && m < n) {
+    printInt(-1);
+  } else {
+    printInt(5);
+  }
+
+  if (m == n || n <= m) {
+    printInt(6);
+  }
+
+  if (!(n >= m)) {
+    printInt(7);
+  }
+
+  if (m != n + 6) {
+    printInt(8);
+  }
+
+  return;
+}

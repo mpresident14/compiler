@@ -1,0 +1,17 @@
+void runprez() {
+  printInt(1 + 5);
+  printInt(20 - 4);
+  printInt(20 - 4*3);
+  printInt(4*3 + 20);
+  printInt(4/3 + 1);
+  printInt(2 * 6/3);
+  printInt(9/4 - -5);
+  printInt(-9 * -3);
+  printInt(-9 / 4);
+  printInt(3 * (1+2));
+
+  int a = 3;
+  int b = -a * a;
+  printInt(b);
+  return;
+}
