@@ -111,6 +111,7 @@ Stmt -> { StmtPtr }
    | RETURN Expr SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1))) %
    | LValue EQ Expr SEMI                      % make_unique<Assign>(move(#0), move(#2)) %
    | Type IDENT EQ Expr SEMI                  % make_unique<VarDecl>(#0, #1, move(#3)) %
+   | Block                                    % move(#0) %
 
 Expr -> { ExprPtr }
   := NUM                                      % make_unique<ConstInt>(#0) %
@@ -118,7 +119,7 @@ Expr -> { ExprPtr }
    | FALSE                                    % make_unique<ConstBool>(false) %
    | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG) %
    | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT) %
-   | Expr PLUS Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
+   | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
    | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
    | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
    | Expr FSLASH Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
@@ -133,6 +134,7 @@ Expr -> { ExprPtr }
    | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
    | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(#0, move(#2)) %
    | LValue                                   % move(#0) %
+   | LPAREN Expr RPAREN                       % move(#1) %
 
 LValue -> { ExprPtr }
   := IDENT   % make_unique<Var>(#0) %

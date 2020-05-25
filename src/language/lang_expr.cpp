@@ -50,13 +50,13 @@ namespace language {
       case UOp::NOT:
         // !b = b ^ 1
         return { make_unique<im::BinOp>(
-                     e_->toImExprAssert(intType), make_unique<im::Const>(1), im::BOp::XOR),
-                 intType };
+                     e_->toImExprAssert(boolType), make_unique<im::Const>(1), im::BOp::XOR),
+                 boolType };
       case UOp::NEG:
         return {
           make_unique<im::BinOp>(
-              make_unique<im::Const>(0), e_->toImExprAssert(boolType), im::BOp::MINUS),
-          boolType
+              make_unique<im::Const>(0), e_->toImExprAssert(intType), im::BOp::MINUS),
+          intType
         };
       default:
         throw invalid_argument("Unrecognized Uop");
@@ -198,11 +198,11 @@ namespace language {
     boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr());
     imStmts.emplace_back(move(mkElseLabel));
     imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
+        new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
     imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
     imStmts.emplace_back(move(mkIfLabel));
     imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
+        new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
     imStmts.emplace_back(move(mkDoneLabel));
     return { make_unique<im::DoThenEval>(
                  move(imStmts), make_unique<im::Temp>(temp)),
@@ -250,8 +250,8 @@ namespace language {
         toImExprAssert(boolType),
         make_unique<im::Const>(0),
         im::ROp::EQ,
-        ifTrue,
-        ifFalse));
+        ifFalse,
+        ifTrue));
   }
 
 

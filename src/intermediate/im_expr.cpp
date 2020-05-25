@@ -115,8 +115,8 @@ namespace im {
     int t2 = newTemp();
     expr2_->toAssemInstrs(t2, instrs);
     instrs.emplace_back(
-        new assem::Operation(asmCode.append(" `S0, `D0"), { t1, t2 }, { t2 }));
-    Temp(t2).toAssemInstrs(temp, instrs);
+        new assem::Operation(asmCode.append(" `S1, `D0"), { t1, t2 }, { t1 }));
+    Temp(t1).toAssemInstrs(temp, instrs);
   }
 
 

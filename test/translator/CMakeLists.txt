@@ -39,8 +39,8 @@ endfunction()
 # For testing
 include(CTest)
 
-make_test(arith_test 5)
-make_test(if_test 2)
+make_test(arith_test "6,16,8,32,2,4,7,27,-2,9,-9")
+make_test(if_test "1,2,3,4")
 
 message(${MY_TESTS})
 message(${MY_TEST_EXES})

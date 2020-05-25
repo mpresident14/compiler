@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TEST=$1
-EXPECTED_OUTPUT=$2
+EXPECTED_OUTPUT=$(echo $2 | sed 's/,/\n/g')
 
 OUTPUT=$($TEST)
 if [[ "$OUTPUT" == "$EXPECTED_OUTPUT" ]]; then
