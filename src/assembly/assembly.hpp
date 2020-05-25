@@ -116,6 +116,7 @@ private:
 };
 
 
+/* An instruction that always falls thru to the next one */
 class Operation : public Instruction {
 public:
   Operation(
@@ -142,7 +143,7 @@ private:
   std::vector<int> dsts_;
 };
 
-
+/* A jmp instruction. Guaranteed to jump, will not fall thru */
 class JumpOp : public Operation {
 public:
   JumpOp(

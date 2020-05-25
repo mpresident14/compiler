@@ -64,7 +64,7 @@ VOID        "void"
 INT         "int"
 BOOL        "bool"
 
-NUM         "[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
+NUM         "0|[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*" -> { string } % #str %
 
 #prec

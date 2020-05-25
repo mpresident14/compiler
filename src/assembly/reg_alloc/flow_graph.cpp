@@ -15,11 +15,15 @@ using namespace assem;
 /*********
  * utils *
  *********/
+
+/* Returns true if a new element was inserted */
 template <typename T, template <typename...> class Container>
-void setUnion(unordered_set<T>& to, const Container<T>& from) {
+bool setUnion(unordered_set<T>& to, const Container<T>& from) {
+  bool newInsertion = false;
   for (const T& n : from) {
-    to.insert(n);
+    newInsertion |= to.insert(n).second;
   }
+  return newInsertion;
 }
 
 template <typename T, template <typename...> class Container>
@@ -42,8 +46,7 @@ FlowGraph::FlowGraph(const vector<InstrPtr>& instrs) : instrs_(instrs) {
  * liveIn = (liveOut - def) + use */
 void FlowGraph::computeLiveness() {
   // For last instruction, only need to compute liveIn (liveOut is empty)
-  auto iter = instrs_.crbegin();
-  const Instruction* lastInstr = iter->get();
+  const Instruction* lastInstr = instrs_.back().get();
   Liveness& lastLiveness = nodes_.at(instrs_.back().get());
   switch (lastInstr->getType()) {
     case InstrType::MOVE:
@@ -64,12 +67,12 @@ void FlowGraph::computeLiveness() {
       break;
     default:;
   }
-  ++iter;
+
 
   bool changed = true;
   while (changed) {
     changed = false;
-    for (; iter != instrs_.crend(); ++iter) {
+    for (auto iter = next(instrs_.crbegin()); iter != instrs_.crend(); ++iter) {
       const Instruction* instr = iter->get();
       Liveness& node = nodes_.at(instr);
       InstrType type = instr->getType();
@@ -79,6 +82,7 @@ void FlowGraph::computeLiveness() {
       if (type == InstrType::RETURN) {
         if (static_cast<const Return*>(lastInstr)->hasValue()) {
           node.liveIn.insert(RAX);
+          changed = true;
         };
         continue;
       }
@@ -86,24 +90,15 @@ void FlowGraph::computeLiveness() {
       // Compute liveOut
       if (type == InstrType::JUMP_OP || type == InstrType::COND_JUMP_OP) {
         // Instruction jumps
-        unordered_set<int> newLiveOut;
-        for (Instruction* jumpInstr :
+        for (const Instruction* jumpDst :
              static_cast<const JumpOp*>(instr)->getJumps()) {
-          setUnion(newLiveOut, nodes_.at(jumpInstr).liveIn);
-        }
-        if (node.liveOut != newLiveOut) {
-          node.liveOut = move(newLiveOut);
-          changed = true;
+          changed |= setUnion(node.liveOut, nodes_.at(jumpDst).liveIn);
         }
       }
 
       if (type != InstrType::JUMP_OP) {
         // Instruction falls through
-        Liveness& nextLiveness = nodes_.at(prev(iter)->get());
-        if (node.liveOut != nextLiveness.liveIn) {
-          node.liveOut = nextLiveness.liveIn;
-          changed = true;
-        }
+        changed |= setUnion(node.liveOut, nodes_.at(prev(iter)->get()).liveIn);
       }
 
       // Compute liveIn

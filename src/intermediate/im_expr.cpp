@@ -189,18 +189,17 @@ namespace im {
 
     if (addr_->getType() == ExprType::LABEL_ADDR) {
       // If we are calling a function name, just call it directly
-      instrs.emplace_back(new assem::JumpOp(
+      instrs.emplace_back(new assem::Operation(
           "callq " + static_cast<LabelAddr*>(addr_.get())->getName(),
           move(srcTemps),
-          regsAsInts(CALLEE_SAVE_REGS),
-          {}));
+          regsAsInts(CALLER_SAVE_REGS)));
     } else {
       // If we are calling an address, we need to put it in a register
       int t = newTemp();
       addr_->toAssemInstrs(t, instrs);
       srcTemps.push_back(t);
-      instrs.emplace_back(new assem::JumpOp(
-          "callq *`S0", move(srcTemps), regsAsInts(CALLEE_SAVE_REGS), {}));
+      instrs.emplace_back(new assem::Operation(
+          "callq *`S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
     }
 
     // Move result from %rax to temp if needed

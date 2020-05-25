@@ -126,8 +126,6 @@ void Return::assignRegs(const unordered_map<int, MachineReg>&) { return; }
  * toCode *
  **********/
 
-/* > for srcs, < for dsts */
-
 void tempToCode(
     ostream& out,
     int temp,
@@ -207,13 +205,13 @@ void Move::toStream(ostream& out) const {
 }
 
 void Operation::toStream(ostream& out) const {
-  out << asmCode_;
+  out << asmCode_ << ' ';
   // Operators should be defined in the same namespace as the class so they
   // can be found via ADL. Unfortunately, you can't add stuff to the std
   // namespace, so we get this nonsense
   detail::printContainerHelper(out, srcs_);
   out << ' ';
-  detail::printContainerHelper(out, srcs_);
+  detail::printContainerHelper(out, dsts_);
 }
 
 void JumpOp::toStream(ostream& out) const {

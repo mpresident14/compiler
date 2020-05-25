@@ -23,7 +23,7 @@ function(make_test TEST_NAME EXPECTED_OUT)
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}
         ${GEN_DIR}/${ASM_FILE}
     COMMAND clang -g
-        -o ${GEN_DIR}/${TEST_NAME}
+        -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
         ${GEN_DIR}/${ASM_FILE}
         ${SRC}/main/runtime.c
     DEPENDS main ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE})
@@ -31,7 +31,7 @@ function(make_test TEST_NAME EXPECTED_OUT)
   add_test(
       NAME ${TEST_NAME}
       COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_test.bash
-          ${GEN_DIR}/${TEST_NAME}
+          ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
           ${EXPECTED_OUT})
 endfunction()
 
@@ -40,7 +40,8 @@ endfunction()
 include(CTest)
 
 make_test(arith_test "6,16,8,32,2,4,7,27,-2,9,-9")
-make_test(if_test "1,2,3,4")
+make_test(comp_test "1,2,3,4,5,6,7,8")
+make_test(while_test "15,120")
 
 message(${MY_TESTS})
 message(${MY_TEST_EXES})
