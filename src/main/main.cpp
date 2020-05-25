@@ -70,11 +70,11 @@ void compile(const lg::Program& prog, const std::string& fileName) {
 //   compile(prog, "prez.s");
 // }
 
-int main() {
-  std::ifstream in("/home/mpresident/cs/compiler/src/main/test.prez");
+int main(int, char** argv) {
+  std::ifstream in(argv[1]);
   if (!in.is_open()) {
     throw std::invalid_argument("File isn't open you dope");
   }
   language::Program prog = parser::parse(in);
-  compile(prog, "/home/mpresident/cs/compiler/src/main/test.s");
+  compile(prog, argv[2]);
 }

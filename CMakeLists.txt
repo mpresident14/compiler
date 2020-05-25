@@ -80,4 +80,4 @@ add_subdirectory(${SRC}/language)
 add_subdirectory(${SRC}/main)
 
 add_subdirectory(${TEST}/parser)
-add_subdirectory(${TEST}/assembly)
+add_subdirectory(${TEST}/translator)
