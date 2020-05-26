@@ -39,8 +39,9 @@ Func::Func(
     Type returnType,
     const string& name,
     vector<pair<Type, string>>&& params,
-    unique_ptr<Block>&& body)
-    : returnType_(returnType), name_(name), body_(move(body)) {
+    unique_ptr<Block>&& body,
+    size_t line)
+    : Decl(line), returnType_(returnType), name_(name), body_(move(body)) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
   for (const auto& param : params) {
