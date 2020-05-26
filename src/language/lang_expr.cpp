@@ -30,7 +30,7 @@ ExprInfo ConstBool::toImExpr() {
  * Var *
  *******/
 
-Var::Var(const std::string& name) : name_(name) {}
+Var::Var(const std::string& name, size_t line) : Expr(line), name_(name) {}
 
 ExprInfo Var::toImExpr() {
   const Context::VarInfo& varInfo = ctx.lookupVar(name_);
@@ -41,7 +41,7 @@ ExprInfo Var::toImExpr() {
  * UnaryOp *
  ***********/
 
-UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp) : e_(move(e)), uOp_(uOp) {}
+UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line) : Expr(line), e_(move(e)), uOp_(uOp) {}
 
 ExprInfo UnaryOp::toImExpr() {
   switch (uOp_) {
@@ -78,8 +78,8 @@ void UnaryOp::asBool(
 /************
  * BinaryOp *
  ************/
-BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp)
-    : e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
+BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp, size_t line)
+    : Expr(line), e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
 
 ExprInfo BinaryOp::toImExpr() {
   switch (bOp_) {
@@ -112,8 +112,9 @@ ExprInfo BinaryOp::toImExpr() {
       // boolean operator
       return TernaryOp(
                  make_unique<BinaryOp>(move(*this)),
-                 make_unique<ConstBool>(true),
-                 make_unique<ConstBool>(false))
+                 make_unique<ConstBool>(true, line_),
+                 make_unique<ConstBool>(false, line_),
+                 line_)
           .toImExpr();
   }
 }
@@ -207,8 +208,8 @@ void BinaryOp::asBoolXor(
 /*************
  * TernaryOp *
  *************/
-TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
-    : boolE_(move(boolE)), e1_(move(e1)), e2_(move(e2)) {}
+TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2, size_t line)
+    : Expr(line), boolE_(move(boolE)), e1_(move(e1)), e2_(move(e2)) {}
 
 /* This is really similar to If, but using If directy would force use to
  * use a Temp and also do typechecking twice for one of the expressions */
@@ -245,8 +246,8 @@ ExprInfo TernaryOp::toImExpr() {
  * CallExpr *
  ************/
 
-CallExpr::CallExpr(const std::string& name, std::vector<ExprPtr>&& params)
-    : name_(name), params_(move(params)) {}
+CallExpr::CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_t line)
+    : Expr(line), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr() {
   pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_);
