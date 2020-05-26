@@ -150,18 +150,16 @@ public:
       const std::string& asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
-      std::vector<Instruction*>&& jumps);
+      Label* jump);
   constexpr InstrType getType() const noexcept override {
     return InstrType::JUMP_OP;
   }
   virtual void toStream(std::ostream& out) const override;
 
-  const std::vector<Instruction*>& getJumps() const noexcept { return jumps_; }
+  const Label* getJump() const noexcept { return jump_; }
 
 private:
-  // If empty then we are jumping out of
-  // the function entirely
-  std::vector<Instruction*> jumps_;
+  Label* jump_;
 };
 
 

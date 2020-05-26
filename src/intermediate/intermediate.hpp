@@ -127,10 +127,12 @@ namespace im {
   };
 
 
-  /* Jump to appropriate label depending on result of comparison */
-  // TODO: The ifFalse will often just fall through so we will have
-  // jmp IF_FALSE followed by IF_FALSE. Optimize these out and put a
-  // comment saying we did that.
+  /*
+   * Jump to appropriate label depending on result of comparison
+   * NOTE: The ifFalse will often just fall through so we will have
+   * jmp IF_FALSE followed by IF_FALSE. We remove such occurrences
+   * in Function::regAlloc
+   */
   class CondJump : public Stmt {
   public:
     CondJump(

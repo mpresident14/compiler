@@ -4,7 +4,6 @@ void runprez() {
   } else {
     printInt(1);
   }
-
   bool b = 3 < 4;
   if (b) {
     printInt(2);

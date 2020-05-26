@@ -48,7 +48,7 @@ Jump::Jump(assem::Label* label) : label_(label) {}
 
 void Jump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   instrs.emplace_back(
-      new assem::JumpOp("jmp " + label_->getName(), {}, {}, { label_ }));
+      new assem::JumpOp("jmp " + label_->getName(), {}, {}, label_));
 }
 
 
@@ -95,12 +95,38 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     default:
       throw invalid_argument("Unrecognized relative operator.");
   }
+  // switch (rop_) {
+  //   case ROp::EQ:
+  //     op = "jne ";
+  //     break;
+  //   case ROp::NEQ:
+  //     op = "je ";
+  //     break;
+  //   case ROp::LT:
+  //     op = "jge ";
+  //     break;
+  //   case ROp::GT:
+  //     op = "jle ";
+  //     break;
+  //   case ROp::LTE:
+  //     op = "jg ";
+  //     break;
+  //   case ROp::GTE:
+  //     op = "jl ";
+  //     break;
+  //   default:
+  //     throw invalid_argument("Unrecognized relative operator.");
+  // }
 
   instrs.emplace_back(new assem::Operation("cmpq `S1, `S0", { t1, t2 }, {}));
   instrs.emplace_back(
-      new assem::CondJumpOp(op.append(ifTrue_->getName()), {}, {}, { ifTrue_ }));
+      new assem::CondJumpOp(op.append(ifTrue_->getName()), {}, {}, ifTrue_));
   instrs.emplace_back(
-      new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, { ifFalse_ }));
+      new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
+  // instrs.emplace_back(
+  //     new assem::CondJumpOp(op.append(ifFalse_->getName()), {}, {}, { ifFalse_ }));
+  // instrs.emplace_back(
+  //     new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, { ifTrue_ }));
 }
 
 

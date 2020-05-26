@@ -90,10 +90,8 @@ void FlowGraph::computeLiveness() {
       // Compute liveOut
       if (type == InstrType::JUMP_OP || type == InstrType::COND_JUMP_OP) {
         // Instruction jumps
-        for (const Instruction* jumpDst :
-             static_cast<const JumpOp*>(instr)->getJumps()) {
-          changed |= setUnion(node.liveOut, nodes_.at(jumpDst).liveIn);
-        }
+        const Label* jumpDst = static_cast<const JumpOp*>(instr)->getJump();
+        changed |= setUnion(node.liveOut, nodes_.at(jumpDst).liveIn);
       }
 
       if (type != InstrType::JUMP_OP) {

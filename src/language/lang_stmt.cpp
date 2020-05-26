@@ -24,7 +24,7 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
   vector<string> newVars;
   for (StmtPtr& stmt : stmts_) {
     stmt->toImStmts(imStmts);
-    // TODO: Remove this and replace with StmtType
+    // TODO: Maybe remove this and replace with StmtType
     if (VarDecl* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
       newVars.push_back(varDecl->getName());
     }

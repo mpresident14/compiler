@@ -71,8 +71,14 @@ void Function::regAlloc() {
   // Update the instructions and add them
   // TODO: Lots of virtual function calls here, either use a switch
   // or group them together
-  for (InstrPtr& instr : instrs_) {
-    if (instr->getType() == InstrType::RETURN) {
+  for (auto iter = instrs_.begin(); iter != instrs_.end(); ++iter) {
+    InstrPtr& instr = *iter;
+    InstrType type = instr->getType();
+    if (type == InstrType::JUMP_OP
+        && static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
+      // Skip jumps immediately followed by the label to which they jump
+      // (Nothing to do)
+    } else if (type == InstrType::RETURN) {
       // Deallocate space on the stack for spilled variables
       newInstrs.push_back(make_unique<Operation>(
           "addq $" + to_string(stackSpace) + ", %rsp",

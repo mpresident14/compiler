@@ -27,8 +27,8 @@ JumpOp::JumpOp(
     const string& asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
-    vector<Instruction*>&& jumps)
-    : Operation(asmCode, move(srcs), move(dsts)), jumps_(move(jumps)) {}
+    Label* jump)
+    : Operation(asmCode, move(srcs), move(dsts)), jump_(jump) {}
 
 
 namespace {
@@ -217,9 +217,7 @@ void Operation::toStream(ostream& out) const {
 void JumpOp::toStream(ostream& out) const {
   Operation::toStream(out);
   out << " [";
-  for (const Instruction* instr : jumps_) {
-    out << *instr << ", ";
-  }
+  out << *jump_;
   out << ']';
 }
 
