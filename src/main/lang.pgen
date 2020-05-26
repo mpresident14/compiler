@@ -36,6 +36,13 @@ PLUS        "\+"
 MINUS       "-"
 STAR        "\*"
 FSLASH      "/"
+MOD         "%"
+BIT_AND     "&"
+BIT_OR      "\|"
+XOR         "^"
+LSHIFT      "<<"
+RSHIFT      ">>"
+
 AND         "&&"
 OR          "\|\|"
 EQEQ        "=="
@@ -77,9 +84,13 @@ EPSILON                 #left
 QMARK                   #right
 OR                      #left
 AND                     #left
+XOR                     #left
+BIT_OR                  #left
+BIT_AND                 #left
 EQEQ NEQ LT GT LTE GTE  #nonassoc
+LSHIFT RSHIFT           #left
 PLUS MINUS              #left
-STAR FSLASH             #left
+STAR FSLASH MOD         #left
 UNARY_MINUS BANG        #nonassoc
 
 
@@ -123,6 +134,12 @@ Expr -> { ExprPtr }
    | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
    | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
    | Expr FSLASH Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
+   | Expr MOD Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::MOD) %
+   | Expr BIT_AND Expr                        % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
+   | Expr BIT_OR Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
+   | Expr XOR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::XOR) %
+   | Expr LSHIFT Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::LSHIFT) %
+   | Expr RSHIFT Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::RSHIFT) %
    | Expr AND Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
    | Expr OR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
    | Expr EQEQ Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %

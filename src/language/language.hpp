@@ -188,6 +188,12 @@ namespace language {
     MUL,
     MINUS,
     DIV,
+    MOD,
+    BIT_AND,
+    BIT_OR,
+    XOR,
+    LSHIFT,
+    RSHIFT,
     EQ,
     NEQ,
     GT,
@@ -279,6 +285,8 @@ namespace language {
     asBoolAnd(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
     void
     asBoolOr(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
+    void asBoolXor(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
+
     ExprPtr e1_;
     ExprPtr e2_;
     BOp bOp_;

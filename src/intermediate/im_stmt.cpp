@@ -7,17 +7,6 @@ namespace im {
 // TODO: Can I just use ints for labels other than actual functions???
 // String copying is a lot, especially b/c of SSO
 
-/*********
- * Block *
- *********/
-// Block::Block(std::vector<StmtPtr>&& stmts) : stmts_(move(stmts)) {}
-
-// void Block::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-//   for (const StmtPtr& stmt : stmts_) {
-//     stmt->toAssemInstrs(instrs);
-//   }
-// }
-
 /*************
  * MakeLabel *
  *************/

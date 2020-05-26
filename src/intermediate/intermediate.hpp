@@ -38,6 +38,9 @@ namespace im {
     virtual constexpr ExprType getType() const noexcept = 0;
     /* Add instructions that put the value of this Expr into this temp */
     virtual void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const = 0;
+    /* Same as above but allow the Expr to determine the temp it is put into (mainly to avoid
+     * unnecessary moves for Expr::Temp) */
+    virtual int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const;
   };
 
   enum class BOp {
@@ -87,17 +90,6 @@ namespace im {
   /********
    * Stmt *
    ********/
-
-  /* Sequence of statemnts */
-  // TODO: Remove when we are sure we don't need it
-  // class Block : public Stmt {
-  // public:
-  //   Block(std::vector<StmtPtr>&& stmts);
-  //   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
-
-  // private:
-  //   std::vector<StmtPtr> stmts_;
-  // };
 
   /* Write a label */
   class MakeLabel : public Stmt {
@@ -237,6 +229,7 @@ namespace im {
       return ExprType::TEMP;
     }
     void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
+    int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const override;
 
     constexpr int getTemp() { return t_; }
 

@@ -42,5 +42,9 @@ void runprez() {
     printInt(8);
   }
 
+  if (1 == 3 ^ 2 < 4) {
+    printInt(9);
+  }
+
   return;
 }
