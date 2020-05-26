@@ -16,8 +16,8 @@ namespace language {
 /*********
  * Block *
  *********/
-Block::Block(std::vector<StmtPtr>&& stmts, size_t line)
-    : Stmt(line), stmts_(move(stmts)) {}
+Block::Block(std::vector<StmtPtr>&& stmts)
+    : stmts_(move(stmts)) {}
 
 void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
   // Keep track of variables declared in this scope
@@ -41,8 +41,8 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
  * If *
  ******/
 
-If::If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line)
-      : Stmt(line), boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
+If::If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE)
+      : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkIfLabel =
@@ -66,8 +66,8 @@ void If::toImStmts(vector<im::StmtPtr>& imStmts) {
  * While *
  *********/
 
-While::While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line)
-    : Stmt(line), boolE_(move(boolE)), body_(move(body)) {}
+While::While(ExprPtr&& boolE, std::unique_ptr<Block> body)
+    : boolE_(move(boolE)), body_(move(body)) {}
 
 void While::toImStmts(vector<im::StmtPtr>& imStmts) {
   unique_ptr<im::MakeLabel> mkBodyLabel =
@@ -89,8 +89,8 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts) {
 /************
  * CallStmt *
  ************/
-CallStmt::CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_t line)
-    : Stmt(line), name_(name), params_(move(params)) {}
+CallStmt::CallStmt(const std::string& name, std::vector<ExprPtr>&& params)
+    : name_(name), params_(move(params)) {}
 
 void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(
@@ -102,8 +102,8 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * Return *
  **********/
 
-Return::Return(std::optional<ExprPtr>&& retValue, size_t line)
-    : Stmt(line), retValue_(move(retValue)) {}
+Return::Return(std::optional<ExprPtr>&& retValue)
+    : retValue_(move(retValue)) {}
 
 void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   const Type& retType = ctx.getReturnTy();
@@ -128,8 +128,8 @@ void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * Assign *
  **********/
 
-Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs, size_t line)
-    : Stmt(line), lhs_(move(lhs)), rhs_(move(rhs)) {}
+Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
+    : lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   if (lhs_->getType() != ExprType::VAR) {
@@ -148,8 +148,8 @@ void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * VarDecl *
  ***********/
 
-VarDecl::VarDecl(const Type& type, const std::string& name, ExprPtr&& e, size_t line)
-    : Stmt(line), type_(type), name_(name), e_(move(e)) {}
+VarDecl::VarDecl(const Type& type, const std::string& name, ExprPtr&& e)
+    : type_(type), name_(name), e_(move(e)) {}
 
 void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   // Make sure the right side has the correct type and translate it

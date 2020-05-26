@@ -14,25 +14,17 @@ namespace language {
 
   class Decl {
   public:
-    constexpr Decl(size_t line) : line_(line) {}
     virtual ~Decl() {}
     virtual void toImDecls(std::vector<im::DeclPtr>&) const = 0;
     virtual void addToContext(Context& ctx) const = 0;
-
-  protected:
-    size_t line_;
   };
 
   class Stmt {
   public:
-    constexpr Stmt(size_t line)  : line_(line) {}
     virtual ~Stmt() {}
     /* If the statement typechecks, generate the corresponding intermediate
      * statements */
     virtual void toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
-
-  protected:
-    size_t line_;
   };
 
   enum class ExprType {
@@ -53,7 +45,6 @@ namespace language {
 
   class Expr {
   public:
-    constexpr Expr(size_t line)  : line_(line) {}
     virtual ~Expr() {}
     virtual ExprType getType() const noexcept = 0;
 
@@ -64,9 +55,6 @@ namespace language {
     asBool(std::vector<im::StmtPtr>& imStmts, assem::Label* ifTrue, assem::Label* ifFalse);
 
     im::ExprPtr toImExprAssert(const Type& type);
-
-  protected:
-    size_t line_;
   };
 
   using ExprPtr = std::unique_ptr<Expr>;
@@ -94,8 +82,7 @@ namespace language {
         Type returnType,
         const std::string& name,
         std::vector<std::pair<Type, std::string>>&& params,
-        std::unique_ptr<Block>&& body,
-        size_t line);
+        std::unique_ptr<Block>&& body);
     void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
     void addToContext(Context& ctx) const override;
 
@@ -113,7 +100,7 @@ namespace language {
 
   class Block : public Stmt {
   public:
-    Block(std::vector<StmtPtr>&& stmts, size_t line);
+    Block(std::vector<StmtPtr>&& stmts);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -123,7 +110,7 @@ namespace language {
 
   class If : public Stmt {
   public:
-    If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line);
+    If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -135,7 +122,7 @@ namespace language {
 
   class While : public Stmt {
   public:
-    While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
+    While(ExprPtr&& boolE, std::unique_ptr<Block> body);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -146,7 +133,7 @@ namespace language {
   class CallExpr;
   class CallStmt : public Stmt {
   public:
-    CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
+    CallStmt(const std::string& name, std::vector<ExprPtr>&& params);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -157,7 +144,7 @@ namespace language {
 
   class Return : public Stmt {
   public:
-    Return(std::optional<ExprPtr>&& retValue, size_t line);
+    Return(std::optional<ExprPtr>&& retValue);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -167,7 +154,7 @@ namespace language {
 
   class Assign : public Stmt {
   public:
-    Assign(ExprPtr&& lhs, ExprPtr&& rhs, size_t line);
+    Assign(ExprPtr&& lhs, ExprPtr&& rhs);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   private:
@@ -178,7 +165,7 @@ namespace language {
 
   class VarDecl : public Stmt {
   public:
-    VarDecl(const Type& type, const std::string& name, ExprPtr&& e, size_t line);
+    VarDecl(const Type& type, const std::string& name, ExprPtr&& e);
     void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
     const std::string& getName() const noexcept { return name_; }
@@ -220,7 +207,7 @@ namespace language {
 
   class ConstInt : public Expr {
   public:
-    constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
+    constexpr explicit ConstInt(int n) : n_(n) {}
     ExprType getType() const noexcept override { return ExprType::CONST_INT; }
     ExprInfo toImExpr() override;
 
@@ -231,7 +218,7 @@ namespace language {
 
   class ConstBool : public Expr {
   public:
-    constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
+    constexpr explicit ConstBool(bool b) : b_(b) {}
     ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
     ExprInfo toImExpr() override;
 
@@ -243,7 +230,7 @@ namespace language {
   /* Variable in the program */
   class Var : public Expr {
   public:
-    Var(const std::string& name, size_t line);
+    Var(const std::string& name);
     ExprType getType() const noexcept override { return ExprType::VAR; }
     ExprInfo toImExpr() override;
 
@@ -257,7 +244,7 @@ namespace language {
 
   class UnaryOp : public Expr {
   public:
-    UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
+    UnaryOp(ExprPtr&& e, UOp uOp);
     ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
     ExprInfo toImExpr() override;
 
@@ -274,7 +261,7 @@ namespace language {
 
   class BinaryOp : public Expr {
   public:
-    BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp, size_t line);
+    BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
     ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
     ExprInfo toImExpr() override;
 
@@ -308,7 +295,7 @@ namespace language {
 
   class TernaryOp : public Expr {
   public:
-    TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2, size_t line);
+    TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
     ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
     ExprInfo toImExpr() override;
 
@@ -321,7 +308,7 @@ namespace language {
 
   class CallExpr : public Expr {
   public:
-    CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
+    CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
     ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
     ExprInfo toImExpr() override;
 
