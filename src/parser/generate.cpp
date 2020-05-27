@@ -104,26 +104,6 @@ void replaceAll(
   out << str.substr(startPos);
 }
 
-template <
-    typename Fn,
-    enable_if_t<is_invocable_v<Fn, string_view, int>, int> = 0>
-void replaceNumbers(ostream& out, string_view fmt, Fn&& convertNum) {
-  size_t i = 0;
-  size_t len = fmt.size();
-  while (i < len) {
-    if (fmt[i] == '#') {
-      ++i;
-      string_view digitsStart = fmt.substr(i);
-      size_t numDigits;
-      int argIndex = stoi(string(digitsStart), &numDigits);
-      i += numDigits;
-      out << convertNum(digitsStart.substr(0, numDigits), argIndex);
-    } else {
-      out << fmt[i++];
-    }
-  }
-}
-
 string replaceAll(string_view str, char from, char to) {
   string s;
   s.reserve(str.size());
@@ -293,6 +273,78 @@ void streamSymbolNames(
 }
 
 
+string convertArgNum(
+    string_view argIndexStr,
+    int argIndex,
+    const Concrete& concrete,
+    const GrammarData& gd) {
+  const vector<intptr_t>& argSymbols = concrete.argSymbols;
+  // These are user-provided numbers, so check the bounds
+  if (argIndex < 0) {
+    errors << errorColored << " on line " << concrete.declLine << ": Index"
+           << argIndex << " is < 0 for rule ";
+    streamSymbolNames(errors, argSymbols, gd);
+    errors << '\n';
+    return "";
+  }
+  if ((size_t)argIndex >= argSymbols.size()) {
+    errors << errorColored << " on line " << concrete.declLine << ": Index "
+           << argIndex << " is greater than the number of elements in rule ";
+    streamSymbolNames(errors, argSymbols, gd);
+    errors << '\n';
+    return "";
+  }
+
+  int argSymbol = argSymbols[argIndex];
+  string symbolName = isToken(argSymbol)
+                          ? gd.tokens[tokenToFromIndex(argSymbol)].type
+                          : gd.variables[argSymbol].type;
+  // Make sure the symbol has data associated with it (only necessary for
+  // tokens)
+  if (symbolName.empty()) {
+    errors << errorColored << " on line " << concrete.declLine << ": Token "
+           << symbolToString(argSymbol, gd)
+           << " is passed as an argument, but has no data "
+              "associated with it.\n";
+    return "";
+  }
+
+  return string("(*static_cast<")
+      .append(symbolName)
+      .append("*>(args[")
+      .append(argIndexStr)
+      .append("].releaseObj()))");
+}
+
+void replacePounds(
+    ostream& out,
+    const Concrete& concrete,
+    const GrammarData& gd) {
+  size_t i = 0;
+  string_view ctor = concrete.ctorExpr;
+  size_t len = ctor.size();
+  const char line[] = "line";
+
+  while (i < len) {
+    if (ctor[i] == '#') {
+      ++i;
+      string_view afterPound = ctor.substr(i);
+      if (afterPound.starts_with(line)) {
+        out << "args[0].getLine()";
+        i += sizeof(line);
+      } else {
+        size_t numDigits;
+        int argIndex = stoi(string(afterPound), &numDigits);
+        i += numDigits;
+        out << convertArgNum(
+            afterPound.substr(0, numDigits), argIndex, concrete, gd);
+      }
+    } else {
+      out << ctor[i++];
+    }
+  }
+}
+
 void constructObjFn(ostream& out, const GrammarData& grammarData) {
   out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
@@ -303,52 +355,9 @@ void constructObjFn(ostream& out, const GrammarData& grammarData) {
     const Variable& var = grammarData.variables[concrete.varType];
     out << "case " << i << ": return new " << var.type << '(';
 
+    // Catch stoi aerrors
     try {
-      replaceNumbers(
-          out,
-          concrete.ctorExpr,
-          [&concrete, &grammarData](
-              string_view argIndexStr, int argIndex) -> string {
-            const vector<intptr_t>& argSymbols = concrete.argSymbols;
-            // These are user-provided numbers, so check the bounds
-            if (argIndex < 0) {
-              errors << errorColored << " on line " << concrete.declLine
-                     << ": Index" << argIndex << " is < 0 for rule ";
-              streamSymbolNames(errors, argSymbols, grammarData);
-              errors << '\n';
-              return "";
-            }
-            if ((size_t)argIndex >= argSymbols.size()) {
-              errors << errorColored << " on line " << concrete.declLine
-                     << ": Index " << argIndex
-                     << " is greater than the number of elements in rule ";
-              streamSymbolNames(errors, argSymbols, grammarData);
-              errors << '\n';
-              return "";
-            }
-
-            int argSymbol = argSymbols[argIndex];
-            string symbolName;
-            if (isToken(argSymbol)) {
-              symbolName = grammarData.tokens[tokenToFromIndex(argSymbol)].type;
-              if (symbolName.empty()) {
-                errors << errorColored << " on line " << concrete.declLine
-                       << ": Token " << symbolToString(argSymbol, grammarData)
-                       << " is passed as an argument, but has no data "
-                          "associated with it.";
-                errors << '\n';
-                return "";
-              }
-            } else {
-              symbolName = grammarData.variables[argSymbol].type;
-            }
-
-            return string("(*static_cast<")
-                .append(symbolName)
-                .append("*>(args[")
-                .append(argIndexStr)
-                .append("].releaseObj()))");
-          });
+      replacePounds(out, concrete, grammarData);
     } catch (const invalid_argument& e) {
       errors << errorColored << " on line " << concrete.declLine
              << ": Invalid argument #\n";
