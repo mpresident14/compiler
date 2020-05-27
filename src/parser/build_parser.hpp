@@ -10,7 +10,11 @@
 
 
 DFA<DFARuleSet, int, DFARuleSetHash> buildParserDFA(
-    const GrammarData& gd, const ParseFlags& parseFlags);
-void condensedDFAToCode(std::ostream& out, const GrammarData& gd, const ParseFlags& parseFlags);
+    const GrammarData& gd,
+    const ParseFlags& parseFlags);
+void condensedDFAToCode(
+    std::ostream& out,
+    const GrammarData& gd,
+    const ParseFlags& parseFlags);
 
 #endif

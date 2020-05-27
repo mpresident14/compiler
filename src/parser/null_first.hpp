@@ -3,8 +3,8 @@
 
 #include "src/parser/utils.hpp"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <boost/dynamic_bitset.hpp>
 

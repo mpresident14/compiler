@@ -113,7 +113,8 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   instrs.emplace_back(
       new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
   // instrs.emplace_back(
-  //     new assem::CondJumpOp(op.append(ifFalse_->getName()), {}, {}, { ifFalse_ }));
+  //     new assem::CondJumpOp(op.append(ifFalse_->getName()), {}, {}, {
+  //     ifFalse_ }));
   // instrs.emplace_back(
   //     new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, { ifTrue_ }));
 }
@@ -136,7 +137,8 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     int t2 = newTemp();
     e2_->toAssemInstrs(t2, instrs);
     static_cast<MemDeref*>(e1_.get())->getAddr()->toAssemInstrs(t1, instrs);
-    instrs.emplace_back(new assem::Operation("movq `S1, (`S0)", { t1, t2 }, {}));
+    instrs.emplace_back(
+        new assem::Operation("movq `S1, (`S0)", { t1, t2 }, {}));
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }
@@ -168,4 +170,4 @@ void ReturnStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   instrs.emplace_back(new assem::Return(retValue_ != nullptr));
 }
 
-}
+}  // namespace im

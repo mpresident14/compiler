@@ -10,7 +10,8 @@ using namespace std;
 
 int main(int argc, char** argv) {
   const char* errMsg =
-      "Usage: parsegen -g <grammar_file> [-f <output_file_base>] [-l <log_file>]";
+      "Usage: parsegen -g <grammar_file> [-f <output_file_base>] [-l "
+      "<log_file>]";
 
   string pgenFile;
   string parserFilePath;
@@ -51,7 +52,7 @@ int main(int argc, char** argv) {
     ParseInfo parseInfo = parseConfig(pgenFile);
     generateParserCode(parseInfo, { parserFilePath, logFile });
   } catch (exception& e) {
-    cerr << pgenFile << ":\n"<< e.what() << endl;
+    cerr << pgenFile << ":\n" << e.what() << endl;
     return 1;
   }
   return 0;

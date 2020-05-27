@@ -1,13 +1,13 @@
-#include "src/language/language.hpp"
 #include "src/assembly/assembly.hpp"
+#include "src/language/language.hpp"
 
-#include <utility>
 #include <sstream>
+#include <utility>
 
 using namespace std;
 
 namespace {
-  Context& ctx = Context::getContext();
+Context& ctx = Context::getContext();
 }
 
 namespace language {
@@ -16,8 +16,7 @@ namespace language {
 /*********
  * Block *
  *********/
-Block::Block(std::vector<StmtPtr>&& stmts)
-    : stmts_(move(stmts)) {}
+Block::Block(std::vector<StmtPtr>&& stmts) : stmts_(move(stmts)) {}
 
 void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
   // Keep track of variables declared in this scope
@@ -42,11 +41,10 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
  ******/
 
 If::If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE)
-      : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
+    : boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts) {
-  unique_ptr<im::MakeLabel> mkIfLabel =
-      make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel =
       make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkDoneLabel =
@@ -93,8 +91,8 @@ CallStmt::CallStmt(const std::string& name, std::vector<ExprPtr>&& params)
     : name_(name), params_(move(params)) {}
 
 void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  imStmts.emplace_back(
-      new im::CallStmt(make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_).first));
+  imStmts.emplace_back(new im::CallStmt(
+      make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_).first));
 }
 
 
@@ -102,8 +100,7 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * Return *
  **********/
 
-Return::Return(std::optional<ExprPtr>&& retValue)
-    : retValue_(move(retValue)) {}
+Return::Return(std::optional<ExprPtr>&& retValue) : retValue_(move(retValue)) {}
 
 void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   const Type& retType = ctx.getReturnTy();
@@ -139,8 +136,7 @@ void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   const Context::VarInfo& varInfo =
       ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName());
   imStmts.emplace_back(new im::Assign(
-      make_unique<im::Temp>(varInfo.temp),
-      rhs_->toImExprAssert(varInfo.type)));
+      make_unique<im::Temp>(varInfo.temp), rhs_->toImExprAssert(varInfo.type)));
 }
 
 
@@ -156,9 +152,8 @@ void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   im::ExprPtr rhs = e_->toImExprAssert(type_);
   // Insert the variable into the context
   int temp = ctx.insertVar(name_, move(type_));
-  imStmts.emplace_back(
-      new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
+  imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
 }
 
 
-}
+}  // namespace language

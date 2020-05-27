@@ -137,9 +137,9 @@ void testHashFn() {
 void testRgxDFAToCode_withNullableRegex() {
   GrammarData gd = {
     {
-        { "", "", NONE, Assoc::NONE, "", "", "a*",0 },
-        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" ,0},
-        { "", "", NONE, Assoc::NONE, "", "", "for",0 },
+        { "", "", NONE, Assoc::NONE, "", "", "a*", 0 },
+        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*", 0 },
+        { "", "", NONE, Assoc::NONE, "", "", "for", 0 },
     },
     {},
     {}
@@ -160,15 +160,13 @@ void testRgxDFAToCode_withNullableRegex() {
 }
 
 void testRgxDFAToCode_withInvalidRegex() {
-  GrammarData gd = {
-    {
-        { "", "", NONE, Assoc::NONE, "", "", "." ,0},
-        { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" ,0},
-        { "", "", NONE, Assoc::NONE, "", "", "for",0 },
-    },
-    {},
-    {}
-  };
+  GrammarData gd = { {
+                         { "", "", NONE, Assoc::NONE, "", "", ".", 0 },
+                         { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*", 0 },
+                         { "", "", NONE, Assoc::NONE, "", "", "for", 0 },
+                     },
+                     {},
+                     {} };
 
   stringstream out;
   out.setstate(ios_base::badbit);

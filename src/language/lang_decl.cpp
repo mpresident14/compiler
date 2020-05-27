@@ -3,7 +3,7 @@
 using namespace std;
 
 namespace {
-  Context& ctx = Context::getContext();
+Context& ctx = Context::getContext();
 }
 
 namespace language {
@@ -12,8 +12,7 @@ namespace language {
  * Program *
  ***********/
 
-Program::Program(vector<DeclPtr>&& decls)
-    : decls_(move(decls)) {}
+Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
 im::Program Program::toImProg() const {

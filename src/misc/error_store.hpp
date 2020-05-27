@@ -27,30 +27,29 @@ public:
   std::stringstream& addNote(size_t line = 0, std::string_view msg = "");
 
   /* Throw if there were any MsgType::ERRORs */
-  template<typename ExceptType = std::runtime_error>
+  template <typename ExceptType = std::runtime_error>
   void displayErrors() {
-  if (errorCount_ == 0) {
-    for (std::stringstream& stream : errors_) {
-      std::cerr << stream.str() << std::endl;
+    if (errorCount_ == 0) {
+      for (std::stringstream& stream : errors_) {
+        std::cerr << stream.str() << std::endl;
+      }
+    } else {
+      std::string allErrs;
+      for (std::stringstream& stream : errors_) {
+        allErrs.append(stream.str());
+      }
+      throw ExceptType(allErrs);
     }
-  } else {
-    std::string allErrs;
-    for (std::stringstream& stream : errors_) {
-      allErrs.append(stream.str());
-    }
-    throw ExceptType(allErrs);
   }
-}
 
 private:
-  enum class MsgType {ERROR, WARNING, NOTE};
-  inline std::stringstream&  add(MsgType type, size_t line, std::string_view msg);
+  enum class MsgType { ERROR, WARNING, NOTE };
+  inline std::stringstream&
+  add(MsgType type, size_t line, std::string_view msg);
 
   std::vector<std::stringstream> errors_;
   size_t errorCount_ = 0;
 };
 
 
-
-
-#endif // ERROR_STORE_HPP
+#endif  // ERROR_STORE_HPP

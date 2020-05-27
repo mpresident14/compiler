@@ -38,6 +38,7 @@ class Decl {
 public:
   virtual ~Decl() {}
   virtual void toCode(std::ostream& out) = 0;
+
 private:
   std::vector<InstrPtr> instrs_;
 };
@@ -194,6 +195,6 @@ private:
 };
 
 
-}
+}  // namespace assem
 
-#endif // ASSEMBLY_HPP
+#endif  // ASSEMBLY_HPP

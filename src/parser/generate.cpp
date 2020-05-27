@@ -267,9 +267,7 @@ void streamSymbolNames(
       symbols.begin(),
       symbols.end(),
       back_inserter(symbolNames),
-      [&gd](int symbol) {
-        return symbolToString(symbol, gd);
-      });
+      [&gd](int symbol) { return symbolToString(symbol, gd); });
   out << symbolNames;
 }
 
@@ -290,7 +288,8 @@ string convertArgNum(
   }
   if ((size_t)argIndex >= argSymbols.size()) {
     stringstream& error = errorStore.addError(concrete.declLine);
-    error << "Index " << argIndex << " is greater than the number of elements in rule ";
+    error << "Index " << argIndex
+          << " is greater than the number of elements in rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
@@ -305,7 +304,7 @@ string convertArgNum(
   if (symbolName.empty()) {
     stringstream& error = errorStore.addError(concrete.declLine);
     error << "Token " << symbolToString(argSymbol, gd)
-           << " is passed as an argument, but has no data associated with it.\n";
+          << " is passed as an argument, but has no data associated with it.\n";
     return "";
   }
 
@@ -367,8 +366,8 @@ void constructObjFn(ostream& out, const GrammarData& gd) {
   }
 
   // Root type of grammar is the first type listed
-  out << "case 0: return new Start(move(*static_cast<"
-      << gd.variables[1].type << "*>(args[0].releaseObj())));";
+  out << "case 0: return new Start(move(*static_cast<" << gd.variables[1].type
+      << "*>(args[0].releaseObj())));";
   out << R"(default: throw ParseException("Can't construct object. Parser programmer error.");}})";
 }
 
@@ -654,8 +653,7 @@ void tryReduceFn(ostream& out) {
 }
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
-  out << gd.variables[1].type
-      << R"(shiftReduce(vector<StackObj>& inputTokens) {
+  out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {
         // vector<StackObj> stk;
         // if (inputTokens.empty()) {
         //   parseError(stk, inputTokens, 0);
@@ -937,7 +935,6 @@ void generateParserCode(
   errorStore.displayErrors();
   hppFile << hppCode;
   cppFile << cppCode;
-
 }
 
 
@@ -962,4 +959,5 @@ void generateLexerCode(
   string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
   errorStore.displayErrors();
   hppFile << hppCode;
-  cppFile << cppCode;}
+  cppFile << cppCode;
+}

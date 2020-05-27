@@ -13,7 +13,9 @@ string newLabel() {
   return "L" + to_string(i++);
 }
 
-pair<vector<im::ExprPtr>, Type> argsToImExprs(const string& fnName, const vector<ExprPtr>& params) {
+pair<vector<im::ExprPtr>, Type> argsToImExprs(
+    const string& fnName,
+    const vector<ExprPtr>& params) {
   // Ensure function was declared
   const Context::FnInfo& fnInfo = ctx.lookupFn(fnName);
   // Ensure parameter types match and translate them to intermediate exprs
@@ -30,4 +32,4 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(const string& fnName, const vector
   return { move(argsCode), fnInfo.returnType };
 }
 
-}
+}  // namespace language

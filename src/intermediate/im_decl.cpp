@@ -1,7 +1,7 @@
 #include "src/intermediate/intermediate.hpp"
 
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
 
 using namespace std;
 
@@ -11,8 +11,7 @@ namespace im {
 /***********
  * Program *
  ***********/
-Program::Program(std::vector<DeclPtr>&& decls)
-    : decls_(move(decls)) {}
+Program::Program(std::vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 assem::Program Program::toAssemProg() const {
   std::vector<assem::DeclPtr> assemDecls;
@@ -40,11 +39,4 @@ assem::DeclPtr Func::toAssemDecl() const {
 }
 
 
-
-
-
-
-
-
-
-}
+}  // namespace im

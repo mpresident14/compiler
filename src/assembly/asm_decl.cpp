@@ -1,5 +1,5 @@
-#include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/assembly.hpp"
+#include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/reg_alloc/interference_graph.hpp"
 #include "src/assembly/temp.hpp"
 
@@ -13,8 +13,7 @@ namespace assem {
 /***********
  * Program *
  ***********/
-Program::Program(std::vector<DeclPtr>&& decls)
-    : decls_(move(decls)) {}
+Program::Program(std::vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
 void Program::toCode(const string& fileName) {
@@ -74,8 +73,8 @@ void Function::regAlloc() {
   for (auto iter = instrs_.begin(); iter != instrs_.end(); ++iter) {
     InstrPtr& instr = *iter;
     InstrType type = instr->getType();
-    if (type == InstrType::JUMP_OP
-        && static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
+    if (type == InstrType::JUMP_OP &&
+        static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
       // Skip jumps immediately followed by the label to which they jump
       // (Nothing to do)
     } else if (type == InstrType::RETURN) {
@@ -97,4 +96,4 @@ void Function::regAlloc() {
 }
 
 
-}
+}  // namespace assem

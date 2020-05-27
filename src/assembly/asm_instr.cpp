@@ -226,4 +226,4 @@ void Return::toStream(ostream& out) const {
 }
 
 
-}
+}  // namespace assem

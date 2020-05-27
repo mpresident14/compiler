@@ -1,8 +1,8 @@
+#include "src/assembly/assembly.hpp"
+#include "src/assembly/reg_alloc/flow_graph.hpp"
+#include "src/assembly/temp.hpp"
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/language.hpp"
-#include "src/assembly/reg_alloc/flow_graph.hpp"
-#include "src/assembly/assembly.hpp"
-#include "src/assembly/temp.hpp"
 #include "src/main/parser.hpp"
 
 #include <fstream>
@@ -56,8 +56,9 @@ void compile(const lg::Program& prog, const std::string& fileName) {
 
 // int main() {
 //   vector<lg::StmtPtr> stmts;
-//   stmts.emplace_back(new lg::VarDecl(intType, "n", make_unique<lg::ConstInt>(1)));
-//   stmts.emplace_back(new lg::VarDecl(intType, "m", make_unique<lg::ConstInt>(2)));
+//   stmts.emplace_back(new lg::VarDecl(intType, "n",
+//   make_unique<lg::ConstInt>(1))); stmts.emplace_back(new lg::VarDecl(intType,
+//   "m", make_unique<lg::ConstInt>(2)));
 
 //   vector<lg::DeclPtr> decls;
 //   decls.emplace_back(new lg::Func(

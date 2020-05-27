@@ -12,7 +12,6 @@
 #include <vector>
 
 #include <boost/dynamic_bitset.hpp>
-
 #include <prez/print_stuff.hpp>
 
 
@@ -21,7 +20,9 @@ public:
   constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
 
   /* Given a rule "S -> A.B", returns B */
-  constexpr int nextSymbol() const noexcept { return atEnd() ? NONE : symbols[pos]; }
+  constexpr int nextSymbol() const noexcept {
+    return atEnd() ? NONE : symbols[pos];
+  }
 
   /* Given a rule "S -> A.BC", returns C */
   constexpr int nextNextSymbol() const noexcept {
@@ -87,8 +88,8 @@ public:
     }
   };
 
-  // NOTE: These are staying public because this was initially a simple struct and I'm too lazy to fix everything that
-  // would break if I made them private
+  // NOTE: These are staying public because this was initially a simple struct
+  // and I'm too lazy to fix everything that would break if I made them private
   int concrete;
   std::vector<intptr_t> symbols;
   size_t pos;

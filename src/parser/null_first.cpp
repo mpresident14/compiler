@@ -4,81 +4,80 @@
 #include <array>
 #include <bitset>
 #include <cstddef>
+#include <fstream>
 #include <iostream>
 #include <string>
-#include <fstream>
 
 using BitSetVars = boost::dynamic_bitset<>;
 using BitSetToks = boost::dynamic_bitset<>;
 using BitRef = typename boost::dynamic_bitset<>::reference;
 
 namespace {
-  using namespace std;
+using namespace std;
 
 
-  /* Iterate to find the least fixed point */
-  void computeNullabilities(
-      BitSetVars& nullabilities,
-      const vector<vector<vector<BitRef>>>& equations) {
-    bool changed = true;
-    size_t numVars = nullabilities.size();
-    while (changed) {
-      changed = false;
-      for (size_t i = 0; i < numVars; ++i) {
-        // If the nullability for this symbol is already true, no need to
-        // evaluate it again
-        if (nullabilities[i]) {
-          continue;
-        }
+/* Iterate to find the least fixed point */
+void computeNullabilities(
+    BitSetVars& nullabilities,
+    const vector<vector<vector<BitRef>>>& equations) {
+  bool changed = true;
+  size_t numVars = nullabilities.size();
+  while (changed) {
+    changed = false;
+    for (size_t i = 0; i < numVars; ++i) {
+      // If the nullability for this symbol is already true, no need to
+      // evaluate it again
+      if (nullabilities[i]) {
+        continue;
+      }
 
-        const vector<vector<BitRef>>& disjunctions = equations[i];
-        // Nullable if any of the conjunctions evaluate to true
-        bool newValue = any_of(
-            disjunctions.cbegin(),
-            disjunctions.cend(),
-            [](const vector<BitRef>& conj) {
-              return all_of(
-                  conj.cbegin(), conj.cend(), [](const BitRef& bitref) {
-                    return bitref;
-                  });
+      const vector<vector<BitRef>>& disjunctions = equations[i];
+      // Nullable if any of the conjunctions evaluate to true
+      bool newValue = any_of(
+          disjunctions.cbegin(),
+          disjunctions.cend(),
+          [](const vector<BitRef>& conj) {
+            return all_of(conj.cbegin(), conj.cend(), [](const BitRef& bitref) {
+              return bitref;
             });
-        if (newValue) {
-          nullabilities.set(i);
-          changed = true;
-        }
+          });
+      if (newValue) {
+        nullabilities.set(i);
+        changed = true;
       }
     }
   }
+}
 
-  struct UnionEquation {
-    UnionEquation(size_t numTokens) : tokenSet(numTokens) {}
-    BitSetToks tokenSet;
-    vector<BitSetToks*> bitSetTokRefs;
-  };
+struct UnionEquation {
+  UnionEquation(size_t numTokens) : tokenSet(numTokens) {}
+  BitSetToks tokenSet;
+  vector<BitSetToks*> bitSetTokRefs;
+};
 
-  /* Iterate to find the least fixed point */
-  void computeFirsts(
-      vector<BitSetToks>& firsts,
-      const vector<UnionEquation>& equations) {
-    bool changed = true;
-    while (changed) {
-      changed = false;
-      size_t numVariables = equations.size();
-      for (size_t i = 0; i < numVariables; ++i) {
-        const UnionEquation& unionEq = equations[i];
-        // Take union of all the bitsets
-        BitSetToks newValue = unionEq.tokenSet;
-        for (const BitSetToks* bitsetRef : unionEq.bitSetTokRefs) {
-          newValue |= *bitsetRef;
-        }
-        // Compare to previous value and see if anything has changed
-        if (newValue != firsts[i]) {
-          firsts[i] = std::move(newValue);
-          changed = true;
-        }
+/* Iterate to find the least fixed point */
+void computeFirsts(
+    vector<BitSetToks>& firsts,
+    const vector<UnionEquation>& equations) {
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    size_t numVariables = equations.size();
+    for (size_t i = 0; i < numVariables; ++i) {
+      const UnionEquation& unionEq = equations[i];
+      // Take union of all the bitsets
+      BitSetToks newValue = unionEq.tokenSet;
+      for (const BitSetToks* bitsetRef : unionEq.bitSetTokRefs) {
+        newValue |= *bitsetRef;
+      }
+      // Compare to previous value and see if anything has changed
+      if (newValue != firsts[i]) {
+        firsts[i] = std::move(newValue);
+        changed = true;
       }
     }
   }
+}
 }  // namespace
 
 /* For each symbol in the grammar, the equations for each rule on the rhs
@@ -116,9 +115,8 @@ BitSetVars getNullabilities(const GrammarData& gd) {
 }
 
 
-
-std::pair<BitSetVars, std::vector<BitSetToks>>
-getNullsAndFirsts(const GrammarData& gd) {
+std::pair<BitSetVars, std::vector<BitSetToks>> getNullsAndFirsts(
+    const GrammarData& gd) {
   size_t numVars = gd.variables.size();
   size_t numTokens = gd.tokens.size();
 

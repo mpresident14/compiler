@@ -8,7 +8,6 @@
 #include <string>
 
 #include <boost/dynamic_bitset.hpp>
-
 #include <prez/print_stuff.hpp>
 #include <prez/unit_test.hpp>
 
@@ -27,12 +26,18 @@ void testInitState(const DFA<DFARuleSet, int, DFARuleSetHash>& dfa) {
   /* lookahead = {INT, PLUS, STAR, whitespace} */
 
   const DFARuleSet& initRules = dfa.getRoot()->getValue();
-  const DFARule expected0 = { SCONC, { EXPR }, 0, boost::dynamic_bitset<>("0000"s)};
-  const DFARule expected1 = { EINT, { INT }, 0, boost::dynamic_bitset<>("0110"s) };
+  const DFARule expected0 = {
+    SCONC, { EXPR }, 0, boost::dynamic_bitset<>("0000"s)
+  };
+  const DFARule expected1 = {
+    EINT, { INT }, 0, boost::dynamic_bitset<>("0110"s)
+  };
   const DFARule expected2 = {
-    EPLUS, { EXPR, PLUS, EXPR }, 0, boost::dynamic_bitset<>("0110"s)};
+    EPLUS, { EXPR, PLUS, EXPR }, 0, boost::dynamic_bitset<>("0110"s)
+  };
   const DFARule expected3 = {
-    ETIMES, { EXPR, STAR, EXPR }, 0, boost::dynamic_bitset<>("0110"s) };
+    ETIMES, { EXPR, STAR, EXPR }, 0, boost::dynamic_bitset<>("0110"s)
+  };
 
   TESTER.assertEquals(4, initRules.size());
 

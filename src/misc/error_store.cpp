@@ -30,7 +30,8 @@ stringstream& ErrorStore::add(MsgType type, size_t line, string_view msg) {
       case MsgType::NOTE:
         error << noteColored;
         break;
-      default: throw invalid_argument("Unknown MsgType");
+      default:
+        throw invalid_argument("Unknown MsgType");
     }
     error << " on line " << line << ": ";
   }
@@ -40,4 +41,3 @@ stringstream& ErrorStore::add(MsgType type, size_t line, string_view msg) {
   }
   return error;
 }
-

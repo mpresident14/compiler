@@ -7,10 +7,14 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
 
 std::ostream& operator<<(std::ostream& out, Type type) {
   switch (type.type) {
-    case TypeName::INT: return out << "int";
-    case TypeName::BOOL: return out << "bool";
-    case TypeName::VOID: return  out << "void";
-    default: return out << type.className;
+    case TypeName::INT:
+      return out << "int";
+    case TypeName::BOOL:
+      return out << "bool";
+    case TypeName::VOID:
+      return out << "void";
+    default:
+      return out << type.className;
   }
   return out;
 }

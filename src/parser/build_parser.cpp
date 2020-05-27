@@ -1,5 +1,6 @@
 #include "src/parser/build_parser.hpp"
 
+#include "src/misc/error_store.hpp"
 #include "src/parser/null_first.hpp"
 
 #include <chrono>
@@ -14,7 +15,6 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "src/misc/error_store.hpp"
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
@@ -31,10 +31,7 @@ namespace {
  * Logging *
  ***********/
 
-void streamRule(
-    std::ostream& out,
-    const DFARule& rule,
-    const GrammarData& gd) {
+void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gd) {
   const vector<Variable>& variables = gd.variables;
   const vector<Token>& tokens = gd.tokens;
 
@@ -76,7 +73,8 @@ void printNullabilities(
   }
   out << "*************\n"
       << "* NULLABLES *\n"
-      << "*************\n" << nullVarNames << "\n\n\n";
+      << "*************\n"
+      << nullVarNames << "\n\n\n";
 }
 
 void printFirsts(
@@ -183,8 +181,7 @@ void addRhses(
   // If the next variable is nullable, we need to consider the possibility
   // that we are on the nextNext variable
   if (nulls[nextSymbol]) {
-    addRhses(
-        fromRule.nextStep(), ruleQueue, ruleSet, gd, nulls, firsts);
+    addRhses(fromRule.nextStep(), ruleQueue, ruleSet, gd, nulls, firsts);
   }
 
   // Construct the lookahead set for the new rules
@@ -220,10 +217,9 @@ void addRhses(
   }
 
   for (int concreteType : gd.variables[nextSymbol].concreteTypes) {
-    DFARule nextRule{ concreteType,
-                      gd.concretes[concreteType].argSymbols,
-                      0,
-                      newLookahead };
+    DFARule nextRule{
+      concreteType, gd.concretes[concreteType].argSymbols, 0, newLookahead
+    };
     addIfNewRule(move(nextRule), ruleQueue, ruleSet);
   }
 }
@@ -280,18 +276,13 @@ vector<DFA_t::Node*> createTransitions(
   // Do the transitions for each symbol in parallel
   vector<DFA_t::Node*> addedNodes;
   mutex mtx;
-  auto job = [node,
-              &mtx,
-              &addedNodes,
-              &gd,
-              &nulls,
-              &firsts,
-              &dfa](DFARuleSet& transitionRules, size_t symbolIndex) {
+  auto job = [node, &mtx, &addedNodes, &gd, &nulls, &firsts, &dfa](
+                 DFARuleSet& transitionRules, size_t symbolIndex) {
     epsilonTransition(transitionRules, gd, nulls, firsts);
 
     mtx.lock();
-    DFA_t::Node* newNode = dfa.addTransition(
-        node, symbolIndex, move(transitionRules));
+    DFA_t::Node* newNode =
+        dfa.addTransition(node, symbolIndex, move(transitionRules));
     if (newNode) {
       addedNodes.push_back(newNode);
     }
@@ -304,7 +295,8 @@ vector<DFA_t::Node*> createTransitions(
     DFARuleSet& transitionRules = newTransitions[i];
     // Has a valid transition
     if (!transitionRules.empty()) {
-      eTransJobs.push_back(async(job, ref(transitionRules), indexToSymbol(i, numVars)));
+      eTransJobs.push_back(
+          async(job, ref(transitionRules), indexToSymbol(i, numVars)));
     }
   }
 
@@ -361,7 +353,8 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
       printFirsts(logStream, firsts, gd);
       printDfa(logStream, dfa, gd);
     } else {
-      cerr << ErrorStore::warningColored << ": could not open " << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
+      cerr << ErrorStore::warningColored << ": could not open "
+           << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
     }
   }
 
@@ -441,9 +434,7 @@ struct RuleData {
  * Remove the pieces of the ruleSet we do not need to actually run the DFA.
  * Also find any shift- or reduce-reduce conflicts
  */
-RuleData condenseRuleSet(
-    const DFARuleSet& ruleSet,
-    const GrammarData& gd) {
+RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
   const DFARule* reducibleRule = nullptr;
   for (const DFARule& rule : ruleSet) {
     if (rule.atEnd()) {
@@ -462,8 +453,7 @@ RuleData condenseRuleSet(
   }
 
   // Find the last token, if any
-  int rulePrecedence =
-      gd.concretes[reducibleRule->concrete].precedence;
+  int rulePrecedence = gd.concretes[reducibleRule->concrete].precedence;
   auto ruleIter = find_if(
       reducibleRule->symbols.crbegin(),
       reducibleRule->symbols.crend(),
@@ -477,8 +467,7 @@ RuleData condenseRuleSet(
   }
 
   // Check for shift-reduce conflicts
-  findShiftReduceConflicts(
-      *reducibleRule, rulePrecedence, ruleSet, gd);
+  findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, gd);
 
   // Reducible rule contains no tokens
   if (lastToken == NONE) {
@@ -535,7 +524,10 @@ string ruleDataToCode(const RuleData& ruleData) {
 }  // namespace
 
 
-void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
+void condensedDFAToCode(
+    ostream& out,
+    const GrammarData& gd,
+    const ParseFlags& parseFlags) {
   auto dfa = buildParserDFA(gd, parseFlags);
 
   dfa.streamAsCode(

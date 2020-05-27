@@ -309,7 +309,8 @@ void parseGrammar() {
         // Otherwise, check if it is a variable
         auto varIter = varNameToIndex.find(symbolName);
         if (varIter == varNameToIndex.end()) {
-          errorStore.addError(symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
+          errorStore.addError(
+              symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
         } else {
           concrete.argSymbols[j] = varIter->second;
         }
@@ -327,7 +328,8 @@ ParseInfo parseConfig(const string& fileName) {
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    errorStore.addError(0, string("File ").append(fileName).append(" is empty."));
+    errorStore.addError(
+        0, string("File ").append(fileName).append(" is empty."));
   }
   tokenStream.setTokens(move(tokens));
 
