@@ -104,32 +104,32 @@ Decls -> { vector<DeclPtr> }
    | Decls Decl                  % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
-  := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(#0, #1, move(#3), move(#5)) %
+  := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(#0, #1, move(#3), move(#5), #line) %
 
 Block -> { std::unique_ptr<Block> }
-  := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1)) %
+  := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %
 
 Stmts -> { vector<StmtPtr> }
   :=            #prec EPSILON % vector<StmtPtr>() %
    | Stmts Stmt               % (#0.push_back(move(#1)), move(#0)) %
 
 Stmt -> { StmtPtr }
-  := IF LPAREN Expr RPAREN Block              % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>())) %
-   | IF LPAREN Expr RPAREN Block ELSE Stmt    % make_unique<If>(move(#2), move(#4), move(#6)) %
-   | WHILE LPAREN Expr RPAREN Block           % make_unique<While>(move(#2), move(#4)) %
-   | IDENT LPAREN Exprs RPAREN SEMI           % make_unique<CallStmt>(#0, move(#2)) %
-   | RETURN SEMI                              % make_unique<Return>(optional<ExprPtr>()) %
-   | RETURN Expr SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1))) %
+  := IF LPAREN Expr RPAREN Block              % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %
+   | IF LPAREN Expr RPAREN Block ELSE Stmt    % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+   | WHILE LPAREN Expr RPAREN Block           % make_unique<While>(move(#2), move(#4), #line) %
+   | IDENT LPAREN Exprs RPAREN SEMI           % make_unique<CallStmt>(#0, move(#2), #line) %
+   | RETURN SEMI                              % make_unique<Return>(optional<ExprPtr>(), #line) %
+   | RETURN Expr SEMI                         % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
    | LValue EQ Expr SEMI                      % make_unique<Assign>(move(#0), move(#2)) %
-   | Type IDENT EQ Expr SEMI                  % make_unique<VarDecl>(#0, #1, move(#3)) %
+   | Type IDENT EQ Expr SEMI                  % make_unique<VarDecl>(#0, #1, move(#3), #line) %
    | Block                                    % move(#0) %
 
 Expr -> { ExprPtr }
-  := NUM                                      % make_unique<ConstInt>(#0) %
-   | TRUE                                     % make_unique<ConstBool>(true) %
-   | FALSE                                    % make_unique<ConstBool>(false) %
-   | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG) %
-   | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT) %
+  := NUM                                      % make_unique<ConstInt>(#0, #line) %
+   | TRUE                                     % make_unique<ConstBool>(true, #line) %
+   | FALSE                                    % make_unique<ConstBool>(false, #line) %
+   | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
+   | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
    | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
    | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
    | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
@@ -149,12 +149,12 @@ Expr -> { ExprPtr }
    | Expr LTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
    | Expr GTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
    | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(#0, move(#2)) %
+   | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(#0, move(#2), #line) %
    | LValue                                   % move(#0) %
    | LPAREN Expr RPAREN                       % move(#1) %
 
 LValue -> { ExprPtr }
-  := IDENT   % make_unique<Var>(#0) %
+  := IDENT   % make_unique<Var>(#0, #line) %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %

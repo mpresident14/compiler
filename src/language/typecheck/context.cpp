@@ -53,13 +53,6 @@ const Context::FnInfo& Context::lookupFn(const std::string& name) const {
 }
 
 
-// /* If either of these two error, it's a programming mistake */
-// int Context::insertTemp(int temp, const Type& type) {
-//   tempMap_.emplace(temp, type);
-// }
-
-// const Type& Context::lookupTemp(int temp) const { return tempMap_.at(temp); }
-
 // TODO: Remove this when we add a print() to the language
 Context::Context() {
   fnMap_.emplace(

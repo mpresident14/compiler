@@ -46,10 +46,6 @@ make_test(while_test "15,120")
 make_test(ternary_test "10,10")
 make_test(function_test "1,2")
 
-message(${MY_TESTS})
-message(${MY_TEST_EXES})
-
-
 add_custom_target(
       translator_check
       COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure

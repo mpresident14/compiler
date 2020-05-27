@@ -14,17 +14,27 @@ namespace language {
 
 class Decl {
 public:
+  constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&) const = 0;
   virtual void addToContext(Context& ctx) const = 0;
+  constexpr size_t getLine() const noexcept { return line_; }
+
+protected:
+  size_t line_;
 };
 
 class Stmt {
 public:
+  constexpr Stmt(size_t line) : line_(line) {}
   virtual ~Stmt() {}
   /* If the statement typechecks, generate the corresponding intermediate
    * statements */
   virtual void toImStmts(std::vector<im::StmtPtr>& imStmts) = 0;
+  constexpr size_t getLine() const noexcept { return line_; }
+
+protected:
+  size_t line_;
 };
 
 enum class ExprType {
@@ -45,6 +55,7 @@ struct ExprInfo {
 
 class Expr {
 public:
+  constexpr Expr(size_t line) : line_(line) {}
   virtual ~Expr() {}
   virtual ExprType getType() const noexcept = 0;
 
@@ -57,6 +68,10 @@ public:
       assem::Label* ifFalse);
 
   im::ExprPtr toImExprAssert(const Type& type);
+  constexpr size_t getLine() const noexcept { return line_; }
+
+protected:
+  size_t line_;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -84,7 +99,7 @@ public:
       Type returnType,
       const std::string& name,
       std::vector<std::pair<Type, std::string>>&& params,
-      std::unique_ptr<Block>&& body);
+      std::unique_ptr<Block>&& body, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
   void addToContext(Context& ctx) const override;
 
@@ -102,7 +117,7 @@ private:
 
 class Block : public Stmt {
 public:
-  Block(std::vector<StmtPtr>&& stmts);
+  Block(std::vector<StmtPtr>&& stmts, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -112,7 +127,7 @@ private:
 
 class If : public Stmt {
 public:
-  If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE);
+  If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -124,7 +139,7 @@ private:
 
 class While : public Stmt {
 public:
-  While(ExprPtr&& boolE, std::unique_ptr<Block> body);
+  While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -135,7 +150,7 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(const std::string& name, std::vector<ExprPtr>&& params);
+  CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -146,7 +161,7 @@ private:
 
 class Return : public Stmt {
 public:
-  Return(std::optional<ExprPtr>&& retValue);
+  Return(std::optional<ExprPtr>&& retValue, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -167,7 +182,7 @@ private:
 
 class VarDecl : public Stmt {
 public:
-  VarDecl(const Type& type, const std::string& name, ExprPtr&& e);
+  VarDecl(const Type& type, const std::string& name, ExprPtr&& e, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   const std::string& getName() const noexcept { return name_; }
@@ -203,13 +218,13 @@ enum class BOp {
   GTE,
   LTE,
   AND,
-  OR /* TODO: , BIT_AND, BIT_OR, XOR */
+  OR
 };
 
 
 class ConstInt : public Expr {
 public:
-  constexpr explicit ConstInt(int n) : n_(n) {}
+  constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr() override;
 
@@ -220,7 +235,7 @@ private:
 
 class ConstBool : public Expr {
 public:
-  constexpr explicit ConstBool(bool b) : b_(b) {}
+  constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
   ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
   ExprInfo toImExpr() override;
 
@@ -232,7 +247,7 @@ private:
 /* Variable in the program */
 class Var : public Expr {
 public:
-  Var(const std::string& name);
+  Var(const std::string& name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
   ExprInfo toImExpr() override;
 
@@ -245,7 +260,7 @@ private:
 
 class UnaryOp : public Expr {
 public:
-  UnaryOp(ExprPtr&& e, UOp uOp);
+  UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
   ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
   ExprInfo toImExpr() override;
 
@@ -316,7 +331,7 @@ private:
 
 class CallExpr : public Expr {
 public:
-  CallExpr(const std::string& name, std::vector<ExprPtr>&& params);
+  CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr() override;
 

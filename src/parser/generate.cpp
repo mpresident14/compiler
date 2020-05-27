@@ -1,6 +1,6 @@
 #include "src/parser/generate.hpp"
 
-#include "src/misc/error_store.hpp"
+#include "src/misc/logger.hpp"
 #include "src/parser/build_parser.hpp"
 #include "src/parser/regex_merge.hpp"
 #include "src/parser/regex_parser.hpp"

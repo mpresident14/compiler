@@ -1,6 +1,6 @@
 #include "src/parser/config_parse.hpp"
 
-#include "src/misc/error_store.hpp"
+#include "src/misc/logger.hpp"
 #include "src/parser/config_grammar.hpp"
 #include "src/parser/config_lexer.hpp"
 

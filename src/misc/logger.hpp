@@ -1,5 +1,5 @@
-#ifndef ERROR_STORE_HPP
-#define ERROR_STORE_HPP
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
 
 #include <iostream>
 #include <sstream>
@@ -53,4 +53,4 @@ private:
 };
 
 
-#endif  // ERROR_STORE_HPP
+#endif  // LOGGER_HPP

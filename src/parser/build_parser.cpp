@@ -1,6 +1,6 @@
 #include "src/parser/build_parser.hpp"
 
-#include "src/misc/error_store.hpp"
+#include "src/misc/logger.hpp"
 #include "src/parser/null_first.hpp"
 
 #include <chrono>

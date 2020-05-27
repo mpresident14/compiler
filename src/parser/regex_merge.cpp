@@ -1,6 +1,6 @@
 #include "src/parser/regex_merge.hpp"
 
-#include "src/misc/error_store.hpp"
+#include "src/misc/logger.hpp"
 #include "src/parser/dfa.hpp"
 #include "src/parser/regex.hpp"
 #include "src/parser/regex_parser.hpp"
