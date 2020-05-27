@@ -2,6 +2,8 @@
 
 using namespace std;
 
+Logger::Logger(const std::string& srcFile) : srcFile_(srcFile) {}
+
 stringstream& Logger::logError(size_t line, string_view msg) {
   ++errorCount_;
   return log(MsgType::ERROR, line, msg);
@@ -16,8 +18,8 @@ stringstream& Logger::logNote(size_t line, string_view msg) {
 }
 
 stringstream& Logger::log(MsgType type, size_t line, string_view msg) {
-  errors_.push_back(stringstream());
-  stringstream& error = errors_.back();
+  logs_.push_back(stringstream());
+  stringstream& error = logs_.back();
 
   if (line != 0) {
     switch (type) {

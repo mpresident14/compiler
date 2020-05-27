@@ -185,7 +185,7 @@ void CallExpr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
   vector<int> srcTemps;
   size_t numParams = params_.size();
   if (numParams > 6) {
-    throw runtime_error("More than 6 args not implemented yet");
+    throw runtime_error("TODO: More than 6 args not implemented yet");
   }
   for (size_t i = 0; i < numParams; ++i) {
     int argReg = ARG_REGS[i];

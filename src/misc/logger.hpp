@@ -16,6 +16,7 @@ public:
   static constexpr char noteColored[] = "\033[1;35mWarning\033[0m";
 
   Logger() = default;
+  Logger(const std::string& srcFile);
   ~Logger() = default;
   Logger(const Logger&) = delete;
   Logger(Logger&&) = default;
@@ -28,19 +29,27 @@ public:
 
   /* Throw if there were any MsgType::ERRORs */
   template <typename ExceptType = std::runtime_error>
-  void displayErrors() {
+  void displayLog() const {
+    if (logs_.empty()) {
+      return;
+    }
+
     if (errorCount_ == 0) {
-      for (std::stringstream& stream : errors_) {
+      std::cerr << srcFile_ << ":\n";
+      for (const std::stringstream& stream : logs_) {
         std::cerr << stream.str() << std::endl;
       }
     } else {
-      std::string allErrs;
-      for (std::stringstream& stream : errors_) {
+      std::string allErrs(srcFile_);
+      allErrs.append(":\n");
+      for (const std::stringstream& stream : logs_) {
         allErrs.append(stream.str());
       }
       throw ExceptType(allErrs);
     }
   }
+
+  void setSrcFile(const std::string& fileName) noexcept { srcFile_ = fileName; }
 
 private:
   enum class MsgType { ERROR, WARNING, NOTE };
@@ -48,8 +57,9 @@ private:
   inline std::stringstream&
   log(MsgType type, size_t line, std::string_view msg);
 
-  std::vector<std::stringstream> errors_;
+  std::vector<std::stringstream> logs_;
   size_t errorCount_ = 0;
+  std::string srcFile_;
 };
 
 

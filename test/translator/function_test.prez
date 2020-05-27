@@ -11,7 +11,7 @@ bool isEqual(int a, int b) {
 }
 
 void runprez() {
-  doNothing();
+  doNothng();
   printInt(inc(0));
 
   int a = 4;

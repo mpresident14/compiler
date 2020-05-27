@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     ParseInfo parseInfo = parseConfig(pgenFile);
     generateParserCode(parseInfo, { parserFilePath, logFile });
   } catch (exception& e) {
-    cerr << pgenFile << ":\n" << e.what() << endl;
+    cerr << e.what() << endl;
     return 1;
   }
   return 0;

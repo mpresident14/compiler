@@ -328,10 +328,11 @@ ParseInfo parseConfig(const string& fileName) {
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    logger.logError(
-        0, string("File ").append(fileName).append(" is empty."));
+    throw invalid_argument(string("File ").append(fileName).append(" is empty."));
   }
+
   tokenStream.setTokens(move(tokens));
+  logger.setSrcFile(fileName);
 
   string addlHppCode = parseHeader();
   string addlCppCode = parseSource();
@@ -346,7 +347,7 @@ ParseInfo parseConfig(const string& fileName) {
     logger.logError(0, "No grammar variables were provided.");
   }
 
-  logger.displayErrors();
+  logger.displayLog();
 
   return { move(gd), move(addlHppCode), move(addlCppCode) };
 }

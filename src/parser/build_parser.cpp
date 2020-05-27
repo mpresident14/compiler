@@ -15,6 +15,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <string.h>
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>

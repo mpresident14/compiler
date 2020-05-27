@@ -53,6 +53,22 @@ const Context::FnInfo& Context::lookupFn(const std::string& name) const {
 }
 
 
+void Context::displayLog() const {
+  bool hasError = false;
+  for (const Logger& logger : loggers_) {
+    try {
+      logger.displayLog();
+    } catch (std::exception& e) {
+      cerr << e.what() << endl;
+      hasError = true;
+    }
+  }
+
+  if (hasError) {
+    throw runtime_error("Context::displayLog");
+  }
+}
+
 // TODO: Remove this when we add a print() to the language
 Context::Context() {
   fnMap_.emplace(

@@ -935,7 +935,7 @@ void generateParserCode(
   string hppCode = parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
-  logger.displayErrors();
+  logger.displayLog();
   hppFile << hppCode;
   cppFile << cppCode;
 }
@@ -960,7 +960,7 @@ void generateLexerCode(
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
   string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
-  logger.displayErrors();
+  logger.displayLog();
   hppFile << hppCode;
   cppFile << cppCode;
 }

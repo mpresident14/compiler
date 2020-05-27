@@ -3,6 +3,7 @@
 
 #include "src/assembly/temp.hpp"
 #include "src/language/typecheck/type.hpp"
+#include "src/misc/logger.hpp"
 
 #include <unordered_map>
 #include <vector>
@@ -43,6 +44,8 @@ public:
   void setReturnTy(const Type& type) { returnType_ = type; }
   const std::string& getCurrentFn() const noexcept { return currentFn_; }
   const Type& getReturnTy() const noexcept { return returnType_; }
+  void addLogger(const std::string& srcFileName) { loggers_.emplace_back(srcFileName); }
+  Logger& currentLogger() noexcept { return loggers_.back(); }
 
   int insertVar(const std::string& name, const Type& type);
   void insertParam(const std::string& name, const Type& type, MachineReg reg);
@@ -55,6 +58,8 @@ public:
       const Type& returnType);
   const FnInfo& lookupFn(const std::string& name) const;
 
+  /* Throws if any errors were encountered */
+  void displayLog() const;
 
 private:
   Context();
@@ -63,7 +68,8 @@ private:
   std::unordered_map<std::string, FnInfo> fnMap_;
   std::string currentFn_;
   Type returnType_;
-
+  /* Separate Logger for each source file */
+  std::vector<Logger> loggers_;
 };
 
 #endif  // CONTEXT_HPP

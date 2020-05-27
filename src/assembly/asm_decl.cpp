@@ -16,12 +16,7 @@ namespace assem {
 Program::Program(std::vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
-void Program::toCode(const string& fileName) {
-  ofstream asmFile(fileName);
-  if (!asmFile.is_open()) {
-    throw invalid_argument("Could not open file " + fileName);
-  }
-
+void Program::toCode(std::ofstream& asmFile) {
   asmFile << ".text\n.globl runprez\n.align 16\n";
   for (DeclPtr& decl : decls_) {
     decl->toCode(asmFile);
