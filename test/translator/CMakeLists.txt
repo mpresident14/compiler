@@ -19,7 +19,8 @@ function(make_test TEST_NAME EXPECTED_OUT)
 
   add_custom_command(
     OUTPUT ${GEN_DIR}/${TEST_NAME}
-    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/main
+    COMMAND #valgrind --leak-check=full
+        ${RUNTIME_OUTPUT_DIRECTORY}/main
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}
         ${GEN_DIR}/${ASM_FILE}
     COMMAND clang -g
