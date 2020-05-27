@@ -344,7 +344,7 @@ private:
 std::string newLabel();
 std::pair<std::vector<im::ExprPtr>, Type> argsToImExprs(
     const std::string& fnName,
-    const std::vector<ExprPtr>& params);
+    const std::vector<ExprPtr>& params, size_t line);
 
 }  // namespace language
 

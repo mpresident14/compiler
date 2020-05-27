@@ -15,9 +15,9 @@ string newLabel() {
 
 pair<vector<im::ExprPtr>, Type> argsToImExprs(
     const string& fnName,
-    const vector<ExprPtr>& params) {
+    const vector<ExprPtr>& params, size_t line) {
   // Ensure function was declared
-  const Context::FnInfo& fnInfo = ctx.lookupFn(fnName);
+  const Context::FnInfo& fnInfo = ctx.lookupFn(fnName, line);
   // Ensure parameter types match and translate them to intermediate exprs
   const vector<Type>& paramTypes = fnInfo.paramTypes;
   size_t numParams = params.size();

@@ -33,7 +33,7 @@ ExprInfo ConstBool::toImExpr() {
 Var::Var(const std::string& name, size_t line) : Expr(line), name_(name) {}
 
 ExprInfo Var::toImExpr() {
-  const Context::VarInfo& varInfo = ctx.lookupVar(name_);
+  const Context::VarInfo& varInfo = ctx.lookupVar(name_, line_);
   return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
 }
 
@@ -249,7 +249,7 @@ CallExpr::CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_
     : Expr(line), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr() {
-  pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_);
+  pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_, line_);
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(name_),
                move(argCodes.first),

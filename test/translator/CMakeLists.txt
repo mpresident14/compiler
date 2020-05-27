@@ -40,10 +40,10 @@ endfunction()
 # For testing
 include(CTest)
 
-# make_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-# make_test(comp_test "1,2,3,4,5,6,7,8,9")
-# make_test(while_test "15,120")
-# make_test(ternary_test "10,10")
+make_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
+make_test(comp_test "1,2,3,4,5,6,7,8,9")
+make_test(while_test "15,120")
+make_test(ternary_test "10,10")
 make_test(function_test "1,2")
 
 add_custom_target(

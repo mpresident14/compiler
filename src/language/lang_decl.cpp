@@ -51,11 +51,10 @@ Func::Func(
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
   ctx.setCurrentFn(name_);
-  ctx.setReturnTy(returnType_);
   // Insert all the parameters as variables
   size_t numParams = paramTypes_.size();
   for (size_t i = 0; i < numParams; ++i) {
-    ctx.insertParam(paramNames_[i], paramTypes_[i], ARG_REGS[i]);
+    ctx.insertParam(paramNames_[i], paramTypes_[i], ARG_REGS[i], line_);
   }
   // Typecheck and compile the function
   vector<im::StmtPtr> imStmts;
@@ -68,7 +67,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
 }
 
 void Func::addToContext(Context& ctx) const {
-  ctx.insertFn(name_, vector<Type>(paramTypes_), returnType_);
+  ctx.insertFn(name_, vector<Type>(paramTypes_), returnType_, line_);
 }
 
 

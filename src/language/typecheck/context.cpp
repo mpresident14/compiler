@@ -6,10 +6,10 @@
 
 using namespace std;
 
-int Context::insertVar(const std::string& name, const Type& type) {
+int Context::insertVar(const std::string& name, const Type& type, size_t line) {
   int temp = newTemp();
   if (!varMap_.emplace(name, VarInfo{ move(type), temp }).second) {
-    throw invalid_argument("Redefinition of variable  \"" + name + "\"");
+    currentLogger().logError(line, "Redefinition of variable \"" + name + "\"");
   }
   return temp;
 }
@@ -17,16 +17,18 @@ int Context::insertVar(const std::string& name, const Type& type) {
 void Context::insertParam(
     const std::string& name,
     const Type& type,
-    MachineReg reg) {
+    MachineReg reg, size_t line) {
   if (!varMap_.emplace(name, VarInfo{ move(type), reg }).second) {
-    throw invalid_argument("Redefinition of variable  \"" + name + "\"");
+    currentLogger().logError(line, "Redefinition of variable \"" + name + "\"");
   }
 }
 
-const Context::VarInfo& Context::lookupVar(const std::string& name) const {
+const Context::VarInfo& Context::lookupVar(const std::string& name, size_t line) {
   auto iter = varMap_.find(name);
   if (iter == varMap_.end()) {
-    throw invalid_argument("Undefined variable \"" + name + "\"");
+    currentLogger().logError(line, "Undefined variable \"" + name + "\"");
+    // We can't really continue from this error
+    throw invalid_argument("");
   }
   return iter->second;
 }
@@ -37,17 +39,19 @@ void Context::removeVar(const string& name) { varMap_.erase(name); }
 void Context::insertFn(
     const std::string& name,
     std::vector<Type>&& paramTypes,
-    const Type& returnType) {
+    const Type& returnType, size_t line) {
   if (!fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) })
            .second) {
-    throw invalid_argument("Redefinition of function  \"" + name + "\"");
+    currentLogger().logError(line, "Redefinition of function \"" + name + "\"");
   }
 }
 
-const Context::FnInfo& Context::lookupFn(const std::string& name) const {
+const Context::FnInfo& Context::lookupFn(const std::string& name, size_t line) {
   auto iter = fnMap_.find(name);
   if (iter == fnMap_.end()) {
-    throw invalid_argument("Undefined function \"" + name + "\"");
+    currentLogger().logError(line, "Undefined function \"" + name + "\"");
+    // We can't really continue from this error
+    throw invalid_argument("");
   }
   return iter->second;
 }

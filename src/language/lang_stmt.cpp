@@ -92,7 +92,7 @@ CallStmt::CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_
 
 void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(new im::CallStmt(
-      make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_).first));
+      make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_, line_).first));
 }
 
 
@@ -103,7 +103,7 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
 Return::Return(std::optional<ExprPtr>&& retValue, size_t line) : Stmt(line), retValue_(move(retValue)) {}
 
 void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  const Type& retType = ctx.getReturnTy();
+  const Type& retType = ctx.lookupFn(ctx.getCurrentFn(), line_).returnType;
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
     if (retType.type != TypeName::VOID) {
@@ -134,7 +134,7 @@ void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   }
 
   const Context::VarInfo& varInfo =
-      ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName());
+      ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
   imStmts.emplace_back(new im::Assign(
       make_unique<im::Temp>(varInfo.temp), rhs_->toImExprAssert(varInfo.type)));
 }
@@ -151,7 +151,7 @@ void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   // Make sure the right side has the correct type and translate it
   im::ExprPtr rhs = e_->toImExprAssert(type_);
   // Insert the variable into the context
-  int temp = ctx.insertVar(name_, move(type_));
+  int temp = ctx.insertVar(name_, move(type_), line_);
   imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
 }
 

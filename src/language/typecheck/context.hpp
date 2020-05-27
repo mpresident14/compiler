@@ -41,22 +41,18 @@ public:
   }
 
   void setCurrentFn(const std::string& fnName) { currentFn_ = fnName; }
-  void setReturnTy(const Type& type) { returnType_ = type; }
   const std::string& getCurrentFn() const noexcept { return currentFn_; }
-  const Type& getReturnTy() const noexcept { return returnType_; }
   void addLogger(const std::string& srcFileName) { loggers_.emplace_back(srcFileName); }
   Logger& currentLogger() noexcept { return loggers_.back(); }
-
-  int insertVar(const std::string& name, const Type& type);
-  void insertParam(const std::string& name, const Type& type, MachineReg reg);
-  const VarInfo& lookupVar(const std::string& name) const;
+  int insertVar(const std::string& name, const Type& type, size_t line);
+  void insertParam(const std::string& name, const Type& type, MachineReg reg, size_t line);
+  const VarInfo& lookupVar(const std::string& name, size_t line);
   void removeVar(const std::string& name);
-
   void insertFn(
       const std::string& name,
       std::vector<Type>&& paramTypes,
-      const Type& returnType);
-  const FnInfo& lookupFn(const std::string& name) const;
+      const Type& returnType, size_t line);
+  const FnInfo& lookupFn(const std::string& name, size_t line);
 
   /* Throws if any errors were encountered */
   void displayLog() const;
@@ -67,7 +63,6 @@ private:
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_map<std::string, FnInfo> fnMap_;
   std::string currentFn_;
-  Type returnType_;
   /* Separate Logger for each source file */
   std::vector<Logger> loggers_;
 };

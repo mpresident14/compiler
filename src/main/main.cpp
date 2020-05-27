@@ -36,6 +36,8 @@ void compile(const std::string& srcFile, const std::string& outAsmFile) {
     prog.toImProg().toAssemProg().toCode(out);
   } catch (const parser::ParseException& e) {
     ctx.currentLogger().logError(0, e.what());
+  } catch (const std::exception& e) {
+    // Any exception from the translating code will already be logged, so do nothing
   }
 }
 
