@@ -5,6 +5,6 @@
 
 #include <ostream>
 
-void mergedRgxDFAToCode(std::ostream& out, const GrammarData& grammarData);
+void mergedRgxDFAToCode(std::ostream& out, const GrammarData& gd);
 
 #endif

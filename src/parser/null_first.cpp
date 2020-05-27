@@ -84,15 +84,15 @@ namespace {
 /* For each symbol in the grammar, the equations for each rule on the rhs
  * are a disjunction of conjunctions, which we represent with a
  * vector<vector<BitVarRef> */
-BitSetVars getNullabilities(const GrammarData& grammarData) {
-  size_t numVars = grammarData.variables.size();
+BitSetVars getNullabilities(const GrammarData& gd) {
+  size_t numVars = gd.variables.size();
   BitSetVars nullabilities(numVars);
   vector<vector<vector<BitRef>>> equations(numVars);
 
   for (size_t var = 0; var < numVars; ++var) {
-    for (int concreteType : grammarData.variables[var].concreteTypes) {
+    for (int concreteType : gd.variables[var].concreteTypes) {
       // Epsilon (i.e. empty) is always nullable, so this symbol is nullable
-      const Concrete& rule = grammarData.concretes[concreteType];
+      const Concrete& rule = gd.concretes[concreteType];
       if (rule.argSymbols.empty()) {
         nullabilities[var] = true;
         break;
@@ -118,9 +118,9 @@ BitSetVars getNullabilities(const GrammarData& grammarData) {
 
 
 std::pair<BitSetVars, std::vector<BitSetToks>>
-getNullsAndFirsts(const GrammarData& grammarData) {
-  size_t numVars = grammarData.variables.size();
-  size_t numTokens = grammarData.tokens.size();
+getNullsAndFirsts(const GrammarData& gd) {
+  size_t numVars = gd.variables.size();
+  size_t numTokens = gd.tokens.size();
 
   // Initialize firsts with empty bitset vectors
   vector<BitSetToks> firsts;
@@ -136,12 +136,12 @@ getNullsAndFirsts(const GrammarData& grammarData) {
     equations.push_back(UnionEquation(numTokens));
   }
 
-  BitSetVars nullabilities = getNullabilities(grammarData);
+  BitSetVars nullabilities = getNullabilities(gd);
 
   for (size_t var = 0; var < numVars; ++var) {
     UnionEquation& unionEq = equations[var];
-    for (int concreteType : grammarData.variables[var].concreteTypes) {
-      for (int rhsSymbol : grammarData.concretes[concreteType].argSymbols) {
+    for (int concreteType : gd.variables[var].concreteTypes) {
+      for (int rhsSymbol : gd.concretes[concreteType].argSymbols) {
         // Tokens are never nullable, so nothing beyond it can be first
         if (isToken(rhsSymbol)) {
           unionEq.tokenSet[tokenToFromIndex(rhsSymbol)] = true;

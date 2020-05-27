@@ -84,11 +84,11 @@ constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
 
 inline std::string symbolToString(
     int symbolId,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   if (isToken(symbolId)) {
-    return grammarData.tokens[tokenToFromIndex(symbolId)].name;
+    return gd.tokens[tokenToFromIndex(symbolId)].name;
   }
-  return grammarData.variables[symbolId].name;
+  return gd.variables[symbolId].name;
 }
 
 struct ParseFlags {

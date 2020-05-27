@@ -135,7 +135,7 @@ void testHashFn() {
 }
 
 void testRgxDFAToCode_withNullableRegex() {
-  GrammarData grammarData = {
+  GrammarData gd = {
     {
         { "", "", NONE, Assoc::NONE, "", "", "a*",0 },
         { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*" ,0},
@@ -152,7 +152,7 @@ void testRgxDFAToCode_withNullableRegex() {
   stringstream out;
   out.setstate(ios_base::badbit);
   cout << "HERE4" << endl;
-  mergedRgxDFAToCode(out, grammarData);
+  mergedRgxDFAToCode(out, gd);
   cout << "HERE" << endl;
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
@@ -160,7 +160,7 @@ void testRgxDFAToCode_withNullableRegex() {
 }
 
 void testRgxDFAToCode_withInvalidRegex() {
-  GrammarData grammarData = {
+  GrammarData gd = {
     {
         { "", "", NONE, Assoc::NONE, "", "", "." ,0},
         { "", "", NONE, Assoc::NONE, "", "", "9)[0-9]*" ,0},
@@ -172,7 +172,7 @@ void testRgxDFAToCode_withInvalidRegex() {
 
   stringstream out;
   out.setstate(ios_base::badbit);
-  TESTER.assertThrows(([&]() { mergedRgxDFAToCode(out, grammarData); }));
+  TESTER.assertThrows(([&]() { mergedRgxDFAToCode(out, gd); }));
 }
 
 int main(int, char**) {

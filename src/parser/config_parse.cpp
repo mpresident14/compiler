@@ -21,10 +21,10 @@ using namespace std;
 using namespace config_lexer;
 
 namespace {
-  GrammarData grammarData;
-  vector<Token>& gdTokens = grammarData.tokens;
-  vector<Concrete>& gdConcretes = grammarData.concretes;
-  vector<Variable>& gdVariables = grammarData.variables;
+  GrammarData gd;
+  vector<Token>& gdTokens = gd.tokens;
+  vector<Concrete>& gdConcretes = gd.concretes;
+  vector<Variable>& gdVariables = gd.variables;
 
   unordered_map<string, size_t> tokenNameToIndex;
   unordered_map<string, size_t> varNameToIndex;
@@ -346,5 +346,5 @@ ParseInfo parseConfig(const string& fileName) {
 
   throwIfError(errors);
 
-  return { move(grammarData), move(addlHppCode), move(addlCppCode) };
+  return { move(gd), move(addlHppCode), move(addlCppCode) };
 }

@@ -85,13 +85,13 @@ namespace {
 
   using MergedRgxDFA = DFA<MergeData, char, MergeData::Hash>;
 
-  MergedRgxDFA buildMergedRgxDFA(const GrammarData& grammarData) {
+  MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
     // Store the errors so we can throw them all at once.
     stringstream regexErrs;
     // We need the regex DFAs to be live long enough to create the merged DFA,
     // so we store them in this vector. Afterwards, all the pointers inside the
     // merged DFA will be deleted, but we will no longer need them.
-    size_t numTokens = grammarData.tokens.size();
+    size_t numTokens = gd.tokens.size();
     vector<RgxDFA> rgxDfas;
     rgxDfas.reserve(numTokens);
 
@@ -100,7 +100,7 @@ namespace {
     vector<pair<RgxDFA::Node*, int>> initialStates;
     int stateToken = NONE;
     for (size_t i = 0; i < numTokens; ++i) {
-      const Token& token = grammarData.tokens[i];
+      const Token& token = gd.tokens[i];
       try {
         RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
         RgxDFA rgxDfa = buildRegexDFA(move(rgx));
@@ -195,8 +195,8 @@ namespace {
 
 }  // namespace
 
-void mergedRgxDFAToCode(ostream& out, const GrammarData& grammarData) {
-  buildMergedRgxDFA(grammarData)
+void mergedRgxDFAToCode(ostream& out, const GrammarData& gd) {
+  buildMergedRgxDFA(gd)
       .streamAsCode(
           out,
           "int",

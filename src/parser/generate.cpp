@@ -28,7 +28,7 @@ inline void toCode(ostream& out, const vector<T>& v);
 inline void toCode(ostream& out, const Token& token);
 inline void toCode(ostream& out, const Concrete& concrete);
 inline void toCode(ostream& out, const Variable& var);
-inline void toCode(ostream& out, const GrammarData& grammarData);
+inline void toCode(ostream& out, const GrammarData& gd);
 
 inline void toCode(ostream& out, const string& str) {
   out << '"' << str << '"';
@@ -77,13 +77,13 @@ inline void toCode(ostream& out, const Variable& var) {
   // Other fields not needed for shift-reducing
 }
 
-inline void toCode(ostream& out, const GrammarData& grammarData) {
+inline void toCode(ostream& out, const GrammarData& gd) {
   out << '{';
-  toCode(out, grammarData.tokens);
+  toCode(out, gd.tokens);
   out << ',';
-  toCode(out, grammarData.concretes);
+  toCode(out, gd.concretes);
   out << ',';
-  toCode(out, grammarData.variables);
+  toCode(out, gd.variables);
   out << '}';
 }
 
@@ -157,7 +157,7 @@ void variableDecl(ostream& out) {
     )";
 }
 
-void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
+void gdDecl(ostream& out, const GrammarData& gd) {
   out << R"(struct GrammarData {
       vector<Token> tokens;
       vector<Concrete> concretes;
@@ -165,7 +165,7 @@ void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
     };
     )";
   out << "GrammarData GRAMMAR_DATA = ";
-  toCode(out, grammarData);
+  toCode(out, gd);
   out << ';';
 }
 
@@ -173,7 +173,7 @@ void grammarDataDecl(ostream& out, const GrammarData& grammarData) {
  * STACK OBJECT *
  ****************/
 
-void stackObjDef(ostream& out, const GrammarData& grammarData) {
+void stackObjDef(ostream& out, const GrammarData& gd) {
   out << R"(
       class StackObj {
       public:
@@ -197,10 +197,10 @@ void stackObjDef(ostream& out, const GrammarData& grammarData) {
 
         switch (symbol_) {
     )";
-  size_t numTokens = grammarData.tokens.size();
+  size_t numTokens = gd.tokens.size();
   // Case statement for each token with data
   for (size_t i = 0; i < numTokens; ++i) {
-    const Token& token = grammarData.tokens[i];
+    const Token& token = gd.tokens[i];
     if (!token.type.empty()) {
       out << "case " << tokenToFromIndex(i) << ':';
       if (!token.dtorStmt.empty()) {
@@ -216,10 +216,10 @@ void stackObjDef(ostream& out, const GrammarData& grammarData) {
     }
   }
 
-  size_t numVars = grammarData.variables.size();
+  size_t numVars = gd.variables.size();
   // Case statement for each variable
   for (size_t i = 0; i < numVars; ++i) {
-    const Variable& var = grammarData.variables[i];
+    const Variable& var = gd.variables[i];
     out << "case " << i << ':';
     if (!var.dtorStmt.empty()) {
       out << "if (!released_) {";
@@ -250,8 +250,8 @@ void stackObjDef(ostream& out, const GrammarData& grammarData) {
     )";
 }
 
-void startDecl(ostream& out, const GrammarData& grammarData) {
-  string type = grammarData.variables[1].type;
+void startDecl(ostream& out, const GrammarData& gd) {
+  string type = gd.variables[1].type;
   out << "struct Start {"
          "Start("
       << type << "&& r) : r_(move(r)) {}" << type << " r_; };";
@@ -260,14 +260,14 @@ void startDecl(ostream& out, const GrammarData& grammarData) {
 void streamSymbolNames(
     ostream& out,
     const vector<intptr_t>& symbols,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   vector<string> symbolNames;
   transform(
       symbols.begin(),
       symbols.end(),
       back_inserter(symbolNames),
-      [&grammarData](int symbol) {
-        return symbolToString(symbol, grammarData);
+      [&gd](int symbol) {
+        return symbolToString(symbol, gd);
       });
   out << symbolNames;
 }
@@ -345,19 +345,19 @@ void replacePounds(
   }
 }
 
-void constructObjFn(ostream& out, const GrammarData& grammarData) {
+void constructObjFn(ostream& out, const GrammarData& gd) {
   out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
-  size_t numConcretes = grammarData.concretes.size();
+  size_t numConcretes = gd.concretes.size();
   // Case statement for each concrete except SCONC (handled specially below)
   for (size_t i = 1; i < numConcretes; ++i) {
-    const Concrete& concrete = grammarData.concretes[i];
-    const Variable& var = grammarData.variables[concrete.varType];
+    const Concrete& concrete = gd.concretes[i];
+    const Variable& var = gd.variables[concrete.varType];
     out << "case " << i << ": return new " << var.type << '(';
 
     // Catch stoi aerrors
     try {
-      replacePounds(out, concrete, grammarData);
+      replacePounds(out, concrete, gd);
     } catch (const invalid_argument& e) {
       errors << errorColored << " on line " << concrete.declLine
              << ": Invalid argument #\n";
@@ -370,7 +370,7 @@ void constructObjFn(ostream& out, const GrammarData& grammarData) {
 
   // Root type of grammar is the first type listed
   out << "case 0: return new Start(move(*static_cast<"
-      << grammarData.variables[1].type << "*>(args[0].releaseObj())));";
+      << gd.variables[1].type << "*>(args[0].releaseObj())));";
   out << R"(default: throw ParseException("Can't construct object. Parser programmer error.");}})";
 }
 
@@ -384,12 +384,12 @@ void constructFn(ostream& out) {
     })";
 }
 
-void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
+void constructTokenObjFn(ostream& out, const GrammarData& gd) {
   out << R"(optional<StackObj> constructTokenObj(int token, string_view str) {
       switch (token) {)";
-  size_t numTokens = grammarData.tokens.size();
+  size_t numTokens = gd.tokens.size();
   for (size_t i = 0; i < numTokens; ++i) {
-    const Token& token = grammarData.tokens[i];
+    const Token& token = gd.tokens[i];
     if (token.precedence == SKIP_TOKEN) {
       out << "case " << tokenToFromIndex(i) << ": return {};";
     } else if (!token.type.empty()) {
@@ -407,10 +407,10 @@ void constructTokenObjFn(ostream& out, const GrammarData& grammarData) {
 /********
  * DFAs *
  ********/
-void lexerDFA(ostream& out, const GrammarData& grammarData) {
+void lexerDFA(ostream& out, const GrammarData& gd) {
   out << "namespace lexer {";
   try {
-    mergedRgxDFAToCode(out, grammarData);
+    mergedRgxDFAToCode(out, gd);
   } catch (const regex_parser::ParseException& e) {
     errors << e.what();
   }
@@ -419,10 +419,10 @@ void lexerDFA(ostream& out, const GrammarData& grammarData) {
 
 void parserDFA(
     ostream& out,
-    const GrammarData& grammarData,
+    const GrammarData& gd,
     const ParseFlags& parseFlags) {
   out << "namespace parser {";
-  condensedDFAToCode(out, grammarData, parseFlags);
+  condensedDFAToCode(out, gd, parseFlags);
   out << '}';
 }
 
@@ -551,8 +551,8 @@ void ruleDataDecl(ostream& out) {
     )";
 }
 
-void parseDecl(ostream& out, const GrammarData& grammarData) {
-  const string& rootType = grammarData.variables[1].type;
+void parseDecl(ostream& out, const GrammarData& gd) {
+  const string& rootType = gd.variables[1].type;
   out << rootType << " parse(const std::string& input);" << rootType
       << " parse(std::istream& input);";
 }
@@ -655,8 +655,8 @@ void tryReduceFn(ostream& out) {
     })";
 }
 
-void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
-  out << grammarData.variables[1].type
+void shiftReduceFn(ostream& out, const GrammarData& gd) {
+  out << gd.variables[1].type
       << R"(shiftReduce(vector<StackObj>& inputTokens) {
         // vector<StackObj> stk;
         // if (inputTokens.empty()) {
@@ -715,8 +715,8 @@ void shiftReduceFn(ostream& out, const GrammarData& grammarData) {
     )";
 }
 
-void parseFn(ostream& out, const GrammarData& grammarData) {
-  const string& rootType = grammarData.variables[1].type;
+void parseFn(ostream& out, const GrammarData& gd) {
+  const string& rootType = gd.variables[1].type;
   out << rootType << R"(
       parse(const string& input) {
         vector<StackObj> stackObjs = tokenize(input);
@@ -804,7 +804,7 @@ string parserHppCode(
     const string& namespaceName,
     const string& headerGuard,
     const string& addlHdrIncludes,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   stringstream out;
 
   out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
@@ -813,7 +813,7 @@ string parserHppCode(
   out << addlHdrIncludes;
   parserHppIncludes(out);
   out << "namespace " << namespaceName << '{';
-  parseDecl(out, grammarData);
+  parseDecl(out, gd);
   parseExceptionDecl(out);
   out << "}\n#endif";
 
@@ -823,7 +823,7 @@ string parserHppCode(
 string lexerHppCode(
     const string& namespaceName,
     const string& headerGuard,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   stringstream out;
 
   out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
@@ -831,7 +831,7 @@ string lexerHppCode(
   out << generatedWarning;
   lexerHppIncludes(out);
   out << "namespace " << namespaceName << '{';
-  stackObjDef(out, grammarData);
+  stackObjDef(out, gd);
   tokenizeDecl(out);
   parseExceptionDecl(out);
   out << "}\n#endif";
@@ -844,7 +844,7 @@ string parserCppCode(
     const string& namespaceName,
     const ParseInfo& parseInfo) {
   stringstream out;
-  const GrammarData& grammarData = parseInfo.grammarData;
+  const GrammarData& gd = parseInfo.gd;
 
   out << generatedWarning;
   out << "#include \"" << parseFlags.parserFilePath << ".hpp\"\n";
@@ -860,23 +860,23 @@ string parserCppCode(
   tokenDecl(out);
   concreteDecl(out);
   variableDecl(out);
-  grammarDataDecl(out, grammarData);
-  startDecl(out, grammarData);
-  stackObjDef(out, grammarData);
+  gdDecl(out, gd);
+  startDecl(out, gd);
+  stackObjDef(out, gd);
   currentLineDecl(out);
-  constructObjFn(out, grammarData);
+  constructObjFn(out, gd);
   constructFn(out);
-  constructTokenObjFn(out, grammarData);
-  lexerDFA(out, grammarData);
+  constructTokenObjFn(out, gd);
+  lexerDFA(out, gd);
   dfaRuleDecl(out);
   ruleDataDecl(out);
-  parserDFA(out, grammarData, parseFlags);
+  parserDFA(out, gd, parseFlags);
   tokenizeFn(out);
   parseHelperFns(out);
   tryReduceFn(out);
-  shiftReduceFn(out, grammarData);
+  shiftReduceFn(out, gd);
   out << "} namespace " << namespaceName << '{';
-  parseFn(out, grammarData);
+  parseFn(out, gd);
   out << '}';
 
   return out.str();
@@ -886,7 +886,7 @@ string lexerCppCode(
     const string& lexerFilePath,
     const string& namespaceName,
     const string& addlCode,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   stringstream out;
 
   out << generatedWarning;
@@ -901,10 +901,10 @@ string lexerCppCode(
   tokenDecl(out);
   concreteDecl(out);
   variableDecl(out);
-  grammarDataDecl(out, grammarData);
+  gdDecl(out, gd);
   currentLineDecl(out);
-  constructTokenObjFn(out, grammarData);
-  lexerDFA(out, grammarData);
+  constructTokenObjFn(out, gd);
+  lexerDFA(out, gd);
   out << "} namespace " << namespaceName << '{';
   tokenizeFn(out);
   tokenizeFileFn(out);
@@ -934,7 +934,7 @@ void generateParserCode(
   }
 
   hppFile << parserHppCode(
-      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.grammarData);
+      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   cppFile << parserCppCode(parseFlags, namespaceName, parseInfo);
   throwIfError(errors);
 }
@@ -943,7 +943,7 @@ void generateParserCode(
 void generateLexerCode(
     const string& lexerFilePath,
     const string& addlCode,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   auto thePair = getNamespaceAndGuard(lexerFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
@@ -957,7 +957,7 @@ void generateLexerCode(
     throw invalid_argument("Could not open file " + lexerFilePath + ".cpp");
   }
 
-  hppFile << lexerHppCode(namespaceName, headerGuard, grammarData);
-  cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, grammarData);
+  hppFile << lexerHppCode(namespaceName, headerGuard, gd);
+  cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
   throwIfError(errors);
 }

@@ -9,7 +9,7 @@
 using namespace std;
 
 int main() {
-  GrammarData grammarData = {
+  GrammarData gd = {
     {
         { "DNOTABC",
           "char*",
@@ -49,7 +49,7 @@ int main() {
     {}
   };
 
-  generateLexerCode("test/parser/generated/random_lexer", "", grammarData);
+  generateLexerCode("test/parser/generated/random_lexer", "", gd);
 
   return 0;
 }

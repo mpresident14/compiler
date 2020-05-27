@@ -7,7 +7,7 @@
 #include <vector>
 
 struct ParseInfo {
-  GrammarData grammarData;
+  GrammarData gd;
   std::string addlHppCode;
   std::string addlCppCode;
 };

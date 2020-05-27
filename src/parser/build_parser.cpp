@@ -34,11 +34,11 @@ namespace {
 void streamRule(
     std::ostream& out,
     const DFARule& rule,
-    const GrammarData& grammarData) {
-  const vector<Variable>& variables = grammarData.variables;
-  const vector<Token>& tokens = grammarData.tokens;
+    const GrammarData& gd) {
+  const vector<Variable>& variables = gd.variables;
+  const vector<Token>& tokens = gd.tokens;
 
-  out << grammarData.concretes[rule.concrete].name << " -> ";
+  out << gd.concretes[rule.concrete].name << " -> ";
   size_t len = rule.symbols.size();
   for (size_t i = 0; i < len; ++i) {
     if (i == rule.pos) {
@@ -170,7 +170,7 @@ void addRhses(
     const DFARule& fromRule,
     queue<DFARule>& ruleQueue,
     DFARuleSet& ruleSet,
-    const GrammarData& grammarData,
+    const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
   // Nothing to expand if we are at the end of the rule or if the next symbol
@@ -184,11 +184,11 @@ void addRhses(
   // that we are on the nextNext variable
   if (nulls[nextSymbol]) {
     addRhses(
-        fromRule.nextStep(), ruleQueue, ruleSet, grammarData, nulls, firsts);
+        fromRule.nextStep(), ruleQueue, ruleSet, gd, nulls, firsts);
   }
 
   // Construct the lookahead set for the new rules
-  BitSetToks newLookahead(grammarData.tokens.size());
+  BitSetToks newLookahead(gd.tokens.size());
   // Start at the nextNextSymbol
   size_t i = fromRule.pos + 1;
   size_t ruleSize = fromRule.symbols.size();
@@ -219,9 +219,9 @@ void addRhses(
     ++i;
   }
 
-  for (int concreteType : grammarData.variables[nextSymbol].concreteTypes) {
+  for (int concreteType : gd.variables[nextSymbol].concreteTypes) {
     DFARule nextRule{ concreteType,
-                      grammarData.concretes[concreteType].argSymbols,
+                      gd.concretes[concreteType].argSymbols,
                       0,
                       newLookahead };
     addIfNewRule(move(nextRule), ruleQueue, ruleSet);
@@ -235,21 +235,21 @@ void addRhses(
  */
 void epsilonTransition(
     DFARuleSet& ruleSet,
-    const GrammarData& grammarData,
+    const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
   queue<DFARule> ruleQueue;
 
   // Expand variables (epsilon transition) in the initial set of rules.
   for (const DFARule& rule : ruleSet) {
-    addRhses(rule, ruleQueue, ruleSet, grammarData, nulls, firsts);
+    addRhses(rule, ruleQueue, ruleSet, gd, nulls, firsts);
   }
 
   // Keep expanding variables (epsilon transition) until we've determined all
   // the possible rule positions we could be in.
   while (!ruleQueue.empty()) {
     DFARule& rule = ruleQueue.front();
-    addRhses(rule, ruleQueue, ruleSet, grammarData, nulls, firsts);
+    addRhses(rule, ruleQueue, ruleSet, gd, nulls, firsts);
     ruleQueue.pop();
   }
 }
@@ -259,13 +259,13 @@ void epsilonTransition(
 vector<DFA_t::Node*> createTransitions(
     DFA_t& dfa,
     DFA_t::Node* node,
-    const GrammarData& grammarData,
+    const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
   // Get all the valid transition symbols and map each of them to a new set of
   // rules
-  size_t numVars = grammarData.variables.size();
-  size_t numSymbols = grammarData.tokens.size() + numVars;
+  size_t numVars = gd.variables.size();
+  size_t numSymbols = gd.tokens.size() + numVars;
   vector<DFARuleSet> newTransitions(numSymbols);
 
   for (const DFARule& rule : node->getValue()) {
@@ -283,11 +283,11 @@ vector<DFA_t::Node*> createTransitions(
   auto job = [node,
               &mtx,
               &addedNodes,
-              &grammarData,
+              &gd,
               &nulls,
               &firsts,
               &dfa](DFARuleSet& transitionRules, size_t symbolIndex) {
-    epsilonTransition(transitionRules, grammarData, nulls, firsts);
+    epsilonTransition(transitionRules, gd, nulls, firsts);
 
     mtx.lock();
     DFA_t::Node* newNode = dfa.addTransition(
@@ -317,15 +317,15 @@ vector<DFA_t::Node*> createTransitions(
 
 /* Constructs the starting node of the DFA */
 DFA_t initDFA(
-    const GrammarData& grammarData,
+    const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
-  int rootType = grammarData.variables[S].concreteTypes[0];
+  int rootType = gd.variables[S].concreteTypes[0];
   DFARuleSet firstSet = { DFARule{ SCONC,
-                                   grammarData.concretes[rootType].argSymbols,
+                                   gd.concretes[rootType].argSymbols,
                                    0,
-                                   BitSetToks(grammarData.tokens.size()) } };
-  epsilonTransition(firstSet, grammarData, nulls, firsts);
+                                   BitSetToks(gd.tokens.size()) } };
+  epsilonTransition(firstSet, gd, nulls, firsts);
   DFA_t dfa(move(firstSet));
   return dfa;
 }
@@ -335,12 +335,12 @@ DFA_t initDFA(
 
 
 /* Build the DFA */
-DFA_t buildParserDFA(const GrammarData& grammarData, const ParseFlags& parseFlags) {
-  auto nullFirstsPair = getNullsAndFirsts(grammarData);
+DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
+  auto nullFirstsPair = getNullsAndFirsts(gd);
   const vector<BitSetToks>& firsts = nullFirstsPair.second;
   const BitSetVars& nulls = nullFirstsPair.first;
 
-  DFA_t dfa = initDFA(grammarData, nulls, firsts);
+  DFA_t dfa = initDFA(gd, nulls, firsts);
   queue<DFA_t::Node*> q;
   q.push(dfa.getRoot());
 
@@ -348,7 +348,7 @@ DFA_t buildParserDFA(const GrammarData& grammarData, const ParseFlags& parseFlag
     DFA_t::Node* node = q.front();
     q.pop();
     vector<DFA_t::Node*> addedNodes =
-        createTransitions(dfa, node, grammarData, nulls, firsts);
+        createTransitions(dfa, node, gd, nulls, firsts);
     for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
@@ -357,9 +357,9 @@ DFA_t buildParserDFA(const GrammarData& grammarData, const ParseFlags& parseFlag
   if (!parseFlags.logFile.empty()) {
     ofstream logStream(parseFlags.logFile);
     if (logStream.is_open()) {
-      printNullabilities(logStream, nulls, grammarData);
-      printFirsts(logStream, firsts, grammarData);
-      printDfa(logStream, dfa, grammarData);
+      printNullabilities(logStream, nulls, gd);
+      printFirsts(logStream, firsts, gd);
+      printDfa(logStream, dfa, gd);
     } else {
       cerr << warningColored << ": could not open " << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
     }
@@ -377,22 +377,22 @@ namespace {
 void shiftReduceConflict(
     const DFARule& reduceRule,
     const DFARule& shiftRule,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   cerr << "WARNING: Shift-reduce conflict for rules\n\t";
-  streamRule(cerr, reduceRule, grammarData);
+  streamRule(cerr, reduceRule, gd);
   cerr << "\n\t";
-  streamRule(cerr, shiftRule, grammarData);
+  streamRule(cerr, shiftRule, gd);
   cerr << endl;
 }
 
 void reduceReduceConflict(
     const DFARule& reduceRule1,
     const DFARule& reduceRule2,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   cerr << "WARNING: Reduce-reduce conflict for rules\n\t";
-  streamRule(cerr, reduceRule1, grammarData);
+  streamRule(cerr, reduceRule1, gd);
   cerr << "\n\t";
-  streamRule(cerr, reduceRule2, grammarData);
+  streamRule(cerr, reduceRule2, gd);
   cerr << endl;
 }
 
@@ -400,8 +400,8 @@ void findShiftReduceConflicts(
     const DFARule& reducibleRule,
     int rulePrecedence,
     const DFARuleSet& ruleSet,
-    const GrammarData& grammarData) {
-  const vector<Token>& tokens = grammarData.tokens;
+    const GrammarData& gd) {
+  const vector<Token>& tokens = gd.tokens;
   for (const DFARule& rule : ruleSet) {
     // Already found reducible rules
     if (rule.atEnd()) {
@@ -422,7 +422,7 @@ void findShiftReduceConflicts(
     // Unspecified precedence -> shift-reduce conflict! (Will be resolved by
     // shifting)
     if (rulePrecedence == NONE && tokens[nextTokenIndex].precedence == NONE) {
-      shiftReduceConflict(reducibleRule, rule, grammarData);
+      shiftReduceConflict(reducibleRule, rule, gd);
     }
   }
 }
@@ -443,13 +443,13 @@ struct RuleData {
  */
 RuleData condenseRuleSet(
     const DFARuleSet& ruleSet,
-    const GrammarData& grammarData) {
+    const GrammarData& gd) {
   const DFARule* reducibleRule = nullptr;
   for (const DFARule& rule : ruleSet) {
     if (rule.atEnd()) {
       // Reduce-reduce conflict! (Will be resolved by first come, first served)
       if (reducibleRule) {
-        reduceReduceConflict(*reducibleRule, rule, grammarData);
+        reduceReduceConflict(*reducibleRule, rule, gd);
       } else {
         reducibleRule = &rule;
       }
@@ -463,7 +463,7 @@ RuleData condenseRuleSet(
 
   // Find the last token, if any
   int rulePrecedence =
-      grammarData.concretes[reducibleRule->concrete].precedence;
+      gd.concretes[reducibleRule->concrete].precedence;
   auto ruleIter = find_if(
       reducibleRule->symbols.crbegin(),
       reducibleRule->symbols.crend(),
@@ -473,12 +473,12 @@ RuleData condenseRuleSet(
   int lastToken = NONE;
   if (rulePrecedence == NONE && ruleIter != reducibleRule->symbols.crend()) {
     lastToken = *ruleIter;
-    rulePrecedence = grammarData.tokens[tokenToFromIndex(lastToken)].precedence;
+    rulePrecedence = gd.tokens[tokenToFromIndex(lastToken)].precedence;
   }
 
   // Check for shift-reduce conflicts
   findShiftReduceConflicts(
-      *reducibleRule, rulePrecedence, ruleSet, grammarData);
+      *reducibleRule, rulePrecedence, ruleSet, gd);
 
   // Reducible rule contains no tokens
   if (lastToken == NONE) {
@@ -535,15 +535,15 @@ string ruleDataToCode(const RuleData& ruleData) {
 }  // namespace
 
 
-void condensedDFAToCode(ostream& out, const GrammarData& grammarData, const ParseFlags& parseFlags) {
-  auto dfa = buildParserDFA(grammarData, parseFlags);
+void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
+  auto dfa = buildParserDFA(gd, parseFlags);
 
   dfa.streamAsCode(
       out,
       "RuleData",
       "int",
-      [&grammarData](const DFARuleSet& ruleSet) {
-        return ruleDataToCode(condenseRuleSet(ruleSet, grammarData));
+      [&gd](const DFARuleSet& ruleSet) {
+        return ruleDataToCode(condenseRuleSet(ruleSet, gd));
       },
       [](int n) { return to_string(n); });
 }
