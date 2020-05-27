@@ -281,15 +281,15 @@ string convertArgNum(
   const vector<intptr_t>& argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
-    errors << errorColored << " on line " << concrete.declLine << ": Index"
-           << argIndex << " is < 0 for rule ";
+    streamError(errors, concrete.declLine);
+    errors << "Index " << argIndex << " is < 0 for rule ";
     streamSymbolNames(errors, argSymbols, gd);
     errors << '\n';
     return "";
   }
   if ((size_t)argIndex >= argSymbols.size()) {
-    errors << errorColored << " on line " << concrete.declLine << ": Index "
-           << argIndex << " is greater than the number of elements in rule ";
+    streamError(errors, concrete.declLine);
+    errors << "Index " << argIndex << " is greater than the number of elements in rule ";
     streamSymbolNames(errors, argSymbols, gd);
     errors << '\n';
     return "";
@@ -302,10 +302,9 @@ string convertArgNum(
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolName.empty()) {
-    errors << errorColored << " on line " << concrete.declLine << ": Token "
-           << symbolToString(argSymbol, gd)
-           << " is passed as an argument, but has no data "
-              "associated with it.\n";
+    streamError(errors, concrete.declLine);
+    errors << "Token " << symbolToString(argSymbol, gd)
+           << " is passed as an argument, but has no data associated with it.\n";
     return "";
   }
 
@@ -359,11 +358,9 @@ void constructObjFn(ostream& out, const GrammarData& gd) {
     try {
       replacePounds(out, concrete, gd);
     } catch (const invalid_argument& e) {
-      errors << errorColored << " on line " << concrete.declLine
-             << ": Invalid argument #\n";
+      streamError(errors, concrete.declLine, "Invalid argument #");
     } catch (const out_of_range& e) {
-      errors << errorColored << " on line " << concrete.declLine
-             << ": Argument # out of range of int\n";
+      streamError(errors, concrete.declLine, "Argument # out of range of int");
     }
     out << ");";
   }

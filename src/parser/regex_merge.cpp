@@ -118,16 +118,12 @@ namespace {
         rgxDfas.push_back(move(rgxDfa));
       } catch (const regex_parser::ParseException& e) {
         string err(e.what());
-        regexErrs << errorColored << " on line " << token.declLine << " for regex \"" << token.regex << "\":\n" << err.substr(err.find_first_of('\n') + 1) << '\n';
+        streamError(regexErrs, token.declLine);
+        regexErrs << " For regex \"" << token.regex << "\":\n" << err.substr(err.find_first_of('\n') + 1) << '\n';
       }
     }
 
-    {
-      const string& errs = regexErrs.str();
-      if (!errs.empty()) {
-        throw regex_parser::ParseException(errs);
-      }
-    }
+    throwIfError<regex_parser::ParseException>(regexErrs);
 
     MergedRgxDFA mergedDfa(MergeData{ move(initialStates), stateToken });
 

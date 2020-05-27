@@ -43,8 +43,8 @@ namespace {
     TokenStream& operator=(TokenStream&& other) = delete;
 
     void parseError(int tokenId) {
-      errors  << errorColored << " on line " << tokens_[pos_].getLine()
-             << ". Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
+      streamError(errors, tokens_[pos_].getLine());
+      errors << "Expected " << symbolToString(tokenId, CONFIG_GRAMMAR)
              << ". Got "
              << symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR) << '\n';
     }
@@ -130,8 +130,7 @@ namespace {
     }
 
     if (tokenNameToIndex.contains(*name)) {
-      errors  << errorColored << " on line " << tokenStream.currentLine()
-              << ": Duplicate token " << *name;
+      streamError(errors, tokenStream.currentLine(), "Duplicate token " + *name);
     }
 
     gdToken.name = *name;
@@ -251,8 +250,7 @@ namespace {
       if (iter == tokenNameToIndex.end()) {
         auto precIter = precNameToPrec.find(tokenName);
         if (precIter == precNameToPrec.end()) {
-          errors  << errorColored << " on line " << tokenStream.currentLine()
-                 << ": Unknown token " << tokenName << '\n';
+          streamError(errors, tokenStream.currentLine(), "Unknown token " + tokenName);
         } else {
           prec = precIter->second;
         }
@@ -261,11 +259,9 @@ namespace {
       }
 
       if (prec == NONE) {
-        errors  << warningColored << " on line " << tokenStream.currentLine()
-             << ": Token " << tokenName
-             << " is used to override a rule's precedence, "
-                "but has no precedence set.\n"
-             << endl;
+        streamWarning(errors, tokenStream.currentLine());
+        errors << ": Token " << tokenName
+               << " is used to override a rule's precedence, but has no precedence set.\n";
       }
       gdConcrete.precedence = prec;
     }
@@ -308,8 +304,7 @@ namespace {
           // Otherwise, check if it is a variable
           auto varIter = varNameToIndex.find(symbolName);
           if (varIter == varNameToIndex.end()) {
-            errors  << errorColored << " on line " << symbolToLineMap.at(&symbolName)
-                   << ": Unknown symbol " << symbolName << '\n';
+            streamError(errors, symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
           } else {
             concrete.argSymbols[j] = varIter->second;
           }
