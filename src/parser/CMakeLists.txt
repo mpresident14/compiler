@@ -8,13 +8,13 @@ find_package( Threads )
 add_library(parse_lib STATIC build_parser.cpp null_first.cpp)
 target_link_libraries(parse_lib ${CMAKE_THREAD_LIBS_INIT})
 add_library(regex_lib STATIC regex.cpp regex_parser.cpp regex_merge.cpp)
-target_link_libraries(regex_lib)
+target_link_libraries(regex_lib parse_lib misc_lib)
+add_library(gen_lib STATIC generate.cpp)
+target_link_libraries(gen_lib regex_lib)
 
 # Write the lexer for the .gp files
-add_executable(write_config_lexer
-    write_config_lexer.cpp
-    generate.cpp)
-target_link_libraries(write_config_lexer regex_lib parse_lib)
+add_executable(write_config_lexer write_config_lexer.cpp)
+target_link_libraries(write_config_lexer gen_lib)
 
 # NOTE: OUTPUT and WORKING_DIRECTORY are relative to corresponding
 # *build* tree directory
@@ -32,6 +32,5 @@ add_custom_command(
 add_executable(parsegen
     parsegen.cpp
     config_parse.cpp
-    config_lexer.cpp
-    generate.cpp)
-target_link_libraries(parsegen regex_lib parse_lib)
+    config_lexer.cpp)
+target_link_libraries(parsegen gen_lib)

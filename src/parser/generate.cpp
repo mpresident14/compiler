@@ -1,6 +1,6 @@
 #include "src/parser/generate.hpp"
 
-#include "src/misc/errors.hpp"
+#include "src/misc/error_store.hpp"
 #include "src/parser/build_parser.hpp"
 #include "src/parser/regex_merge.hpp"
 #include "src/parser/regex_parser.hpp"
@@ -14,7 +14,8 @@
 using namespace std;
 
 namespace {
-stringstream errors;
+
+ErrorStore errorStore;
 
 /***********
  * TO CODE *
@@ -281,17 +282,17 @@ string convertArgNum(
   const vector<intptr_t>& argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
-    streamError(errors, concrete.declLine);
-    errors << "Index " << argIndex << " is < 0 for rule ";
-    streamSymbolNames(errors, argSymbols, gd);
-    errors << '\n';
+    stringstream& error = errorStore.addError(concrete.declLine);
+    error << "Index " << argIndex << " is < 0 for rule ";
+    streamSymbolNames(error, argSymbols, gd);
+    error << '\n';
     return "";
   }
   if ((size_t)argIndex >= argSymbols.size()) {
-    streamError(errors, concrete.declLine);
-    errors << "Index " << argIndex << " is greater than the number of elements in rule ";
-    streamSymbolNames(errors, argSymbols, gd);
-    errors << '\n';
+    stringstream& error = errorStore.addError(concrete.declLine);
+    error << "Index " << argIndex << " is greater than the number of elements in rule ";
+    streamSymbolNames(error, argSymbols, gd);
+    error << '\n';
     return "";
   }
 
@@ -302,8 +303,8 @@ string convertArgNum(
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolName.empty()) {
-    streamError(errors, concrete.declLine);
-    errors << "Token " << symbolToString(argSymbol, gd)
+    stringstream& error = errorStore.addError(concrete.declLine);
+    error << "Token " << symbolToString(argSymbol, gd)
            << " is passed as an argument, but has no data associated with it.\n";
     return "";
   }
@@ -358,9 +359,9 @@ void constructObjFn(ostream& out, const GrammarData& gd) {
     try {
       replacePounds(out, concrete, gd);
     } catch (const invalid_argument& e) {
-      streamError(errors, concrete.declLine, "Invalid argument #");
+      errorStore.addError(concrete.declLine, "Invalid argument #");
     } catch (const out_of_range& e) {
-      streamError(errors, concrete.declLine, "Argument # out of range of int");
+      errorStore.addError(concrete.declLine, "Argument # out of range of int");
     }
     out << ");";
   }
@@ -409,7 +410,7 @@ void lexerDFA(ostream& out, const GrammarData& gd) {
   try {
     mergedRgxDFAToCode(out, gd);
   } catch (const regex_parser::ParseException& e) {
-    errors << e.what();
+    errorStore.addError(0, e.what());
   }
   out << '}';
 }
@@ -930,10 +931,13 @@ void generateParserCode(
     throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
   }
 
-  hppFile << parserHppCode(
+  string hppCode = parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
-  cppFile << parserCppCode(parseFlags, namespaceName, parseInfo);
-  throwIfError(errors);
+  string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
+  errorStore.displayErrors();
+  hppFile << hppCode;
+  cppFile << cppCode;
+
 }
 
 
@@ -954,7 +958,8 @@ void generateLexerCode(
     throw invalid_argument("Could not open file " + lexerFilePath + ".cpp");
   }
 
-  hppFile << lexerHppCode(namespaceName, headerGuard, gd);
-  cppFile << lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
-  throwIfError(errors);
-}
+  string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
+  string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
+  errorStore.displayErrors();
+  hppFile << hppCode;
+  cppFile << cppCode;}

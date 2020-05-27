@@ -78,6 +78,7 @@ add_subdirectory(${SRC}/assembly)
 add_subdirectory(${SRC}/intermediate)
 add_subdirectory(${SRC}/language)
 add_subdirectory(${SRC}/main)
+add_subdirectory(${SRC}/misc)
 
 add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/translator)

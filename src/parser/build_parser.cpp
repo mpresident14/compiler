@@ -14,7 +14,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "src/misc/errors.hpp"
+#include "src/misc/error_store.hpp"
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
@@ -361,7 +361,7 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
       printFirsts(logStream, firsts, gd);
       printDfa(logStream, dfa, gd);
     } else {
-      cerr << warningColored << ": could not open " << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
+      cerr << ErrorStore::warningColored << ": could not open " << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
     }
   }
 
