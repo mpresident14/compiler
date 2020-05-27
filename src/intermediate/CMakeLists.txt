@@ -5,3 +5,4 @@ add_library(im_lib
     im_decl.cpp
     im_stmt.cpp
     im_expr.cpp)
+target_link_libraries(im_lib asm_lib)

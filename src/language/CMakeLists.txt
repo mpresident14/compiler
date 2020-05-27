@@ -8,3 +8,4 @@ add_library(lang_lib
     typecheck/context.cpp
     typecheck/type.cpp
     utils.cpp)
+target_link_libraries(lang_lib im_lib)
