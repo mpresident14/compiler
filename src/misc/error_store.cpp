@@ -2,20 +2,20 @@
 
 using namespace std;
 
-stringstream& ErrorStore::addError(size_t line, string_view msg) {
+stringstream& Logger::logError(size_t line, string_view msg) {
   ++errorCount_;
-  return add(MsgType::ERROR, line, msg);
+  return log(MsgType::ERROR, line, msg);
 }
 
-stringstream& ErrorStore::addWarning(size_t line, string_view msg) {
-  return add(MsgType::WARNING, line, msg);
+stringstream& Logger::logWarning(size_t line, string_view msg) {
+  return log(MsgType::WARNING, line, msg);
 }
 
-stringstream& ErrorStore::addNote(size_t line, string_view msg) {
-  return add(MsgType::NOTE, line, msg);
+stringstream& Logger::logNote(size_t line, string_view msg) {
+  return log(MsgType::NOTE, line, msg);
 }
 
-stringstream& ErrorStore::add(MsgType type, size_t line, string_view msg) {
+stringstream& Logger::log(MsgType type, size_t line, string_view msg) {
   errors_.push_back(stringstream());
   stringstream& error = errors_.back();
 

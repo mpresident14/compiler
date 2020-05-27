@@ -353,7 +353,7 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
       printFirsts(logStream, firsts, gd);
       printDfa(logStream, dfa, gd);
     } else {
-      cerr << ErrorStore::warningColored << ": could not open "
+      cerr << Logger::warningColored << ": could not open "
            << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
     }
   }

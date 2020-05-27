@@ -15,7 +15,7 @@ using namespace std;
 
 namespace {
 
-ErrorStore errorStore;
+Logger logger;
 
 /***********
  * TO CODE *
@@ -280,14 +280,14 @@ string convertArgNum(
   const vector<intptr_t>& argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
-    stringstream& error = errorStore.addError(concrete.declLine);
+    stringstream& error = logger.logError(concrete.declLine);
     error << "Index " << argIndex << " is < 0 for rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
   }
   if ((size_t)argIndex >= argSymbols.size()) {
-    stringstream& error = errorStore.addError(concrete.declLine);
+    stringstream& error = logger.logError(concrete.declLine);
     error << "Index " << argIndex
           << " is greater than the number of elements in rule ";
     streamSymbolNames(error, argSymbols, gd);
@@ -302,7 +302,7 @@ string convertArgNum(
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolName.empty()) {
-    stringstream& error = errorStore.addError(concrete.declLine);
+    stringstream& error = logger.logError(concrete.declLine);
     error << "Token " << symbolToString(argSymbol, gd)
           << " is passed as an argument, but has no data associated with it.\n";
     return "";
@@ -329,8 +329,11 @@ void replacePounds(
       ++i;
       string_view afterPound = ctor.substr(i);
       if (afterPound.starts_with(line)) {
+        if (concrete.argSymbols.size() == 0) {
+          logger.logError(concrete.declLine, "#line cannot be used with empty rule");
+        }
         out << "args[0].getLine()";
-        i += sizeof(line);
+        i += sizeof(line) - 1;
       } else {
         size_t numDigits;
         int argIndex = stoi(string(afterPound), &numDigits);
@@ -358,9 +361,9 @@ void constructObjFn(ostream& out, const GrammarData& gd) {
     try {
       replacePounds(out, concrete, gd);
     } catch (const invalid_argument& e) {
-      errorStore.addError(concrete.declLine, "Invalid argument #");
+      logger.logError(concrete.declLine, "Invalid argument #");
     } catch (const out_of_range& e) {
-      errorStore.addError(concrete.declLine, "Argument # out of range of int");
+      logger.logError(concrete.declLine, "Argument # out of range of int");
     }
     out << ");";
   }
@@ -409,7 +412,7 @@ void lexerDFA(ostream& out, const GrammarData& gd) {
   try {
     mergedRgxDFAToCode(out, gd);
   } catch (const regex_parser::ParseException& e) {
-    errorStore.addError(0, e.what());
+    logger.logError(0, e.what());
   }
   out << '}';
 }
@@ -932,7 +935,7 @@ void generateParserCode(
   string hppCode = parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
-  errorStore.displayErrors();
+  logger.displayErrors();
   hppFile << hppCode;
   cppFile << cppCode;
 }
@@ -957,7 +960,7 @@ void generateLexerCode(
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
   string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
-  errorStore.displayErrors();
+  logger.displayErrors();
   hppFile << hppCode;
   cppFile << cppCode;
 }

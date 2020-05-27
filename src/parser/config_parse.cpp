@@ -31,7 +31,7 @@ unordered_map<string, size_t> varNameToIndex;
 unordered_map<string, int> precNameToPrec;
 unordered_map<const string*, int> symbolToLineMap;
 
-ErrorStore errorStore;
+Logger logger;
 
 
 class TokenStream {
@@ -44,7 +44,7 @@ public:
   TokenStream& operator=(TokenStream&& other) = delete;
 
   void parseError(int tokenId) {
-    errorStore.addError(
+    logger.logError(
         tokens_[pos_].getLine(),
         string("Expected ")
             .append(symbolToString(tokenId, CONFIG_GRAMMAR))
@@ -131,7 +131,7 @@ bool maybeParseToken() {
   }
 
   if (tokenNameToIndex.contains(*name)) {
-    errorStore.addError(tokenStream.currentLine(), "Duplicate token " + *name);
+    logger.logError(tokenStream.currentLine(), "Duplicate token " + *name);
   }
 
   gdToken.name = *name;
@@ -251,7 +251,7 @@ void parseGrammarDef(size_t concNum) {
     if (iter == tokenNameToIndex.end()) {
       auto precIter = precNameToPrec.find(tokenName);
       if (precIter == precNameToPrec.end()) {
-        errorStore.addError(
+        logger.logError(
             tokenStream.currentLine(), "Unknown token " + tokenName);
       } else {
         prec = precIter->second;
@@ -261,7 +261,7 @@ void parseGrammarDef(size_t concNum) {
     }
 
     if (prec == NONE) {
-      errorStore.addError(
+      logger.logError(
           tokenStream.currentLine(),
           string("Token ").append(tokenName).append(
               " is used to override a rule's precedence, but has no precedence "
@@ -309,7 +309,7 @@ void parseGrammar() {
         // Otherwise, check if it is a variable
         auto varIter = varNameToIndex.find(symbolName);
         if (varIter == varNameToIndex.end()) {
-          errorStore.addError(
+          logger.logError(
               symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
         } else {
           concrete.argSymbols[j] = varIter->second;
@@ -328,7 +328,7 @@ ParseInfo parseConfig(const string& fileName) {
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    errorStore.addError(
+    logger.logError(
         0, string("File ").append(fileName).append(" is empty."));
   }
   tokenStream.setTokens(move(tokens));
@@ -340,13 +340,13 @@ ParseInfo parseConfig(const string& fileName) {
   parseGrammar();
 
   if (gdTokens.empty()) {
-    errorStore.addError(0, "No tokens were provided.");
+    logger.logError(0, "No tokens were provided.");
   }
   if (gdVariables.empty()) {
-    errorStore.addError(0, "No grammar variables were provided.");
+    logger.logError(0, "No grammar variables were provided.");
   }
 
-  errorStore.displayErrors();
+  logger.displayErrors();
 
   return { move(gd), move(addlHppCode), move(addlCppCode) };
 }

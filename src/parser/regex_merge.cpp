@@ -87,7 +87,7 @@ using MergedRgxDFA = DFA<MergeData, char, MergeData::Hash>;
 
 MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
   // Store the errors so we can throw them all at once.
-  ErrorStore regexErrs;
+  Logger logger;
   // We need the regex DFAs to be live long enough to create the merged DFA,
   // so we store them in this vector. Afterwards, all the pointers inside the
   // merged DFA will be deleted, but we will no longer need them.
@@ -107,7 +107,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
       initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {
         // Accepting the empty string will likely result in an infinite loop
-        regexErrs.addWarning(
+        logger.logWarning(
             token.declLine,
             string("The regex \"")
                 .append(token.regex)
@@ -121,7 +121,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
       rgxDfas.push_back(move(rgxDfa));
     } catch (const regex_parser::ParseException& e) {
       string_view err(e.what());
-      regexErrs.addError(
+      logger.logError(
           token.declLine,
           string("For regex \"")
               .append(token.regex)
@@ -130,7 +130,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
     }
   }
 
-  regexErrs.displayErrors<regex_parser::ParseException>();
+  logger.displayErrors<regex_parser::ParseException>();
 
   MergedRgxDFA mergedDfa(MergeData{ move(initialStates), stateToken });
 
