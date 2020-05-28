@@ -19,6 +19,9 @@ using namespace std;
 
 void compile(ifstream& srcFile, ofstream& outAsmFile) {
   language::Program prog = parser::parse(srcFile);
+  // TODO: We don't want to write to the assembly file if there are errors.
+  // When we import other files, maybe accumulate assemPrograms in a vector
+  // and pass to main function to write to the file if everything checks out.
   prog.toImProg().toAssemProg().toCode(outAsmFile);
 }
 

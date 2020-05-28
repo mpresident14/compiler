@@ -8,7 +8,7 @@ using namespace std;
 
 namespace assem {
 
-// TODO: Turn at()s into []s when all testing is complete.
+// TODO: Turn at()s into []s and make noexcept when all testing is complete.
 
 /****************
  * constructors *
@@ -173,7 +173,7 @@ void Operation::toCode(
             out, dsts_.at(digitToInt(asmCode_.at(i + 2))), varToStackOffset);
       } else {
         // TODO: Remove this case when done
-        throw runtime_error("Operation::toCode: I screwed up");
+        throw runtime_error("Operation::toCode");
       }
       i += 3;
     } else {
