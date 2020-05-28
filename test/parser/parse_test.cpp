@@ -11,7 +11,7 @@ using namespace std;
 using namespace prez;
 
 UnitTest TESTER = UnitTest::createTester();
-stringstream errBuffer;
+ostringstream errBuffer;
 
 using ExprPtr = unique_ptr<Expr>;
 

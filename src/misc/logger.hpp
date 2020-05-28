@@ -7,10 +7,16 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <fstream>
 
 
 class Logger {
 public:
+  class Exception : public std::exception {
+  public:
+    const char* what() const noexcept override { return nullptr; }
+  };
+
   static constexpr char errorColored[] = "\033[1;31mError\033[0m";
   static constexpr char warningColored[] = "\033[1;34mWarning\033[0m";
   static constexpr char noteColored[] = "\033[1;35mWarning\033[0m";
@@ -23,41 +29,30 @@ public:
   Logger& operator=(const Logger&) = delete;
   Logger& operator=(Logger&&) = default;
 
-  std::stringstream& logError(size_t line = 0, std::string_view msg = "");
-  std::stringstream& logWarning(size_t line = 0, std::string_view msg = "");
-  std::stringstream& logNote(size_t line = 0, std::string_view msg = "");
+  std::ostringstream& logError(size_t line = 0, std::string_view msg = "");
+  std::ostringstream& logWarning(size_t line = 0, std::string_view msg = "");
+  std::ostringstream& logNote(size_t line = 0, std::string_view msg = "");
+  bool hasErrors() const noexcept;
+  void streamLog(std::ostream& out = std::cerr) const;
 
-  /* Throw if there were any MsgType::ERRORs */
-  template <typename ExceptType = std::runtime_error>
-  void displayLog() const {
-    if (logs_.empty()) {
-      return;
-    }
+  void setSrcFile(const std::string& fileName) noexcept { srcFile_ = fileName; }
 
-    if (errorCount_ == 0) {
-      std::cerr << srcFile_ << ":\n";
-      for (const std::stringstream& stream : logs_) {
-        std::cerr << stream.str() << std::endl;
-      }
-    } else {
-      std::string allErrs(srcFile_);
-      allErrs.append(":\n");
-      for (const std::stringstream& stream : logs_) {
-        allErrs.append(stream.str());
-      }
-      throw ExceptType(allErrs);
+  template<typename FStream>
+  void checkFile(const std::string& fileName, FStream& file) {
+    if (!file.is_open()) {
+      logFatal(0, "Could not open file " + fileName);
     }
   }
 
-  void setSrcFile(const std::string& fileName) noexcept { srcFile_ = fileName; }
+  void logFatal(size_t line, std::string_view msg);
+  void checkLog() const;
 
 private:
   enum class MsgType { ERROR, WARNING, NOTE };
 
-  inline std::stringstream&
-  log(MsgType type, size_t line, std::string_view msg);
+  std::ostringstream& log(MsgType type, size_t line, std::string_view msg);
 
-  std::vector<std::stringstream> logs_;
+  std::vector<std::ostringstream> logs_;
   size_t errorCount_ = 0;
   std::string srcFile_;
 };

@@ -18,37 +18,42 @@
 namespace lg = language;
 
 
-void compile(const std::string& srcFile, const std::string& outAsmFile) {
-  // TODO: Open with APPEND when we implement import
-  std::ifstream in(srcFile);
-  if (!in.is_open()) {
-    throw std::invalid_argument(std::string("Unable to open ").append(srcFile).append(": ").append(strerror(errno)));
-  }
-  std::ofstream out(outAsmFile);
-  if (!out.is_open()) {
-    throw std::invalid_argument(std::string("Unable to open ").append(outAsmFile).append(": ").append(strerror(errno)));
-  }
-
-  Context& ctx = Context::getContext();
-  ctx.addLogger(srcFile);
-  try {
-    lg::Program prog = parser::parse(in);
-    prog.toImProg().toAssemProg().toCode(out);
-  } catch (const parser::ParseException& e) {
-    ctx.currentLogger().logError(0, e.what());
-  } catch (const std::exception& e) {
-    // Any exception from the translating code will already be logged, so do nothing
-  }
+void compile(std::ifstream& srcFile, std::ofstream& outAsmFile) {
+  lg::Program prog = parser::parse(srcFile);
+  prog.toImProg().toAssemProg().toCode(outAsmFile);
 }
 
 
 int main(int, char** argv) {
+  std::string srcFile(argv[1]);
+
+  std::ifstream in(srcFile);
+  if (!in.is_open()) {
+    std::cerr << "Unable to open " << srcFile << ": " << strerror(errno) << std::endl;
+  }
+
+  std::ofstream out(argv[2]);
+  if (!out.is_open()) {
+    std::cerr << "Unable to open " << argv[2] << ": " << strerror(errno) << std::endl;
+  }
+
+  Context& ctx = Context::getContext();
+  ctx.addLogger(srcFile);
+
   try {
-    compile(argv[1], argv[2]);
-    Context::getContext().displayLog();
+    compile(in, out);
+    if (ctx.displayLogs()) {
+      return 1;
+    }
     return 0;
-  } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const parser::ParseException& e) {
+    // Error from the parser
+    ctx.currentLogger().logError(0, e.what());
+    ctx.displayLogs();
+    return 1;
+  } catch (Logger::Exception& e) {
+    // Fatal errors from the translator (already logged)
+    ctx.displayLogs();
     return 1;
   }
 }

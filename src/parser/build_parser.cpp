@@ -485,7 +485,7 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
 
 
 string ruleDataToCode(const RuleData& ruleData) {
-  stringstream code;
+  ostringstream code;
   code << "RuleData{";
 
   if (ruleData.reducibleRule.has_value()) {

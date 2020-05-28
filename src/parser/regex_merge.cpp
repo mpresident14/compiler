@@ -130,7 +130,11 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
     }
   }
 
-  logger.displayLog<regex_parser::ParseException>();
+  if (logger.hasErrors()) {
+    ostringstream errors;
+    logger.streamLog(errors);
+    throw regex_parser::ParseException(errors.str());
+  }
 
   MergedRgxDFA mergedDfa(MergeData{ move(initialStates), stateToken });
 

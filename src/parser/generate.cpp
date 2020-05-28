@@ -280,14 +280,14 @@ string convertArgNum(
   const vector<intptr_t>& argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
-    stringstream& error = logger.logError(concrete.declLine);
+    ostringstream& error = logger.logError(concrete.declLine);
     error << "Index " << argIndex << " is < 0 for rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
   }
   if ((size_t)argIndex >= argSymbols.size()) {
-    stringstream& error = logger.logError(concrete.declLine);
+    ostringstream& error = logger.logError(concrete.declLine);
     error << "Index " << argIndex
           << " is greater than the number of elements in rule ";
     streamSymbolNames(error, argSymbols, gd);
@@ -302,7 +302,7 @@ string convertArgNum(
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolName.empty()) {
-    stringstream& error = logger.logError(concrete.declLine);
+    ostringstream& error = logger.logError(concrete.declLine);
     error << "Token " << symbolToString(argSymbol, gd)
           << " is passed as an argument, but has no data associated with it.\n";
     return "";
@@ -804,7 +804,7 @@ string parserHppCode(
     const string& headerGuard,
     const string& addlHdrIncludes,
     const GrammarData& gd) {
-  stringstream out;
+  ostringstream out;
 
   out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
       << endl;
@@ -823,7 +823,7 @@ string lexerHppCode(
     const string& namespaceName,
     const string& headerGuard,
     const GrammarData& gd) {
-  stringstream out;
+  ostringstream out;
 
   out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
       << endl;
@@ -842,7 +842,7 @@ string parserCppCode(
     const ParseFlags& parseFlags,
     const string& namespaceName,
     const ParseInfo& parseInfo) {
-  stringstream out;
+  ostringstream out;
   const GrammarData& gd = parseInfo.gd;
 
   out << generatedWarning;
@@ -886,7 +886,7 @@ string lexerCppCode(
     const string& namespaceName,
     const string& addlCode,
     const GrammarData& gd) {
-  stringstream out;
+  ostringstream out;
 
   out << generatedWarning;
   out << "#include \"" << lexerFilePath << ".hpp\"\n";
@@ -917,25 +917,23 @@ string lexerCppCode(
 void generateParserCode(
     const ParseInfo& parseInfo,
     const ParseFlags& parseFlags) {
-  const string& parserFilePath = parseFlags.parserFilePath;
 
+  const string& parserFilePath = parseFlags.parserFilePath;
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
 
-  ofstream hppFile(parserFilePath + ".hpp");
-  if (!hppFile.is_open()) {
-    throw invalid_argument("Could not open file " + parserFilePath + ".hpp");
-  }
-  ofstream cppFile(parserFilePath + ".cpp");
-  if (!cppFile.is_open()) {
-    throw invalid_argument("Could not open file " + parserFilePath + ".cpp");
-  }
+  std::string hppName = parserFilePath + ".hpp";
+  ofstream hppFile(hppName);
+  logger.checkFile(hppName, hppFile);
+  std::string cppName = parserFilePath + ".cpp";
+  ofstream cppFile(cppName);
+  logger.checkFile(cppName, cppFile);
 
   string hppCode = parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
-  logger.displayLog();
+  logger.checkLog();
   hppFile << hppCode;
   cppFile << cppCode;
 }
@@ -945,22 +943,21 @@ void generateLexerCode(
     const string& lexerFilePath,
     const string& addlCode,
     const GrammarData& gd) {
+
   auto thePair = getNamespaceAndGuard(lexerFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
 
-  ofstream hppFile(lexerFilePath + ".hpp");
-  if (!hppFile.is_open()) {
-    throw invalid_argument("Could not open file " + lexerFilePath + ".hpp");
-  }
-  ofstream cppFile(lexerFilePath + ".cpp");
-  if (!cppFile.is_open()) {
-    throw invalid_argument("Could not open file " + lexerFilePath + ".cpp");
-  }
+  std::string hppName = lexerFilePath + ".hpp";
+  ofstream hppFile(hppName);
+  logger.checkFile(hppName, hppFile);
+  std::string cppName = lexerFilePath + ".cpp";
+  ofstream cppFile(cppName);
+  logger.checkFile(cppName, cppFile);
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
   string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
-  logger.displayLog();
+  logger.checkLog();
   hppFile << hppCode;
   cppFile << cppCode;
 }

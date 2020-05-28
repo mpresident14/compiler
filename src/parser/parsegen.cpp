@@ -1,5 +1,6 @@
 #include "src/parser/config_parse.hpp"
 #include "src/parser/generate.hpp"
+#include "src/misc/logger.hpp"
 
 #include <iostream>
 #include <string>
@@ -51,9 +52,9 @@ int main(int argc, char** argv) {
   try {
     ParseInfo parseInfo = parseConfig(pgenFile);
     generateParserCode(parseInfo, { parserFilePath, logFile });
-  } catch (exception& e) {
-    cerr << e.what() << endl;
+    return 0;
+  } catch (Logger::Exception& e) {
+    // Errors already displayed by logger
     return 1;
   }
-  return 0;
 }

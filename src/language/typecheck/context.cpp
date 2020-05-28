@@ -6,6 +6,14 @@
 
 using namespace std;
 
+
+void Context::addLogger(const std::string& srcFileName) {
+  loggers_.emplace(srcFileName, Logger(srcFileName));
+  currentFile_ = srcFileName;
+}
+
+Logger& Context::currentLogger() { return loggers_.at(currentFile_); }
+
 int Context::insertVar(const std::string& name, const Type& type, size_t line) {
   int temp = newTemp();
   if (!varMap_.emplace(name, VarInfo{ move(type), temp }).second) {
@@ -26,8 +34,8 @@ void Context::insertParam(
 const Context::VarInfo& Context::lookupVar(const std::string& name, size_t line) {
   auto iter = varMap_.find(name);
   if (iter == varMap_.end()) {
-    currentLogger().logError(line, "Undefined variable \"" + name + "\"");
     // We can't really continue from this error
+    currentLogger().logFatal(line, "Undefined variable \"" + name + "\"");
     throw invalid_argument("");
   }
   return iter->second;
@@ -49,28 +57,20 @@ void Context::insertFn(
 const Context::FnInfo& Context::lookupFn(const std::string& name, size_t line) {
   auto iter = fnMap_.find(name);
   if (iter == fnMap_.end()) {
-    currentLogger().logError(line, "Undefined function \"" + name + "\"");
     // We can't really continue from this error
-    throw invalid_argument("");
+    currentLogger().logFatal(line, "Undefined function \"" + name + "\"");
   }
   return iter->second;
 }
 
 
-void Context::displayLog() const {
+bool Context::displayLogs() const {
   bool hasError = false;
-  for (const Logger& logger : loggers_) {
-    try {
-      logger.displayLog();
-    } catch (std::exception& e) {
-      cerr << e.what() << endl;
-      hasError = true;
-    }
+  for (const auto& [_, logger] : loggers_) {
+    logger.streamLog();
+    hasError |= logger.hasErrors();
   }
-
-  if (hasError) {
-    throw runtime_error("Context::displayLog");
-  }
+  return hasError;
 }
 
 // TODO: Remove this when we add a print() to the language

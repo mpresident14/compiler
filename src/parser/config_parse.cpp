@@ -261,7 +261,7 @@ void parseGrammarDef(size_t concNum) {
     }
 
     if (prec == NONE) {
-      logger.logError(
+      logger.logWarning(
           tokenStream.currentLine(),
           string("Token ").append(tokenName).append(
               " is used to override a rule's precedence, but has no precedence "
@@ -328,7 +328,7 @@ ParseInfo parseConfig(const string& fileName) {
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    throw invalid_argument(string("File ").append(fileName).append(" is empty."));
+    logger.logFatal(0, string("File ").append(fileName).append(" is empty."));
   }
 
   tokenStream.setTokens(move(tokens));
@@ -347,7 +347,7 @@ ParseInfo parseConfig(const string& fileName) {
     logger.logError(0, "No grammar variables were provided.");
   }
 
-  logger.displayLog();
+  logger.checkLog();
 
   return { move(gd), move(addlHppCode), move(addlCppCode) };
 }

@@ -266,7 +266,7 @@ im::ExprPtr Expr::toImExprAssert(const Type& type) {
   ExprInfo exprInfo = toImExpr();
   // TODO: Use isConvertible here later
   if (exprInfo.type != type) {
-    stringstream err;
+    ostringstream err;
     err << "Expected expression of type " << type << ", got " << exprInfo.type;
     typeError(err.str());
   }

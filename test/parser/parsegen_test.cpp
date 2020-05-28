@@ -11,7 +11,7 @@ using namespace prez;
 using namespace pgen_expr_parser;
 
 UnitTest TESTER = UnitTest::createTester();
-stringstream errBuffer;
+ostringstream errBuffer;
 
 using ExprPtr = unique_ptr<Expr>;
 

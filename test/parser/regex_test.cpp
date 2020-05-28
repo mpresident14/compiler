@@ -21,7 +21,7 @@ using regex_parser::parse;
 
 UnitTest TESTER = UnitTest::createTester();
 
-stringstream errBuffer;
+ostringstream errBuffer;
 
 void testParse() {
   RgxPtr r0 = RgxPtr(parse("a"));
@@ -149,7 +149,7 @@ void testRgxDFAToCode_withNullableRegex() {
                                          { "[1-9][0-9]*", 2 },
                                          { "for", 3 } };
 
-  stringstream out;
+  ostringstream out;
   out.setstate(ios_base::badbit);
   cout << "HERE4" << endl;
   mergedRgxDFAToCode(out, gd);
@@ -168,7 +168,7 @@ void testRgxDFAToCode_withInvalidRegex() {
                      {},
                      {} };
 
-  stringstream out;
+  ostringstream out;
   out.setstate(ios_base::badbit);
   TESTER.assertThrows(([&]() { mergedRgxDFAToCode(out, gd); }));
 }

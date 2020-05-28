@@ -14,7 +14,7 @@ using namespace test::expr_grammar;
 using namespace prez;
 
 UnitTest TESTER = UnitTest::createTester();
-stringstream errBuffer;
+ostringstream errBuffer;
 
 void test_parserWithConflicts() {
   generateParserCode(

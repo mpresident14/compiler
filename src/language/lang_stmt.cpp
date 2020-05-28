@@ -107,7 +107,7 @@ void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
     if (retType.type != TypeName::VOID) {
-      stringstream err;
+      ostringstream err;
       err << "Function has return type " << retType << " but may return void.";
       typeError(err.str());
     }

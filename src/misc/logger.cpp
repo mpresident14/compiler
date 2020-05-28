@@ -4,22 +4,22 @@ using namespace std;
 
 Logger::Logger(const std::string& srcFile) : srcFile_(srcFile) {}
 
-stringstream& Logger::logError(size_t line, string_view msg) {
+ostringstream& Logger::logError(size_t line, string_view msg) {
   ++errorCount_;
   return log(MsgType::ERROR, line, msg);
 }
 
-stringstream& Logger::logWarning(size_t line, string_view msg) {
+ostringstream& Logger::logWarning(size_t line, string_view msg) {
   return log(MsgType::WARNING, line, msg);
 }
 
-stringstream& Logger::logNote(size_t line, string_view msg) {
+ostringstream& Logger::logNote(size_t line, string_view msg) {
   return log(MsgType::NOTE, line, msg);
 }
 
-stringstream& Logger::log(MsgType type, size_t line, string_view msg) {
-  logs_.push_back(stringstream());
-  stringstream& error = logs_.back();
+ostringstream& Logger::log(MsgType type, size_t line, string_view msg) {
+  logs_.push_back(ostringstream());
+  ostringstream& error = logs_.back();
 
   if (line != 0) {
     switch (type) {
@@ -38,8 +38,35 @@ stringstream& Logger::log(MsgType type, size_t line, string_view msg) {
     error << " on line " << line << ": ";
   }
 
-  if (!msg.empty()) {
-    error << msg << '\n';
-  }
+  error << msg;
   return error;
+}
+
+
+bool Logger::hasErrors() const noexcept { return errorCount_ != 0; }
+
+void Logger::streamLog(std::ostream& out) const {
+  if (logs_.empty()) {
+    return;
+  }
+
+  if (!srcFile_.empty()) {
+    out << srcFile_ << ":\n";
+  }
+
+  for (const std::ostringstream& stream : logs_) {
+    out << stream.str() << '\n';
+  }
+}
+
+void Logger::logFatal(size_t line, std::string_view msg) {
+  logError(line, msg);
+  throw Exception();
+}
+
+void Logger::checkLog() const {
+  streamLog();
+  if (hasErrors()) {
+    throw Exception();
+  }
 }
