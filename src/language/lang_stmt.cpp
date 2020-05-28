@@ -6,9 +6,6 @@
 
 using namespace std;
 
-namespace {
-Context& ctx = Context::getContext();
-}
 
 namespace language {
 
@@ -16,7 +13,8 @@ namespace language {
 /*********
  * Block *
  *********/
-Block::Block(std::vector<StmtPtr>&& stmts, size_t line) : Stmt(line), stmts_(move(stmts)) {}
+Block::Block(std::vector<StmtPtr>&& stmts, size_t line)
+    : Stmt(line), stmts_(move(stmts)) {}
 
 void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
   // Keep track of variables declared in this scope
@@ -31,7 +29,7 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
 
   // When we exit the block remove declared variables from this scope
   for (const string& var : newVars) {
-    ctx.removeVar(var);
+    ctx::removeVar(var);
   }
 }
 
@@ -40,7 +38,11 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
  * If *
  ******/
 
-If::If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line)
+If::If(
+    ExprPtr&& boolE,
+    std::unique_ptr<Block>&& ifE,
+    StmtPtr&& elseE,
+    size_t line)
     : Stmt(line), boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts) {
@@ -87,12 +89,16 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts) {
 /************
  * CallStmt *
  ************/
-CallStmt::CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_t line)
+CallStmt::CallStmt(
+    const std::string& name,
+    std::vector<ExprPtr>&& params,
+    size_t line)
     : Stmt(line), name_(name), params_(move(params)) {}
 
 void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   imStmts.emplace_back(new im::CallStmt(
-      make_unique<im::LabelAddr>(name_), argsToImExprs(name_, params_, line_).first));
+      make_unique<im::LabelAddr>(name_),
+      argsToImExprs(name_, params_, line_).first));
 }
 
 
@@ -100,16 +106,16 @@ void CallStmt::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * Return *
  **********/
 
-Return::Return(std::optional<ExprPtr>&& retValue, size_t line) : Stmt(line), retValue_(move(retValue)) {}
+Return::Return(std::optional<ExprPtr>&& retValue, size_t line)
+    : Stmt(line), retValue_(move(retValue)) {}
 
 void Return::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  const Type& retType = ctx.lookupFn(ctx.getCurrentFn(), line_).returnType;
+  const Type& retType = ctx::lookupFn(ctx::getCurrentFn(), line_).returnType;
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
     if (retType.type != TypeName::VOID) {
-      ostringstream err;
+      ostringstream& err = ctx::getLogger().logError(line_);
       err << "Function has return type " << retType << " but may return void.";
-      typeError(err.str());
     }
     imStmts.emplace_back(new im::ReturnStmt(nullptr));
   } else {
@@ -129,14 +135,15 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  if (lhs_->getType() != ExprType::VAR) {
-    typeError("Only variables can be assigned");
+  if (lhs_->getType() == ExprType::VAR) {
+    const ctx::VarInfo& varInfo =
+        ctx::lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
+    imStmts.emplace_back(new im::Assign(
+        make_unique<im::Temp>(varInfo.temp),
+        rhs_->toImExprAssert(varInfo.type)));
+  } else {
+    ctx::getLogger().logError(line_, "Only lvalues can be assigned");
   }
-
-  const Context::VarInfo& varInfo =
-      ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
-  imStmts.emplace_back(new im::Assign(
-      make_unique<im::Temp>(varInfo.temp), rhs_->toImExprAssert(varInfo.type)));
 }
 
 
@@ -144,14 +151,18 @@ void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
  * VarDecl *
  ***********/
 
-VarDecl::VarDecl(const Type& type, const std::string& name, ExprPtr&& e, size_t line)
+VarDecl::VarDecl(
+    const Type& type,
+    const std::string& name,
+    ExprPtr&& e,
+    size_t line)
     : Stmt(line), type_(type), name_(name), e_(move(e)) {}
 
 void VarDecl::toImStmts(std::vector<im::StmtPtr>& imStmts) {
   // Make sure the right side has the correct type and translate it
   im::ExprPtr rhs = e_->toImExprAssert(type_);
   // Insert the variable into the context
-  int temp = ctx.insertVar(name_, move(type_), line_);
+  int temp = ctx::insertVar(name_, move(type_), line_);
   imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
 }
 

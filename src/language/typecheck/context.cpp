@@ -7,75 +7,118 @@
 using namespace std;
 
 
-void Context::addLogger(const std::string& srcFileName) {
-  loggers_.emplace(srcFileName, Logger(srcFileName));
-  currentFile_ = srcFileName;
+namespace ctx {
+namespace {
+  std::unordered_map<std::string, VarInfo> varMap;
+  // TODO: Remove initialization when we add a print() to the language
+  std::unordered_map<std::string, FnInfo> fnMap = {
+    { "printInt",
+      FnInfo{ vector<Type>{ { TypeName::INT, "" } },
+              { TypeName::VOID, "" } } }
+  };
+  std::string currentFn;
+  /* Separate Logger for each source file */
+  std::unordered_map<std::string, Logger> loggers;
+  std::string currentFile;
+  Logger* currentLogger = nullptr;
+}  // namespace
+
+
+void setCurrentFn(string_view fnName) {currentFn = fnName;}
+
+
+const string& getCurrentFn() noexcept { return currentFn; }
+
+
+void setCurrentFile(string_view fileName) {
+  currentFile = fileName;
+  currentLogger = &loggers.at(string(fileName));
 }
 
-Logger& Context::currentLogger() { return loggers_.at(currentFile_); }
 
-int Context::insertVar(const std::string& name, const Type& type, size_t line) {
+Logger& addLogger(string_view srcFileName) {
+  loggers.emplace(srcFileName, Logger(srcFileName));
+  setCurrentFile(srcFileName);
+  return *currentLogger;
+}
+
+
+Logger& getLogger() {
+  if (!currentLogger) {
+    throw runtime_error("Logger::getLogger");
+  }
+  return *currentLogger;
+}
+
+
+int insertVar(string_view name, const Type& type, size_t line) {
   int temp = newTemp();
-  if (!varMap_.emplace(name, VarInfo{ move(type), temp }).second) {
-    currentLogger().logError(line, "Redefinition of variable \"" + name + "\"");
+  if (!varMap.emplace(name, VarInfo{ move(type), temp }).second) {
+    currentLogger->logError(
+        line, string("Redefinition of variable \"").append(name).append("\""));
   }
   return temp;
 }
 
-void Context::insertParam(
-    const std::string& name,
+
+void insertParam(
+    string_view name,
     const Type& type,
-    MachineReg reg, size_t line) {
-  if (!varMap_.emplace(name, VarInfo{ move(type), reg }).second) {
-    currentLogger().logError(line, "Redefinition of variable \"" + name + "\"");
+    MachineReg reg,
+    size_t line) {
+  if (!varMap.emplace(name, VarInfo{ move(type), reg }).second) {
+    currentLogger->logError(
+        line, string("Redefinition of variable \"").append(name).append("\""));
   }
 }
 
-const Context::VarInfo& Context::lookupVar(const std::string& name, size_t line) {
-  auto iter = varMap_.find(name);
-  if (iter == varMap_.end()) {
+
+const VarInfo& lookupVar(string_view name, size_t line) {
+  auto iter = varMap.find(string(name));
+  if (iter == varMap.end()) {
     // We can't really continue from this error
-    currentLogger().logFatal(line, "Undefined variable \"" + name + "\"");
+    currentLogger->logFatal(
+        line, string("Undefined variable \"").append(name).append("\""));
     throw invalid_argument("");
   }
   return iter->second;
 }
 
-void Context::removeVar(const string& name) { varMap_.erase(name); }
+
+void removeVar(string_view name) { varMap.erase(string(name)); }
 
 
-void Context::insertFn(
-    const std::string& name,
+void insertFn(
+    string_view name,
     std::vector<Type>&& paramTypes,
-    const Type& returnType, size_t line) {
-  if (!fnMap_.emplace(name, FnInfo{ move(paramTypes), move(returnType) })
+    const Type& returnType,
+    size_t line) {
+  if (!fnMap.emplace(name, FnInfo{ move(paramTypes), move(returnType) })
            .second) {
-    currentLogger().logError(line, "Redefinition of function \"" + name + "\"");
+    currentLogger->logError(
+        line, string("Redefinition of function \"").append(name).append("\""));
   }
 }
 
-const Context::FnInfo& Context::lookupFn(const std::string& name, size_t line) {
-  auto iter = fnMap_.find(name);
-  if (iter == fnMap_.end()) {
+// TODO: Handle function overloads
+const FnInfo& lookupFn(string_view name, size_t line) {
+  auto iter = fnMap.find(string(name));
+  if (iter == fnMap.end()) {
     // We can't really continue from this error
-    currentLogger().logFatal(line, "Undefined function \"" + name + "\"");
+    currentLogger->logFatal(
+        line, string("Undefined function \"").append(name).append("\""));
   }
   return iter->second;
 }
 
 
-bool Context::displayLogs() const {
+bool displayLogs() {
   bool hasError = false;
-  for (const auto& [_, logger] : loggers_) {
+  for (const auto& [_, logger] : loggers) {
     logger.streamLog();
     hasError |= logger.hasErrors();
   }
   return hasError;
 }
 
-// TODO: Remove this when we add a print() to the language
-Context::Context() {
-  fnMap_.emplace(
-      "printInt",
-      FnInfo{ vector<Type>{ { TypeName::INT, "" } }, { TypeName::VOID, "" } });
-}
+}  // namespace ctx

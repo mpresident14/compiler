@@ -6,9 +6,6 @@
 
 using namespace std;
 
-namespace {
-Context& ctx = Context::getContext();
-}
 
 namespace language {
 
@@ -33,7 +30,7 @@ ExprInfo ConstBool::toImExpr() {
 Var::Var(const std::string& name, size_t line) : Expr(line), name_(name) {}
 
 ExprInfo Var::toImExpr() {
-  const Context::VarInfo& varInfo = ctx.lookupVar(name_, line_);
+  const ctx::VarInfo& varInfo = ctx::lookupVar(name_, line_);
   return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
 }
 
@@ -68,10 +65,10 @@ void UnaryOp::asBool(
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   // Only valid for NOT
-  if (uOp_ == UOp::NEG) {
-    typeError("- cannot be interpreted as a boolean");
+  if (uOp_ == UOp::NOT) {
+    return e_->asBool(imStmts, ifFalse, ifTrue);
   }
-  return e_->asBool(imStmts, ifFalse, ifTrue);
+  ctx::getLogger().logError(line_, "Cannot interpret unary minus at bool");
 }
 
 
@@ -266,9 +263,7 @@ im::ExprPtr Expr::toImExprAssert(const Type& type) {
   ExprInfo exprInfo = toImExpr();
   // TODO: Use isConvertible here later
   if (exprInfo.type != type) {
-    ostringstream err;
-    err << "Expected expression of type " << type << ", got " << exprInfo.type;
-    typeError(err.str());
+    typeError(type, exprInfo.type, line_);
   }
   return move(exprInfo.imExpr);
 }

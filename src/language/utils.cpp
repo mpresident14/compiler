@@ -6,7 +6,6 @@ using namespace std;
 
 namespace language {
 
-Context& ctx = Context::getContext();
 
 string newLabel() {
   static int i = 0;
@@ -17,12 +16,12 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(
     const string& fnName,
     const vector<ExprPtr>& params, size_t line) {
   // Ensure function was declared
-  const Context::FnInfo& fnInfo = ctx.lookupFn(fnName, line);
+  const ctx::FnInfo& fnInfo = ctx::lookupFn(fnName, line);
   // Ensure parameter types match and translate them to intermediate exprs
   const vector<Type>& paramTypes = fnInfo.paramTypes;
   size_t numParams = params.size();
   if (numParams != paramTypes.size()) {
-    typeError("Wrong number of arguments for function: " + fnName);
+    ctx::getLogger().logError(line, "Wrong number of arguments for function: " + fnName);
   }
   std::vector<im::ExprPtr> argsCode;
   argsCode.reserve(numParams);

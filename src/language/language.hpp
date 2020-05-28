@@ -17,7 +17,7 @@ public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&) const = 0;
-  virtual void addToContext(Context& ctx) const = 0;
+  virtual void addToContext() const = 0;
   constexpr size_t getLine() const noexcept { return line_; }
 
 protected:
@@ -101,7 +101,7 @@ public:
       std::vector<std::pair<Type, std::string>>&& params,
       std::unique_ptr<Block>&& body, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
-  void addToContext(Context& ctx) const override;
+  void addToContext() const override;
 
 private:
   Type returnType_;

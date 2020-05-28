@@ -19,14 +19,12 @@ public:
 
 bool operator==(const Type& t1, const Type& t2) noexcept;
 
-std::ostream& operator<<(std::ostream& out, Type type);
-
+std::ostream& operator<<(std::ostream& out, const Type& type);
 
 const Type intType = { TypeName::INT, "" };
 const Type boolType = { TypeName::BOOL, "" };
 const Type voidType = { TypeName::VOID, "" };
 
-// TODO: Store all type errors in global stream
-void typeError(const std::string& msg);
+void typeError(const Type& expected, const Type& got, size_t line);
 
 #endif  // TYPE_HPP

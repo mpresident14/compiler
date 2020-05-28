@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Logger::Logger(const std::string& srcFile) : srcFile_(srcFile) {}
+Logger::Logger(string_view srcFile) : srcFile_(srcFile) {}
 
 ostringstream& Logger::logError(size_t line, string_view msg) {
   ++errorCount_;

@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 #include <fstream>
-
+#include <string.h>
 
 class Logger {
 public:
@@ -22,7 +22,7 @@ public:
   static constexpr char noteColored[] = "\033[1;35mWarning\033[0m";
 
   Logger() = default;
-  Logger(const std::string& srcFile);
+  Logger(std::string_view srcFile);
   ~Logger() = default;
   Logger(const Logger&) = delete;
   Logger(Logger&&) = default;
@@ -40,7 +40,7 @@ public:
   template<typename FStream>
   void checkFile(const std::string& fileName, FStream& file) {
     if (!file.is_open()) {
-      logFatal(0, "Could not open file " + fileName);
+      logFatal(0, "Could not open file " + fileName + ": " + strerror(errno));
     }
   }
 
