@@ -31,7 +31,7 @@ function(make_test TEST_NAME EXPECTED_OUT)
 
   add_test(
       NAME ${TEST_NAME}
-      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_test.bash
+      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_success.bash
           ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
           ${EXPECTED_OUT})
 endfunction()
