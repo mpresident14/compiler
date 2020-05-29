@@ -7,7 +7,10 @@ OUTPUT=$($TEST)
 if [[ "$OUTPUT" == "$EXPECTED_OUTPUT" ]]; then
   echo "Pass!"
 else
-  echo "Failure:"
-  echo "   Expected $EXPECTED_OUTPUT"
-  echo "   Got $OUTPUT"
+  echo "Failure..."
+  echo "Expected:"
+  echo "$EXPECTED_OUTPUT"
+  echo
+  echo "Got"
+  echo "$OUTPUT"
 fi

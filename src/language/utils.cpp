@@ -19,16 +19,20 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(
   const ctx::FnInfo& fnInfo = ctx::lookupFn(fnName, line);
   // Ensure parameter types match and translate them to intermediate exprs
   const vector<Type>& paramTypes = fnInfo.paramTypes;
+  size_t expectedNumParams = paramTypes.size();
   size_t numParams = params.size();
   if (numParams != paramTypes.size()) {
     auto& errStream = ctx::getLogger().logError(line);
     errStream << "Wrong number of arguments for function: \"" << fnName
-              << "\". Expected " << paramTypes.size() << ", got " << numParams
+              << "\". Expected " << expectedNumParams << ", got " << numParams
               << ". Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
   }
   std::vector<im::ExprPtr> argsCode;
   argsCode.reserve(numParams);
-  for (size_t i = 0; i < numParams; ++i) {
+  // NOTE: We use the minimum of the two so that we don't segfault if they aren't equal.
+  // This allows us to continue compiling and report other errors
+  size_t smaller = min(numParams, expectedNumParams);
+  for (size_t i = 0; i < smaller; ++i) {
     argsCode.push_back(params[i]->toImExprAssert(paramTypes[i]));
   }
   return { move(argsCode), fnInfo.returnType };

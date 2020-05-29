@@ -83,9 +83,8 @@ void FlowGraph::computeLiveness() {
       // Nothing is live after a return. %rax is live before
       // only if we return a value
       if (type == InstrType::RETURN) {
-        if (static_cast<const Return*>(lastInstr)->hasValue()) {
-          node.liveIn.insert(RAX);
-          changed = true;
+        if (static_cast<const Return*>(instr)->hasValue()) {
+          changed |= node.liveIn.insert(RAX).second;
         };
         continue;
       }

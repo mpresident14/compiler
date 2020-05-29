@@ -2,32 +2,36 @@
 project(translator_test)
 
 set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
+set(SUCCESS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/success)
+set(ERROR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/error)
 set(MY_TESTS "")
 set(MY_TEST_EXES "")
 
-function(make_test TEST_NAME EXPECTED_OUT)
 
+function(success_test TEST_NAME EXPECTED_OUT)
   set(ASM_FILE ${TEST_NAME})
   string(APPEND ASM_FILE ".s")
 
   set(SRC_FILE ${TEST_NAME})
   string(APPEND SRC_FILE ".prez")
 
-  set(EXE ${GEN_DIR}/${TEST_NAME})
+  set(EXE ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME})
   set(MY_TEST_EXES "${MY_TEST_EXES};${EXE}" PARENT_SCOPE)
   set(MY_TESTS "${MY_TESTS};${TEST_NAME}" PARENT_SCOPE)
 
   add_custom_command(
-    OUTPUT ${GEN_DIR}/${TEST_NAME}
+    OUTPUT
+      ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
+      ${GEN_DIR}/${ASM_FILE}
     COMMAND #valgrind --leak-check=full
         ${RUNTIME_OUTPUT_DIRECTORY}/main
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}
+        ${SUCCESS_DIR}/${SRC_FILE}
         ${GEN_DIR}/${ASM_FILE}
     COMMAND clang -g
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
         ${GEN_DIR}/${ASM_FILE}
         ${SRC}/main/runtime.c
-    DEPENDS main ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE})
+    DEPENDS ${SUCCESS_DIR}/${SRC_FILE})
 
   add_test(
       NAME ${TEST_NAME}
@@ -36,20 +40,56 @@ function(make_test TEST_NAME EXPECTED_OUT)
           ${EXPECTED_OUT})
 endfunction()
 
+
+function(error_test TEST_NAME EXPECTED_OUT)
+  set(ASM_FILE ${TEST_NAME})
+  string(APPEND ASM_FILE ".s")
+
+  set(SRC_FILE ${TEST_NAME})
+  string(APPEND SRC_FILE ".prez")
+
+  set(MY_TESTS "${MY_TESTS};${TEST_NAME}" PARENT_SCOPE)
+
+  add_test(
+      NAME ${TEST_NAME}
+      COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/test_error.py
+          ${RUNTIME_OUTPUT_DIRECTORY}/main
+          ${ERROR_DIR}/${SRC_FILE}
+          ${GEN_DIR}/${ASM_FILE}
+          ${EXPECTED_OUT})
+endfunction()
+
+
 # Running Tests
 # For testing
 include(CTest)
 
-make_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-make_test(comp_test "1,2,3,4,5,6,7,8,9")
-make_test(while_test "15,120")
-make_test(ternary_test "10,10")
-make_test(function_test "1,2")
+success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
+success_test(comp_test "1,2,3,4,5,6,7,8,9")
+success_test(while_test "15,120")
+success_test(ternary_test "10,10")
+success_test(function_test "1,2")
+error_test(redef_test
+    "('Error','2','Redefinition')
+    ('Error','9','Redefinition')
+    ('Error','13','Redefinition')
+    ('Error','17','Redefinition')")
+error_test(undef1_test "('Error','2','Undefined')")
+error_test(undef2_test "('Error','3','Undefined')")
+error_test(undef3_test "('Error','2','Undefined')")
+error_test(undef4_test "('Error','3','Undefined')")
+error_test(return_test
+    "('Error','2','Expected')
+    ('Error','7','Expected')
+    ('Error','10','Non-void')")
+error_test(param_test
+    "('Error','2','Expected')
+    ('Error','14','Wrong')")
 
 add_custom_target(
-      translator_check
-      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-      DEPENDS ${MY_TEST_EXES})
+    translator_check
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    DEPENDS main ${MY_TEST_EXES})
 
 set_tests_properties(
     ${MY_TESTS}

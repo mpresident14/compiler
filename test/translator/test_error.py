@@ -2,6 +2,7 @@ from ast import literal_eval as make_tuple
 import subprocess
 import sys
 import re
+from pprint import pprint
 
 def msgString(msgType : str, line : str, firstWord : str) -> str:
   return msgType + " on line " + line + ": " + firstWord
@@ -29,13 +30,20 @@ if __name__ == "__main__":
   errOutput = ansi_escape.sub('', errOutput).split('\n')[1:-1]
 
   expected = []
-  for check in sys.argv[4:]:
+  for check in sys.argv[4].split():
     (msgType, line, firstWord) = make_tuple(check)
     expected.append(msgString(msgType, line, firstWord))
 
+  # Errors don't have to appear in exact order
+  errOutput.sort()
+  expected.sort()
+
   if len(errOutput) != len(expected) or not runTest(expected, errOutput):
-    print("Failure:")
-    print(f"\tExpected {expected}")
-    print(f"\tGot {errOutput}")
+    print("Failure...")
+    print("Expected:")
+    pprint(expected)
+    print()
+    print("Got:")
+    pprint(errOutput)
   else:
     print("Pass!")
