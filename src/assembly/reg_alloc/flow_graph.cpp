@@ -45,9 +45,12 @@ FlowGraph::FlowGraph(const vector<InstrPtr>& instrs) : instrs_(instrs) {
  * liveOut = U_desc (desc.liveIn)
  * liveIn = (liveOut - def) + use */
 void FlowGraph::computeLiveness() {
+  if (instrs_.empty()) {
+    return;
+  }
   // For last instruction, only need to compute liveIn (liveOut is empty)
   const Instruction* lastInstr = instrs_.back().get();
-  Liveness& lastLiveness = nodes_.at(instrs_.back().get());
+  Liveness& lastLiveness = nodes_.at(lastInstr);
   switch (lastInstr->getType()) {
     case InstrType::MOVE:
       lastLiveness.liveIn.insert(static_cast<const Move*>(lastInstr)->getSrc());

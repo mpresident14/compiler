@@ -16,7 +16,7 @@ class Decl {
 public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
-  virtual void toImDecls(std::vector<im::DeclPtr>&) const = 0;
+  virtual void toImDecls(std::vector<im::DeclPtr>&) = 0;
   virtual void addToContext() const = 0;
   constexpr size_t getLine() const noexcept { return line_; }
 
@@ -100,8 +100,10 @@ public:
       const std::string& name,
       std::vector<std::pair<Type, std::string>>&& params,
       std::unique_ptr<Block>&& body, size_t line);
-  void toImDecls(std::vector<im::DeclPtr>& imDecls) const override;
+  void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
   void addToContext() const override;
+  /* Check if for no return at end of function and handle accordingly */
+  void checkForReturn();
 
 private:
   Type returnType_;
@@ -119,6 +121,7 @@ class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
+  friend class Func;
 
 private:
   std::vector<StmtPtr> stmts_;

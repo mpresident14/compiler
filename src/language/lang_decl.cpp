@@ -35,7 +35,8 @@ Func::Func(
     Type returnType,
     const string& name,
     vector<pair<Type, string>>&& params,
-    unique_ptr<Block>&& body, size_t line)
+    unique_ptr<Block>&& body,
+    size_t line)
     : Decl(line), returnType_(returnType), name_(name), body_(move(body)) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
@@ -46,7 +47,8 @@ Func::Func(
 }
 
 
-void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
+void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
+  checkForReturn();
   ctx::setCurrentFn(name_);
   // Insert all the parameters as variables
   size_t numParams = paramTypes_.size();
@@ -65,6 +67,19 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) const {
 
 void Func::addToContext() const {
   ctx::insertFn(name_, vector<Type>(paramTypes_), returnType_, line_);
+}
+
+
+void Func::checkForReturn() {
+  vector<StmtPtr>& stmts = body_->stmts_;
+  if (stmts.empty() || !(dynamic_cast<Return*>(stmts.back().get()))) {
+    if (returnType_ == voidType) {
+      // Add implicit return for functions with void return type if needed
+      body_->stmts_.emplace_back(new Return({}, 0));
+    } else {
+      ctx::getLogger().logError(line_, string("Non-void function ").append(name_).append(" should return a value"));
+    }
+  }
 }
 
 

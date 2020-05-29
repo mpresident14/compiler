@@ -100,7 +100,7 @@ void insertFn(
   }
 }
 
-// TODO: Handle function overloads
+// TODO: Handle function overloads (maybe by giving them different names depending on params)
 const FnInfo& lookupFn(string_view name, size_t line) {
   auto iter = fnMap.find(string(name));
   if (iter == fnMap.end()) {

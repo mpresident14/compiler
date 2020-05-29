@@ -19,6 +19,4 @@ void runprez() {
   if (isEqual(a, b)) {
     printInt(2);
   }
-
-  return;
 }

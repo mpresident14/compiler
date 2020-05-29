@@ -49,7 +49,7 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Program {
 public:
   Program(std::vector<DeclPtr>&& decls);
-  void toCode(std::ofstream& asmFile);
+  void toCode(std::ostream& asmFile);
 
 private:
   std::vector<DeclPtr> decls_;

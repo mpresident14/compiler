@@ -2,8 +2,9 @@
 #include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/reg_alloc/interference_graph.hpp"
 #include "src/assembly/temp.hpp"
+#include "src/language/typecheck/context.hpp"
+#include "src/language/typecheck/type.hpp"
 
-#include <fstream>
 #include <stdexcept>
 
 using namespace std;
@@ -13,10 +14,10 @@ namespace assem {
 /***********
  * Program *
  ***********/
-Program::Program(std::vector<DeclPtr>&& decls) : decls_(move(decls)) {}
+Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
-void Program::toCode(std::ofstream& asmFile) {
+void Program::toCode(ostream& asmFile) {
   asmFile << ".text\n.globl runprez\n.align 16\n";
   for (DeclPtr& decl : decls_) {
     decl->toCode(asmFile);
@@ -27,11 +28,11 @@ void Program::toCode(std::ofstream& asmFile) {
 /********
  * Func *
  ********/
-Function::Function(const std::string& name, std::vector<InstrPtr>&& instrs)
+Function::Function(const string& name, vector<InstrPtr>&& instrs)
     : name_(name), instrs_(move(instrs)) {}
 
 
-void Function::toCode(std::ostream& out) {
+void Function::toCode(ostream& out) {
   regAlloc();
   out << name_ << ":\n";
   for (const InstrPtr& instr : instrs_) {
