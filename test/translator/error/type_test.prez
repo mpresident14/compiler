@@ -1,0 +1,11 @@
+int add(int a, int b) {
+  return a + b;
+}
+
+void f(int p) {
+  bool b1 = p;
+  bool b2 = add(1, p);
+  int n1 = 1 + true;
+  int n2 = b1 || b2;
+  b1 = n1 + n2;
+}

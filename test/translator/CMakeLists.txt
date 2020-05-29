@@ -85,6 +85,16 @@ error_test(return_test
 error_test(param_test
     "('Error','2','Expected')
     ('Error','14','Wrong')")
+error_test(type_test
+    "('Error','6','Expected')
+    ('Error','7','Expected')
+    ('Error','8','Expected')
+    ('Error','9','Expected')
+    ('Error','10','Expected')")
+error_test(unused_test
+    "('Warning','1','Unused')
+    ('Warning','2','Unused')")
+
 
 add_custom_target(
     translator_check
