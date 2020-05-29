@@ -59,9 +59,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
   vector<im::StmtPtr> imStmts;
   body_->toImStmts(imStmts);
   // Remove all parameters
-  for (const string& param : paramNames_) {
-    ctx::removeVar(param);
-  }
+  ctx::removeParams(paramNames_, line_);
   imDecls.emplace_back(new im::Func(name_, move(imStmts)));
 }
 

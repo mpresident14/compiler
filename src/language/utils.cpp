@@ -21,7 +21,10 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(
   const vector<Type>& paramTypes = fnInfo.paramTypes;
   size_t numParams = params.size();
   if (numParams != paramTypes.size()) {
-    ctx::getLogger().logError(line, "Wrong number of arguments for function: " + fnName);
+    auto& errStream = ctx::getLogger().logError(line);
+    errStream << "Wrong number of arguments for function: \"" << fnName
+              << "\". Expected " << paramTypes.size() << ", got " << numParams
+              << ". Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
   }
   std::vector<im::ExprPtr> argsCode;
   argsCode.reserve(numParams);

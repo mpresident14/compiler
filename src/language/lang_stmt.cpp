@@ -17,20 +17,18 @@ Block::Block(std::vector<StmtPtr>&& stmts, size_t line)
     : Stmt(line), stmts_(move(stmts)) {}
 
 void Block::toImStmts(vector<im::StmtPtr>& imStmts) {
-  // Keep track of variables declared in this scope
-  vector<string> newVars;
+  // Keep track of variables declared in this scope and their lines
+  vector<pair<string, size_t>> newVars;
   for (StmtPtr& stmt : stmts_) {
     stmt->toImStmts(imStmts);
     // TODO: Maybe remove this and replace with StmtType
     if (VarDecl* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
-      newVars.push_back(varDecl->getName());
+      newVars.emplace_back(varDecl->getName(), varDecl->getLine());
     }
   }
 
   // When we exit the block remove declared variables from this scope
-  for (const string& var : newVars) {
-    ctx::removeVar(var);
-  }
+  ctx::removeVars(newVars);
 }
 
 

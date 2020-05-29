@@ -18,8 +18,8 @@ public:
   };
 
   static constexpr char errorColored[] = "\033[1;31mError\033[0m";
-  static constexpr char warningColored[] = "\033[1;34mWarning\033[0m";
-  static constexpr char noteColored[] = "\033[1;35mWarning\033[0m";
+  static constexpr char warningColored[] = "\033[1;35mWarning\033[0m";
+  static constexpr char noteColored[] = "\033[1;34mWarning\033[0m";
 
   Logger() = default;
   Logger(std::string_view srcFile);
