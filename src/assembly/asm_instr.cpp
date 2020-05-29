@@ -97,30 +97,39 @@ bool Return::spillTemps(vector<InstrPtr>&) {
  * assignRegs *
  **************/
 
-void assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
-  auto iter = coloring.find(temp);
-  if (iter != coloring.end()) {
-    temp = iter->second;
-  }
+void Label::assignRegs(
+    const unordered_map<int, MachineReg>&,
+    std::bitset<NUM_AVAIL_REGS>&) {
+  return;
 }
 
-void Label::assignRegs(const unordered_map<int, MachineReg>&) { return; }
-
-void Move::assignRegs(const unordered_map<int, MachineReg>& coloring) {
-  assignReg(src_, coloring);
-  assignReg(dst_, coloring);
+void Move::assignRegs(
+    const unordered_map<int, MachineReg>& coloring,
+    std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
+  src_ = coloring.at(src_);
+  MachineReg reg = coloring.at(dst_);
+  dst_ = reg;
+  writtenRegs.set(reg);
 }
 
-void Operation::assignRegs(const unordered_map<int, MachineReg>& coloring) {
+void Operation::assignRegs(
+    const unordered_map<int, MachineReg>& coloring,
+    std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
   for (int& src : srcs_) {
-    assignReg(src, coloring);
+    src = coloring.at(src);
   }
   for (int& dst : dsts_) {
-    assignReg(dst, coloring);
+    MachineReg reg = coloring.at(dst);
+    dst = reg;
+    writtenRegs.set(reg);
   }
 }
 
-void Return::assignRegs(const unordered_map<int, MachineReg>&) { return; }
+void Return::assignRegs(
+    const unordered_map<int, MachineReg>&,
+    std::bitset<NUM_AVAIL_REGS>&) {
+  return;
+}
 
 /**********
  * toCode *

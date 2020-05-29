@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 /*
  * Machine registers are enumerate from 0 through -15.
@@ -35,8 +36,6 @@ enum MachineReg {
 /* All registers except RSP and RBP are available for variables */
 constexpr size_t NUM_AVAIL_REGS = 14;
 
-// NOTE: These are not vector<MachineReg> because I'm lazy and I want
-// a syntactically succinct copy when I pass them into Instruction constructors.
 const std::vector<MachineReg> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
 
 /* Not preserved across function calls */
@@ -44,8 +43,8 @@ const std::vector<MachineReg> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI,
                                                 R8,  R9,  R10, R11 };
 
 /* Preserved across function calls */
-const std::vector<MachineReg> CALLEE_SAVE_REGS{ R12, R13, R14, R15,
-                                                RBX, RBP, RSP };
+const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12, R13, R14, R15,
+                                                RBX };
 
 inline std::vector<int> regsAsInts(const std::vector<MachineReg>& regs) {
   std::vector<int> ints;
