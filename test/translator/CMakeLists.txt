@@ -31,6 +31,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
         ${GEN_DIR}/${ASM_FILE}
         ${SRC}/main/runtime.c
+        ${SRC}/main/syscall.s
     DEPENDS main ${SUCCESS_DIR}/${SRC_FILE})
 
   add_test(
