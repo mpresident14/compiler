@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace language {
@@ -51,10 +52,12 @@ enum class ExprType {
   ARRAY_ACCESS
 };
 
+
 struct ExprInfo {
   im::ExprPtr imExpr;
-  Type type;
+  TypePtr type;
 };
+
 
 class Expr {
 public:
@@ -100,9 +103,9 @@ class Block;
 class Func : public Decl {
 public:
   Func(
-      const Type& returnType,
+      TypePtr&& returnType,
       std::string_view name,
-      std::vector<std::pair<Type, std::string>>&& params,
+      std::vector<std::pair<TypePtr, std::string>>&& params,
       std::unique_ptr<Block>&& body, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
   void addToContext() const override;
@@ -110,24 +113,11 @@ public:
   void checkForReturn();
 
 private:
-  Type returnType_;
+  TypePtr returnType_;
   std::string name_;
-  std::vector<Type> paramTypes_;
+  std::vector<TypePtr> paramTypes_;
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
-};
-
-
-class GlobVar : public Decl {
-public:
-  GlobVar(const Type& type, string_view name, ExprPtr expr);
-  void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
-  void addToContext() const override;
-
-private:
-  Type type_;
-  std::string name_;
-  ExprPtr expr_;
 };
 
 
@@ -171,7 +161,7 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallStmt(std::string_view name, std::vector<ExprPtr>&& params, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -203,14 +193,14 @@ private:
 
 class VarDecl : public Stmt {
 public:
-  VarDecl(const Type& type, string_view name, ExprPtr&& e, size_t line);
+  VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   const std::string& getName() const noexcept { return name_; }
 
 
 private:
-  Type type_;  // TODO Have a reference here???
+  TypePtr type_;  // TODO Have a reference here???
   std::string name_;
   ExprPtr e_;
 };
@@ -268,7 +258,7 @@ private:
 /* Variable in the program */
 class Var : public Expr {
 public:
-  Var(string_view name, size_t line);
+  Var(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
   ExprInfo toImExpr() override;
 
@@ -352,7 +342,7 @@ private:
 
 class CallExpr : public Expr {
 public:
-  CallExpr(string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallExpr(std::string_view name, std::vector<ExprPtr>&& params, size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr() override;
 
@@ -364,13 +354,12 @@ private:
 
 class NewArray : public Expr {
 public:
-  constexpr NewArray(const Type& type, size_t numElems, size_t line)
-      : Expr(line), type_(type), numElems_(numElems) {}
+  NewArray(TypePtr&& type, size_t numElems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
   ExprInfo toImExpr() override;
 
 private:
-  Type type_;
+  TypePtr type_;
   size_t numElems_;
 
 };
@@ -390,8 +379,8 @@ private:
 
 
 std::string newLabel();
-std::pair<std::vector<im::ExprPtr>, Type> argsToImExprs(
-    string_view fnName,
+std::pair<std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
+    const std::string& fnName,
     const std::vector<ExprPtr>& params, size_t line);
 
 }  // namespace language

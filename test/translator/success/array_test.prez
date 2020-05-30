@@ -1,0 +1,5 @@
+void runprez() {
+  int[] arr = int[1];
+  arr[0] = 1;
+  printInt(arr[0]);
+}

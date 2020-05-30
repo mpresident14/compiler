@@ -13,7 +13,7 @@ namespace im {
 class Decl {
 public:
   virtual ~Decl(){};
-  virtual assem::DeclPtr toAssemDecl() const = 0;
+  virtual assem::DeclPtr toAssemDecl() = 0;
 };
 
 class Stmt {
@@ -81,7 +81,7 @@ private:
 class Func : public Decl {
 public:
   Func(const std::string& name, std::vector<StmtPtr>&& stmts);
-  assem::DeclPtr toAssemDecl() const override;
+  assem::DeclPtr toAssemDecl() override;
 
 private:
   std::string name_;
@@ -91,8 +91,8 @@ private:
 
 class Ints : public Decl {
 public:
-  Ints(string_view label, std::vector<int>&& nums);
-  assem::DeclPtr toAssemDecl() const override;
+  Ints(std::string_view label, std::vector<int>&& nums);
+  assem::DeclPtr toAssemDecl() override;
 
 private:
   std::string label_;

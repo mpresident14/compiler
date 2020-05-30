@@ -32,17 +32,17 @@ im::Program Program::toImProg() const {
  ********/
 
 Func::Func(
-    const Type& returnType,
+    TypePtr&& returnType,
     string_view name,
-    vector<pair<Type, string>>&& params,
+    vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Decl(line), returnType_(returnType), name_(name), body_(move(body)) {
+    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
-  for (const auto& param : params) {
-    paramTypes_.push_back(param.first);
-    paramNames_.push_back(param.second);
+  for (const auto& [type, name] : params) {
+    paramTypes_.push_back(move(type));
+    paramNames_.push_back(move(name));
   }
 }
 
@@ -64,7 +64,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
 }
 
 void Func::addToContext() const {
-  ctx::insertFn(name_, vector<Type>(paramTypes_), returnType_, line_);
+  ctx::insertFn(name_, paramTypes_, returnType_, line_);
 }
 
 

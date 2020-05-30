@@ -11,15 +11,15 @@
 namespace ctx {
 
 struct VarInfo {
-  Type type;
+  TypePtr type;
   int temp;
   size_t line;
   bool used;
 };
 
 struct FnInfo {
-  std::vector<Type> paramTypes;
-  Type returnType;
+  std::vector<TypePtr> paramTypes;
+  TypePtr returnType;
   std::string declFile;
   size_t line;
 };
@@ -29,10 +29,10 @@ Logger& addLogger(const std::string& srcFileName);
 Logger& getLogger();
 void setCurrentFn(std::string_view fnName);
 const std::string& getCurrentFn() noexcept;
-int insertVar(std::string_view name, const Type& type, size_t line);
+int insertVar(std::string_view name, TypePtr type, size_t line);
 void insertParam(
     std::string_view name,
-    const Type& type,
+    TypePtr type,
     MachineReg reg,
     size_t line);
 const VarInfo& lookupVar(const std::string& name, size_t line);
@@ -40,8 +40,8 @@ void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
 void removeParams(const std::vector<std::string>& params, size_t line);
 void insertFn(
     std::string_view name,
-    std::vector<Type>&& paramTypes,
-    const Type& returnType,
+    const std::vector<TypePtr>& paramTypes,
+    TypePtr returnType,
     size_t line);
 const FnInfo& lookupFn(const std::string& name, size_t line);
 

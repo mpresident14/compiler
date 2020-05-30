@@ -12,7 +12,7 @@ namespace im {
  * Const *
  *********/
 
-void Const::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   instrs.emplace_back(new assem::Operation(
       string("movq $").append(to_string(n_)).append(", `D0"), {}, { temp }));
@@ -23,11 +23,11 @@ void Const::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
  * Temp *
  *********/
 
-void Temp::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
+void Temp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Move(t_, temp));
 }
 
-int Temp::toAssemInstrs(std::vector<assem::InstrPtr>&) const { return t_; }
+int Temp::toAssemInstrs(vector<assem::InstrPtr>&) const { return t_; }
 
 
 /*********
@@ -37,7 +37,7 @@ int Temp::toAssemInstrs(std::vector<assem::InstrPtr>&) const { return t_; }
 BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop)
     : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
 
-void BinOp::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   switch (bop_) {
     case BOp::LSHIFT:
@@ -71,7 +71,7 @@ void BinOp::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
 void BinOp::handleShifts(
     string asmCode,
     int temp,
-    std::vector<assem::InstrPtr>& instrs) const {
+    vector<assem::InstrPtr>& instrs) const {
   expr1_->toAssemInstrs(temp, instrs);
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
@@ -90,7 +90,7 @@ void BinOp::handleShifts(
 void BinOp::handleDiv(
     bool isDiv,
     int temp,
-    std::vector<assem::InstrPtr>& instrs) const {
+    vector<assem::InstrPtr>& instrs) const {
   expr1_->toAssemInstrs(RAX, instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   // Sign-extend %rax into %rdx
@@ -109,9 +109,9 @@ void BinOp::handleDiv(
 
 
 void BinOp::handleOthers(
-    std::string asmCode,
+    string asmCode,
     int temp,
-    std::vector<assem::InstrPtr>& instrs) const {
+    vector<assem::InstrPtr>& instrs) const {
   // TODO: Specialize if expr1_ is a Const
   // TODO: Leaq optimization
   // TODO: Inc/deq optimization
@@ -132,7 +132,7 @@ void BinOp::handleOthers(
 
 MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
 
-void MemDeref::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   int t = addr_->toAssemInstrs(instrs);
   instrs.emplace_back(new assem::Operation("movq (`S0), `D0", { t }, { temp }));
@@ -142,10 +142,10 @@ void MemDeref::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
  * DoThenEval *
  **************/
 
-DoThenEval::DoThenEval(std::vector<StmtPtr>&& stmts, ExprPtr expr)
+DoThenEval::DoThenEval(vector<StmtPtr>&& stmts, ExprPtr expr)
     : stmts_(move(stmts)), expr_(move(expr)) {}
 
-void DoThenEval::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void DoThenEval::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   for (const StmtPtr& stmt : stmts_) {
     stmt->toAssemInstrs(instrs);
@@ -159,7 +159,7 @@ void DoThenEval::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
 
 LabelAddr::LabelAddr(const string& name) : name_(name) {}
 
-void LabelAddr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   // "leaq symbol(%rip), dst" looks like symbol + %rip, but actually means
   // symbol with respect to %rip. Essentially, it calculates the address of
@@ -174,14 +174,14 @@ void LabelAddr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
  ************/
 CallExpr::CallExpr(
     ExprPtr&& addr,
-    std::vector<ExprPtr>&& params,
+    vector<ExprPtr>&& params,
     bool hasReturnValue)
     : addr_(move(addr)),
       params_(move(params)),
       hasReturnValue_(hasReturnValue) {}
 
 
-void CallExpr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
     const {
   // Move params into argument registers
   // TODO: If more than six params, need to put onto stack
@@ -220,7 +220,7 @@ void CallExpr::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
 /********
  * Expr *
  ********/
-int Expr::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const {
+int Expr::toAssemInstrs(vector<assem::InstrPtr>& instrs) const {
   int temp = newTemp();
   toAssemInstrs(temp, instrs);
   return temp;

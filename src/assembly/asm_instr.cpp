@@ -13,18 +13,18 @@ namespace assem {
 /****************
  * constructors *
  ****************/
-Label::Label(const string& name) : name_(name) {}
+Label::Label(string_view name) : name_(name) {}
 
 Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 
 Operation::Operation(
-    const string& asmCode,
+    string_view asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts)
     : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)) {}
 
 JumpOp::JumpOp(
-    const string& asmCode,
+    string_view asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
     Label* jump)
@@ -108,13 +108,13 @@ bool assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
 
 void Label::assignRegs(
     const unordered_map<int, MachineReg>&,
-    std::bitset<NUM_AVAIL_REGS>&) {
+    bitset<NUM_AVAIL_REGS>&) {
   return;
 }
 
 void Move::assignRegs(
     const unordered_map<int, MachineReg>& coloring,
-    std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
+    bitset<NUM_AVAIL_REGS>& writtenRegs) {
   assignReg(src_, coloring);
   if (assignReg(dst_, coloring)) {
     writtenRegs.set(dst_);
@@ -123,7 +123,7 @@ void Move::assignRegs(
 
 void Operation::assignRegs(
     const unordered_map<int, MachineReg>& coloring,
-    std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
+    bitset<NUM_AVAIL_REGS>& writtenRegs) {
   for (int& src : srcs_) {
     assignReg(src, coloring);
   }
@@ -136,7 +136,7 @@ void Operation::assignRegs(
 
 void Return::assignRegs(
     const unordered_map<int, MachineReg>&,
-    std::bitset<NUM_AVAIL_REGS>&) {
+    bitset<NUM_AVAIL_REGS>&) {
   return;
 }
 

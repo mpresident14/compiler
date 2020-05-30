@@ -12,13 +12,13 @@ string newLabel() {
   return "L" + to_string(i++);
 }
 
-pair<vector<im::ExprPtr>, Type> argsToImExprs(
+pair<vector<im::ExprPtr>, TypePtr> argsToImExprs(
     const string& fnName,
     const vector<ExprPtr>& params, size_t line) {
   // Ensure function was declared
   const ctx::FnInfo& fnInfo = ctx::lookupFn(fnName, line);
   // Ensure parameter types match and translate them to intermediate exprs
-  const vector<Type>& paramTypes = fnInfo.paramTypes;
+  const vector<TypePtr>& paramTypes = fnInfo.paramTypes;
   size_t expectedNumParams = paramTypes.size();
   size_t numParams = params.size();
   if (numParams != paramTypes.size()) {
@@ -27,13 +27,13 @@ pair<vector<im::ExprPtr>, Type> argsToImExprs(
               << "\". Expected " << expectedNumParams << ", got " << numParams
               << ". Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
   }
-  std::vector<im::ExprPtr> argsCode;
+  vector<im::ExprPtr> argsCode;
   argsCode.reserve(numParams);
   // NOTE: We use the minimum of the two so that we don't segfault if they aren't equal.
   // This allows us to continue compiling and report other errors
   size_t smaller = min(numParams, expectedNumParams);
   for (size_t i = 0; i < smaller; ++i) {
-    argsCode.push_back(params[i]->toImExprAssert(paramTypes[i]));
+    argsCode.push_back(params[i]->toImExprAssert(*paramTypes[i]));
   }
   return { move(argsCode), fnInfo.returnType };
 }

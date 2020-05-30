@@ -46,23 +46,23 @@ ExprInfo UnaryOp::toImExpr() {
     case UOp::NOT:
       // !b = b ^ 1
       return { make_unique<im::BinOp>(
-                   e_->toImExprAssert(boolType),
+                   e_->toImExprAssert(*boolType),
                    make_unique<im::Const>(1),
                    im::BOp::XOR),
-               boolType };
+               make_unique<Type>(TypeName::BOOL) };
     case UOp::NEG:
       return { make_unique<im::BinOp>(
                    make_unique<im::Const>(0),
-                   e_->toImExprAssert(intType),
+                   e_->toImExprAssert(*intType),
                    im::BOp::MINUS),
-               intType };
+               make_unique<Type>(TypeName::INT) };
     default:
       throw invalid_argument("Unrecognized Uop");
   }
 }
 
 void UnaryOp::asBool(
-    std::vector<im::StmtPtr>& imStmts,
+    vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   // Only valid for NOT
@@ -118,8 +118,8 @@ ExprInfo BinaryOp::toImExpr() {
 
 ExprInfo BinaryOp::toImExprArith(im::BOp op) {
   return { make_unique<im::BinOp>(
-               e1_->toImExprAssert(intType), e2_->toImExprAssert(intType), op),
-           intType };
+               e1_->toImExprAssert(*intType), e2_->toImExprAssert(*intType), op),
+           make_unique<Type>(TypeName::INT) };
 }
 
 void BinaryOp::asBool(
@@ -152,19 +152,19 @@ void BinaryOp::asBool(
 }
 
 void BinaryOp::asBoolComp(
-    std::vector<im::StmtPtr>& imStmts,
+    vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     im::ROp rOp) {
   // Make sure we are comparing two ints
-  im::ExprPtr imE1 = e1_->toImExprAssert(intType);
-  im::ExprPtr imE2 = e2_->toImExprAssert(intType);
+  im::ExprPtr imE1 = e1_->toImExprAssert(*intType);
+  im::ExprPtr imE2 = e2_->toImExprAssert(*intType);
   imStmts.emplace_back(
       new im::CondJump(move(imE1), move(imE2), rOp, ifTrue, ifFalse));
 }
 
 void BinaryOp::asBoolAnd(
-    std::vector<im::StmtPtr>& imStmts,
+    vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
@@ -175,7 +175,7 @@ void BinaryOp::asBoolAnd(
 }
 
 void BinaryOp::asBoolOr(
-    std::vector<im::StmtPtr>& imStmts,
+    vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
@@ -190,12 +190,12 @@ void BinaryOp::asBoolOr(
  * compare to 0
  */
 void BinaryOp::asBoolXor(
-    std::vector<im::StmtPtr>& imStmts,
+    vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   im::ExprPtr imXor = make_unique<im::BinOp>(
-      e1_->toImExprAssert(boolType),
-      e2_->toImExprAssert(boolType),
+      e1_->toImExprAssert(*boolType),
+      e2_->toImExprAssert(*boolType),
       im::BOp::XOR);
   imStmts.emplace_back(new im::CondJump(
       move(imXor), make_unique<im::Const>(0), im::ROp::EQ, ifFalse, ifTrue));
@@ -216,7 +216,7 @@ TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
 ExprInfo TernaryOp::toImExpr() {
   // Make sure expressions are the same type
   ExprInfo exprInfo = e1_->toImExpr();
-  im::ExprPtr imExpr2 = e2_->toImExprAssert(exprInfo.type);
+  im::ExprPtr imExpr2 = e2_->toImExprAssert(*exprInfo.type);
 
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel =
@@ -238,7 +238,7 @@ ExprInfo TernaryOp::toImExpr() {
   imStmts.emplace_back(move(mkDoneLabel));
   return { make_unique<im::DoThenEval>(
                move(imStmts), make_unique<im::Temp>(temp)),
-           exprInfo.type };
+           move(exprInfo.type) };
 }
 
 
@@ -246,17 +246,17 @@ ExprInfo TernaryOp::toImExpr() {
  * CallExpr *
  ************/
 
-CallExpr::CallExpr(string_view name, std::vector<ExprPtr>&& params, size_t line)
+CallExpr::CallExpr(string_view name, vector<ExprPtr>&& params, size_t line)
     : Expr(line), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr() {
-  pair<vector<im::ExprPtr>, Type> argCodes =
+  pair<vector<im::ExprPtr>, TypePtr> argCodes =
       argsToImExprs(name_, params_, line_);
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(name_),
                move(argCodes.first),
                argCodes.second != voidType),
-           argCodes.second };
+           move(argCodes.second) };
 }
 
 
@@ -264,9 +264,12 @@ ExprInfo CallExpr::toImExpr() {
  * NewArray *
  ************/
 
+NewArray::NewArray(TypePtr&& type, size_t numElems, size_t line)
+      : Expr(line), type_(move(type)), numElems_(numElems) {}
+
 ExprInfo NewArray::toImExpr() {
   int t = newTemp();
-  vector<ExprPtr> mallocParams;
+  vector<im::ExprPtr> mallocParams;
   // Arrays will start with the number of elements they contain
   mallocParams.emplace_back(new im::Const((numElems_ + 1) * OBJ_SIZE));
 
@@ -276,8 +279,9 @@ ExprInfo NewArray::toImExpr() {
       make_unique<im::CallExpr>(
           make_unique<im::LabelAddr>("__malloc"), move(mallocParams), true));
 
-  im::StmtPtr setSize = make_unique<im::Assign>(make_unique<im::MemDeref>(
-      make_unique<im::Temp>(t), make_unique<im::Const>(numElems_)));
+  im::StmtPtr setSize = make_unique<im::Assign>(
+      make_unique<im::MemDeref>(make_unique<im::Temp>(t)),
+      make_unique<im::Const>(numElems_));
 
   // TODO: Zero/null initialize array
 
@@ -285,7 +289,7 @@ ExprInfo NewArray::toImExpr() {
   stmts.push_back(move(setSize));
 
   return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(t)),
-           Array(type_) };
+           make_unique<Array>(type_) };
 }
 
 /***************
@@ -298,8 +302,8 @@ ArrayAccess::ArrayAccess(ExprPtr&& expr, size_t index, size_t line)
 
 ExprInfo ArrayAccess::toImExpr() {
   ExprInfo exprInfo = expr_->toImExpr();
-  const Type& type = exprInfo.type;
-  if (type.typeName != TypeName::ARRAY) {
+  TypePtr& type = exprInfo.type;
+  if (type->typeName != TypeName::ARRAY) {
     ostringstream err;
     err << "Expected an array type, got " << type;
     ctx::getLogger().logFatal(line_, err.str());
@@ -307,10 +311,12 @@ ExprInfo ArrayAccess::toImExpr() {
 
   // Add 1 to skip the size field
   im::ExprPtr offsetAddr = make_unique<im::BinOp>(
-      move(exprInfo.imExpr), make_unique<im::Const>((index_ + 1) * OBJ_SIZE));
+      move(exprInfo.imExpr),
+      make_unique<im::Const>((index_ + 1) * OBJ_SIZE),
+      im::BOp::PLUS);
 
   return { make_unique<im::MemDeref>(move(offsetAddr)),
-           static_cast<const Array&>(type).arrType };
+           static_cast<Array*>(type.get())->arrType };
 }
 
 /********
@@ -320,8 +326,8 @@ ExprInfo ArrayAccess::toImExpr() {
 im::ExprPtr Expr::toImExprAssert(const Type& type) {
   ExprInfo exprInfo = toImExpr();
   // TODO: Use isConvertible here later
-  if (exprInfo.type != type) {
-    typeError(type, exprInfo.type, line_);
+  if (*exprInfo.type != type) {
+    typeError(type, *exprInfo.type, line_);
   }
   return move(exprInfo.imExpr);
 }
@@ -332,7 +338,7 @@ void Expr::asBool(
     assem::Label* ifTrue,
     assem::Label* ifFalse) {
   imStmts.emplace_back(new im::CondJump(
-      toImExprAssert(boolType),
+      toImExprAssert(*boolType),
       make_unique<im::Const>(0),
       im::ROp::EQ,
       ifFalse,

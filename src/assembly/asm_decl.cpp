@@ -144,7 +144,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
  * Ints *
  ********/
 
-Ints::Ints(std::string_view name, std::vector<int>&& nums)
+Ints::Ints(string_view name, vector<int>&& nums)
     : label_(name), nums_(move(nums)) {}
 
 

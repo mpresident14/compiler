@@ -67,7 +67,7 @@ private:
 
 class Function : public Decl {
 public:
-  Function(string_view name, std::vector<InstrPtr>&& instrs);
+  Function(std::string_view name, std::vector<InstrPtr>&& instrs);
   void toCode(std::ostream& out) override;
 
 private:
@@ -82,7 +82,7 @@ private:
 
 class Ints : public Decl {
 public:
-  Ints(string_view label, std::vector<int>&& nums);
+  Ints(std::string_view label, std::vector<int>&& nums);
   void toCode(std::ostream& out) override;
 
 private:
@@ -97,7 +97,7 @@ private:
 
 class Label : public Instruction {
 public:
-  Label(string_view name);
+  Label(std::string_view name);
   constexpr InstrType getType() const noexcept override {
     return InstrType::LABEL;
   }
@@ -140,7 +140,7 @@ private:
 class Operation : public Instruction {
 public:
   Operation(
-      string_view asmCode,
+      std::string_view asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts);
   constexpr InstrType getType() const noexcept override {
@@ -167,7 +167,7 @@ private:
 class JumpOp : public Operation {
 public:
   JumpOp(
-      string_view asmCode,
+      std::string_view asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
       Label* jump);

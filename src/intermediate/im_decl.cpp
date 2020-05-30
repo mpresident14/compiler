@@ -11,10 +11,10 @@ namespace im {
 /***********
  * Program *
  ***********/
-Program::Program(std::vector<DeclPtr>&& decls) : decls_(move(decls)) {}
+Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 assem::Program Program::toAssemProg() const {
-  std::vector<assem::DeclPtr> assemDecls;
+  vector<assem::DeclPtr> assemDecls;
   for (const DeclPtr& decl : decls_) {
     assemDecls.push_back(decl->toAssemDecl());
   }
@@ -26,12 +26,12 @@ assem::Program Program::toAssemProg() const {
  * Func *
  ********/
 
-Func::Func(const std::string& name, std::vector<StmtPtr>&& stmts)
+Func::Func(const string& name, vector<StmtPtr>&& stmts)
     : name_(name), stmts_(move(stmts)) {}
 
 
-assem::DeclPtr Func::toAssemDecl() const {
-  std::vector<assem::InstrPtr> assemInstrs;
+assem::DeclPtr Func::toAssemDecl() {
+  vector<assem::InstrPtr> assemInstrs;
   for (const StmtPtr& stmt : stmts_) {
     stmt->toAssemInstrs(assemInstrs);
   }
@@ -43,11 +43,11 @@ assem::DeclPtr Func::toAssemDecl() const {
  * Ints *
  ********/
 
-Ints::Ints(std::string_view name, std::vector<int>&& nums)
+Ints::Ints(string_view name, vector<int>&& nums)
     : label_(name), nums_(move(nums)) {}
 
-assem::DeclPtr Ints::toAssemDecl() const {
-  return make_unique<assem::Decl>(label_, move(nums_));
+assem::DeclPtr Ints::toAssemDecl() {
+  return make_unique<assem::Ints>(label_, move(nums_));
 }
 
 

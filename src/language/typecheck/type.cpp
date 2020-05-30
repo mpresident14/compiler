@@ -19,6 +19,10 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
   return false;
 }
 
+bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept {
+  return *t1 == *t2;
+}
+
 ostream& operator<<(ostream& out, const Type& type) {
   switch (type.typeName) {
     case TypeName::INT:
@@ -31,7 +35,7 @@ ostream& operator<<(ostream& out, const Type& type) {
       out << "void";
       break;
     case TypeName::ARRAY:
-      out << static_cast<const Array&>(type).arrType << "[]";
+      out << *static_cast<const Array&>(type).arrType << "[]";
       break;
     case TypeName::CLASS:
       out << static_cast<const Class&>(type).className;
