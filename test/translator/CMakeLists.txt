@@ -65,39 +65,39 @@ endfunction()
 # For testing
 include(CTest)
 
-# success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-# success_test(comp_test "1,2,3,4,5,6,7,8,9")
-# success_test(while_test "15,120")
-# success_test(ternary_test "10,10")
-# success_test(function_test "1,2")
-# success_test(callee_save_test "9,9")
+success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
+success_test(comp_test "1,2,3,4,5,6,7,8,9")
+success_test(while_test "15,120")
+success_test(ternary_test "10,10")
+success_test(function_test "1,2")
+success_test(callee_save_test "9,9")
 success_test(spill_test "0,1,2,3,4,5,6,7,8,9,10,11,12,13")
 
-# error_test(redef_test
-#     "('Error','2','Redefinition')
-#     ('Error','9','Redefinition')
-#     ('Error','13','Redefinition')
-#     ('Error','17','Redefinition')")
-# error_test(undef1_test "('Error','2','Undefined')")
-# error_test(undef2_test "('Error','3','Undefined')")
-# error_test(undef3_test "('Error','2','Undefined')")
-# error_test(undef4_test "('Error','3','Undefined')")
-# error_test(return_test
-#     "('Error','2','Expected')
-#     ('Error','7','Expected')
-#     ('Error','10','Non-void')")
-# error_test(param_test
-#     "('Error','2','Expected')
-#     ('Error','14','Wrong')")
-# error_test(type_test
-#     "('Error','6','Expected')
-#     ('Error','7','Expected')
-#     ('Error','8','Expected')
-#     ('Error','9','Expected')
-#     ('Error','10','Expected')")
-# error_test(unused_test
-#     "('Warning','1','Unused')
-#     ('Warning','2','Unused')")
+error_test(redef_test
+    "('Error','2','Redefinition')
+    ('Error','9','Redefinition')
+    ('Error','13','Redefinition')
+    ('Error','17','Redefinition')")
+error_test(undef1_test "('Error','2','Undefined')")
+error_test(undef2_test "('Error','3','Undefined')")
+error_test(undef3_test "('Error','2','Undefined')")
+error_test(undef4_test "('Error','3','Undefined')")
+error_test(return_test
+    "('Error','2','Expected')
+    ('Error','7','Expected')
+    ('Error','10','Non-void')")
+error_test(param_test
+    "('Error','2','Expected')
+    ('Error','14','Wrong')")
+error_test(type_test
+    "('Error','6','Expected')
+    ('Error','7','Expected')
+    ('Error','8','Expected')
+    ('Error','9','Expected')
+    ('Error','10','Expected')")
+error_test(unused_test
+    "('Warning','1','Unused')
+    ('Warning','2','Unused')")
 
 
 add_custom_target(

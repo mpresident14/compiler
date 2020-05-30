@@ -117,9 +117,12 @@ void BinOp::handleOthers(
   // TODO: Inc/deq optimization
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
+  // Need to create a new temp first in case t1 or t2 is the same as temp
+  int tRes = newTemp();
+  instrs.emplace_back(new assem::Move(t1, tRes));
   instrs.emplace_back(
-      new assem::Operation(asmCode.append(" `S1, `D0"), { t1, t2 }, { t1 }));
-  Temp(t1).toAssemInstrs(temp, instrs);
+      new assem::Operation(asmCode.append(" `S1, `D0"), { tRes, t2 }, { tRes }));
+  instrs.emplace_back(new assem::Move(tRes, temp));
 }
 
 

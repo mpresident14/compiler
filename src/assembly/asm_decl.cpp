@@ -46,9 +46,6 @@ void Function::toCode(ostream& out) {
   InterferenceGraph igraph(fgraph);
   auto colorPair = igraph.color();
 
-  cout << igraph << endl;
-  cout << colorPair.first << endl;
-
   bitset<NUM_AVAIL_REGS> writtenRegs = regAlloc(colorPair.first, colorPair.second);
   auto savesAndRestores = preserveRegs(writtenRegs);
   const vector<InstrPtr>& saves = savesAndRestores.first;
