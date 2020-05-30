@@ -8,4 +8,6 @@ void f(int p) {
   int n1 = 1 + true;
   int n2 = b1 || b2;
   b1 = n1 + n2;
+  bool[] bArr = 3;
+  bArr[0] = 9;
 }
