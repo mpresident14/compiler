@@ -1,5 +1,3 @@
-// #define DEBUG
-
 #include "src/assembly/assembly.hpp"
 #include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/temp.hpp"

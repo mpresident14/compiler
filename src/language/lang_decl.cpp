@@ -5,6 +5,7 @@ using namespace std;
 
 namespace language {
 
+
 /***********
  * Program *
  ***********/
@@ -50,13 +51,20 @@ Func::Func(
 void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
   checkForReturn();
   ctx::setCurrentFn(name_);
+  vector<im::StmtPtr> imStmts;
+
   // Insert all the parameters as variables
+  // Move all parameters from argument registers into temporaries
+  //   (b/c if we call a function w/i this function, they will be overwritten)
   size_t numParams = paramTypes_.size();
   for (size_t i = 0; i < numParams; ++i) {
-    ctx::insertParam(paramNames_[i], paramTypes_[i], ARG_REGS[i], line_);
+    int temp = ctx::insertVar(paramNames_[i], paramTypes_[i], line_);
+    imStmts.emplace_back(new im::Assign(
+      make_unique<im::Temp>(temp),
+      make_unique<im::Temp>(ARG_REGS[i])));
   }
+
   // Typecheck and compile the function
-  vector<im::StmtPtr> imStmts;
   body_->toImStmts(imStmts);
   // Remove all parameters
   ctx::removeParams(paramNames_, line_);

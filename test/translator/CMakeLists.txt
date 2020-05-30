@@ -32,7 +32,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${GEN_DIR}/${ASM_FILE}
         ${SRC}/main/runtime.c
         ${SRC}/main/syscall.s
-    DEPENDS main ${SUCCESS_DIR}/${SRC_FILE})
+    DEPENDS main ${SRC}/main/syscall.s ${SRC}/main/runtime.c ${SUCCESS_DIR}/${SRC_FILE})
 
   add_test(
       NAME ${TEST_NAME}
@@ -72,7 +72,7 @@ include(CTest)
 # success_test(function_test "1,2")
 # success_test(callee_save_test "9,9")
 # success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
-success_test(array_test "1")
+success_test(array_test "0,1,1,2,3")
 
 # error_test(redef_test
 #     "('Error','2','Redefinition')

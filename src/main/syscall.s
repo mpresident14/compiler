@@ -8,6 +8,16 @@ __mallocaddr:
   .quad 0
 
 .section .text
+
+# Note: %rcx, %r11, and %rax are volatile across syscall
+
+.globl __setup
+__setup:
+  callq __findheap
+  callq runprez
+  retq
+
+# Volatile: %rdi, %rcx, %r11, %rax
 __findheap:
   movq $12, %rax            # syscall 12
   xorq %rdi, %rdi           # set addr to nullptr so that it returns the
@@ -17,6 +27,7 @@ __findheap:
   retq
 
 
+# Volatile: %rdi, %rcx, %r11, %rax
 __brk:
   movq $12, %rax
   addq __heaptop(%rip), %rdi  # extend the heap by some amount
@@ -36,8 +47,8 @@ __malloc:
   movq %r12, %rax
   addq %r13, %rax
   # #if (mallocaddr + numBytes > __heaptop)
-  cmpq %rax, %rcx
-  jle LDONE
+  cmpq %rcx, %rax
+  jbe LDONE
   # TODO: Should allocate min(numBytes, 4096)
   # heaptop = brk(4096)
   movq $4096, %rdi

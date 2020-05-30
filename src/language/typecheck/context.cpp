@@ -25,17 +25,6 @@ namespace {
   Logger* currentLogger = nullptr;
 
 
-  void insertTemp(string_view name, TypePtr type, int temp, size_t line) {
-    auto insertResult =
-        varMap.emplace(name, VarInfo{ move(type), temp, line, false });
-    if (!insertResult.second) {
-      auto& errStream = currentLogger->logError(line);
-      errStream << "Redefinition of variable \"" << name
-                << "\". Originally declared on line "
-                << insertResult.first->second.line;
-    }
-  }
-
   void removeTemp(const string& var, size_t line) {
     // If we had a variable redefinition error, we may have already removed this
     // variable
@@ -78,17 +67,15 @@ Logger& getLogger() {
 
 int insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
-  insertTemp(name, move(type), temp, line);
+  auto insertResult =
+        varMap.emplace(name, VarInfo{ move(type), temp, line, false });
+    if (!insertResult.second) {
+      auto& errStream = currentLogger->logError(line);
+      errStream << "Redefinition of variable \"" << name
+                << "\". Originally declared on line "
+                << insertResult.first->second.line;
+    }
   return temp;
-}
-
-
-void insertParam(
-    string_view name,
-    TypePtr type,
-    MachineReg reg,
-    size_t line) {
-  insertTemp(name, move(type), reg, line);
 }
 
 

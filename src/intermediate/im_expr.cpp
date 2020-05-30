@@ -118,6 +118,7 @@ void BinOp::handleOthers(
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   // Need to create a new temp first in case t1 or t2 is the same as temp
+  // TODO: Handle these cases separately so we don't waste instructions most of the time
   int tRes = newTemp();
   instrs.emplace_back(new assem::Move(t1, tRes));
   instrs.emplace_back(

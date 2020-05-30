@@ -1,6 +1,8 @@
 #ifndef ASSEMBLY_HPP
 #define ASSEMBLY_HPP
 
+// #define DEBUG
+
 #include "src/assembly/temp.hpp"
 
 #include <cstddef>

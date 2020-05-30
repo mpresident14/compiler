@@ -15,12 +15,6 @@
  */
 
 enum MachineReg {
-  // Assign preserved registers first (usually more restricted)
-  RBX,
-  R12,
-  R13,
-  R14,
-  R15,
   RAX,
   RCX,
   RDX,
@@ -28,6 +22,12 @@ enum MachineReg {
   RSI,
   R8,
   R9,
+  // Assign preserved registers last
+  RBX,
+  R12,
+  R13,
+  R14,
+  R15,
   // Not available for variable assignment
   R10,
   R11,

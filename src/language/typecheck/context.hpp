@@ -30,11 +30,6 @@ Logger& getLogger();
 void setCurrentFn(std::string_view fnName);
 const std::string& getCurrentFn() noexcept;
 int insertVar(std::string_view name, TypePtr type, size_t line);
-void insertParam(
-    std::string_view name,
-    TypePtr type,
-    MachineReg reg,
-    size_t line);
 const VarInfo& lookupVar(const std::string& name, size_t line);
 void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
 void removeParams(const std::vector<std::string>& params, size_t line);

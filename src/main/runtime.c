@@ -4,8 +4,8 @@ void printInt(long n) {
   printf("%ld\n", n);
 }
 
-extern void runprez() asm("runprez");
+extern void setup() asm("__setup");
 
 int main() {
-  runprez();
+  setup();
 }

@@ -34,9 +34,11 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 
 
 void Function::toCode(ostream& out) {
+  out << name_ << ":\n";
+
   #ifdef DEBUG
     for (const InstrPtr& instr : instrs_) {
-      instr->toCodeWithTemps(out);
+      instr->toCode(out, {});
     }
     return;
   #endif
@@ -50,8 +52,6 @@ void Function::toCode(ostream& out) {
   auto savesAndRestores = preserveRegs(writtenRegs);
   const vector<InstrPtr>& saves = savesAndRestores.first;
   const vector<InstrPtr>& restores = savesAndRestores.second;
-
-  out << name_ << ":\n";
 
   // Push all registers that need to be saved at the beginning of the function
   for (const InstrPtr& save : saves) {
