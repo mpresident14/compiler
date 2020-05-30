@@ -6,8 +6,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 /*
  * Machine registers are enumerate from 0 through -15.
@@ -16,25 +16,29 @@
 
 enum MachineReg {
   RAX = 0,
-  RBX,
   RCX,
   RDX,
   RDI,
   RSI,
   R8,
   R9,
-  R10,
-  R11,
+  // Assign preserved registers last
+  RBX,
   R12,
   R13,
   R14,
   R15,
+  // Not available for variable assignment
+  R10,
+  R11,
   RSP,
   RBP,
+  NREGS,
 };
 
-/* All registers except RSP and RBP are available for variables */
-constexpr size_t NUM_AVAIL_REGS = 14;
+/* All registers except RSP, RBP, and the spill registers (R10 and R11) are
+ * available for variables */
+constexpr size_t NUM_AVAIL_REGS = 12;
 
 const std::vector<MachineReg> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
 
@@ -43,8 +47,11 @@ const std::vector<MachineReg> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI,
                                                 R8,  R9,  R10, R11 };
 
 /* Preserved across function calls */
-const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12, R13, R14, R15,
-                                                RBX };
+const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12,
+                                                       R13,
+                                                       R14,
+                                                       R15,
+                                                       RBX };
 
 inline std::vector<int> regsAsInts(const std::vector<MachineReg>& regs) {
   std::vector<int> ints;

@@ -71,7 +71,7 @@ success_test(while_test "15,120")
 success_test(ternary_test "10,10")
 success_test(function_test "1,2")
 success_test(callee_save_test "9,9")
-success_test(spill_test "0,1,2,3,4,5,6,7,8,9,10,11,12,13")
+success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
 
 error_test(redef_test
     "('Error','2','Redefinition')

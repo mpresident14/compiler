@@ -1,18 +1,42 @@
+int fib() {
+  int a = 0;
+  int b = a + 1;
+  int c = b + a;
+  int d = c + b;
+  int e = d + c;
+  int f = e + d;
+  int g = f + e;
+  int h = g + f;
+  int i = h + g;
+  int j = i + h;
+  int k = j + i;
+  int l = k + j;
+  int m = l + k;
+  int n = m + l;
+  int o = n + m;
+  int p = o + n;
+  int q = p + o;
+  int r = q + p;
+  int s = r + q;
+  a = a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p + q + r + s;
+  return s;
+}
+
 void runprez() {
   int a = 0;
   int b = a + 1;
-  int c = b + 1;
-  int d = c + 1;
-  int e = d + 1;
-  int f = e + 1;
-  int g = f + 1;
-  int h = g + 1;
-  int i = h + 1;
-  int j = i + 1;
-  int k = j + 1;
-  int l = k + 1;
-  int m = l + 1;
-  int n = m + 1;
+  int c = b + a;
+  int d = c + b;
+  int e = d + c;
+  int f = e + d;
+  int g = f + e;
+  int h = g + f;
+  int i = h + g;
+  int j = i + h;
+  int k = j + i;
+  int l = k + j;
+  int m = l + k;
+  int n = m + l;
 
   printInt(a);
   printInt(b);
@@ -28,4 +52,5 @@ void runprez() {
   printInt(l);
   printInt(m);
   printInt(n);
+  printInt(fib());
 }
