@@ -151,7 +151,11 @@ void tempToCode(
   if (isRegister(temp)) {
     out << static_cast<MachineReg>(temp);
   } else {
-    out << varToStackOffset.at(temp) << "(%rsp)";
+    #ifdef DEBUG
+      out << "%t" << -temp;
+    #else
+      out << varToStackOffset.at(temp) << "(%rsp)";
+    #endif
   }
 }
 
@@ -207,64 +211,6 @@ void Return::toCode(ostream& out, const unordered_map<int, size_t>&) const {
   out << "\tretq" << endl;
 }
 
-
-/*******************
- * toCodeWithTemps *
- *******************/
-void tempToCode(ostream& out, int temp) {
-  if (isRegister(temp)) {
-    out << static_cast<MachineReg>(temp);
-  } else {
-    out << "%t" << -temp;
-  }
-}
-
-
-void Label::toCodeWithTemps(ostream& out) const {
-  out << name_ << ":\n";
-}
-
-void Move::toCodeWithTemps(
-    ostream& out) const {
-  out << "\tmovq ";
-  tempToCode(out, src_);
-  out << ", ";
-  tempToCode(out, dst_);
-  out << '\n';
-}
-
-void Operation::toCodeWithTemps(
-    ostream& out) const {
-  out << '\t';
-  size_t len = asmCode_.size();
-  size_t i = 0;
-  while (i < len) {
-    char c = asmCode_.at(i);
-    if (c == '`') {
-      c = asmCode_.at(i + 1);
-      if (c == 'S') {
-        tempToCode(
-            out, srcs_.at(digitToInt(asmCode_.at(i + 2))));
-      } else if (c == 'D') {
-        tempToCode(
-            out, dsts_.at(digitToInt(asmCode_.at(i + 2))));
-      } else {
-        // TODO: Remove this case when done
-        throw runtime_error("Operation::toCode");
-      }
-      i += 3;
-    } else {
-      out << c;
-      ++i;
-    }
-  }
-  out << '\n';
-}
-
-// NOTE: Function::regAlloc handles the stack deallocation
-void Return::toCodeWithTemps(ostream& out) const {
-  out << "\tretq" << endl;
-}
 
 /************
  * toStream *

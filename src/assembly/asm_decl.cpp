@@ -26,13 +26,6 @@ void Program::toCode(ostream& asmFile) {
   }
 }
 
-void Program::toCodeWithTemps(ostream& logFile) {
-  logFile << ".text\n.globl runprez\n.align 16\n";
-  for (DeclPtr& decl : decls_) {
-    decl->toCodeWithTemps(logFile);
-  }
-}
-
 /********
  * Func *
  ********/
@@ -41,6 +34,13 @@ Function::Function(const string& name, vector<InstrPtr>&& instrs)
 
 
 void Function::toCode(ostream& out) {
+  #ifdef DEBUG
+    for (const InstrPtr& instr : instrs_) {
+      instr->toCodeWithTemps(out);
+    }
+    return;
+  #endif
+
   FlowGraph fgraph(instrs_);
   fgraph.computeLiveness();
   InterferenceGraph igraph(fgraph);
@@ -138,14 +138,6 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
   }
 
   return { move(pushInstrs), move(popInstrs) };
-}
-
-
-void Function::toCodeWithTemps(ostream& out) {
-  for (const InstrPtr& instr : instrs_) {
-    cout << *instr << endl;
-    instr->toCodeWithTemps(out);
-  }
 }
 
 

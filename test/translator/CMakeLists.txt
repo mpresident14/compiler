@@ -27,7 +27,6 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${RUNTIME_OUTPUT_DIRECTORY}/main
         ${SUCCESS_DIR}/${SRC_FILE}
         ${GEN_DIR}/${ASM_FILE}
-        ${LOG_DIRECTORY}/${ASM_FILE}
     COMMAND clang -g
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
         ${GEN_DIR}/${ASM_FILE}

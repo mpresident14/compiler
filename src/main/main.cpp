@@ -18,11 +18,6 @@
 
 using namespace std;
 
-void debugCompile(ifstream& srcFile, ofstream& logFile) {
-  language::Program prog = parser::parse(srcFile);
-  prog.toImProg().toAssemProg().toCodeWithTemps(logFile);
-}
-
 void compile(ifstream& srcFile, ofstream& asmFile) {
   language::Program prog = parser::parse(srcFile);
   // TODO: We don't want to write to the assembly file if there are errors.
@@ -35,34 +30,27 @@ void compile(ifstream& srcFile, ofstream& asmFile) {
 int main(int, char** argv) {
   char* srcFile = argv[1];
   char* asmFile = argv[2];
-  char* logFile = argv[3];
 
   ifstream in(srcFile);
   ofstream out(asmFile);
-  ofstream log(logFile);
 
-
-  #ifdef DEBUG
-    debugCompile(in, log);
-  #else
-    try {
-      Logger& logger = ctx::addLogger(srcFile);
-      logger.checkFile(srcFile, in);
-      logger.checkFile(asmFile, out);
-      compile(in, out);
-      if (ctx::displayLogs()) {
-        return 1;
-      }
-      return 0;
-    } catch (const parser::ParseException& e) {
-      // Error from the parser
-      ctx::getLogger().logError(0, e.what());
-      ctx::displayLogs();
-      return 1;
-    } catch (Logger::Exception& e) {
-      // Fatal errors from the translator (already logged)
-      ctx::displayLogs();
+  try {
+    Logger& logger = ctx::addLogger(srcFile);
+    logger.checkFile(srcFile, in);
+    logger.checkFile(asmFile, out);
+    compile(in, out);
+    if (ctx::displayLogs()) {
       return 1;
     }
-  #endif
+    return 0;
+  } catch (const parser::ParseException& e) {
+    // Error from the parser
+    ctx::getLogger().logError(0, e.what());
+    ctx::displayLogs();
+    return 1;
+  } catch (Logger::Exception& e) {
+    // Fatal errors from the translator (already logged)
+    ctx::displayLogs();
+    return 1;
+  }
 }
