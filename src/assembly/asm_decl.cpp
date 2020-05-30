@@ -26,6 +26,12 @@ void Program::toCode(ostream& asmFile) {
   }
 }
 
+void Program::toCodeWithTemps(ostream& logFile) {
+  logFile << ".text\n.globl runprez\n.align 16\n";
+  for (DeclPtr& decl : decls_) {
+    decl->toCodeWithTemps(logFile);
+  }
+}
 
 /********
  * Func *
@@ -39,6 +45,10 @@ void Function::toCode(ostream& out) {
   fgraph.computeLiveness();
   InterferenceGraph igraph(fgraph);
   auto colorPair = igraph.color();
+
+  cout << igraph << endl;
+  cout << colorPair.first << endl;
+
   bitset<NUM_AVAIL_REGS> writtenRegs = regAlloc(colorPair.first, colorPair.second);
   auto savesAndRestores = preserveRegs(writtenRegs);
   const vector<InstrPtr>& saves = savesAndRestores.first;
@@ -131,6 +141,14 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
   }
 
   return { move(pushInstrs), move(popInstrs) };
+}
+
+
+void Function::toCodeWithTemps(ostream& out) {
+  for (const InstrPtr& instr : instrs_) {
+    cout << *instr << endl;
+    instr->toCodeWithTemps(out);
+  }
 }
 
 

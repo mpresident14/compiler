@@ -27,6 +27,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${RUNTIME_OUTPUT_DIRECTORY}/main
         ${SUCCESS_DIR}/${SRC_FILE}
         ${GEN_DIR}/${ASM_FILE}
+        ${LOG_DIRECTORY}/${ASM_FILE}
     COMMAND clang -g
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
         ${GEN_DIR}/${ASM_FILE}
@@ -69,7 +70,8 @@ include(CTest)
 # success_test(while_test "15,120")
 # success_test(ternary_test "10,10")
 # success_test(function_test "1,2")
-success_test(callee_save_test "9,9")
+# success_test(callee_save_test "9,9")
+success_test(spill_test "0,1,2,3,4,5,6,7,8,9,10,11,12,13")
 
 # error_test(redef_test
 #     "('Error','2','Redefinition')

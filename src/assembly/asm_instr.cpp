@@ -96,6 +96,15 @@ bool Return::spillTemps(vector<InstrPtr>&) {
 /**************
  * assignRegs *
  **************/
+/* Returns true if temp was assigned to a machine register, false otherwise (will be spilled) */
+bool assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
+  auto iter = coloring.find(temp);
+  if (iter != coloring.end()) {
+    temp = iter->second;
+    return true;
+  }
+  return false;
+}
 
 void Label::assignRegs(
     const unordered_map<int, MachineReg>&,
@@ -106,22 +115,22 @@ void Label::assignRegs(
 void Move::assignRegs(
     const unordered_map<int, MachineReg>& coloring,
     std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
-  src_ = coloring.at(src_);
-  MachineReg reg = coloring.at(dst_);
-  dst_ = reg;
-  writtenRegs.set(reg);
+  assignReg(src_, coloring);
+  if (assignReg(dst_, coloring)) {
+    writtenRegs.set(dst_);
+  }
 }
 
 void Operation::assignRegs(
     const unordered_map<int, MachineReg>& coloring,
     std::bitset<NUM_AVAIL_REGS>& writtenRegs) {
   for (int& src : srcs_) {
-    src = coloring.at(src);
+    assignReg(src, coloring);
   }
   for (int& dst : dsts_) {
-    MachineReg reg = coloring.at(dst);
-    dst = reg;
-    writtenRegs.set(reg);
+    if (assignReg(dst, coloring)) {
+      writtenRegs.set(dst);
+    }
   }
 }
 
@@ -197,6 +206,66 @@ void Operation::toCode(
 void Return::toCode(ostream& out, const unordered_map<int, size_t>&) const {
   out << "\tretq" << endl;
 }
+
+
+/*******************
+ * toCodeWithTemps *
+ *******************/
+void tempToCode(ostream& out, int temp) {
+  if (isRegister(temp)) {
+    out << static_cast<MachineReg>(temp);
+  } else {
+    out << "%t" << -temp;
+  }
+}
+
+
+void Label::toCodeWithTemps(ostream& out) const {
+  out << name_ << ":\n";
+}
+
+void Move::toCodeWithTemps(
+    ostream& out) const {
+  out << "\tmovq ";
+  tempToCode(out, src_);
+  out << ", ";
+  tempToCode(out, dst_);
+  out << '\n';
+}
+
+void Operation::toCodeWithTemps(
+    ostream& out) const {
+  out << '\t';
+  size_t len = asmCode_.size();
+  size_t i = 0;
+  while (i < len) {
+    char c = asmCode_.at(i);
+    if (c == '`') {
+      c = asmCode_.at(i + 1);
+      if (c == 'S') {
+        tempToCode(
+            out, srcs_.at(digitToInt(asmCode_.at(i + 2))));
+      } else if (c == 'D') {
+        tempToCode(
+            out, dsts_.at(digitToInt(asmCode_.at(i + 2))));
+      } else {
+        // TODO: Remove this case when done
+        throw runtime_error("Operation::toCode");
+      }
+      i += 3;
+    } else {
+      out << c;
+      ++i;
+    }
+  }
+  out << '\n';
+}
+
+// NOTE: Function::regAlloc handles the stack deallocation
+void Return::toCodeWithTemps(ostream& out) const {
+  out << "\tretq" << endl;
+}
+
 /************
  * toStream *
  ************/

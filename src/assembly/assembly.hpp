@@ -33,6 +33,7 @@ public:
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
+  virtual void toCodeWithTemps(std::ostream& out) const = 0;
   virtual void toStream(std::ostream& out) const = 0;
   friend std::ostream& operator<<(std::ostream& out, const Instruction& instr);
 };
@@ -41,6 +42,7 @@ class Decl {
 public:
   virtual ~Decl() {}
   virtual void toCode(std::ostream& out) = 0;
+  virtual void toCodeWithTemps(std::ostream& out) = 0;
 
 private:
   std::vector<InstrPtr> instrs_;
@@ -53,6 +55,7 @@ class Program {
 public:
   Program(std::vector<DeclPtr>&& decls);
   void toCode(std::ostream& asmFile);
+  void toCodeWithTemps(std::ostream& logFile);
 
 private:
   std::vector<DeclPtr> decls_;
@@ -66,6 +69,7 @@ class Function : public Decl {
 public:
   Function(const std::string& name, std::vector<InstrPtr>&& instrs);
   void toCode(std::ostream& out) override;
+  void toCodeWithTemps(std::ostream& out) override;
 
 private:
   std::bitset<NUM_AVAIL_REGS> regAlloc(const std::unordered_map<int, MachineReg>& coloring, const std::vector<int>& spilled);
@@ -91,6 +95,7 @@ public:
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCodeWithTemps(std::ostream& out) const override;
   void toStream(std::ostream& out) const override;
 
   const std::string& getName() const noexcept { return name_; }
@@ -110,6 +115,7 @@ public:
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCodeWithTemps(std::ostream& out) const override;
   void toStream(std::ostream& out) const override;
 
   int getSrc() const noexcept { return src_; }
@@ -136,6 +142,7 @@ public:
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCodeWithTemps(std::ostream& out) const override;
   void toStream(std::ostream& out) const override;
 
   const std::string& getAsm() const noexcept { return asmCode_; }
@@ -190,6 +197,7 @@ public:
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCodeWithTemps(std::ostream& out) const override;
   virtual void toStream(std::ostream& out) const override;
 
   constexpr bool hasValue() const noexcept { return hasValue_; }
