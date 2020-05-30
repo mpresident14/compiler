@@ -27,7 +27,7 @@ ExprInfo ConstBool::toImExpr() {
  * Var *
  *******/
 
-Var::Var(const std::string& name, size_t line) : Expr(line), name_(name) {}
+Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
 
 ExprInfo Var::toImExpr() {
   const ctx::VarInfo& varInfo = ctx::lookupVar(name_, line_);
@@ -38,7 +38,8 @@ ExprInfo Var::toImExpr() {
  * UnaryOp *
  ***********/
 
-UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line) : Expr(line), e_(move(e)), uOp_(uOp) {}
+UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line)
+    : Expr(line), e_(move(e)), uOp_(uOp) {}
 
 ExprInfo UnaryOp::toImExpr() {
   switch (uOp_) {
@@ -205,7 +206,10 @@ void BinaryOp::asBoolXor(
  * TernaryOp *
  *************/
 TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
-    : Expr(boolE->getLine()), boolE_(move(boolE)), e1_(move(e1)), e2_(move(e2)) {}
+    : Expr(boolE->getLine()),
+      boolE_(move(boolE)),
+      e1_(move(e1)),
+      e2_(move(e2)) {}
 
 /* This is really similar to If, but using If directy would force use to
  * use a Temp and also do typechecking twice for one of the expressions */
@@ -242,11 +246,12 @@ ExprInfo TernaryOp::toImExpr() {
  * CallExpr *
  ************/
 
-CallExpr::CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_t line)
+CallExpr::CallExpr(string_view name, std::vector<ExprPtr>&& params, size_t line)
     : Expr(line), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr() {
-  pair<vector<im::ExprPtr>, Type> argCodes = argsToImExprs(name_, params_, line_);
+  pair<vector<im::ExprPtr>, Type> argCodes =
+      argsToImExprs(name_, params_, line_);
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(name_),
                move(argCodes.first),
@@ -254,6 +259,59 @@ ExprInfo CallExpr::toImExpr() {
            argCodes.second };
 }
 
+
+/************
+ * NewArray *
+ ************/
+
+ExprInfo NewArray::toImExpr() {
+  int t = newTemp();
+  vector<ExprPtr> mallocParams;
+  // Arrays will start with the number of elements they contain
+  mallocParams.emplace_back(new im::Const((numElems_ + 1) * OBJ_SIZE));
+
+  vector<im::StmtPtr> stmts;
+  im::StmtPtr callMalloc = make_unique<im::Assign>(
+      make_unique<im::Temp>(t),
+      make_unique<im::CallExpr>(
+          make_unique<im::LabelAddr>("__malloc"), move(mallocParams), true));
+
+  im::StmtPtr setSize = make_unique<im::Assign>(make_unique<im::MemDeref>(
+      make_unique<im::Temp>(t), make_unique<im::Const>(numElems_)));
+
+  // TODO: Zero/null initialize array
+
+  stmts.push_back(move(callMalloc));
+  stmts.push_back(move(setSize));
+
+  return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(t)),
+           Array(type_) };
+}
+
+/***************
+ * ArrayAccess *
+ ***************/
+
+ArrayAccess::ArrayAccess(ExprPtr&& expr, size_t index, size_t line)
+    : Expr(line), expr_(move(expr)), index_(index) {}
+
+
+ExprInfo ArrayAccess::toImExpr() {
+  ExprInfo exprInfo = expr_->toImExpr();
+  const Type& type = exprInfo.type;
+  if (type.typeName != TypeName::ARRAY) {
+    ostringstream err;
+    err << "Expected an array type, got " << type;
+    ctx::getLogger().logFatal(line_, err.str());
+  }
+
+  // Add 1 to skip the size field
+  im::ExprPtr offsetAddr = make_unique<im::BinOp>(
+      move(exprInfo.imExpr), make_unique<im::Const>((index_ + 1) * OBJ_SIZE));
+
+  return { make_unique<im::MemDeref>(move(offsetAddr)),
+           static_cast<const Array&>(type).arrType };
+}
 
 /********
  * Expr *

@@ -63,6 +63,8 @@ LBRACE      "{"
 RBRACE      "}"
 LPAREN      "\("
 RPAREN      "\)"
+LBRACKET    "\["
+RBRACKET    "\]"
 
 TRUE        "true"
 FALSE       "false"
@@ -154,7 +156,8 @@ Expr -> { ExprPtr }
    | LPAREN Expr RPAREN                       % move(#1) %
 
 LValue -> { ExprPtr }
-  := IDENT   % make_unique<Var>(#0, #line) %
+  := IDENT                        % make_unique<Var>(#0, #line) %
+   | Type LBRACKET NUM RBRACKET   %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %
@@ -176,6 +179,7 @@ Param -> { pair<Type, string> }
   := Type IDENT         % { #0, #1 } %
 
 Type -> { Type }
-  := INT   % intType %
-   | BOOL  % boolType %
-   | VOID  % voidType %
+  := INT                      % intType %
+   | BOOL                     % boolType %
+   | VOID                     % voidType %
+   | Type LBRACKET RBRACKET   % Array(#0) %

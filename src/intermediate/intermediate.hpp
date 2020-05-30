@@ -77,6 +77,7 @@ private:
   std::vector<DeclPtr> decls_;
 };
 
+
 class Func : public Decl {
 public:
   Func(const std::string& name, std::vector<StmtPtr>&& stmts);
@@ -85,6 +86,17 @@ public:
 private:
   std::string name_;
   std::vector<StmtPtr> stmts_;
+};
+
+
+class Ints : public Decl {
+public:
+  Ints(string_view label, std::vector<int>&& nums);
+  assem::DeclPtr toAssemDecl() const override;
+
+private:
+  std::string label_;
+  std::vector<int> nums_;
 };
 
 
@@ -258,6 +270,7 @@ public:
 private:
   ExprPtr addr_;
 };
+
 
 class DoThenEval : public Expr {
 public:

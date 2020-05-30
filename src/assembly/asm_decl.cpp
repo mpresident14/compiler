@@ -29,7 +29,7 @@ void Program::toCode(ostream& asmFile) {
 /********
  * Func *
  ********/
-Function::Function(const string& name, vector<InstrPtr>&& instrs)
+Function::Function(string_view name, vector<InstrPtr>&& instrs)
     : name_(name), instrs_(move(instrs)) {}
 
 
@@ -140,5 +140,19 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
   return { move(pushInstrs), move(popInstrs) };
 }
 
+/********
+ * Ints *
+ ********/
+
+Ints::Ints(std::string_view name, std::vector<int>&& nums)
+    : label_(name), nums_(move(nums)) {}
+
+
+void Ints::toCode(std::ostream& out) {
+  out << label_ << ":\n";
+  for (int n : nums_) {
+    out << "\t.quad " << n << '\n';
+  }
+}
 
 }  // namespace assem

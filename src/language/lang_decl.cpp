@@ -32,8 +32,8 @@ im::Program Program::toImProg() const {
  ********/
 
 Func::Func(
-    Type returnType,
-    const string& name,
+    const Type& returnType,
+    string_view name,
     vector<pair<Type, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)

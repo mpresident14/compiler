@@ -88,7 +88,7 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts) {
  * CallStmt *
  ************/
 CallStmt::CallStmt(
-    const std::string& name,
+    string_view name,
     std::vector<ExprPtr>&& params,
     size_t line)
     : Stmt(line), name_(name), params_(move(params)) {}
@@ -133,7 +133,8 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
-  if (lhs_->getType() == ExprType::VAR) {
+  ExprType lhsType = lhs_->getType();
+  if (lhsType == ExprType::VAR) {
     const ctx::VarInfo& varInfo =
         ctx::lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
     imStmts.emplace_back(new im::Assign(
@@ -151,7 +152,7 @@ void Assign::toImStmts(std::vector<im::StmtPtr>& imStmts) {
 
 VarDecl::VarDecl(
     const Type& type,
-    const std::string& name,
+    string_view name,
     ExprPtr&& e,
     size_t line)
     : Stmt(line), type_(type), name_(name), e_(move(e)) {}

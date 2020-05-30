@@ -6,19 +6,37 @@
 using namespace std;
 
 bool operator==(const Type& t1, const Type& t2) noexcept {
-  return t1.type == t2.type && t1.className == t2.className;
+  if (t1.typeName == t2.typeName) {
+    switch (t1.typeName) {
+      case TypeName::ARRAY:
+        return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
+      case TypeName::CLASS:
+        return static_cast<const Class&>(t1).className == static_cast<const Class&>(t2).className;
+      default:
+        return true;
+    }
+  }
+  return false;
 }
 
 ostream& operator<<(ostream& out, const Type& type) {
-  switch (type.type) {
+  switch (type.typeName) {
     case TypeName::INT:
-      return out << "int";
+      out << "int";
+      break;
     case TypeName::BOOL:
-      return out << "bool";
+      out << "bool";
+      break;
     case TypeName::VOID:
-      return out << "void";
-    default:
-      return out << type.className;
+      out << "void";
+      break;
+    case TypeName::ARRAY:
+      out << static_cast<const Array&>(type).arrType << "[]";
+      break;
+    case TypeName::CLASS:
+      out << static_cast<const Class&>(type).className;
+      break;
+    default: throw invalid_argument("Type::operator<<");
   }
   return out;
 }

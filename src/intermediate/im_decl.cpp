@@ -39,4 +39,16 @@ assem::DeclPtr Func::toAssemDecl() const {
 }
 
 
+/********
+ * Ints *
+ ********/
+
+Ints::Ints(std::string_view name, std::vector<int>&& nums)
+    : label_(name), nums_(move(nums)) {}
+
+assem::DeclPtr Ints::toAssemDecl() const {
+  return make_unique<assem::Decl>(label_, move(nums_));
+}
+
+
 }  // namespace im

@@ -37,6 +37,7 @@ protected:
   size_t line_;
 };
 
+// TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data member
 enum class ExprType {
   CONST_INT,
   CONST_BOOL,
@@ -45,7 +46,9 @@ enum class ExprType {
   UNARY_OP,
   BINARY_OP,
   TERNARY_OP,
-  CALL_EXPR
+  CALL_EXPR,
+  NEW_ARRAY,
+  ARRAY_ACCESS
 };
 
 struct ExprInfo {
@@ -92,12 +95,13 @@ private:
   std::vector<DeclPtr> decls_;
 };
 
+
 class Block;
 class Func : public Decl {
 public:
   Func(
-      Type returnType,
-      const std::string& name,
+      const Type& returnType,
+      std::string_view name,
       std::vector<std::pair<Type, std::string>>&& params,
       std::unique_ptr<Block>&& body, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
@@ -112,6 +116,20 @@ private:
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
 };
+
+
+class GlobVar : public Decl {
+public:
+  GlobVar(const Type& type, string_view name, ExprPtr expr);
+  void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
+  void addToContext() const override;
+
+private:
+  Type type_;
+  std::string name_;
+  ExprPtr expr_;
+};
+
 
 /********
  * Stmt *
@@ -153,7 +171,7 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
+  CallStmt(string_view name, std::vector<ExprPtr>&& params, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -185,7 +203,7 @@ private:
 
 class VarDecl : public Stmt {
 public:
-  VarDecl(const Type& type, const std::string& name, ExprPtr&& e, size_t line);
+  VarDecl(const Type& type, string_view name, ExprPtr&& e, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
   const std::string& getName() const noexcept { return name_; }
@@ -250,7 +268,7 @@ private:
 /* Variable in the program */
 class Var : public Expr {
 public:
-  Var(const std::string& name, size_t line);
+  Var(string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
   ExprInfo toImExpr() override;
 
@@ -334,7 +352,7 @@ private:
 
 class CallExpr : public Expr {
 public:
-  CallExpr(const std::string& name, std::vector<ExprPtr>&& params, size_t line);
+  CallExpr(string_view name, std::vector<ExprPtr>&& params, size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr() override;
 
@@ -344,9 +362,36 @@ private:
 };
 
 
+class NewArray : public Expr {
+public:
+  constexpr NewArray(const Type& type, size_t numElems, size_t line)
+      : Expr(line), type_(type), numElems_(numElems) {}
+  ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
+  ExprInfo toImExpr() override;
+
+private:
+  Type type_;
+  size_t numElems_;
+
+};
+
+
+class ArrayAccess : public Expr {
+public:
+  ArrayAccess(ExprPtr&& expr, size_t index, size_t line);
+  ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
+  ExprInfo toImExpr() override;
+
+private:
+  ExprPtr expr_;
+  size_t index_;
+
+};
+
+
 std::string newLabel();
 std::pair<std::vector<im::ExprPtr>, Type> argsToImExprs(
-    const std::string& fnName,
+    string_view fnName,
     const std::vector<ExprPtr>& params, size_t line);
 
 }  // namespace language

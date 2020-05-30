@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include <bitset>
+#include <string_view>
 
 namespace assem {
 
@@ -59,13 +60,14 @@ private:
   std::vector<DeclPtr> decls_;
 };
 
+
 /********
  * Decl *
  ********/
 
 class Function : public Decl {
 public:
-  Function(const std::string& name, std::vector<InstrPtr>&& instrs);
+  Function(string_view name, std::vector<InstrPtr>&& instrs);
   void toCode(std::ostream& out) override;
 
 private:
@@ -77,13 +79,25 @@ private:
   std::unordered_map<int, size_t> varToStackOffset_;
 };
 
+
+class Ints : public Decl {
+public:
+  Ints(string_view label, std::vector<int>&& nums);
+  void toCode(std::ostream& out) override;
+
+private:
+  std::string label_;
+  std::vector<int> nums_;
+};
+
+
 /***************
  * Instruction *
  ***************/
 
 class Label : public Instruction {
 public:
-  Label(const std::string& name);
+  Label(string_view name);
   constexpr InstrType getType() const noexcept override {
     return InstrType::LABEL;
   }
@@ -126,7 +140,7 @@ private:
 class Operation : public Instruction {
 public:
   Operation(
-      const std::string& asmCode,
+      string_view asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts);
   constexpr InstrType getType() const noexcept override {
@@ -153,7 +167,7 @@ private:
 class JumpOp : public Operation {
 public:
   JumpOp(
-      const std::string& asmCode,
+      string_view asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
       Label* jump);
