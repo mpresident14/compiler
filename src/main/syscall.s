@@ -25,6 +25,7 @@ __brk:
   retq
 
 
+.globl __malloc
 __malloc:
   pushq %r12
   pushq %r13
