@@ -1,4 +1,7 @@
 #include "src/language/language.hpp"
+#include "src/main/parser.hpp"
+
+#include <fstream>
 
 using namespace std;
 
@@ -11,16 +14,43 @@ namespace language {
  ***********/
 
 Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
-    : imports_(move(imports)), decls_(move(decls)) {}
+    : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {}
 
+
+void Program::initContext(
+    string_view fileName,
+    std::unordered_map<std::string, Program>& initializedProgs) {
+  // Create a new context
+  ctx_ = make_shared<Ctx>(fileName);
+
+  // Go through the imports and build the context tree so we have access
+  // to all imported declarations.
+  for (const string& import : imports_) {
+    auto iter = initializedProgs.find(import);
+    if (iter == initializedProgs.end()) {
+      ifstream importFile(import);
+      ctx_->getLogger().checkFile(import, importFile);
+      // TODO: Catch and log (fatal?) parse errors
+      // Mark as initiailized before recursing to allow circular dependencies
+      auto iter =
+          initializedProgs.emplace(import, parser::parse(importFile)).first;
+      ctxTree_.addCtx(import, iter->second.ctx_);
+    } else {
+      const Program& prog = initializedProgs.at(import);
+      ctxTree_.addCtx(import, prog.ctx_);
+    }
+  }
+
+  // Add this program's declarations to its own context
+  for (const DeclPtr& decl : decls_) {
+    decl->addToContext(*ctx_);
+  }
+}
+
+
+assem::Program Program::toAssemProg() const { return toImProg().toAssemProg(); }
 
 im::Program Program::toImProg() const {
-  // First go through all the declarations and add them to the context so that
-  // we don't have to support forward declarations.
-  for (const DeclPtr& decl : decls_) {
-    decl->addToContext();
-  }
-  // Then typecheck and compile
   vector<im::DeclPtr> imDecls;
   for (const DeclPtr& decl : decls_) {
     decl->toImDecls(imDecls);

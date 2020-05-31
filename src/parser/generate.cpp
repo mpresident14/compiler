@@ -916,7 +916,7 @@ string lexerCppCode(
 
 void generateParserCode(
     const ParseInfo& parseInfo,
-    const ParseFlags& parseFlags) {
+    const ParseFlags& parseFlags, std::ostream& warnings) {
 
   const string& parserFilePath = parseFlags.parserFilePath;
   auto thePair = getNamespaceAndGuard(parserFilePath);
@@ -933,7 +933,12 @@ void generateParserCode(
   string hppCode = parserHppCode(
       namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
-  logger.checkLog();
+
+  if (logger.hasErrors()) {
+    throw Logger::Exception(logger);
+  }
+  logger.streamLog(warnings);
+
   hppFile << hppCode;
   cppFile << cppCode;
 }
@@ -957,7 +962,12 @@ void generateLexerCode(
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
   string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
-  logger.checkLog();
+
+  if (logger.hasErrors()) {
+    throw Logger::Exception(logger);
+  }
+  logger.streamLog();
+
   hppFile << hppCode;
   cppFile << cppCode;
 }

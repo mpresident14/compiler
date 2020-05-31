@@ -14,8 +14,13 @@ class Logger {
 public:
   class Exception : public std::exception {
   public:
-    const char* what() const noexcept override { return nullptr; }
+    Exception(const Logger& logger);
+    const char* what() const noexcept override;
+  private:
+    std::string what_;
   };
+
+  friend class Exception;
 
   static constexpr char errorColored[] = "\033[1;31mError\033[0m";
   static constexpr char warningColored[] = "\033[1;35mWarning\033[0m";
@@ -35,17 +40,14 @@ public:
   bool hasErrors() const noexcept;
   void streamLog(std::ostream& out = std::cerr) const;
 
-  void setSrcFile(const std::string& fileName) noexcept { srcFile_ = fileName; }
-
   template<typename FStream>
-  void checkFile(const std::string& fileName, FStream& file) {
+  void checkFile(std::string_view fileName, FStream& file) {
     if (!file.is_open()) {
       logFatal(0, "Could not open file " + fileName + ": " + strerror(errno));
     }
   }
 
   void logFatal(size_t line, std::string_view msg);
-  void checkLog() const;
 
 private:
   enum class MsgType { ERROR, WARNING, NOTE };
@@ -54,7 +56,6 @@ private:
 
   std::vector<std::ostringstream> logs_;
   size_t errorCount_ = 0;
-  std::string srcFile_;
 };
 
 

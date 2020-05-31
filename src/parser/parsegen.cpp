@@ -50,11 +50,13 @@ int main(int argc, char** argv) {
   }
 
   try {
-    ParseInfo parseInfo = parseConfig(pgenFile);
-    generateParserCode(parseInfo, { parserFilePath, logFile });
+    ostringstream warnings;
+    ParseInfo parseInfo = parseConfig(pgenFile, warnings);
+    generateParserCode(parseInfo, { parserFilePath, logFile }, warnings);
+    cerr << warnings.str() << endl;
     return 0;
   } catch (Logger::Exception& e) {
-    // Errors already displayed by logger
+    cerr << pgenFile << ":\n" << e.what() << endl;
     return 1;
   }
 }

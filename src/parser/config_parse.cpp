@@ -324,7 +324,7 @@ void parseGrammar() {
 }  // namespace
 
 
-ParseInfo parseConfig(const string& fileName) {
+ParseInfo parseConfig(const string& fileName, ostream& warnings) {
   ifstream configFile(fileName);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
@@ -332,7 +332,6 @@ ParseInfo parseConfig(const string& fileName) {
   }
 
   tokenStream.setTokens(move(tokens));
-  logger.setSrcFile(fileName);
 
   string addlHppCode = parseHeader();
   string addlCppCode = parseSource();
@@ -347,7 +346,12 @@ ParseInfo parseConfig(const string& fileName) {
     logger.logError(0, "No grammar variables were provided.");
   }
 
-  logger.checkLog();
+  // Can't continue to parser generation if we had an error
+  if (logger.hasErrors()) {
+    throw Logger::Exception(logger);
+  }
+  // Record the warnings and continue
+  logger.streamLog(warnings);
 
   return { move(gd), move(addlHppCode), move(addlCppCode) };
 }

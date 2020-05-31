@@ -2,8 +2,6 @@
 
 using namespace std;
 
-Logger::Logger(string_view srcFile) : srcFile_(srcFile) {}
-
 ostringstream& Logger::logError(size_t line, string_view msg) {
   ++errorCount_;
   return log(MsgType::ERROR, line, msg);
@@ -46,14 +44,6 @@ ostringstream& Logger::log(MsgType type, size_t line, string_view msg) {
 bool Logger::hasErrors() const noexcept { return errorCount_ != 0; }
 
 void Logger::streamLog(std::ostream& out) const {
-  if (logs_.empty()) {
-    return;
-  }
-
-  if (!srcFile_.empty()) {
-    out << srcFile_ << ":\n";
-  }
-
   for (const std::ostringstream& stream : logs_) {
     out << stream.str() << '\n';
   }
@@ -61,12 +51,16 @@ void Logger::streamLog(std::ostream& out) const {
 
 void Logger::logFatal(size_t line, std::string_view msg) {
   logError(line, msg);
-  throw Exception();
+  throw Exception(*this);
 }
 
-void Logger::checkLog() const {
-  streamLog();
-  if (hasErrors()) {
-    throw Exception();
+
+Logger::Exception::Exception(const Logger& logger) {
+  for (const std::ostringstream& stream : logger.logs_) {
+    what_.append(stream.str()).push_back('\n');
   }
+}
+
+const char* Logger::Exception::what() const noexcept {
+  return what_.c_str();
 }

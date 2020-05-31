@@ -1,9 +1,11 @@
 #ifndef LANGUAGE_HPP
 #define LANGUAGE_HPP
 
+#include "src/assembly/assembly.hpp"
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
+#include "src/language/typecheck/ctx_tree.hpp"
 
 #include <memory>
 #include <string>
@@ -18,7 +20,7 @@ public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&) = 0;
-  virtual void addToContext() const = 0;
+  virtual void addToContext(const Ctx& ctx) const = 0;
   constexpr size_t getLine() const noexcept { return line_; }
 
 protected:
@@ -38,7 +40,8 @@ protected:
   size_t line_;
 };
 
-// TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data member
+// TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data
+// member
 enum class ExprType {
   CONST_INT,
   CONST_BOOL,
@@ -92,11 +95,19 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Program {
 public:
   Program(std::vector<std::string>&& imports, std::vector<DeclPtr>&& decls);
-  im::Program toImProg() const;
+  assem::Program toAssemProg() const;
+  void initContext(
+      string_view fileName,
+      std::unordered_map<std::string, Program>& initializedProgs);
+  const Ctx& getCtx() const noexcept { return *ctx_; }
 
 private:
+  im::Program toImProg() const;
+
   std::vector<std::string> imports_;
   std::vector<DeclPtr> decls_;
+  CtxPtr ctx_;
+  CtxTree ctxTree_;
 };
 
 
@@ -107,9 +118,10 @@ public:
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
-      std::unique_ptr<Block>&& body, size_t line);
+      std::unique_ptr<Block>&& body,
+      size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls) override;
-  void addToContext() const override;
+  void addToContext(const Ctx& ctx) const override;
   /* Check if for no return at end of function and handle accordingly */
   void checkForReturn();
 
@@ -139,7 +151,10 @@ private:
 
 class If : public Stmt {
 public:
-  If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line);
+  If(ExprPtr&& boolE,
+     std::unique_ptr<Block>&& ifE,
+     StmtPtr&& elseE,
+     size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts);
 
 private:
@@ -362,7 +377,6 @@ public:
 private:
   TypePtr type_;
   size_t numElems_;
-
 };
 
 
@@ -375,14 +389,14 @@ public:
 private:
   ExprPtr expr_;
   size_t index_;
-
 };
 
 
 std::string newLabel();
 std::pair<std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
     const std::string& fnName,
-    const std::vector<ExprPtr>& params, size_t line);
+    const std::vector<ExprPtr>& params,
+    size_t line);
 
 }  // namespace language
 
