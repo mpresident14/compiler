@@ -439,9 +439,19 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
   const DFARule* reducibleRule = nullptr;
   for (const DFARule& rule : ruleSet) {
     if (rule.atEnd()) {
-      // Reduce-reduce conflict! (Will be resolved by first come, first served)
+      // If there is already a reducible rule, we try to resolve it by
+      // the rule's override precedence. Otherwise, it picks the first declared
       if (reducibleRule) {
-        reduceReduceConflict(*reducibleRule, rule, gd);
+        int rulePrec = gd.concretes[rule.concrete].precedence;
+        int redRulePrec = gd.concretes[reducibleRule->concrete].precedence;
+        if (rulePrec == redRulePrec) {
+          reduceReduceConflict(*reducibleRule, rule, gd);
+          if (rule.concrete < reducibleRule->concrete) {
+            reducibleRule = &rule;
+          }
+        } else if (rule.concrete < reducibleRule->concrete) {
+          reducibleRule = &rule;
+        }
       } else {
         reducibleRule = &rule;
       }
