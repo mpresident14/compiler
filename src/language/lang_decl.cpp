@@ -10,7 +10,8 @@ namespace language {
  * Program *
  ***********/
 
-Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
+Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
+    : imports_(move(imports)), decls_(move(decls)) {}
 
 
 im::Program Program::toImProg() const {
@@ -38,7 +39,10 @@ Func::Func(
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)) {
+    : Decl(line),
+      returnType_(move(returnType)),
+      name_(name),
+      body_(move(body)) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
   for (const auto& [type, name] : params) {
@@ -60,8 +64,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
   for (size_t i = 0; i < numParams; ++i) {
     int temp = ctx::insertVar(paramNames_[i], paramTypes_[i], line_);
     imStmts.emplace_back(new im::Assign(
-      make_unique<im::Temp>(temp),
-      make_unique<im::Temp>(ARG_REGS[i])));
+        make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
   }
 
   // Typecheck and compile the function
@@ -83,7 +86,11 @@ void Func::checkForReturn() {
       // Add implicit return for functions with void return type if needed
       body_->stmts_.emplace_back(new Return({}, 0));
     } else {
-      ctx::getLogger().logError(line_, string("Non-void function ").append(name_).append(" should return a value"));
+      ctx::getLogger().logError(
+          line_,
+          string("Non-void function ")
+              .append(name_)
+              .append(" should return a value"));
     }
   }
 }

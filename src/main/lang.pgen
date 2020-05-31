@@ -8,7 +8,7 @@
 %
   #include <memory>
   #include <vector>
-
+  #include <string_view>
 
   using namespace std;
   using namespace language;
@@ -18,6 +18,10 @@
     vector<T> v;
     v.push_back(move(item));
     return v;
+  }
+
+  string_view removeQuotes(string_view sv) {
+    return sv.substr(1,sv.size() - 2);
   }
 %
 
@@ -73,15 +77,19 @@ VOID        "void"
 INT         "int"
 BOOL        "bool"
 
-NUM         "0|[1-9][0-9]*"                         -> { int }    % stoi(string(#str)) %
-IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*" -> { string } % #str %
+IMPORT      "import"
+
+NUM         "0|[1-9][0-9]*"                        -> { int }    % stoi(string(#str)) %
+IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string } % #str %
+SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""             -> { string } % removeQuotes(#str) %
 
 #prec
 
 // Not an actual operator, just so that
 // we can push_back instead of push_front
-// for Params and Exprs
-EPSILON                 #left
+// for Params, Exprs, Decls, Imports, etc
+EPSILON1                #left
+EPSILON2                #left
 
 QMARK                   #right
 OR                      #left
@@ -100,11 +108,18 @@ LBRACKET                #left
 #grammar
 
 Program -> { language::Program }
-  := Decls  % Program(move(#0)) %
+  := Imports Decls  % Program(move(#0), move(#1)) %
+
+Imports -> { vector<string> }
+  :=                #prec EPSILON2 % vector<string>() %
+   | Imports Import                % (#0.push_back(move(#1)), move(#0)) %
+
+Import -> { string }
+  := IMPORT SRCFILE     % move(#1) %
 
 Decls -> { vector<DeclPtr> }
-  :=              #prec EPSILON  % vector<DeclPtr>() %
-   | Decls Decl                  % (#0.push_back(move(#1)), move(#0)) %
+  :=              #prec EPSILON1  % vector<DeclPtr>() %
+   | Decls Decl                   % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
   := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(move(#0), #1, move(#3), move(#5), #line) %
@@ -113,8 +128,8 @@ Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %
 
 Stmts -> { vector<StmtPtr> }
-  :=            #prec EPSILON % vector<StmtPtr>() %
-   | Stmts Stmt               % (#0.push_back(move(#1)), move(#0)) %
+  :=            #prec EPSILON1 % vector<StmtPtr>() %
+   | Stmts Stmt                % (#0.push_back(move(#1)), move(#0)) %
 
 Stmt -> { StmtPtr }
   := IF LPAREN Expr RPAREN Block              % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %

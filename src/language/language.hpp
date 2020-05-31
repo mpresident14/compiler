@@ -91,10 +91,11 @@ using DeclPtr = std::unique_ptr<Decl>;
 
 class Program {
 public:
-  Program(std::vector<DeclPtr>&& decls);
+  Program(std::vector<std::string>&& imports, std::vector<DeclPtr>&& decls);
   im::Program toImProg() const;
 
 private:
+  std::vector<std::string> imports_;
   std::vector<DeclPtr> decls_;
 };
 
