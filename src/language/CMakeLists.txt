@@ -9,4 +9,4 @@ add_library(lang_lib
     typecheck/ctx_tree.cpp
     typecheck/type.cpp
     utils.cpp)
-target_link_libraries(lang_lib im_lib misc_lib)
+target_link_libraries(lang_lib im_lib misc_lib my_parser_lib)

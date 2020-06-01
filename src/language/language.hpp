@@ -96,7 +96,7 @@ public:
   Program(std::vector<std::string>&& imports, std::vector<DeclPtr>&& decls);
   assem::Program toAssemProg() const;
   void initContext(
-      string_view fileName,
+      std::string_view fileName,
       std::unordered_map<std::string, Program>& initializedProgs);
   const Ctx& getCtx() const noexcept { return *ctx_; }
 

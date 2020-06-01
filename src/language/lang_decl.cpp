@@ -26,19 +26,20 @@ void Program::initContext(
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
   for (const string& import : imports_) {
-    auto iter = initializedProgs.find(import);
-    if (iter == initializedProgs.end()) {
+    auto progsIter = initializedProgs.find(import);
+    Program* prog;
+    if (progsIter == initializedProgs.end()) {
       ifstream importFile(import);
       ctx_->getLogger().checkFile(import, importFile);
-      // TODO: Catch and log (fatal?) parse errors
-      // Mark as initiailized before recursing to allow circular dependencies
-      auto iter =
-          initializedProgs.emplace(import, parser::parse(importFile)).first;
-      ctx_->getCtxTree().addCtx(import, iter->second.ctx_);
+      // Mark as initialized before recursing to allow circular dependencies
+      prog =
+          &initializedProgs.emplace(import, parser::parse(importFile)).first->second;
     } else {
-      const Program& prog = initializedProgs.at(import);
-      ctx_->getCtxTree().addCtx(import, prog.ctx_);
+      prog = &progsIter->second;
     }
+
+    prog->initContext(import, initializedProgs);
+    ctx_->getCtxTree().addCtx(import, prog->ctx_);
   }
 
   // Add this program's declarations to its own context

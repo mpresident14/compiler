@@ -11,7 +11,7 @@
 using namespace std;
 
 
-Ctx::Ctx(string_view fileName) : fileName_(fileName) {}
+Ctx::Ctx(string_view fileName) : fileName_(fileName), logger(fileName) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -99,6 +99,14 @@ const Ctx::FnInfo* Ctx::lookupFn(const string& name) {
   return &iter->second;
 }
 
+const Ctx ::  FnInfo& Ctx::lookupFn(const std::string& name, size_t line) {
+  const Ctx::FnInfo* fnInfo = lookupFn(name);
+  if (!fnInfo) {
+    undefinedFn({}, name, line);
+  }
+  return *fnInfo;
+}
+
 
 const Ctx::FnInfo& Ctx::lookupFnRec(
     const std::vector<std::string> qualifiers,
@@ -124,12 +132,11 @@ void Ctx::undefinedFn(
   logger.logFatal(line, "Undefined function " + fullFn);
 }
 
-void typeError(const Type& expected, const Type& got, size_t line, Ctx& ctx) {
-  ostringstream& err = ctx.getLogger().logError(line);
+void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
+  ostringstream& err = logger.logError(line);
   err << "Expected " << expected << ", got " << got;
 }
 
-bool Ctx::displayLogs() const {
-  logger.streamLog();
-  return logger.hasErrors();
-}
+void Ctx::displayLogs() const { logger.streamLog(); }
+
+bool Ctx::hasErrors() const noexcept { return logger.hasErrors(); }

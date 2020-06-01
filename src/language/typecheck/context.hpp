@@ -7,6 +7,7 @@
 
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 class CtxTree;
 
@@ -40,7 +41,7 @@ public:
     };
     using NodePtr = std::unique_ptr<Node>;
 
-    CtxTree();
+    CtxTree() = default;
     ~CtxTree() = default;
     CtxTree(const CtxTree&) = delete;
     CtxTree(CtxTree&&) = default;
@@ -97,8 +98,8 @@ public:
       const std::string& fnName,
       size_t line);
   void typeError(const Type& expected, const Type& got, size_t line);
-  /* Returns true if there was an error */
-  bool displayLogs() const;
+  void displayLogs() const;
+  bool hasErrors() const noexcept;
 
 private:
   void removeTemp(const std::string& var, size_t line);

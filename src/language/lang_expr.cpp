@@ -12,14 +12,14 @@ namespace language {
 /************
  * ConstInt *
  ************/
-ExprInfo ConstInt::toImExpr(Ctx& ctx) {
+ExprInfo ConstInt::toImExpr(Ctx&) {
   return { make_unique<im::Const>(n_), intType };
 }
 
 /*************
  * ConstBool *
  *************/
-ExprInfo ConstBool::toImExpr(Ctx& ctx) {
+ExprInfo ConstBool::toImExpr(Ctx&) {
   return { make_unique<im::Const>(b_), boolType };
 }
 
@@ -267,7 +267,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 NewArray::NewArray(TypePtr&& type, size_t numElems, size_t line)
       : Expr(line), type_(move(type)), numElems_(numElems) {}
 
-ExprInfo NewArray::toImExpr(Ctx& ctx) {
+ExprInfo NewArray::toImExpr(Ctx&) {
   int t = newTemp();
   vector<im::ExprPtr> mallocParams;
   // Arrays will start with the number of elements they contain
@@ -284,6 +284,7 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
       make_unique<im::Const>(numElems_));
 
   // TODO: Zero/null initialize array
+  // TODO: Throw if less than 0
 
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
@@ -299,6 +300,7 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
 ArrayAccess::ArrayAccess(ExprPtr&& expr, size_t index, size_t line)
     : Expr(line), expr_(move(expr)), index_(index) {}
 
+// TODO: Throw if out of range
 
 ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   ExprInfo exprInfo = expr_->toImExpr(ctx);
@@ -327,7 +329,7 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
   // TODO: Use isConvertible here later
   if (*exprInfo.type != type) {
-    typeError(type, *exprInfo.type, line_, ctx);
+    ctx.typeError(type, *exprInfo.type, line_);
   }
   return move(exprInfo.imExpr);
 }

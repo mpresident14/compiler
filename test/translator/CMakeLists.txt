@@ -23,6 +23,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
     OUTPUT
       ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
       ${GEN_DIR}/${ASM_FILE}
+    WORKING_DIRECTORY ${SUCCESS_DIR}
     COMMAND #valgrind --leak-check=full
         ${RUNTIME_OUTPUT_DIRECTORY}/main
         ${SUCCESS_DIR}/${SRC_FILE}

@@ -78,6 +78,7 @@ INT         "int"
 BOOL        "bool"
 
 IMPORT      "import"
+COLON2      "::"
 
 NUM         "0|[1-9][0-9]*"                        -> { int }    % stoi(string(#str)) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string } % #str %
@@ -103,6 +104,7 @@ PLUS MINUS              #left
 STAR FSLASH MOD         #left
 UNARY_MINUS BANG        #nonassoc
 LBRACKET                #left
+COLON2                  #left
 
 
 #grammar
@@ -135,6 +137,7 @@ Stmt -> { StmtPtr }
   := IF LPAREN Expr RPAREN Block                 % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %
    | IF LPAREN Expr RPAREN Block ELSE Stmt       % make_unique<If>(move(#2), move(#4), move(#6), #line) %
    | WHILE LPAREN Expr RPAREN Block              % make_unique<While>(move(#2), move(#4), #line) %
+   | IDENT LPAREN Exprs RPAREN SEMI              % make_unique<CallStmt>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN SEMI   % make_unique<CallStmt>(move(#0), #1, move(#3), #line) %
    | RETURN SEMI                                 % make_unique<Return>(optional<ExprPtr>(), #line) %
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
@@ -167,6 +170,7 @@ Expr -> { ExprPtr }
    | Expr LTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
    | Expr GTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
    | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
+   | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN     % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
    | Type LBRACKET NUM RBRACKET               % make_unique<NewArray>(move(#0), #2, #line) %
    | LValue                                   % move(#0) %
@@ -203,8 +207,8 @@ Type -> { TypePtr }
    | Type LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
 
 Qualifiers -> { vector<string> }
-  :=                         % vector<string>() %
+  := Qualifier               % singletonVec<string>(move(#0)) %
    | Qualifiers Qualifier    % (#0.push_back(move(#1)), move(#0)) %
 
 Qualifier -> { string }
-  := IDENT COLON COLON    % #0 %
+  := IDENT COLON2        % #0 %
