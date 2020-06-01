@@ -3,5 +3,5 @@ import "import_test/file.prez"
 
 void runprez() {
   printInt(file::func());
-  printInt(import_test::file::otherFunc());
+  printInt(import_test::file::func());
 }

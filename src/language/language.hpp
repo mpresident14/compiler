@@ -10,6 +10,9 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <utility>
+#include <tuple>
+#include <optional>
 
 namespace language {
 
@@ -19,7 +22,7 @@ public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&, Ctx&) = 0;
-  virtual void addToContext(Ctx& ctx) const = 0;
+  virtual void addToContext(Ctx& ctx) const  = 0;
   constexpr size_t getLine() const noexcept { return line_; }
 
 protected:
@@ -96,7 +99,7 @@ public:
   Program(std::vector<std::string>&& imports, std::vector<DeclPtr>&& decls);
   assem::Program toAssemProg() const;
   void initContext(
-      std::string_view fileName,
+      std::string_view filename,
       std::unordered_map<std::string, Program>& initializedProgs);
   const Ctx& getCtx() const noexcept { return *ctx_; }
 
@@ -393,7 +396,10 @@ private:
 
 
 std::string newLabel();
-std::pair<std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
+/* Mangle all user functions based on the filename (non-user functions begin with '_')
+ * Return empty if function doesn't need to be mangled */
+std::optional<std::string> mangleFnName(std::string_view fnName, std::string_view filename);
+std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
     const std::vector<std::string>& qualifiers,
     const std::string& fnName,
     const std::vector<ExprPtr>& params,

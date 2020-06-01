@@ -250,13 +250,12 @@ CallExpr::CallExpr(vector<string>&& qualifiers, string_view name, vector<ExprPtr
     : Expr(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr(Ctx& ctx) {
-  pair<vector<im::ExprPtr>, TypePtr> argCodes =
-      argsToImExprs(qualifiers_, name_, params_, line_, ctx);
+  auto infoTuple = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(name_),
-               move(argCodes.first),
-               argCodes.second != voidType),
-           move(argCodes.second) };
+               make_unique<im::LabelAddr>(get<0>(infoTuple)),
+               move(get<1>(infoTuple)),
+               get<2>(infoTuple) != voidType),
+           move(get<2>(infoTuple)) };
 }
 
 

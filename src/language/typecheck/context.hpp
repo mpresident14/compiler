@@ -63,7 +63,7 @@ public:
   };
 
 
-  Ctx(std::string_view fileName);
+  Ctx(std::string_view filename);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -74,6 +74,7 @@ public:
   CtxTree& getCtxTree() noexcept;
   const std::string& getCurrentFn() const noexcept;
   void setCurrentFn(std::string_view fnName);
+  const std::string& getFilename() const noexcept;
 
   int insertVar(std::string_view name, TypePtr type, size_t line);
   const VarInfo& lookupVar(const std::string& name, size_t line);
@@ -110,7 +111,7 @@ private:
     { "printInt", FnInfo{ std::vector<TypePtr>{ intType }, voidType, "", 0 } }
   };
   std::string currentFn;
-  std::string fileName_;
+  std::string filename_;
   Logger logger;
   CtxTree ctxTree_;
 };

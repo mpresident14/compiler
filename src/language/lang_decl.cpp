@@ -18,10 +18,10 @@ Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
 
 
 void Program::initContext(
-    string_view fileName,
+    string_view filename,
     std::unordered_map<std::string, Program>& initializedProgs) {
   // Create a new context
-  ctx_ = make_shared<Ctx>(fileName);
+  ctx_ = make_shared<Ctx>(filename);
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -32,8 +32,8 @@ void Program::initContext(
       ifstream importFile(import);
       ctx_->getLogger().checkFile(import, importFile);
       // Mark as initialized before recursing to allow circular dependencies
-      prog =
-          &initializedProgs.emplace(import, parser::parse(importFile)).first->second;
+      prog = &initializedProgs.emplace(import, parser::parse(importFile))
+                  .first->second;
     } else {
       prog = &progsIter->second;
     }
@@ -107,7 +107,12 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   body_->toImStmts(imStmts, ctx);
   // Remove all parameters
   ctx.removeParams(paramNames_, line_);
-  imDecls.emplace_back(new im::Func(name_, move(imStmts)));
+
+  if (optional<string> newFnName = mangleFnName(name_, ctx.getFilename())) {
+    imDecls.emplace_back(new im::Func(move(*newFnName), move(imStmts)));
+  } else {
+    imDecls.emplace_back(new im::Func(name_, move(imStmts)));
+  }
 }
 
 void Func::checkForReturn(Ctx& ctx) {

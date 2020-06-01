@@ -11,7 +11,7 @@
 using namespace std;
 
 
-Ctx::Ctx(string_view fileName) : fileName_(fileName), logger(fileName) {}
+Ctx::Ctx(string_view filename) : filename_(filename), logger(filename) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -21,6 +21,7 @@ const string& Ctx::getCurrentFn() const noexcept { return currentFn; }
 
 void Ctx::setCurrentFn(string_view fnName) { currentFn = fnName; }
 
+const string& Ctx::getFilename() const noexcept { return filename_; }
 
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
@@ -80,7 +81,7 @@ void Ctx::insertFn(
     TypePtr returnType,
     size_t line) {
   auto insertResult = fnMap.emplace(
-      name, FnInfo{ paramTypes, move(returnType), fileName_, line });
+      name, FnInfo{ paramTypes, move(returnType), filename_, line });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
     errStream << "Redefinition of function \"" << name

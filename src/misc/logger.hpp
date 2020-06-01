@@ -42,12 +42,12 @@ public:
   void streamLog(std::ostream& out = std::cerr) const;
 
   template <typename FStream>
-  void checkFile(std::string_view fileName, FStream& file) {
+  void checkFile(std::string_view filename, FStream& file) {
     if (!file.is_open()) {
       logFatal(
           0,
           std::string("Could not open file ")
-              .append(fileName)
+              .append(filename)
               .append(": ")
               .append(strerror(errno)));
     }

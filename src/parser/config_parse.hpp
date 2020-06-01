@@ -15,7 +15,7 @@ struct ParseInfo {
 };
 
 ParseInfo parseConfig(
-    const std::string& fileName,
+    const std::string& filename,
     std::ostream& warnings);
 
 #endif

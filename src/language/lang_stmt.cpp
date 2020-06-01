@@ -95,9 +95,10 @@ CallStmt::CallStmt(
     : Stmt(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
 
 void CallStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  auto infoTuple = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
   imStmts.emplace_back(new im::CallStmt(
-      make_unique<im::LabelAddr>(name_),
-      argsToImExprs(qualifiers_, name_, params_, line_, ctx).first));
+      make_unique<im::LabelAddr>(get<0>(infoTuple)),
+      move(get<1>(infoTuple))));
 }
 
 

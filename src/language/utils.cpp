@@ -11,7 +11,22 @@ string newLabel() {
   return "L" + to_string(i++);
 }
 
-pair<vector<im::ExprPtr>, TypePtr> argsToImExprs(
+
+optional<string> mangleFnName(string_view fnName, string_view filename) {
+  // TODO: Remove runPrez and printInt when applicable
+  if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
+    return {};
+  }
+
+  string newName = string("_").append(fnName);
+  filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
+  newName.append(filename).push_back('_');
+  replace(newName.begin(), newName.end(), '/', '_');
+  return newName;
+}
+
+
+tuple<string, vector<im::ExprPtr>, TypePtr> argsToImExprs(
     const vector<string>& qualifiers,
     const string& fnName,
     const vector<ExprPtr>& params, size_t line, Ctx& ctx) {
@@ -35,7 +50,12 @@ pair<vector<im::ExprPtr>, TypePtr> argsToImExprs(
   for (size_t i = 0; i < smaller; ++i) {
     argsCode.push_back(params[i]->toImExprAssert(*paramTypes[i], ctx));
   }
-  return { move(argsCode), fnInfo.returnType };
+
+  if (optional<string> newFnName = mangleFnName(fnName, fnInfo.declFile)) {
+    return { *newFnName, move(argsCode), fnInfo.returnType };
+  }
+
+  return { fnName, move(argsCode), fnInfo.returnType };
 }
 
 }  // namespace language

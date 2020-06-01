@@ -324,11 +324,11 @@ void parseGrammar() {
 }  // namespace
 
 
-ParseInfo parseConfig(const string& fileName, ostream& warnings) {
-  ifstream configFile(fileName);
+ParseInfo parseConfig(const string& filename, ostream& warnings) {
+  ifstream configFile(filename);
   vector<StackObj> tokens = tokenize(configFile);
   if (tokens.empty()) {
-    logger.logFatal(0, string("File ").append(fileName).append(" is empty."));
+    logger.logFatal(0, string("File ").append(filename).append(" is empty."));
   }
 
   tokenStream.setTokens(move(tokens));
