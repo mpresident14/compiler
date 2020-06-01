@@ -7,7 +7,7 @@ using namespace std;
 namespace {
 
 vector<string> splitPath(string_view importPath) {
-  importPath = importPath.substr(0, importPath.size() - sizeof(".prez"));
+  importPath = importPath.substr(0, importPath.size() - sizeof(".prez") + 1);
   vector<string> pathParts;
   boost::split(pathParts, importPath, [](char c) { return c == '/'; });
   return pathParts;
@@ -27,7 +27,7 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
       // Path part needs to be created
       CtxPtr newCtx = nullptr;
       // Last part of path, put the context here
-      if (revIter == pathParts.crend()) {
+      if (revIter == prev(pathParts.crend())) {
         newCtx = move(ctx);
       }
       Node* newNode = new Node{ newCtx, {} };
@@ -36,7 +36,7 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
     } else {
       // Path part already exists
       NodePtr& child = iter->second;
-      if (revIter == pathParts.crend()) {
+      if (revIter == prev(pathParts.crend())) {
         bool doesNotExist = child->ctx == nullptr;
         // Last part of path, put the context here
         child->ctx = move(ctx);
@@ -66,7 +66,7 @@ const Ctx::FnInfo& Ctx::CtxTree::lookupFn(
     }
 
     const Node* child = iter->second.get();
-    if (revIter == qualifiers.crend()) {
+    if (revIter == prev(qualifiers.crend())) {
       // We've reached the end of the path used to qualify the function, so
       // start looking for a context
       do {

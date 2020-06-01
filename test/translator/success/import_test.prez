@@ -1,5 +1,7 @@
-import "spill_test.prez"
+import "file.prez"
+import "import_test/file.prez"
 
 void runprez() {
-  printInt(spill_test::fib());
+  printInt(file::func());
+  printInt(import_test::file::otherFunc());
 }
