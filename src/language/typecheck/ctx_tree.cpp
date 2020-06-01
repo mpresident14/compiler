@@ -1,5 +1,3 @@
-#include "src/language/typecheck/ctx_tree.hpp"
-
 #include "src/language/typecheck/context.hpp"
 
 #include <boost/algorithm/string/split.hpp>
@@ -7,15 +5,17 @@
 using namespace std;
 
 namespace {
+
 vector<string> splitPath(string_view importPath) {
   importPath = importPath.substr(0, importPath.size() - sizeof(".prez"));
   vector<string> pathParts;
   boost::split(pathParts, importPath, [](char c) { return c == '/'; });
   return pathParts;
 }
+
 }  // namespace
 
-bool CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
+bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
   vector<string> pathParts = splitPath(importPath);
   unordered_map<string, NodePtr>* currentMap = &roots_;
 
@@ -49,7 +49,7 @@ bool CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
 }
 
 
-const Ctx::FnInfo& CtxTree::lookupFn(
+const Ctx::FnInfo& Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
     size_t line,

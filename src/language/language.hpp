@@ -5,7 +5,6 @@
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
-#include "src/language/typecheck/ctx_tree.hpp"
 
 #include <memory>
 #include <string>
@@ -106,7 +105,7 @@ private:
 
   std::vector<std::string> imports_;
   std::vector<DeclPtr> decls_;
-  CtxPtr ctx_;
+  std::shared_ptr<Ctx> ctx_;
 };
 
 
@@ -176,10 +175,11 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(std::string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallStmt(std::vector<std::string>&& qualifiers, std::string_view name, std::vector<ExprPtr>&& params, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
 
 private:
+  std::vector<std::string> qualifiers_;
   std::string name_;
   std::vector<ExprPtr> params_;
 };
@@ -357,11 +357,12 @@ private:
 
 class CallExpr : public Expr {
 public:
-  CallExpr(std::string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallExpr(std::vector<std::string>&& qualifiers, std::string_view name, std::vector<ExprPtr>&& params, size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr(Ctx& ctx) override;
 
 private:
+  std::vector<std::string> qualifiers_;
   std::string name_;
   std::vector<ExprPtr> params_;
 };
@@ -393,6 +394,7 @@ private:
 
 std::string newLabel();
 std::pair<std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
+    const std::vector<std::string>& qualifiers,
     const std::string& fnName,
     const std::vector<ExprPtr>& params,
     size_t line, Ctx& ctx);

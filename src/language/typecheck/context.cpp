@@ -15,7 +15,7 @@ Ctx::Ctx(string_view fileName) : fileName_(fileName) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
-CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
+Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 
 const string& Ctx::getCurrentFn() const noexcept { return currentFn; }
 
@@ -122,6 +122,11 @@ void Ctx::undefinedFn(
     size_t line) {
   string fullFn = boost::join(qualifiers, "::").append("::").append(fnName);
   logger.logFatal(line, "Undefined function " + fullFn);
+}
+
+void typeError(const Type& expected, const Type& got, size_t line, Ctx& ctx) {
+  ostringstream& err = ctx.getLogger().logError(line);
+  err << "Expected " << expected << ", got " << got;
 }
 
 bool Ctx::displayLogs() const {

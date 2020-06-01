@@ -44,8 +44,3 @@ ostream& operator<<(ostream& out, const Type& type) {
   }
   return out;
 }
-
-void typeError(const Type& expected, const Type& got, size_t line, Ctx& ctx) {
-  ostringstream& err = ctx.getLogger().logError(line);
-  err << "Expected " << expected << ", got " << got;
-}

@@ -246,12 +246,12 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
  * CallExpr *
  ************/
 
-CallExpr::CallExpr(string_view name, vector<ExprPtr>&& params, size_t line)
-    : Expr(line), name_(name), params_(move(params)) {}
+CallExpr::CallExpr(vector<string>&& qualifiers, string_view name, vector<ExprPtr>&& params, size_t line)
+    : Expr(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   pair<vector<im::ExprPtr>, TypePtr> argCodes =
-      argsToImExprs(name_, params_, line_, ctx);
+      argsToImExprs(qualifiers_, name_, params_, line_, ctx);
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(name_),
                move(argCodes.first),

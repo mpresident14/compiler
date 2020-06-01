@@ -88,15 +88,16 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * CallStmt *
  ************/
 CallStmt::CallStmt(
+    vector<string>&& qualifiers,
     string_view name,
     vector<ExprPtr>&& params,
     size_t line)
-    : Stmt(line), name_(name), params_(move(params)) {}
+    : Stmt(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
 
 void CallStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   imStmts.emplace_back(new im::CallStmt(
       make_unique<im::LabelAddr>(name_),
-      argsToImExprs(name_, params_, line_, ctx).first));
+      argsToImExprs(qualifiers_, name_, params_, line_, ctx).first));
 }
 
 
@@ -108,7 +109,7 @@ Return::Return(optional<ExprPtr>&& retValue, size_t line)
     : Stmt(line), retValue_(move(retValue)) {}
 
 void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  const TypePtr& retType = ctx.lookupFnRec(ctx.getCurrentFn(), line_).returnType;
+  const TypePtr& retType = ctx.lookupFn(ctx.getCurrentFn(), line_).returnType;
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
     if (retType->typeName != TypeName::VOID) {

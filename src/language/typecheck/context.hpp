@@ -2,7 +2,6 @@
 #define CONTEXT_HPP
 
 #include "src/assembly/temp.hpp"
-#include "src/language/typecheck/ctx_tree.hpp"
 #include "src/language/typecheck/type.hpp"
 #include "src/misc/logger.hpp"
 
@@ -13,12 +12,15 @@ class CtxTree;
 
 class Ctx {
 public:
+  using CtxPtr = std::shared_ptr<Ctx>;
+
   struct VarInfo {
     TypePtr type;
     int temp;
     size_t line;
     bool used;
   };
+
 
   struct FnInfo {
     std::vector<TypePtr> paramTypes;
@@ -28,7 +30,39 @@ public:
     size_t line;
   };
 
-  Ctx(string_view fileName);
+
+  class CtxTree {
+  public:
+    struct Node {
+      /* non-nullptr if file exists at this level in directory tree */
+      CtxPtr ctx;
+      std::unordered_map<std::string, std::unique_ptr<Node>> children;
+    };
+    using NodePtr = std::unique_ptr<Node>;
+
+    CtxTree();
+    ~CtxTree() = default;
+    CtxTree(const CtxTree&) = delete;
+    CtxTree(CtxTree&&) = default;
+    CtxTree& operator=(const CtxTree&) = delete;
+    CtxTree& operator=(CtxTree&&) = default;
+
+    /* Return true if successfully added, false if already exists */
+    bool addCtx(std::string_view importPath, CtxPtr ctx);
+    const Ctx::FnInfo& lookupFn(
+        const std::vector<std::string> qualifiers,
+        const std::string& name,
+        size_t line,
+        Ctx& ctx) const;
+
+  private:
+    /* The roots specify .prez files that were imported
+     * Each level down represents a level up in the directory */
+    std::unordered_map<std::string, NodePtr> roots_;
+  };
+
+
+  Ctx(std::string_view fileName);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -51,6 +85,8 @@ public:
       size_t line);
   /* Only searches this context, nullptr if it doesn't exist */
   const FnInfo* lookupFn(const std::string& name);
+  /* Only searches this context, throws if it doesn't exist */
+  const FnInfo& lookupFn(const std::string& name, size_t line);
   /* Also searches context tree */
   const FnInfo& lookupFnRec(
       const std::vector<std::string> qualifiers,
@@ -60,6 +96,7 @@ public:
       const std::vector<std::string> qualifiers,
       const std::string& fnName,
       size_t line);
+  void typeError(const Type& expected, const Type& got, size_t line);
   /* Returns true if there was an error */
   bool displayLogs() const;
 
@@ -69,7 +106,7 @@ private:
   std::unordered_map<std::string, VarInfo> varMap;
   // TODO: Remove initialization when we add a print() to the language
   std::unordered_map<std::string, FnInfo> fnMap = {
-    { "printInt", FnInfo{ vector<TypePtr>{ intType }, voidType, "", 0 } }
+    { "printInt", FnInfo{ std::vector<TypePtr>{ intType }, voidType, "", 0 } }
   };
   std::string currentFn;
   std::string fileName_;

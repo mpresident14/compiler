@@ -12,10 +12,11 @@ string newLabel() {
 }
 
 pair<vector<im::ExprPtr>, TypePtr> argsToImExprs(
+    const vector<string>& qualifiers,
     const string& fnName,
     const vector<ExprPtr>& params, size_t line, Ctx& ctx) {
   // Ensure function was declared
-  const Ctx::FnInfo& fnInfo = ctx.lookupFnRec(fnName, line);
+  const Ctx::FnInfo& fnInfo = ctx.lookupFnRec(qualifiers, fnName, line);
   // Ensure parameter types match and translate them to intermediate exprs
   const vector<TypePtr>& paramTypes = fnInfo.paramTypes;
   size_t expectedNumParams = paramTypes.size();

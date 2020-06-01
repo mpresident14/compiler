@@ -49,7 +49,4 @@ const TypePtr intType = std::make_shared<Type>(TypeName::INT);
 const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL);
 const TypePtr voidType = std::make_shared<Type>(TypeName::VOID);
 
-void typeError(const Type& expected, const Type& got, size_t line, Ctx& ctx);
-
-
 #endif  // TYPE_HPP
