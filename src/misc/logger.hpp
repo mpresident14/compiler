@@ -27,7 +27,6 @@ public:
   static constexpr char noteColored[] = "\033[1;34mWarning\033[0m";
 
   Logger() = default;
-  Logger(std::string_view srcFile);
   ~Logger() = default;
   Logger(const Logger&) = delete;
   Logger(Logger&&) = default;

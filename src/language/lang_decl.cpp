@@ -34,10 +34,10 @@ void Program::initContext(
       // Mark as initiailized before recursing to allow circular dependencies
       auto iter =
           initializedProgs.emplace(import, parser::parse(importFile)).first;
-      ctxTree_.addCtx(import, iter->second.ctx_);
+      ctx_->getCtxTree().addCtx(import, iter->second.ctx_);
     } else {
       const Program& prog = initializedProgs.at(import);
-      ctxTree_.addCtx(import, prog.ctx_);
+      ctx_->getCtxTree().addCtx(import, prog.ctx_);
     }
   }
 
@@ -53,7 +53,7 @@ assem::Program Program::toAssemProg() const { return toImProg().toAssemProg(); }
 im::Program Program::toImProg() const {
   vector<im::DeclPtr> imDecls;
   for (const DeclPtr& decl : decls_) {
-    decl->toImDecls(imDecls);
+    decl->toImDecls(imDecls, *ctx_);
   }
   return im::Program(move(imDecls));
 }
@@ -82,9 +82,14 @@ Func::Func(
 }
 
 
-void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
-  checkForReturn();
-  ctx::setCurrentFn(name_);
+void Func::addToContext(Ctx& ctx) const {
+  ctx.insertFn(name_, paramTypes_, returnType_, line_);
+}
+
+
+void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  checkForReturn(ctx);
+  ctx.setCurrentFn(name_);
   vector<im::StmtPtr> imStmts;
 
   // Insert all the parameters as variables
@@ -92,31 +97,26 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls) {
   //   (b/c if we call a function w/i this function, they will be overwritten)
   size_t numParams = paramTypes_.size();
   for (size_t i = 0; i < numParams; ++i) {
-    int temp = ctx::insertVar(paramNames_[i], paramTypes_[i], line_);
+    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
     imStmts.emplace_back(new im::Assign(
         make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
   }
 
   // Typecheck and compile the function
-  body_->toImStmts(imStmts);
+  body_->toImStmts(imStmts, ctx);
   // Remove all parameters
-  ctx::removeParams(paramNames_, line_);
+  ctx.removeParams(paramNames_, line_);
   imDecls.emplace_back(new im::Func(name_, move(imStmts)));
 }
 
-void Func::addToContext() const {
-  ctx::insertFn(name_, paramTypes_, returnType_, line_);
-}
-
-
-void Func::checkForReturn() {
+void Func::checkForReturn(Ctx& ctx) {
   vector<StmtPtr>& stmts = body_->stmts_;
   if (stmts.empty() || !(dynamic_cast<Return*>(stmts.back().get()))) {
     if (returnType_ == voidType) {
       // Add implicit return for functions with void return type if needed
       body_->stmts_.emplace_back(new Return({}, 0));
     } else {
-      ctx::getLogger().logError(
+      ctx.getLogger().logError(
           line_,
           string("Non-void function ")
               .append(name_)

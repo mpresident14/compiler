@@ -6,27 +6,32 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <boost/algorithm/string/join.hpp>
+
 using namespace std;
+
 
 Ctx::Ctx(string_view fileName) : fileName_(fileName) {}
 
-void Ctx::setCurrentFn(string_view fnName) { currentFn = fnName; }
+Logger& Ctx::getLogger() noexcept { return logger; }
+
+CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 
 const string& Ctx::getCurrentFn() const noexcept { return currentFn; }
 
-Logger& Ctx::getLogger() const noexcept { return logger; }
+void Ctx::setCurrentFn(string_view fnName) { currentFn = fnName; }
 
 
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
   auto insertResult =
-        varMap.emplace(name, VarInfo{ move(type), temp, line, false });
-    if (!insertResult.second) {
-      auto& errStream = logger.logError(line);
-      errStream << "Redefinition of variable \"" << name
-                << "\". Originally declared on line "
-                << insertResult.first->second.line;
-    }
+      varMap.emplace(name, VarInfo{ move(type), temp, line, false });
+  if (!insertResult.second) {
+    auto& errStream = logger.logError(line);
+    errStream << "Redefinition of variable \"" << name
+              << "\". Originally declared on line "
+              << insertResult.first->second.line;
+  }
   return temp;
 }
 
@@ -74,8 +79,8 @@ void Ctx::insertFn(
     const std::vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
-  auto insertResult =
-      fnMap.emplace(name, FnInfo{ paramTypes, move(returnType), currentFile, line });
+  auto insertResult = fnMap.emplace(
+      name, FnInfo{ paramTypes, move(returnType), fileName_, line });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
     errStream << "Redefinition of function \"" << name
@@ -86,23 +91,40 @@ void Ctx::insertFn(
 
 // TODO: Handle function overloads (maybe by giving them different names
 // depending on params)
-const FnInfo& Ctx::lookupFn(const string& name, size_t line) {
+const Ctx::FnInfo* Ctx::lookupFn(const string& name) {
   auto iter = fnMap.find(name);
   if (iter == fnMap.end()) {
-    // We can't really continue from this error
-    logger.logFatal(
-        line, string("Undefined function \"").append(name).append("\""));
+    return nullptr;
   }
-  return iter->second;
+  return &iter->second;
 }
 
 
-bool Ctx::displayLogs() {
-  bool hasError = false;
-  for (const auto& [_, logger] : loggers) {
-    logger.streamLog();
-    hasError |= logger.hasErrors();
+const Ctx::FnInfo& Ctx::lookupFnRec(
+    const std::vector<std::string> qualifiers,
+    const std::string& name,
+    size_t line) {
+  if (qualifiers.empty()) {
+    // If no qualifiers we only try our own context
+    const Ctx::FnInfo* fnInfo = lookupFn(name);
+    if (!fnInfo) {
+      undefinedFn(qualifiers, name, line);
+    }
+    return *fnInfo;
   }
-  return hasError;
+  return ctxTree_.lookupFn(qualifiers, name, line, *this);
 }
 
+
+void Ctx::undefinedFn(
+    const vector<string> qualifiers,
+    const string& fnName,
+    size_t line) {
+  string fullFn = boost::join(qualifiers, "::").append("::").append(fnName);
+  logger.logFatal(line, "Undefined function " + fullFn);
+}
+
+bool Ctx::displayLogs() const {
+  logger.streamLog();
+  return logger.hasErrors();
+}
