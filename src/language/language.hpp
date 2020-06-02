@@ -95,26 +95,6 @@ using DeclPtr = std::unique_ptr<Decl>;
  * Decl *
  ********/
 
-class Program {
-public:
-  Program(std::vector<std::string>&& imports, std::vector<DeclPtr>&& decls);
-  assem::Program toAssemProg() const;
-  void initContext(
-      std::string_view filename,
-      std::unordered_map<std::string, Program>& initializedProgs,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
-  const Ctx& getCtx() const noexcept { return *ctx_; }
-
-private:
-  im::Program toImProg() const;
-
-  std::vector<std::string> imports_;
-  std::vector<DeclPtr> decls_;
-  std::shared_ptr<Ctx> ctx_;
-};
-
-
 class Block;
 class Func : public Decl {
 public:
@@ -138,6 +118,32 @@ private:
   std::unique_ptr<Block> body_;
 };
 
+/***********
+ * Program *
+ ***********/
+struct Import {
+  std::string filename;
+  size_t line;
+};
+
+class Program {
+public:
+  Program(std::vector<Import>&& imports, std::vector<DeclPtr>&& decls);
+  assem::Program toAssemProg() const;
+  void initContext(
+      std::string_view filename,
+      std::unordered_map<std::string, Program>& initializedProgs,
+      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
+      std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
+  const Ctx& getCtx() const noexcept { return *ctx_; }
+
+private:
+  im::Program toImProg() const;
+
+  std::vector<Import> imports_;
+  std::vector<DeclPtr> decls_;
+  std::shared_ptr<Ctx> ctx_;
+};
 
 /********
  * Stmt *

@@ -22,7 +22,7 @@ namespace language {
  * Program *
  ***********/
 
-Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
+Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {}
 
 
@@ -37,22 +37,27 @@ void Program::initContext(
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
-  for (const string& import : imports_) {
-    auto progsIter = initializedProgs.find(import);
+  for (const Import& imported : imports_) {
+    const string& importName = imported.filename;
+    auto progsIter = initializedProgs.find(importName);
     Program* prog;
     if (progsIter == initializedProgs.end()) {
       // We haven't initialized this program yet
       // Mark as initialized before recursing to allow circular dependencies
-      prog = &initializedProgs.emplace(import, parser::parse(import))
-                  .first->second;
-      prog->initContext(import, initializedProgs, fileIds, typeIds);
+      try {
+        prog = &initializedProgs.emplace(importName, parser::parse(importName))
+                    .first->second;
+        prog->initContext(importName, initializedProgs, fileIds, typeIds);
+      } catch (const runtime_error& e) {
+        ctx_->getLogger().logError(imported.line, e.what());
+      }
     } else {
       prog = &progsIter->second;
     }
 
     // Put the import's context in our context tree
-    if (!ctx_->getCtxTree().addCtx(import, prog->ctx_)) {
-      ctx_->getLogger().logNote(0, "Duplicate import '" + import + "'");
+    if (!ctx_->getCtxTree().addCtx(importName, prog->ctx_)) {
+      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + importName + "'");
     }
   }
 

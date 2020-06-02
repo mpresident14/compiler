@@ -112,12 +112,12 @@ COLON2                  #left
 Program -> { language::Program }
   := Imports Decls  % Program(move(#0), move(#1)) %
 
-Imports -> { vector<string> }
-  :=                #prec EPSILON2 % vector<string>() %
+Imports -> { vector<Import> }
+  :=                #prec EPSILON2 % vector<Import>() %
    | Imports Import                % (#0.push_back(move(#1)), move(#0)) %
 
-Import -> { string }
-  := IMPORT SRCFILE     % move(#1) %
+Import -> { Import }
+  := IMPORT SRCFILE     % { move(#1), #line } %
 
 Decls -> { vector<DeclPtr> }
   :=              #prec EPSILON1  % vector<DeclPtr>() %
