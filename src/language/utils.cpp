@@ -31,17 +31,12 @@ tuple<string, vector<im::ExprPtr>, TypePtr> argsToImExprs(
     paramTypes.push_back(move(exprInfo.type));
   }
 
-  optional<string> mangledName = ctx.mangleWithParams(fnName, paramTypes);
-  const string& lookupName = mangledName ? *mangledName : fnName;
-  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, lookupName);
+  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, fnName, paramTypes);
   if (!fnInfo) {
     ctx.undefinedFn(qualifiers, fnName, paramTypes, line);
   }
 
-  if (mangledName) {
-    return { ctx.mangleWithFile(*mangledName, fnInfo->declFile), move(paramImExprs), fnInfo->returnType };
-  }
-  return { fnName, move(paramImExprs), fnInfo->returnType };
+  return { ctx.mangleFn(fnName, fnInfo->declFile, paramTypes), move(paramImExprs), fnInfo->returnType };
 }
 
 }  // namespace language

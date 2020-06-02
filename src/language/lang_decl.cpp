@@ -86,9 +86,7 @@ Func::Func(
 
 
 void Func::addToContext(Ctx& ctx) {
-  mangledName_ = ctx.mangleWithParams(name_, paramTypes_);
-  const string& lookupName = mangledName_ ? *mangledName_ : name_;
-  ctx.insertFn(name_, lookupName, paramTypes_, returnType_, line_);
+  ctx.insertFn(name_, paramTypes_, returnType_, line_);
 }
 
 
@@ -112,10 +110,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Remove all parameters
   ctx.removeParams(paramNames_, line_);
 
-  const string& lookupName =
-      mangledName_ ? ctx.mangleWithFile(*mangledName_, ctx.getFilename())
-                   : name_;
-  imDecls.emplace_back(new im::Func(lookupName, move(imStmts)));
+  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
 void Func::checkForReturn(Ctx& ctx) {

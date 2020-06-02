@@ -52,7 +52,8 @@ public:
     bool addCtx(std::string_view importPath, CtxPtr ctx);
     const Ctx::FnInfo* lookupFn(
         const std::vector<std::string> qualifiers,
-        const std::string& name) const;
+        const std::string& name,
+        const std::vector<TypePtr>& paramTypes) const;
 
   private:
     /* The roots specify .prez files that were imported
@@ -62,7 +63,8 @@ public:
 
   Ctx(std::string_view filename,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> typeEncodings);
+      std::shared_ptr<std::unordered_map<std::string, std::string>>
+          typeEncodings);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -81,16 +83,18 @@ public:
   void removeParams(const std::vector<std::string>& params, size_t line);
   void insertFn(
       std::string_view name,
-      std::string_view mangledName,
       const std::vector<TypePtr>& paramTypes,
       TypePtr returnType,
       size_t line);
   /* Only searches this context, nullptr if it doesn't exist */
-  const FnInfo* lookupFn(const std::string& mangledName);
+  const FnInfo* lookupFn(
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes);
   /* Also searches context tree */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
-      const std::string& mangledName);
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes);
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       const std::string& fnName,
@@ -99,10 +103,10 @@ public:
   /* Mangle all user functions based on the filename (non-user functions begin
    * with '_') Return empty if function doesn't need to be mangled */
   // TODO: remove the optional when we get rid of printInt and runprez
-  std::optional<std::string> mangleWithParams(
+  std::string mangleFn(
       std::string_view fnName,
+      std::string_view filename,
       const std::vector<TypePtr>& paramTypes);
-  std::string mangleWithFile(std::string_view fnName, std::string_view filename);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
@@ -112,7 +116,7 @@ private:
 
   std::unordered_map<std::string, VarInfo> varMap;
   // TODO: Remove initialization when we add a print() to the language
-  std::unordered_map<std::string, FnInfo> fnMap = {
+  std::unordered_multimap<std::string, FnInfo> fnMap = {
     { "printInt", FnInfo{ std::vector<TypePtr>{ intType }, voidType, "", 0 } }
   };
   TypePtr currentRetType_;

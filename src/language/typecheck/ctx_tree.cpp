@@ -22,10 +22,10 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
   vector<string> pathParts = splitPath(importPath);
   unordered_map<string, NodePtr>* currentMap = &roots_;
 
-  // Iterate backwards through the parts of the path until we reach the first one
+  // Iterate backwards through the parts of the path until we reach the first
+  // one
   auto iterToFirst = prev(pathParts.crend());
-  for (auto revIter = pathParts.crbegin(); revIter != iterToFirst;
-       ++revIter) {
+  for (auto revIter = pathParts.crbegin(); revIter != iterToFirst; ++revIter) {
     const string& part = *revIter;
     auto mapIter = currentMap->find(part);
     if (mapIter == currentMap->end()) {
@@ -60,7 +60,8 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
 
 const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
-    const string& mangledName) const {
+    const string& name,
+    const std::vector<TypePtr>& paramTypes) const {
   // TODO: Remove when done
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupFn");
@@ -89,7 +90,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     // - a Node with not exactly 1 child (can't resolve qualifiers)
     const CtxPtr& maybeCtx = child->ctx;
     if (maybeCtx) {
-      return maybeCtx->lookupFn(mangledName);
+      return maybeCtx->lookupFn(name, paramTypes);
     }
 
     currentMap = &child->children;

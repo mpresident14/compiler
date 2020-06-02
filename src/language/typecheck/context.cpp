@@ -2,6 +2,7 @@
 
 #include "src/assembly/temp.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -28,7 +29,9 @@ const std::string& Ctx::getFilename() const noexcept { return filename_; }
 
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
-void Ctx::setCurrentRetType(TypePtr type) noexcept { currentRetType_ = move(type); }
+void Ctx::setCurrentRetType(TypePtr type) noexcept {
+  currentRetType_ = move(type);
+}
 
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
@@ -84,42 +87,52 @@ void Ctx::removeTemp(const string& var, size_t line) {
 
 void Ctx::insertFn(
     std::string_view name,
-    string_view mangledName,
     const std::vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
-  auto insertResult = fnMap.emplace(
-      mangledName, FnInfo{ paramTypes, move(returnType), filename_, line });
-  if (!insertResult.second) {
-    auto& errStream = logger.logError(line);
-    // TODO: Output parameter types
-    errStream << "Redefinition of function \"" << name
-              << "\". Originally declared on line "
-              << insertResult.first->second.line;
-  }
+  /* auto insertResult =  */
+  fnMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
+  // TODO
+  // if (!insertResult.second) {
+  //   auto& errStream = logger.logError(line);
+  //   // TODO: Output parameter types
+  //   errStream << "Redefinition of function \"" << name
+  //             << "\". Originally declared on line "
+  //             << insertResult.first->second.line;
+  // }
 }
 
 
-const Ctx::FnInfo* Ctx::lookupFn(const string& mangledName) {
-  auto iter = fnMap.find(mangledName);
-  if (iter == fnMap.end()) {
-    return nullptr;
+const Ctx::FnInfo* Ctx::lookupFn(
+    const string& name,
+    const std::vector<TypePtr>& paramTypes) {
+  auto iterPair = fnMap.equal_range(name);
+  for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
+    const vector<TypePtr> fnParamTypes = iter->second.paramTypes;
+    if (equal(
+            paramTypes.cbegin(),
+            paramTypes.cend(),
+            fnParamTypes.cbegin(),
+            fnParamTypes.cend())) {
+      return &iter->second;
+    }
   }
-  return &iter->second;
-}
 
+  return nullptr;
+}
 
 // TODO: Allow "from <file> import <function/class>""
 const Ctx::FnInfo* Ctx::lookupFnRec(
     const std::vector<std::string>& qualifiers,
-    const std::string& mangledName) {
+    const std::string& name,
+    const std::vector<TypePtr>& paramTypes) {
   if (qualifiers.empty()) {
     // If no qualifiers we only try our own context
-    const Ctx::FnInfo* fnInfo = lookupFn(mangledName);
+    const Ctx::FnInfo* fnInfo = lookupFn(name, paramTypes);
     return fnInfo;
   }
 
-  const Ctx::FnInfo* fnInfo = ctxTree_.lookupFn(qualifiers, mangledName);
+  const Ctx::FnInfo* fnInfo = ctxTree_.lookupFn(qualifiers, name, paramTypes);
   return fnInfo;
 }
 
@@ -132,10 +145,10 @@ void Ctx::undefinedFn(
     size_t line) {
   ostringstream err;
   err << "Undefined function "
-      << boost::join(qualifiers, "::").append("::").append(fnName)
-      << '(';
+      << boost::join(qualifiers, "::").append("::").append(fnName) << '(';
   if (!paramTypes.empty()) {
-    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend()); ++iter) {
+    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
+         ++iter) {
       err << **iter << ',';
     }
     err << *paramTypes.back();
@@ -146,25 +159,26 @@ void Ctx::undefinedFn(
 }
 
 
-optional<string> Ctx::mangleWithParams(string_view fnName, const std::vector<TypePtr>& paramTypes) {
+string Ctx::mangleFn(
+    string_view fnName,
+    string_view filename,
+    const std::vector<TypePtr>& paramTypes) {
   // TODO: Remove runPrez and printInt when applicable
   if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
-    return {};
+    return string(fnName);
   }
 
-  string newName = string("_").append(fnName);
-  for (const TypePtr& type : paramTypes) {
-    newName.append(type->encode(*typeEncodings_)).push_back('_');
-  }
-  return { newName };
-}
-
-// TODO: Use file encodings
-string Ctx::mangleWithFile(string_view fnName, string_view filename) {
-  string newName = string("_").append(fnName);
+  // TODO: Use file encodings
   filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
+  string newName;
   newName.append(filename).push_back('_');
   replace(newName.begin(), newName.end(), '/', '_');
+
+
+  for (const TypePtr& type : paramTypes) {
+    newName.push_back('_');
+    newName.append(type->encode(*typeEncodings_));
+  }
   return newName;
 }
 
