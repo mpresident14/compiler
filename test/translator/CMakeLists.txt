@@ -22,10 +22,6 @@ function(success_test TEST_NAME EXPECTED_OUT)
   if (${ARGC} EQUAL 3)
     set(EXTRA_DEPENDS ${ARGV2})
   endif()
-  # message(l/${ARGV0})
-  # message(l/${ARGV1})
-  # message(l/${ARGV2})
-  # message(l/${EXTRA_DEPENDS})
 
   add_custom_command(
     OUTPUT

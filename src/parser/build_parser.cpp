@@ -123,10 +123,10 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
     }
     out << '\n';
     for (const auto& [trans, successor] : node->getTransitions()) {
-      if (!visited.contains(successor)) {
+      bool notVisited = visited.insert(successor).second;
+      if (notVisited) {
         nodeNumMap.emplace(successor, stateNum++);
         q.push(successor);
-        visited.insert(successor);
       }
       out << "[" << symbolToString(trans, gd) << "] -> State "
           << nodeNumMap.at(successor) << '\n';
@@ -278,12 +278,12 @@ vector<DFA_t::Node*> createTransitions(
   vector<DFA_t::Node*> addedNodes;
   mutex mtx;
   auto job = [node, &mtx, &addedNodes, &gd, &nulls, &firsts, &dfa](
-                 DFARuleSet& transitionRules, size_t symbolIndex) {
-    epsilonTransition(transitionRules, gd, nulls, firsts);
+                 DFARuleSet* transitionRules, size_t symbolIndex) {
+    epsilonTransition(*transitionRules, gd, nulls, firsts);
 
     mtx.lock();
     DFA_t::Node* newNode =
-        dfa.addTransition(node, symbolIndex, move(transitionRules));
+        dfa.addTransition(node, symbolIndex, move(*transitionRules));
     if (newNode) {
       addedNodes.push_back(newNode);
     }
@@ -297,7 +297,7 @@ vector<DFA_t::Node*> createTransitions(
     // Has a valid transition
     if (!transitionRules.empty()) {
       eTransJobs.push_back(
-          async(job, ref(transitionRules), indexToSymbol(i, numVars)));
+          async(job, &transitionRules, indexToSymbol(i, numVars)));
     }
   }
 
@@ -539,9 +539,8 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
-  auto dfa = buildParserDFA(gd, parseFlags);
 
-  dfa.streamAsCode(
+  buildParserDFA(gd, parseFlags).streamAsCode(
       out,
       "RuleData",
       "int",

@@ -53,7 +53,10 @@ int main(int argc, char** argv) {
     ostringstream warnings;
     ParseInfo parseInfo = parseConfig(pgenFile, warnings);
     generateParserCode(parseInfo, { parserFilePath, logFile }, warnings);
-    cerr << warnings.str() << endl;
+    const string& warningsStr = warnings.str();
+    if (!warningsStr.empty()) {
+      cerr << warnings.str() << endl;
+    }
     return 0;
   } catch (Logger::Exception& e) {
     cerr << pgenFile << ":\n" << e.what() << endl;

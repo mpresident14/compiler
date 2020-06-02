@@ -42,12 +42,12 @@ void testConvert() {
   using DFAStrInt = DFA<string, int>;
   using DFAIntInt = DFA<int, int>;
 
-  DFAStrInt dfa("1000");
-  DFAStrInt::Node* node2 = dfa.addTransition(dfa.getRoot(), 2, "20");
-  DFAStrInt::Node* node3 = dfa.addTransition(dfa.getRoot(), 3, "3");
-  dfa.addTransition(node2, 4, "400");
-  dfa.addTransition(node2, 5, "5");
-  dfa.addTransition(node3, 5, "5");
+  DFAStrInt dfa("1000"s);
+  DFAStrInt::Node* node2 = dfa.addTransition(dfa.getRoot(), 2, "20"s);
+  DFAStrInt::Node* node3 = dfa.addTransition(dfa.getRoot(), 3, "3"s);
+  dfa.addTransition(node2, 4, "400"s);
+  dfa.addTransition(node2, 5, "5"s);
+  dfa.addTransition(node3, 5, "5"s);
 
   DFAIntInt newDfa =
       dfa.convert<int>([](const string& str) { return str.size(); });
