@@ -13,7 +13,6 @@ string newLabel() {
   return "L" + to_string(i++);
 }
 
-
 optional<tuple<string, vector<im::ExprPtr>, TypePtr>> argsToImExprs(
     const vector<string>& qualifiers,
     const string& fnName,

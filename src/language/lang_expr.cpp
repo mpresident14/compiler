@@ -7,6 +7,16 @@
 using namespace std;
 
 
+namespace {
+
+/* Allows us to proceed through compile errors so that we don't have to report
+ * one at a time */
+language::ExprInfo dummyInfo() {
+  return { make_unique<im::Temp>(newTemp()), anyType };
+}
+
+}  // namespace
+
 namespace language {
 
 /************
@@ -32,8 +42,8 @@ Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
 ExprInfo Var::toImExpr(Ctx& ctx) {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
   if (!varInfo) {
-    // Undefined variable, use a dummy and continue
-    return { make_unique<im::Temp>(newTemp()), anyType };
+    // Undefined variable
+    return dummyInfo();
   }
   return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
 }
@@ -68,7 +78,8 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
 void UnaryOp::asBool(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   // Only valid for NOT
   if (uOp_ == UOp::NOT) {
     return e_->asBool(imStmts, ifFalse, ifTrue, ctx);
@@ -122,14 +133,17 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
 
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   return { make_unique<im::BinOp>(
-               e1_->toImExprAssert(*intType, ctx), e2_->toImExprAssert(*intType, ctx), op),
+               e1_->toImExprAssert(*intType, ctx),
+               e2_->toImExprAssert(*intType, ctx),
+               op),
            make_unique<Type>(TypeName::INT) };
 }
 
 void BinaryOp::asBool(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   switch (bOp_) {
     case BOp::EQ:
       return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::EQ, ctx);
@@ -159,7 +173,8 @@ void BinaryOp::asBoolComp(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
     assem::Label* ifFalse,
-    im::ROp rOp, Ctx& ctx) {
+    im::ROp rOp,
+    Ctx& ctx) {
   // Make sure we are comparing two ints
   im::ExprPtr imE1 = e1_->toImExprAssert(*intType, ctx);
   im::ExprPtr imE2 = e2_->toImExprAssert(*intType, ctx);
@@ -170,7 +185,8 @@ void BinaryOp::asBoolComp(
 void BinaryOp::asBoolAnd(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, midLabel, ifFalse, ctx);
@@ -181,7 +197,8 @@ void BinaryOp::asBoolAnd(
 void BinaryOp::asBoolOr(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, ifTrue, midLabel, ctx);
@@ -196,7 +213,8 @@ void BinaryOp::asBoolOr(
 void BinaryOp::asBoolXor(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   im::ExprPtr imXor = make_unique<im::BinOp>(
       e1_->toImExprAssert(*boolType, ctx),
       e2_->toImExprAssert(*boolType, ctx),
@@ -250,14 +268,21 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
  * CallExpr *
  ************/
 
-CallExpr::CallExpr(vector<string>&& qualifiers, string_view name, vector<ExprPtr>&& params, size_t line)
-    : Expr(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
+CallExpr::CallExpr(
+    vector<string>&& qualifiers,
+    string_view name,
+    vector<ExprPtr>&& params,
+    size_t line)
+    : Expr(line),
+      qualifiers_(move(qualifiers)),
+      name_(name),
+      params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
   if (!infoTupleOpt) {
-    // Undefined function, return dummy value
-    return { make_unique<im::Temp>(newTemp()), anyType};
+    // Undefined function
+    return dummyInfo();
   }
   auto& infoTuple = *infoTupleOpt;
   return { make_unique<im::CallExpr>(
@@ -273,7 +298,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
  ************/
 
 NewArray::NewArray(TypePtr&& type, size_t numElems, size_t line)
-      : Expr(line), type_(move(type)), numElems_(numElems) {}
+    : Expr(line), type_(move(type)), numElems_(numElems) {}
 
 ExprInfo NewArray::toImExpr(Ctx&) {
   int t = newTemp();
@@ -314,9 +339,9 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   ExprInfo exprInfo = expr_->toImExpr(ctx);
   TypePtr& type = exprInfo.type;
   if (type->typeName != TypeName::ARRAY) {
-    ostringstream err;
-    err << "Expected an array type, got " << type;
-    ctx.getLogger().logFatal(line_, err.str());
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Operator[] can only be used on an arrays, not type " << *type;
+    return dummyInfo();
   }
 
   // Add 1 to skip the size field
@@ -346,7 +371,8 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
 void Expr::asBool(
     vector<im::StmtPtr>& imStmts,
     assem::Label* ifTrue,
-    assem::Label* ifFalse, Ctx& ctx) {
+    assem::Label* ifFalse,
+    Ctx& ctx) {
   imStmts.emplace_back(new im::CondJump(
       toImExprAssert(*boolType, ctx),
       make_unique<im::Const>(0),

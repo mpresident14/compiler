@@ -9,6 +9,8 @@ int func() {
 }
 
 void runprez() {
+  int n = 0;
+  n[0] = 1;
   printInt(file::func());
   printInt(import_test::file::func());
   printInt(other_file::otherFunc());
