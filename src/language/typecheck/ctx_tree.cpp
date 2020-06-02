@@ -121,9 +121,9 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
       ostream& err = ctx.getLogger().logError(line);
       string quals = boost::join(qualifiers, "::");
       string path = boost::join(filepath, "::");
-      err << "Ambiguous qualifier for function \"" << quals << "::" << name;
+      err << "Ambiguous qualifier for function '" << quals << "::" << name;
       Ctx::streamParamTypes(paramTypes, err);
-      err << "\". Found";
+      err << "'. Found";
       for (const auto& [part, _] : *currentMap) {
         err << "\n\t" << part << "::" << path;
       }

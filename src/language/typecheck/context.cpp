@@ -14,6 +14,9 @@ using namespace std;
 std::string Ctx::qualifiedFn(
     std::vector<std::string> qualifiers,
     std::string_view fnName) {
+  if (qualifiers.empty()) {
+    return string(fnName);
+  }
   return boost::join(qualifiers, "::").append("::").append(fnName);
 }
 
@@ -59,8 +62,8 @@ int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
       varMap.emplace(name, VarInfo{ move(type), temp, line, false });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
-    errStream << "Redefinition of variable \"" << name
-              << "\". Originally declared on line "
+    errStream << "Redefinition of variable '" << name
+              << "'. Originally declared on line "
               << insertResult.first->second.line;
   }
   return temp;
@@ -72,7 +75,7 @@ const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
   if (iter == varMap.end()) {
     // We can't really continue from this error
     logger.logError(
-        line, string("Undefined variable \"").append(name).append("\""));
+        line, string("Undefined variable '").append(name).append("'"));
     return nullptr;
   }
   VarInfo& varInfo = iter->second;
@@ -99,7 +102,7 @@ void Ctx::removeTemp(const string& var, size_t line) {
   auto iter = varMap.find(var);
   if (iter != varMap.end() && !iter->second.used) {
     logger.logWarning(
-        line, string("Unused variable \"").append(var).append("\""));
+        line, string("Unused variable '").append(var).append("'"));
   }
   varMap.erase(var);
 }
@@ -120,9 +123,9 @@ void Ctx::insertFn(
             fnParamTypes.cbegin(),
             fnParamTypes.cend())) {
       ostream& errStream = logger.logError(line);
-      errStream << "Redefinition of function \"" << name;
+      errStream << "Redefinition of function '" << name;
       Ctx::streamParamTypes(paramTypes, errStream);
-      errStream << "\". Originally declared at " << fnInfo.declFile
+      errStream << "'. Originally declared at " << fnInfo.declFile
                 << ", line " << fnInfo.line;
       return;
     }
@@ -178,7 +181,7 @@ void Ctx::undefinedFn(
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
   ostream& err = logger.logError(line);
-  err << "Undefined function " << qualifiedFn(qualifiers, fnName);
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName)<< '\'';
   streamParamTypes(paramTypes, err);
   err << ". No imported file matches qualifiers.";
 }
@@ -194,7 +197,7 @@ void Ctx::undefinedFn(
         candidates,
     std::string_view searchedFile) {
   ostream& err = logger.logError(line);
-  err << "Undefined function " << qualifiedFn(qualifiers, fnName);
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
   streamParamTypes(paramTypes, err);
 
   if (candidates.first == candidates.second) {

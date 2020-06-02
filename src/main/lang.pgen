@@ -142,7 +142,7 @@ Stmt -> { StmtPtr }
    | RETURN SEMI                                 % make_unique<Return>(optional<ExprPtr>(), #line) %
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
    | LValue EQ Expr SEMI                         % make_unique<Assign>(move(#0), move(#2)) %
-   | Type IDENT EQ Expr SEMI                     % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
+   | NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
    | Block                                       % move(#0) %
 
 Expr -> { ExprPtr }
@@ -172,7 +172,7 @@ Expr -> { ExprPtr }
    | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
    | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN     % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
-   | Type LBRACKET NUM RBRACKET               % make_unique<NewArray>(move(#0), #2, #line) %
+   | NonVoidType LBRACKET NUM RBRACKET        % make_unique<NewArray>(move(#0), #2, #line) %
    | LValue                                   % move(#0) %
    | LPAREN Expr RPAREN                       % move(#1) %
 
@@ -198,13 +198,16 @@ Paramz -> { vector<pair<TypePtr, string>> }
    | Paramz COMMA Param               % (#0.push_back(move(#2)), move(#0)) %
 
 Param -> { pair<TypePtr, string> }
-  := Type IDENT         % { move(#0), #1 } %
+  := NonVoidType IDENT         % { move(#0), #1 } %
+
+NonVoidType -> { TypePtr }
+  := INT                             % intType %
+   | BOOL                            % boolType %
+   | NonVoidType LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
 
 Type -> { TypePtr }
-  := INT                      % intType %
-   | BOOL                     % boolType %
+  := NonVoidType              % move(#0) %
    | VOID                     % voidType %
-   | Type LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
 
 Qualifiers -> { vector<string> }
   := Qualifier               % singletonVec<string>(move(#0)) %
