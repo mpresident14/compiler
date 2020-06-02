@@ -2,7 +2,8 @@ import "file.prez"
 import "import_test/file.prez"
 import "import_test/folder/subfolder/file.prez"
 import "import_test/folder2/subfolder/file.prez"
-import "import_test/other_file.prez"
+import "file.prez"
+import "import_test/other_fil.prez"
 
 int func() {
   return 6;

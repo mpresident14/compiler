@@ -42,7 +42,9 @@ void Program::initContext(
       prog = &progsIter->second;
     }
 
-    ctx_->getCtxTree().addCtx(import, prog->ctx_);
+    if (!ctx_->getCtxTree().addCtx(import, prog->ctx_)) {
+      ctx_->getLogger().logNote(0, "Duplicate import '" + import + "'");
+    }
   }
 
   // Add this program's declarations to its own context

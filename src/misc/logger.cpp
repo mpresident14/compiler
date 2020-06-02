@@ -11,10 +11,12 @@ ostringstream& Logger::logError(size_t line, string_view msg) {
 }
 
 ostringstream& Logger::logWarning(size_t line, string_view msg) {
+  ++warningCount_;
   return log(MsgType::WARNING, line, msg);
 }
 
 ostringstream& Logger::logNote(size_t line, string_view msg) {
+  ++noteCount_;
   return log(MsgType::NOTE, line, msg);
 }
 
@@ -22,31 +24,38 @@ ostringstream& Logger::log(MsgType type, size_t line, string_view msg) {
   logs_.push_back(ostringstream());
   ostringstream& error = logs_.back();
 
-  if (line != 0) {
-    switch (type) {
-      case MsgType::ERROR:
-        error << errorColored;
-        break;
-      case MsgType::WARNING:
-        error << warningColored;
-        break;
-      case MsgType::NOTE:
-        error << noteColored;
-        break;
-      default:
-        throw invalid_argument("Unknown MsgType");
-    }
-    error << " on line " << line << ": ";
+  switch (type) {
+    case MsgType::ERROR:
+      error << errorColored;
+      break;
+    case MsgType::WARNING:
+      error << warningColored;
+      break;
+    case MsgType::NOTE:
+      error << noteColored;
+      break;
+    default:
+      throw invalid_argument("Unknown MsgType");
   }
 
-  error << msg;
+  if (line != 0) {
+    error << " on line " << line;
+  }
+  error << ": " << msg;
   return error;
 }
 
 
 bool Logger::hasErrors() const noexcept { return errorCount_ != 0; }
 
-// TODO: Make this operator<<
+
+namespace {
+  const char* maybePlural(size_t n, const char* singular, const char* plural) {
+    return n == 1 ? singular : plural;
+  }
+}
+
+
 void Logger::streamLog(std::ostream& out) const {
   if (logs_.empty()) {
     return;
@@ -59,7 +68,9 @@ void Logger::streamLog(std::ostream& out) const {
   for (const std::ostringstream& stream : logs_) {
     out << stream.str() << '\n';
   }
-  out << '\n';
+  out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
+      << warningCount_ << maybePlural(warningCount_, " warning, ", " warnings, ")
+      << noteCount_ << maybePlural(noteCount_, " note\n\n", " notes\n\n");
 }
 
 void Logger::logFatal(size_t line, std::string_view msg) {

@@ -25,7 +25,7 @@ public:
 
   static constexpr char errorColored[] = "\033[1;31mError\033[0m";
   static constexpr char warningColored[] = "\033[1;35mWarning\033[0m";
-  static constexpr char noteColored[] = "\033[1;34mWarning\033[0m";
+  static constexpr char noteColored[] = "\033[1;34mNote\033[0m";
 
   Logger() = default;
   Logger(std::string_view filename);
@@ -46,9 +46,9 @@ public:
     if (!file.is_open()) {
       logFatal(
           0,
-          std::string(errorColored).append(": Could not open file ")
+          std::string("Could not open file '")
               .append(filename)
-              .append(": ")
+              .append("': ")
               .append(strerror(errno)));
     }
   }
@@ -63,6 +63,8 @@ private:
   std::string filename_ = "";
   std::vector<std::ostringstream> logs_;
   size_t errorCount_ = 0;
+  size_t warningCount_ = 0;
+  size_t noteCount_ = 0;
 };
 
 
