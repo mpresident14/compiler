@@ -8,8 +8,9 @@
 #include <iostream>
 #include <string>
 namespace regex_parser {
-Regex* parse(const std::string& input);
+Regex* parseString(const std::string& input);
 Regex* parse(std::istream& input);
+Regex* parse(const std::string& filename);
 class ParseException : public std::exception {
 public:
   ParseException(const std::string& errMsg) : errMsg_(errMsg) {}

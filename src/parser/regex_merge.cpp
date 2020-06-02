@@ -102,7 +102,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
   for (size_t i = 0; i < numTokens; ++i) {
     const Token& token = gd.tokens[i];
     try {
-      RgxPtr rgx = RgxPtr(regex_parser::parse(token.regex));
+      RgxPtr rgx = RgxPtr(regex_parser::parseString(token.regex));
       RgxDFA rgxDfa = buildRegexDFA(move(rgx));
       initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {

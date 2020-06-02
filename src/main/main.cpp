@@ -18,21 +18,19 @@
 
 using namespace std;
 
+// TODO: Generate more informative parser errors by analyzing stack and remaining
+// tokens. Can also update the parser code itself (e.g., "expected <token>" or
+// "no reduction" error)
 
 /* Return true if no errors */
-bool compile(string_view srcFilename, string_view asmFilename) {
+bool compile(const std::string& srcFilename, const std::string& asmFilename) {
   unordered_map<string, language::Program> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
-    // string_view::data() OK
-    ifstream srcFile(srcFilename.data());
-    logger.checkFile(srcFilename, srcFile);
-
     // Mark as initiailized before recursing to allow circular dependencies
-    // TODO: Catch and log (fatal?) parse errors
     auto iter =
-        initializedProgs.emplace(srcFilename, parser::parse(srcFile)).first;
+        initializedProgs.emplace(srcFilename, parser::parse(srcFilename)).first;
 
 
     // Recursively record all declarations
@@ -53,7 +51,7 @@ bool compile(string_view srcFilename, string_view asmFilename) {
     // If we compiled successfully, write the assembly to the file
     if (!hasErr) {
       // string_view::data() OK
-      ofstream asmFile(asmFilename.data());
+      ofstream asmFile(asmFilename);
       logger.checkFile(asmFilename, asmFile);
       for (assem::Program& prog : assemProgs) {
         prog.toCode(asmFile);

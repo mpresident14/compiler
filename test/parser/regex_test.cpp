@@ -17,23 +17,23 @@
 
 using namespace std;
 using namespace prez;
-using regex_parser::parse;
+using regex_parser::parseString;
 
 UnitTest TESTER = UnitTest::createTester();
 
 ostringstream errBuffer;
 
 void testParse() {
-  RgxPtr r0 = RgxPtr(parse("a"));
-  RgxPtr r1 = RgxPtr(parse("ab*|b"));
-  RgxPtr r2 = RgxPtr(parse("[^a-z]"));
-  RgxPtr r3 = RgxPtr(parse("abcd*"));
-  RgxPtr r4 = RgxPtr(parse("a|b|cd"));
-  RgxPtr r5 = RgxPtr(parse("[1-9]"));
-  RgxPtr r6 = RgxPtr(parse("[1-9]*"));
-  RgxPtr r7 = RgxPtr(parse("\\[^([^\\]]|\\\\.)*\\]"));
-  RgxPtr r8 = RgxPtr(parse("(a|b)+"));
-  RgxPtr r9 = RgxPtr(parse("(ab)?"));
+  RgxPtr r0 = RgxPtr(parseString("a"));
+  RgxPtr r1 = RgxPtr(parseString("ab*|b"));
+  RgxPtr r2 = RgxPtr(parseString("[^a-z]"));
+  RgxPtr r3 = RgxPtr(parseString("abcd*"));
+  RgxPtr r4 = RgxPtr(parseString("a|b|cd"));
+  RgxPtr r5 = RgxPtr(parseString("[1-9]"));
+  RgxPtr r6 = RgxPtr(parseString("[1-9]*"));
+  RgxPtr r7 = RgxPtr(parseString("\\[^([^\\]]|\\\\.)*\\]"));
+  RgxPtr r8 = RgxPtr(parseString("(a|b)+"));
+  RgxPtr r9 = RgxPtr(parseString("(ab)?"));
 
   TESTER.assertEquals(RgxType::CHARACTER, r0->getType());
   TESTER.assertEquals(RgxType::ALT, r1->getType());
@@ -56,7 +56,7 @@ void testParseError() {
                << vector<string>{ "Concats", "LPAREN", "Regex" }
                << "\n\tRemaining tokens: " << vector<string>{};
 
-  string err0 = TESTER.assertThrows([]() { parse("abc(b*"); });
+  string err0 = TESTER.assertThrows([]() { parseString("abc(b*"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
 
   ostringstream expectedErr1;
@@ -64,7 +64,7 @@ void testParseError() {
                << vector<string>{ "Regex", "BAR", "STAR" }
                << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
-  string err1 = TESTER.assertThrows([]() { parse("abc|*d"); });
+  string err1 = TESTER.assertThrows([]() { parseString("abc|*d"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
 
   // No conflicts
@@ -72,18 +72,18 @@ void testParseError() {
 }
 
 void testGetDeriv_character() {
-  RgxPtr r1 = RgxPtr(parse("a"));
+  RgxPtr r1 = RgxPtr(parseString("a"));
 
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
 }
 
 void testGetDeriv_alt() {
-  RgxPtr r1 = RgxPtr(parse("ac|ad"));
-  RgxPtr r2 = RgxPtr(parse("ac|bd"));
+  RgxPtr r1 = RgxPtr(parseString("ac|ad"));
+  RgxPtr r2 = RgxPtr(parseString("ac|bd"));
 
-  RgxPtr e1 = RgxPtr(parse("c|d"));
-  RgxPtr e2 = RgxPtr(parse("d"));
+  RgxPtr e1 = RgxPtr(parseString("c|d"));
+  RgxPtr e2 = RgxPtr(parseString("d"));
 
   TESTER.assertEquals(*e1, *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
@@ -91,10 +91,10 @@ void testGetDeriv_alt() {
 }
 
 void testGetDeriv_concat() {
-  RgxPtr r1 = RgxPtr(parse("ac"));
-  RgxPtr r2 = RgxPtr(parse("a*c"));
+  RgxPtr r1 = RgxPtr(parseString("ac"));
+  RgxPtr r2 = RgxPtr(parseString("a*c"));
 
-  RgxPtr e1 = RgxPtr(parse("c"));
+  RgxPtr e1 = RgxPtr(parseString("c"));
 
   TESTER.assertEquals(*e1, *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
@@ -103,17 +103,17 @@ void testGetDeriv_concat() {
 }
 
 void testGetDeriv_star() {
-  RgxPtr r1 = RgxPtr(parse("a*"));
+  RgxPtr r1 = RgxPtr(parseString("a*"));
 
   TESTER.assertEquals(*r1, *r1->getDeriv('a'));
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('b'));
 }
 
 void testGetDeriv_brackets() {
-  RgxPtr r1 = RgxPtr(parse("[0-9]"));
-  RgxPtr r2 = RgxPtr(parse("[^0-9]"));
-  RgxPtr r3 = RgxPtr(parse("[\\]*$-]"));
-  RgxPtr r4 = RgxPtr(parse("[^\\]*$-]"));
+  RgxPtr r1 = RgxPtr(parseString("[0-9]"));
+  RgxPtr r2 = RgxPtr(parseString("[^0-9]"));
+  RgxPtr r3 = RgxPtr(parseString("[\\]*$-]"));
+  RgxPtr r4 = RgxPtr(parseString("[^\\]*$-]"));
 
   TESTER.assertEquals(EmptySet(), *r1->getDeriv('a'));
   TESTER.assertEquals(Epsilon(), *r1->getDeriv('7'));
@@ -126,7 +126,7 @@ void testGetDeriv_brackets() {
 }
 
 void testHashFn() {
-  RgxPtr r1 = RgxPtr(parse("a"));
+  RgxPtr r1 = RgxPtr(parseString("a"));
   cout << "HERE" << endl;
   unordered_set<RgxPtr, Regex::PtrHash> rgxs = { r1->getDeriv('b') };
   cout << "HERE2" << endl;

@@ -16,7 +16,7 @@ ostringstream errBuffer;
 using ExprPtr = unique_ptr<Expr>;
 
 void checkEval(const string& equation, int result) {
-  ExprPtr e(parse(equation));
+  ExprPtr e(parseString(equation));
   TESTER.assertEquals(result, e->eval());
 }
 
@@ -44,7 +44,7 @@ void testParse_invalidTokens() {
   expectedErr0 << "Lexer error on line 1 at: a * 24\n"
                << "Previous tokens were: " << vector<string>{ "INT", "PLUS" };
 
-  string err0 = TESTER.assertThrows([]() { parse("1 + a * 24"); });
+  string err0 = TESTER.assertThrows([]() { parseString("1 + a * 24"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
   TESTER.assertEquals("INT deleter called\n", errBuffer.str());
   // Clear errBuffer
@@ -57,7 +57,7 @@ void testParse_noParse() {
                << vector<string>{ "Expr", "PLUS", "Expr", "STAR", "PLUS" }
                << "\n\tRemaining tokens: " << vector<string>{ "INT" };
 
-  string err0 = TESTER.assertThrows([]() { parse("123 + 24* + 5"); });
+  string err0 = TESTER.assertThrows([]() { parseString("123 + 24* + 5"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
   TESTER.assertEquals("INT deleter called\n", errBuffer.str());
   // Clear errBuffer
@@ -71,7 +71,7 @@ void testParse_noParse() {
                << "\n\tRemaining tokens: "
                << vector<string>{ "STAR", "PLUS", "INT" };
 
-  string err1 = TESTER.assertThrows([]() { parse("3 * 2\n 34* + 5"); });
+  string err1 = TESTER.assertThrows([]() { parseString("3 * 2\n 34* + 5"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
   TESTER.assertEquals(
       "INT deleter called\nINT deleter called\nINT deleter called\n",

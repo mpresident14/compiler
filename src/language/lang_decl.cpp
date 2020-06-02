@@ -42,10 +42,8 @@ void Program::initContext(
     Program* prog;
     if (progsIter == initializedProgs.end()) {
       // We haven't initialized this program yet
-      ifstream importFile(import);
-      ctx_->getLogger().checkFile(import, importFile);
       // Mark as initialized before recursing to allow circular dependencies
-      prog = &initializedProgs.emplace(import, parser::parse(importFile))
+      prog = &initializedProgs.emplace(import, parser::parse(import))
                   .first->second;
       prog->initContext(import, initializedProgs, fileIds, typeIds);
     } else {

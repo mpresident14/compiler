@@ -17,10 +17,10 @@ using ExprPtr = unique_ptr<Expr>;
 
 /* See test/write_lexer.cpp */
 void testParse() {
-  ExprPtr e0(expr_parser::parse("3+12 + 4"));
-  ExprPtr e1(expr_parser::parse("3+12 *4"));
-  ExprPtr e2(expr_parser::parse("3 *12 + 4"));
-  ExprPtr e3(expr_parser::parse("3* 12*  4"));
+  ExprPtr e0(expr_parser::parseString("3+12 + 4"));
+  ExprPtr e1(expr_parser::parseString("3+12 *4"));
+  ExprPtr e2(expr_parser::parseString("3 *12 + 4"));
+  ExprPtr e3(expr_parser::parseString("3* 12*  4"));
 
   TESTER.assertEquals(19, e0->eval());
   TESTER.assertEquals(51, e1->eval());
@@ -33,7 +33,7 @@ void testParse_invalidTokens() {
   expectedErr0 << "Lexer error on line 1 at: a * 24\n"
                << "Previous tokens were: " << vector<string>{ "INT", "PLUS" };
 
-  string err0 = TESTER.assertThrows([]() { expr_parser::parse("1 + a * 24"); });
+  string err0 = TESTER.assertThrows([]() { expr_parser::parseString("1 + a * 24"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
 }
 
@@ -44,7 +44,7 @@ void testParse_noParse() {
                << "\n\tRemaining tokens: " << vector<string>{ "INT" };
 
   string err0 =
-      TESTER.assertThrows([]() { expr_parser::parse("123 + 24* + 5"); });
+      TESTER.assertThrows([]() { expr_parser::parseString("123 + 24* + 5"); });
   TESTER.assertEquals(expectedErr0.str(), err0);
 
   // Note that INT is not in lookahead set after Expr STAR INT, so INT doesn't
@@ -56,7 +56,7 @@ void testParse_noParse() {
                << vector<string>{ "STAR", "PLUS", "INT" };
 
   string err1 =
-      TESTER.assertThrows([]() { expr_parser::parse("3 * 2\n 34* + 5"); });
+      TESTER.assertThrows([]() { expr_parser::parseString("3 * 2\n 34* + 5"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
 }
 

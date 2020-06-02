@@ -474,7 +474,7 @@ void tokenizeFn(ostream& out) {
       }
 
 
-      vector<StackObj> tokenize(const string& input, const string& filename) {
+      vector<StackObj> tokenize(const string& input) {
         if (input.empty()) {
           return {};
         }
@@ -496,9 +496,6 @@ void tokenizeFn(ostream& out) {
                 tokens.cend(),
                 back_inserter(prevTokenNames),
                 [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.getSymbol())].name; });
-            if (!filename.empty()) {
-              error << filename << "\n:";
-            }
             error << "Lexer \033[1;31merror\033[0m on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
             throw ParseException(error.str());
@@ -516,7 +513,7 @@ void tokenizeFn(ostream& out) {
 
 void tokenizeFileFn(ostream& out) {
   out << R"(vector<StackObj> tokenize(istream& input) {
-        return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}), "");
+        return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
       }
     )";
 }
@@ -556,9 +553,9 @@ void ruleDataDecl(ostream& out) {
 
 void parseDecl(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
-  out << rootType << " parseString(const std::string& input);" << rootType
-      << " parse(std::istream& input);"
-      << " parse(const std::string& filename);";
+  out << rootType << " parseString(const std::string& input);"
+      << rootType << " parse(std::istream& input);"
+      << rootType << " parse(const std::string& filename);";
 }
 
 void parseExceptionDecl(ostream& out) {
@@ -660,11 +657,10 @@ void tryReduceFn(ostream& out) {
 }
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
-  out << gd.variables[1].type
-      << R"(shiftReduce(vector<StackObj>& inputTokens, const std::string& filename) {
+  out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {
         // vector<StackObj> stk;
         // if (inputTokens.empty()) {
-        //   parseError(stk, inputTokens, 0, filename);
+        //   parseError(stk, inputTokens, 0);
         // }
 
         // stk.push_back(move(inputTokens[0]));
@@ -687,7 +683,7 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
                   ? parser::root.get()
                   : dfaPath.back()->step(stk.back().getSymbol());
           if (currentNode == nullptr) {
-            parseError(stk, inputTokens, i, filename);
+            parseError(stk, inputTokens, i);
           }
           dfaPath.push_back(currentNode);
 
@@ -706,7 +702,7 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
             stk.push_back(move(newObj));
           } else {
             if (nextInputToken == NONE) {
-              parseError(stk, inputTokens, i, filename);
+              parseError(stk, inputTokens, i);
             }
             stk.push_back(move(inputTokens[i]));
             ++i;
@@ -722,36 +718,32 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
 void parseFn(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
   out << rootType << R"(
-      parseString(const string& input, const string& filename) {
-        vector<StackObj> stackObjs = tokenize(input, filename);
-        return shiftReduce(stackObjs, filename);
-      }
-    )" << rootType << R"(
       parseString(const string& input) {
-        parseString(input, "");
+        vector<StackObj> stackObjs = tokenize(input);
+        return shiftReduce(stackObjs);
       }
     )" << rootType
       << R"(
-      parse(istream& input, const string& filename) {
-        return parse(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
-      }
-    )" << rootType << R"(
       parse(istream& input) {
-        return parse(input, "");
+        return parseString(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
       }
     )" << rootType
       << R"(
       parse(const string& filename) {
         ifstream input(filename);
-        if (!input.is_open) {
-          throw runtime_error(string("Could not open file ')
+        if (!input.is_open()) {
+          throw runtime_error(string("Could not open file '")
               .append(filename)
               .append("': ")
               .append(strerror(errno)));
         }
-        return parse(input, filename);
+        try {
+          return parse(input);
+        } catch (const ParseException& e) {
+          throw ParseException(filename + ":\n" + e.what());
+        }
       }
-    )"
+    )";
 }
 
 /********
@@ -787,6 +779,7 @@ void cppIncludes(ostream& out) {
       #include <string_view>
       #include <unordered_map>
       #include <vector>
+      #include <fstream>
       #include <string.h>
 
       #include <prez/print_stuff.hpp>
