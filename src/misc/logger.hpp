@@ -46,7 +46,7 @@ public:
     if (!file.is_open()) {
       logFatal(
           0,
-          std::string("Could not open file ")
+          std::string(errorColored).append(": Could not open file ")
               .append(filename)
               .append(": ")
               .append(strerror(errno)));

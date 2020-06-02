@@ -31,16 +31,17 @@ void Program::initContext(
     auto progsIter = initializedProgs.find(import);
     Program* prog;
     if (progsIter == initializedProgs.end()) {
+      // We haven't initialized this program yet
       ifstream importFile(import);
       ctx_->getLogger().checkFile(import, importFile);
       // Mark as initialized before recursing to allow circular dependencies
       prog = &initializedProgs.emplace(import, parser::parse(importFile))
                   .first->second;
+      prog->initContext(import, initializedProgs, fnEncodings, typeEncodings);
     } else {
       prog = &progsIter->second;
     }
 
-    prog->initContext(import, initializedProgs, fnEncodings, typeEncodings);
     ctx_->getCtxTree().addCtx(import, prog->ctx_);
   }
 
