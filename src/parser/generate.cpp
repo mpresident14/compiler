@@ -330,7 +330,8 @@ void replacePounds(
       string_view afterPound = ctor.substr(i);
       if (afterPound.starts_with(line)) {
         if (concrete.argSymbols.size() == 0) {
-          logger.logError(concrete.declLine, "#line cannot be used with empty rule");
+          logger.logError(
+              concrete.declLine, "#line cannot be used with empty rule");
         }
         out << "args[0].getLine()";
         i += sizeof(line) - 1;
@@ -473,7 +474,7 @@ void tokenizeFn(ostream& out) {
       }
 
 
-      vector<StackObj> tokenize(const string& input) {
+      vector<StackObj> tokenize(const string& input, const string& filename) {
         if (input.empty()) {
           return {};
         }
@@ -495,6 +496,9 @@ void tokenizeFn(ostream& out) {
                 tokens.cend(),
                 back_inserter(prevTokenNames),
                 [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.getSymbol())].name; });
+            if (!filename.empty()) {
+              error << filename << "\n:";
+            }
             error << "Lexer \033[1;31merror\033[0m on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
             throw ParseException(error.str());
@@ -512,7 +516,7 @@ void tokenizeFn(ostream& out) {
 
 void tokenizeFileFn(ostream& out) {
   out << R"(vector<StackObj> tokenize(istream& input) {
-        return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
+        return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}), "");
       }
     )";
 }
@@ -552,8 +556,9 @@ void ruleDataDecl(ostream& out) {
 
 void parseDecl(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
-  out << rootType << " parse(const std::string& input);" << rootType
-      << " parse(std::istream& input);";
+  out << rootType << " parseString(const std::string& input);" << rootType
+      << " parse(std::istream& input);"
+      << " parse(const std::string& filename);";
 }
 
 void parseExceptionDecl(ostream& out) {
@@ -655,10 +660,11 @@ void tryReduceFn(ostream& out) {
 }
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
-  out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {
+  out << gd.variables[1].type
+      << R"(shiftReduce(vector<StackObj>& inputTokens, const std::string& filename) {
         // vector<StackObj> stk;
         // if (inputTokens.empty()) {
-        //   parseError(stk, inputTokens, 0);
+        //   parseError(stk, inputTokens, 0, filename);
         // }
 
         // stk.push_back(move(inputTokens[0]));
@@ -681,7 +687,7 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
                   ? parser::root.get()
                   : dfaPath.back()->step(stk.back().getSymbol());
           if (currentNode == nullptr) {
-            parseError(stk, inputTokens, i);
+            parseError(stk, inputTokens, i, filename);
           }
           dfaPath.push_back(currentNode);
 
@@ -700,7 +706,7 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
             stk.push_back(move(newObj));
           } else {
             if (nextInputToken == NONE) {
-              parseError(stk, inputTokens, i);
+              parseError(stk, inputTokens, i, filename);
             }
             stk.push_back(move(inputTokens[i]));
             ++i;
@@ -716,16 +722,36 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
 void parseFn(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
   out << rootType << R"(
-      parse(const string& input) {
-        vector<StackObj> stackObjs = tokenize(input);
-        return shiftReduce(stackObjs);
+      parseString(const string& input, const string& filename) {
+        vector<StackObj> stackObjs = tokenize(input, filename);
+        return shiftReduce(stackObjs, filename);
+      }
+    )" << rootType << R"(
+      parseString(const string& input) {
+        parseString(input, "");
       }
     )" << rootType
       << R"(
-      parse(istream& input) {
+      parse(istream& input, const string& filename) {
         return parse(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
       }
-    )";
+    )" << rootType << R"(
+      parse(istream& input) {
+        return parse(input, "");
+      }
+    )" << rootType
+      << R"(
+      parse(const string& filename) {
+        ifstream input(filename);
+        if (!input.is_open) {
+          throw runtime_error(string("Could not open file ')
+              .append(filename)
+              .append("': ")
+              .append(strerror(errno)));
+        }
+        return parse(input, filename);
+      }
+    )"
 }
 
 /********
@@ -761,6 +787,7 @@ void cppIncludes(ostream& out) {
       #include <string_view>
       #include <unordered_map>
       #include <vector>
+      #include <string.h>
 
       #include <prez/print_stuff.hpp>
     )";
@@ -913,8 +940,8 @@ string lexerCppCode(
 
 void generateParserCode(
     const ParseInfo& parseInfo,
-    const ParseFlags& parseFlags, std::ostream& warnings) {
-
+    const ParseFlags& parseFlags,
+    std::ostream& warnings) {
   const string& parserFilePath = parseFlags.parserFilePath;
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string& namespaceName = thePair.first;
@@ -945,7 +972,6 @@ void generateLexerCode(
     const string& lexerFilePath,
     const string& addlCode,
     const GrammarData& gd) {
-
   auto thePair = getNamespaceAndGuard(lexerFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;
