@@ -1,5 +1,5 @@
 import "file.prez"
-import "import_test/file.prez"
+//import "import_test/file.prez"
 import "import_test/folder/subfolder/file.prez"
 import "import_test/folder2/subfolder/file.prez"
 import "import_test/other_file.prez"
@@ -12,7 +12,7 @@ void runprez() {
   printInt(file::func());
   printInt(import_test::file::func());
   printInt(other_file::otherFunc());
-  printInt(file::func(4));
+  printInt(file::func(n));
   printInt(import_test::file::func(4));
   printInt(func());
   printInt(folder::subfolder::file::func());

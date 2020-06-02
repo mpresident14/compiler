@@ -141,11 +141,15 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   switch (lhs_->getType()) {
     case ExprType::VAR: {
-      const Ctx::VarInfo& varInfo =
+      const Ctx::VarInfo* varInfo =
           ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
+      if (!varInfo) {
+        // Undefined variable
+        return;
+      }
       imStmts.emplace_back(new im::Assign(
-          make_unique<im::Temp>(varInfo.temp),
-          rhs_->toImExprAssert(*varInfo.type, ctx)));
+          make_unique<im::Temp>(varInfo->temp),
+          rhs_->toImExprAssert(*varInfo->type, ctx)));
       break;
     }
     case ExprType::ARRAY_ACCESS: {

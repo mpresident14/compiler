@@ -30,8 +30,12 @@ ExprInfo ConstBool::toImExpr(Ctx&) {
 Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
 
 ExprInfo Var::toImExpr(Ctx& ctx) {
-  const Ctx::VarInfo& varInfo = ctx.lookupVar(name_, line_);
-  return { make_unique<im::Temp>(varInfo.temp), varInfo.type };
+  const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
+  if (!varInfo) {
+    // Undefined variable, use a dummy and continue
+    return { make_unique<im::Temp>(newTemp()), anyType };
+  }
+  return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
 }
 
 /***********

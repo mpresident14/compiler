@@ -67,17 +67,17 @@ int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
 }
 
 
-const Ctx::VarInfo& Ctx::lookupVar(const string& name, size_t line) {
+const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
   auto iter = varMap.find(name);
   if (iter == varMap.end()) {
     // We can't really continue from this error
-    logger.logFatal(
+    logger.logError(
         line, string("Undefined variable \"").append(name).append("\""));
-    throw invalid_argument("");
+    return nullptr;
   }
   VarInfo& varInfo = iter->second;
   varInfo.used = true;
-  return varInfo;
+  return &varInfo;
 }
 
 
