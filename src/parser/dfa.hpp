@@ -132,23 +132,25 @@ public:
   }
 
   /* Add a transition to an existing or new node */
-  Node* addTransition(Node* node, T transition, V newNodeValue) {
-    // No duplicate or updated transitions
-    if (node->transitions_.contains(transition)) {
+  Node* addTransition(Node* node, const T& transition, const V& newNodeValue) {
+    auto transIterBool = node->transitions_.try_emplace(transition, nullptr);
+    if (!transIterBool.second) {
+      // No duplicate or updated transitions
       return nullptr;
     }
 
-    // If a node with this value already exists, just add a transition to the
-    // existing node
-    if (valueToNode_.contains(&newNodeValue)) {
-      Node* successor = valueToNode_.at(&newNodeValue);
-      node->transitions_.emplace(std::move(transition), successor);
+    auto nodeIter = valueToNode_.find(&newNodeValue);
+    if (nodeIter != valueToNode_.end()) {
+      // If a node with this value already exists, just add a transition to the
+      // existing node
+      Node* successor = nodeIter->second;
+      transIterBool.first->second = successor;
       return nullptr;
     }
 
     // Otherwise, create a new node
-    Node* newNode = new Node(std::move(newNodeValue));
-    node->transitions_.emplace(std::move(transition), newNode);
+    Node* newNode = new Node(newNodeValue);
+    transIterBool.first->second = newNode;
     valueToNode_.emplace(&newNode->value_, newNode);
     ++size_;
     return newNode;
@@ -302,7 +304,8 @@ private:
   Node* root_;
   // Allows us to check whether a node with some value exists in the
   // DFA and grab a pointer to it.
-  std::unordered_map<V*, Node*, VPtrHash, VPtrEquals> valueToNode_;
+  // TODO: Use is_transparet when clang/gcc implements it
+  std::unordered_map<const V*, Node*, VPtrHash, VPtrEquals> valueToNode_;
   // We don't use valueToNode_.size() because of the comment in convert.
   size_t size_;
 };
