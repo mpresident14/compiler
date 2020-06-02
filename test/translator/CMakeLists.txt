@@ -8,7 +8,7 @@ set(MY_TESTS "")
 set(MY_TEST_EXES "")
 
 
-function(success_test TEST_NAME EXPECTED_OUT EXTRA_DEPENDS)
+function(success_test TEST_NAME EXPECTED_OUT)
   set(ASM_FILE ${TEST_NAME})
   string(APPEND ASM_FILE ".s")
 
@@ -18,6 +18,14 @@ function(success_test TEST_NAME EXPECTED_OUT EXTRA_DEPENDS)
   set(EXE ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME})
   set(MY_TEST_EXES "${MY_TEST_EXES};${EXE}" PARENT_SCOPE)
   set(MY_TESTS "${MY_TESTS};${TEST_NAME}" PARENT_SCOPE)
+
+  if (${ARGC} EQUAL 3)
+    set(EXTRA_DEPENDS ${ARGV2})
+  endif()
+  # message(l/${ARGV0})
+  # message(l/${ARGV1})
+  # message(l/${ARGV2})
+  # message(l/${EXTRA_DEPENDS})
 
   add_custom_command(
     OUTPUT
@@ -66,18 +74,17 @@ endfunction()
 # For testing
 include(CTest)
 
-# success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-# success_test(comp_test "1,2,3,4,5,6,7,8,9")
-# success_test(while_test "15,120")
-# success_test(ternary_test "10,10")
-# success_test(function_test "1,2")
-# success_test(callee_save_test "9,9")
-# success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
-# success_test(array_test "0,1,1,2,3")
+success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
+success_test(comp_test "1,2,3,4,5,6,7,8,9")
+success_test(while_test "15,120")
+success_test(ternary_test "10,10")
+success_test(function_test "1,2")
+success_test(callee_save_test "9,9")
+success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
+success_test(array_test "0,1,1,2,3")
 
-file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*.prez)
-success_test(import_test "1,2,3,4,5,6" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
-message(h${IMPORT_TEST_SRCS})
+file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
+success_test(import_test "1,2,3,4,5,6,7" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
 
 # error_test(redef_test
 #     "('Error','2','Redefinition')

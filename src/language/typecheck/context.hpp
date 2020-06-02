@@ -5,6 +5,7 @@
 #include "src/language/typecheck/type.hpp"
 #include "src/misc/logger.hpp"
 
+#include <ostream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -63,6 +64,13 @@ public:
     std::unordered_map<std::string, NodePtr> roots_;
   };
 
+  static std::string qualifiedFn(
+      std::vector<std::string> qualifiers,
+      std::string_view fnName);
+  static void streamParamTypes(
+      const std::vector<TypePtr>& paramTypes,
+      std::ostream& err);
+
   Ctx(std::string_view filename,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
       std::shared_ptr<std::unordered_map<std::string, std::string>>
@@ -102,14 +110,18 @@ public:
           std::unordered_multimap<std::string, FnInfo>::iterator>>
   lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   void undefinedFn(
-      const std::pair<
-          std::unordered_multimap<std::string, FnInfo>::iterator,
-          std::unordered_multimap<std::string, FnInfo>::iterator>& candidates,
-      std::string_view searchedFile,
+      const std::vector<std::string>& qualifiers,
+      std::string_view fnName,
+      const std::vector<TypePtr>& paramTypes, size_t line);
+  void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
-      size_t line);
+      size_t line,
+      const std::pair<
+          std::unordered_multimap<std::string, FnInfo>::iterator,
+          std::unordered_multimap<std::string, FnInfo>::iterator>& candidates,
+      std::string_view searchedFile);
   /* Mangle all user functions based on the filename (non-user functions begin
    * with '_') Return empty if function doesn't need to be mangled */
   // TODO: remove the optional when we get rid of printInt and runprez

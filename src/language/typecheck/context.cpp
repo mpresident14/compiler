@@ -11,20 +11,26 @@
 
 using namespace std;
 
-
-namespace {
-  void streamParamTypes(const std::vector<TypePtr>& paramTypes, ostream& err) {
-    err << '(';
-    if (!paramTypes.empty()) {
-      for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
-          ++iter) {
-        err << **iter << ", ";
-      }
-      err << *paramTypes.back();
-    }
-    err << ')';
-  }
+std::string Ctx::qualifiedFn(
+    std::vector<std::string> qualifiers,
+    std::string_view fnName) {
+  return boost::join(qualifiers, "::").append("::").append(fnName);
 }
+
+void Ctx::streamParamTypes(
+    const std::vector<TypePtr>& paramTypes,
+    ostream& err) {
+  err << '(';
+  if (!paramTypes.empty()) {
+    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
+         ++iter) {
+      err << **iter << ", ";
+    }
+    err << *paramTypes.back();
+  }
+  err << ')';
+}
+
 
 Ctx::Ctx(
     string_view filename,
@@ -114,21 +120,14 @@ void Ctx::insertFn(
             fnParamTypes.cbegin(),
             fnParamTypes.cend())) {
       ostream& errStream = logger.logError(line);
-      errStream << "Redefinition of function \"" << name
-              << "\". Originally declared at " << fnInfo.declFile
-              << ", line " << fnInfo.line;
+      errStream << "Redefinition of function \"" << name;
+      Ctx::streamParamTypes(paramTypes, errStream);
+      errStream << "\". Originally declared at " << fnInfo.declFile
+                << ", line " << fnInfo.line;
       return;
     }
   }
   fnMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
-  // TODO
-  // if (!insertResult.second) {
-  //   auto& errStream = logger.logError(line);
-  //   // TODO: Output parameter types
-  //   errStream << "Redefinition of function \"" << name
-  //             << "\". Originally declared on line "
-  //             << insertResult.first->second.line;
-  // }
 }
 
 
@@ -165,25 +164,36 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     if (infoAndIters.first) {
       return infoAndIters.first;
     }
-    undefinedFn(infoAndIters.second, filename_, qualifiers, name, paramTypes, line);
+    undefinedFn(
+        qualifiers, name, paramTypes, line, infoAndIters.second, filename_);
   }
   return ctxTree_.lookupFn(qualifiers, name, paramTypes, *this, line);
 }
 
 
 void Ctx::undefinedFn(
-    const std::pair<
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>& candidates,
-    std::string_view searchedFile,
-    const vector<string>& qualifiers,
+    const std::vector<std::string>& qualifiers,
     std::string_view fnName,
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
-
   ostringstream err;
-  err << "Undefined function "
-      << boost::join(qualifiers, "::").append("::").append(fnName);
+  err << "Undefined function " << qualifiedFn(qualifiers, fnName);
+  streamParamTypes(paramTypes, err);
+  logger.logFatal(line, err.str());
+}
+
+void Ctx::undefinedFn(
+    const vector<string>& qualifiers,
+    std::string_view fnName,
+    const std::vector<TypePtr>& paramTypes,
+    size_t line,
+    const std::pair<
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>&
+        candidates,
+    std::string_view searchedFile) {
+  ostringstream err;
+  err << "Undefined function " << qualifiedFn(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
 
   if (candidates.first == candidates.second) {
@@ -192,7 +202,8 @@ void Ctx::undefinedFn(
     err << "\nCandidate functions in " << searchedFile << ":";
     for (auto iter = candidates.first; iter != candidates.second; ++iter) {
       const FnInfo& fnInfo = iter->second;
-      err << "\n\tLine " << fnInfo.line << ": " << *fnInfo.returnType << ' ' << fnName;
+      err << "\n\tLine " << fnInfo.line << ": " << *fnInfo.returnType << ' '
+          << fnName;
       streamParamTypes(fnInfo.paramTypes, err);
     }
   }

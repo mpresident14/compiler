@@ -1,10 +1,10 @@
 #include "src/language/typecheck/context.hpp"
 
-#include <stdexcept>
 #include <list>
+#include <stdexcept>
 
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 using namespace std;
 
@@ -80,7 +80,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     filepath.push_front(part);
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
-      return nullptr;
+      ctx.undefinedFn(qualifiers, name, paramTypes, line);
     }
 
     child = iter->second.get();
@@ -101,14 +101,31 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
         return infoAndIters.first;
       } else {
         string searchedFile = boost::join(filepath, "/").append(".prez");
-        ctx.undefinedFn(infoAndIters.second, searchedFile, qualifiers, name, paramTypes, line);
+        ctx.undefinedFn(
+            qualifiers,
+            name,
+            paramTypes,
+            line,
+            infoAndIters.second,
+            searchedFile);
       }
     }
 
     currentMap = &child->children;
-    if (currentMap->size() != 1) {
-      // TODO: Ambiguous qualifier
-      return nullptr;
+    if (currentMap->empty()) {
+      throw runtime_error("Ctx::CtxTree::lookupFn::empty");
+    }
+    if (currentMap->size() > 1) {
+      ostringstream err;
+      string quals = boost::join(qualifiers, "::");
+      string path = boost::join(filepath, "::");
+      err << "Ambiguous qualifier for function \"" << quals << "::" << name;
+      Ctx::streamParamTypes(paramTypes, err);
+      err << "\". Found";
+      for (const auto& [part, _] : *currentMap) {
+        err << "\n\t" << part << "::" << path;
+      }
+      ctx.getLogger().logFatal(line, err.str());
     }
 
     const auto iter = currentMap->cbegin();
