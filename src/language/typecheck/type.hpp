@@ -17,7 +17,8 @@
 
 constexpr size_t OBJ_SIZE = 8;
 
-enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS };
+/* ANY used to proceed through errors */
+enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
   virtual ~Type(){}
@@ -59,5 +60,6 @@ std::ostream& operator<<(std::ostream& out, const Type& type);
 const TypePtr intType = std::make_shared<Type>(TypeName::INT);
 const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL);
 const TypePtr voidType = std::make_shared<Type>(TypeName::VOID);
+const TypePtr anyType = std::make_shared<Type>(TypeName::ANY);
 
 #endif  // TYPE_HPP

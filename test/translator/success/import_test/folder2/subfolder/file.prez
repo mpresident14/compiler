@@ -1,0 +1,7 @@
+int func() {
+  return 2;
+}
+
+int func(int n) {
+  return n + 1;
+}

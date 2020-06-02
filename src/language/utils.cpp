@@ -14,7 +14,7 @@ string newLabel() {
 }
 
 
-tuple<string, vector<im::ExprPtr>, TypePtr> argsToImExprs(
+optional<tuple<string, vector<im::ExprPtr>, TypePtr>> argsToImExprs(
     const vector<string>& qualifiers,
     const string& fnName,
     const vector<ExprPtr>& params,
@@ -32,12 +32,11 @@ tuple<string, vector<im::ExprPtr>, TypePtr> argsToImExprs(
   }
 
   const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, fnName, paramTypes, line);
-  // TODO: Continue on failed lookup
-  // if (!fnInfo) {
-  //   ctx.undefinedFn(qualifiers, fnName, paramTypes, line);
-  // }
+  if (!fnInfo) {
+    return {};
+  }
 
-  return { ctx.mangleFn(fnName, fnInfo->declFile, paramTypes), move(paramImExprs), fnInfo->returnType };
+  return {{ ctx.mangleFn(fnName, fnInfo->declFile, paramTypes), move(paramImExprs), fnInfo->returnType }};
 }
 
 }  // namespace language

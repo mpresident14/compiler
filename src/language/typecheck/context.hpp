@@ -102,7 +102,9 @@ public:
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       size_t line);
-  /* Only searches this context, nullptr if it doesn't exist */
+  /* Only searches this context, nullptr if it doesn't exist
+   * Also returns the candidate functions with this name via
+   * an iterator range */
   std::pair<
       const FnInfo*,
       std::pair<

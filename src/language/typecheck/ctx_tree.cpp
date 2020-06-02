@@ -81,6 +81,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
       ctx.undefinedFn(qualifiers, name, paramTypes, line);
+      return nullptr;
     }
 
     child = iter->second.get();
@@ -108,6 +109,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
             line,
             infoAndIters.second,
             searchedFile);
+        return nullptr;
       }
     }
 
@@ -116,7 +118,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
       throw runtime_error("Ctx::CtxTree::lookupFn::empty");
     }
     if (currentMap->size() > 1) {
-      ostringstream err;
+      ostream& err = ctx.getLogger().logError(line);
       string quals = boost::join(qualifiers, "::");
       string path = boost::join(filepath, "::");
       err << "Ambiguous qualifier for function \"" << quals << "::" << name;
@@ -125,7 +127,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
       for (const auto& [part, _] : *currentMap) {
         err << "\n\t" << part << "::" << path;
       }
-      ctx.getLogger().logFatal(line, err.str());
+      return nullptr;
     }
 
     const auto iter = currentMap->cbegin();

@@ -166,6 +166,7 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     }
     undefinedFn(
         qualifiers, name, paramTypes, line, infoAndIters.second, filename_);
+    return nullptr;
   }
   return ctxTree_.lookupFn(qualifiers, name, paramTypes, *this, line);
 }
@@ -176,10 +177,10 @@ void Ctx::undefinedFn(
     std::string_view fnName,
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
-  ostringstream err;
+  ostream& err = logger.logError(line);
   err << "Undefined function " << qualifiedFn(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
-  logger.logFatal(line, err.str());
+  err << ". No imported file matches qualifiers.";
 }
 
 void Ctx::undefinedFn(
@@ -192,7 +193,7 @@ void Ctx::undefinedFn(
         std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>&
         candidates,
     std::string_view searchedFile) {
-  ostringstream err;
+  ostream& err = logger.logError(line);
   err << "Undefined function " << qualifiedFn(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
 
@@ -207,8 +208,6 @@ void Ctx::undefinedFn(
       streamParamTypes(fnInfo.paramTypes, err);
     }
   }
-
-  logger.logFatal(line, err.str());
 }
 
 

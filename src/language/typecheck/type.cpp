@@ -12,6 +12,7 @@ std::string Type::encode(
     case TypeName::INT: return "i";
     case TypeName::BOOL: return "b";
     case TypeName::VOID: return "v";
+    case TypeName::ANY: return "x";
     default: throw invalid_argument("Type::encode");
   }
 }
@@ -29,6 +30,10 @@ std::string Class::encode(
 
 
 bool operator==(const Type& t1, const Type& t2) noexcept {
+  if (t1.typeName == TypeName::ANY || t2.typeName == TypeName::ANY) {
+    return true;
+  }
+
   if (t1.typeName == t2.typeName) {
     switch (t1.typeName) {
       case TypeName::ARRAY:
@@ -64,6 +69,9 @@ ostream& operator<<(ostream& out, const Type& type) {
       break;
     case TypeName::CLASS:
       out << static_cast<const Class&>(type).className;
+      break;
+    case TypeName::ANY:
+      out << "any";
       break;
     default:
       throw invalid_argument("Type::operator<<");

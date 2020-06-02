@@ -414,7 +414,7 @@ private:
 
 
 std::string newLabel();
-std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
+std::optional<std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr>> argsToImExprs(
     const std::vector<std::string>& qualifiers,
     const std::string& fnName,
     const std::vector<ExprPtr>& params,
