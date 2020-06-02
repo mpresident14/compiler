@@ -59,6 +59,7 @@ void Logger::streamLog(std::ostream& out) const {
   for (const std::ostringstream& stream : logs_) {
     out << stream.str() << '\n';
   }
+  out << '\n';
 }
 
 void Logger::logFatal(size_t line, std::string_view msg) {

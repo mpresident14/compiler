@@ -103,57 +103,85 @@ void Ctx::insertFn(
 }
 
 
-const Ctx::FnInfo* Ctx::lookupFn(
-    const string& name,
-    const std::vector<TypePtr>& paramTypes) {
+pair<
+    const Ctx::FnInfo*,
+    std::pair<
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>>
+Ctx::lookupFn(const string& name, const std::vector<TypePtr>& paramTypes) {
   auto iterPair = fnMap.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
-    const vector<TypePtr> fnParamTypes = iter->second.paramTypes;
+    const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
     if (equal(
             paramTypes.cbegin(),
             paramTypes.cend(),
             fnParamTypes.cbegin(),
             fnParamTypes.cend())) {
-      return &iter->second;
+      return { &iter->second, move(iterPair) };
     }
   }
 
-  return nullptr;
+  return { nullptr, move(iterPair) };
 }
 
 // TODO: Allow "from <file> import <function/class>""
 const Ctx::FnInfo* Ctx::lookupFnRec(
     const std::vector<std::string>& qualifiers,
     const std::string& name,
-    const std::vector<TypePtr>& paramTypes) {
+    const std::vector<TypePtr>& paramTypes,
+    size_t line) {
   if (qualifiers.empty()) {
     // If no qualifiers we only try our own context
-    const Ctx::FnInfo* fnInfo = lookupFn(name, paramTypes);
-    return fnInfo;
+    auto infoAndIters = lookupFn(name, paramTypes);
+    if (infoAndIters.first) {
+      return infoAndIters.first;
+    }
+    undefinedFn(infoAndIters.second, filename_, qualifiers, name, paramTypes, line);
   }
-
-  const Ctx::FnInfo* fnInfo = ctxTree_.lookupFn(qualifiers, name, paramTypes);
-  return fnInfo;
+  return ctxTree_.lookupFn(qualifiers, name, paramTypes, *this, line);
 }
 
 
-// TODO: Show parameters, possibly suggest alternatives
+namespace {
+  void streamParamTypes(const std::vector<TypePtr>& paramTypes, ostream& err) {
+    err << '(';
+    if (!paramTypes.empty()) {
+      for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
+          ++iter) {
+        err << **iter << ", ";
+      }
+      err << *paramTypes.back();
+    }
+    err << ')';
+  }
+}
+
+
 void Ctx::undefinedFn(
+    const std::pair<
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
+        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>& candidates,
+    std::string_view searchedFile,
     const vector<string>& qualifiers,
-    const string& fnName,
+    std::string_view fnName,
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
+
   ostringstream err;
   err << "Undefined function "
-      << boost::join(qualifiers, "::").append("::").append(fnName) << '(';
-  if (!paramTypes.empty()) {
-    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
-         ++iter) {
-      err << **iter << ',';
+      << boost::join(qualifiers, "::").append("::").append(fnName);
+  streamParamTypes(paramTypes, err);
+
+  if (candidates.first == candidates.second) {
+    err << "\nNo candidate functions in " << searchedFile;
+  } else {
+    err << "\nCandidate functions in " << searchedFile << ":";
+    for (auto iter = candidates.first; iter != candidates.second; ++iter) {
+      const FnInfo& fnInfo = iter->second;
+      err << "\n\tLine " << fnInfo.line << ": " << *fnInfo.returnType << ' ' << fnName;
+      streamParamTypes(fnInfo.paramTypes, err);
     }
-    err << *paramTypes.back();
   }
-  err << ')';
 
   logger.logFatal(line, err.str());
 }

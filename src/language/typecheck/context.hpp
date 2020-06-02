@@ -53,7 +53,9 @@ public:
     const Ctx::FnInfo* lookupFn(
         const std::vector<std::string> qualifiers,
         const std::string& name,
-        const std::vector<TypePtr>& paramTypes) const;
+        const std::vector<TypePtr>& paramTypes,
+        Ctx& ctx,
+        size_t line) const;
 
   private:
     /* The roots specify .prez files that were imported
@@ -86,18 +88,26 @@ public:
       const std::vector<TypePtr>& paramTypes,
       TypePtr returnType,
       size_t line);
-  /* Only searches this context, nullptr if it doesn't exist */
-  const FnInfo* lookupFn(
-      const std::string& name,
-      const std::vector<TypePtr>& paramTypes);
-  /* Also searches context tree */
+  /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
       const std::string& name,
-      const std::vector<TypePtr>& paramTypes);
+      const std::vector<TypePtr>& paramTypes,
+      size_t line);
+  /* Only searches this context, nullptr if it doesn't exist */
+  std::pair<
+      const FnInfo*,
+      std::pair<
+          std::unordered_multimap<std::string, FnInfo>::iterator,
+          std::unordered_multimap<std::string, FnInfo>::iterator>>
+  lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   void undefinedFn(
+      const std::pair<
+          std::unordered_multimap<std::string, FnInfo>::iterator,
+          std::unordered_multimap<std::string, FnInfo>::iterator>& candidates,
+      std::string_view searchedFile,
       const std::vector<std::string>& qualifiers,
-      const std::string& fnName,
+      std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
       size_t line);
   /* Mangle all user functions based on the filename (non-user functions begin

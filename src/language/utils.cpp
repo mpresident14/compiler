@@ -31,10 +31,11 @@ tuple<string, vector<im::ExprPtr>, TypePtr> argsToImExprs(
     paramTypes.push_back(move(exprInfo.type));
   }
 
-  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, fnName, paramTypes);
-  if (!fnInfo) {
-    ctx.undefinedFn(qualifiers, fnName, paramTypes, line);
-  }
+  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, fnName, paramTypes, line);
+  // TODO: Continue on failed lookup
+  // if (!fnInfo) {
+  //   ctx.undefinedFn(qualifiers, fnName, paramTypes, line);
+  // }
 
   return { ctx.mangleFn(fnName, fnInfo->declFile, paramTypes), move(paramImExprs), fnInfo->returnType };
 }

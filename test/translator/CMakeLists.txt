@@ -8,7 +8,7 @@ set(MY_TESTS "")
 set(MY_TEST_EXES "")
 
 
-function(success_test TEST_NAME EXPECTED_OUT)
+function(success_test TEST_NAME EXPECTED_OUT EXTRA_DEPENDS)
   set(ASM_FILE ${TEST_NAME})
   string(APPEND ASM_FILE ".s")
 
@@ -33,7 +33,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${GEN_DIR}/${ASM_FILE}
         ${SRC}/main/runtime.c
         ${SRC}/main/syscall.s
-    DEPENDS main ${SRC}/main/syscall.s ${SRC}/main/runtime.c ${SUCCESS_DIR}/${SRC_FILE})
+    DEPENDS main ${SRC}/main/syscall.s ${SRC}/main/runtime.c ${SUCCESS_DIR}/${SRC_FILE} ${EXTRA_DEPENDS})
 
   add_test(
       NAME ${TEST_NAME}
@@ -74,7 +74,10 @@ include(CTest)
 # success_test(callee_save_test "9,9")
 # success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
 # success_test(array_test "0,1,1,2,3")
-success_test(import_test "1,2,3,4,5,6")
+
+file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*.prez)
+success_test(import_test "1,2,3,4,5,6" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
+message(h${IMPORT_TEST_SRCS})
 
 # error_test(redef_test
 #     "('Error','2','Redefinition')
@@ -113,6 +116,7 @@ set_tests_properties(
     PROPERTIES
       PASS_REGULAR_EXPRESSION "Pass!"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 
 # Remove generated files on make clean
 file(GLOB GENFILES LIST_DIRECTORIES false "${GEN_DIR}/*")

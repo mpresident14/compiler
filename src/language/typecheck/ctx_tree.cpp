@@ -1,8 +1,10 @@
 #include "src/language/typecheck/context.hpp"
 
 #include <stdexcept>
+#include <list>
 
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 using namespace std;
 
@@ -61,7 +63,10 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
 const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
-    const std::vector<TypePtr>& paramTypes) const {
+    const std::vector<TypePtr>& paramTypes,
+    Ctx& ctx,
+    size_t line) const {
+  list<string> filepath;
   // TODO: Remove when done
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupFn");
@@ -72,6 +77,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
   for (auto revIter = qualifiers.crbegin(); revIter != qualifiers.crend();
        ++revIter) {
     const string& part = *revIter;
+    filepath.push_front(part);
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
       return nullptr;
@@ -90,14 +96,24 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     // - a Node with not exactly 1 child (can't resolve qualifiers)
     const CtxPtr& maybeCtx = child->ctx;
     if (maybeCtx) {
-      return maybeCtx->lookupFn(name, paramTypes);
+      auto infoAndIters = maybeCtx->lookupFn(name, paramTypes);
+      if (infoAndIters.first) {
+        return infoAndIters.first;
+      } else {
+        string searchedFile = boost::join(filepath, "/").append(".prez");
+        ctx.undefinedFn(infoAndIters.second, searchedFile, qualifiers, name, paramTypes, line);
+      }
     }
 
     currentMap = &child->children;
     if (currentMap->size() != 1) {
+      // TODO: Ambiguous qualifier
       return nullptr;
     }
 
-    child = currentMap->cbegin()->second.get();
+    const auto iter = currentMap->cbegin();
+    const string& part = iter->first;
+    filepath.push_front(part);
+    child = iter->second.get();
   } while (true);
 }
