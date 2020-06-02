@@ -5,6 +5,7 @@
 #include "src/language/language.hpp"
 #include "src/main/parser.hpp"
 #include "src/language/typecheck/context.hpp"
+#include "src/language/typecheck/type.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -20,7 +21,9 @@ using namespace std;
 
 /* Return true if no errors */
 bool compile(string_view srcFilename, string_view asmFilename) {
-  unordered_map<std::string, language::Program> initializedProgs;
+  unordered_map<string, language::Program> initializedProgs;
+  shared_ptr<unordered_map<string, std::string>> fnEncodings = make_shared<unordered_map<string, std::string>>();
+  shared_ptr<unordered_map<string, std::string>> typeEncodings = make_shared<unordered_map<string, std::string>>();
   Logger logger;
   bool hasErr = false;
   try {
@@ -35,7 +38,7 @@ bool compile(string_view srcFilename, string_view asmFilename) {
     // Convert to assembly
     vector<assem::Program> assemProgs;
     // Recursively record all declarations
-    iter->second.initContext(srcFilename, initializedProgs);
+    iter->second.initContext(srcFilename, initializedProgs, move(fnEncodings), move(typeEncodings));
     for (const auto& [filename, prog] : initializedProgs) {
       assemProgs.push_back(prog.toAssemProg());
       // Print any warnings or non-fatal errors

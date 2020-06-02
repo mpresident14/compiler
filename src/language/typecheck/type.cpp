@@ -1,17 +1,42 @@
 #include "src/language/typecheck/type.hpp"
+
 #include "src/language/typecheck/context.hpp"
 
 #include <sstream>
 
 using namespace std;
 
+std::string Type::encode(
+    const std::unordered_map<std::string, std::string>&) const {
+  switch (typeName) {
+    case TypeName::INT: return "i";
+    case TypeName::BOOL: return "b";
+    case TypeName::VOID: return "v";
+    default: throw invalid_argument("Type::encode");
+  }
+}
+
+std::string Array::encode(
+    const std::unordered_map<std::string, std::string>& typeEncodings) const {
+
+  return string("a_").append(arrType->encode(typeEncodings));
+}
+
+std::string Class::encode(
+    const std::unordered_map<std::string, std::string>& typeEncodings) const  {
+  return typeEncodings.at(className);
+}
+
+
 bool operator==(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == t2.typeName) {
     switch (t1.typeName) {
       case TypeName::ARRAY:
-        return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
+        return static_cast<const Array&>(t1).arrType ==
+               static_cast<const Array&>(t2).arrType;
       case TypeName::CLASS:
-        return static_cast<const Class&>(t1).className == static_cast<const Class&>(t2).className;
+        return static_cast<const Class&>(t1).className ==
+               static_cast<const Class&>(t2).className;
       default:
         return true;
     }
@@ -40,7 +65,8 @@ ostream& operator<<(ostream& out, const Type& type) {
     case TypeName::CLASS:
       out << static_cast<const Class&>(type).className;
       break;
-    default: throw invalid_argument("Type::operator<<");
+    default:
+      throw invalid_argument("Type::operator<<");
   }
   return out;
 }

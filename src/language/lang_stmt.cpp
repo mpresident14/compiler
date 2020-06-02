@@ -110,19 +110,19 @@ Return::Return(optional<ExprPtr>&& retValue, size_t line)
     : Stmt(line), retValue_(move(retValue)) {}
 
 void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  const TypePtr& retType = ctx.lookupFn(ctx.getCurrentFn(), line_).returnType;
+  const Type& retType = ctx.getCurrentRetType();
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
-    if (retType->typeName != TypeName::VOID) {
+    if (retType.typeName != TypeName::VOID) {
       ostringstream& err = ctx.getLogger().logError(line_);
-      err << "Function has return type " << *retType << " but may return void.";
+      err << "Function has return type " << retType << " but may return void.";
     }
     imStmts.emplace_back(new im::ReturnStmt(nullptr));
   } else {
     // Make sure the function return type matches and translate the returned
     // expression
     imStmts.emplace_back(
-        new im::ReturnStmt((*retValue_)->toImExprAssert(*retType, ctx)));
+        new im::ReturnStmt((*retValue_)->toImExprAssert(retType, ctx)));
   }
 }
 

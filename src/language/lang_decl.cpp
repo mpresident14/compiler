@@ -19,9 +19,11 @@ Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
 
 void Program::initContext(
     string_view filename,
-    std::unordered_map<std::string, Program>& initializedProgs) {
+    unordered_map<string, Program>& initializedProgs,
+    shared_ptr<unordered_map<string, std::string>> fnEncodings,
+    shared_ptr<unordered_map<string, std::string>> typeEncodings) {
   // Create a new context
-  ctx_ = make_shared<Ctx>(filename);
+  ctx_ = make_shared<Ctx>(filename, fnEncodings, typeEncodings);
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -38,7 +40,7 @@ void Program::initContext(
       prog = &progsIter->second;
     }
 
-    prog->initContext(import, initializedProgs);
+    prog->initContext(import, initializedProgs, fnEncodings, typeEncodings);
     ctx_->getCtxTree().addCtx(import, prog->ctx_);
   }
 
@@ -83,14 +85,16 @@ Func::Func(
 }
 
 
-void Func::addToContext(Ctx& ctx) const {
-  ctx.insertFn(name_, paramTypes_, returnType_, line_);
+void Func::addToContext(Ctx& ctx) {
+  mangledName_ = ctx.mangleWithParams(name_, paramTypes_);
+  const string& lookupName = mangledName_ ? *mangledName_ : name_;
+  ctx.insertFn(name_, lookupName, paramTypes_, returnType_, line_);
 }
 
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   checkForReturn(ctx);
-  ctx.setCurrentFn(name_);
+  ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts;
 
   // Insert all the parameters as variables
@@ -108,11 +112,10 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Remove all parameters
   ctx.removeParams(paramNames_, line_);
 
-  if (optional<string> newFnName = mangleFnName(name_, ctx.getFilename())) {
-    imDecls.emplace_back(new im::Func(move(*newFnName), move(imStmts)));
-  } else {
-    imDecls.emplace_back(new im::Func(name_, move(imStmts)));
-  }
+  const string& lookupName =
+      mangledName_ ? ctx.mangleWithFile(*mangledName_, ctx.getFilename())
+                   : name_;
+  imDecls.emplace_back(new im::Func(lookupName, move(imStmts)));
 }
 
 void Func::checkForReturn(Ctx& ctx) {

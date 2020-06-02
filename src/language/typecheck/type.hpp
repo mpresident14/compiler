@@ -4,7 +4,9 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 
 /********
  * Type *
@@ -18,23 +20,32 @@ constexpr size_t OBJ_SIZE = 8;
 enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS };
 
 struct Type {
+  virtual ~Type(){}
   Type(TypeName name) : typeName(name) {}
+  virtual std::string encode(
+      const std::unordered_map<std::string, std::string>& typeEncodings) const;
+
   TypeName typeName;
 };
 
-// TODO: Shared pointer might make more sense, especially when we have more complicated
-// types like templates cuz we have a lot of copying
+// TODO: Shared pointer might make more sense, especially when we have more
+// complicated types like templates cuz we have a lot of copying
 using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
-  Array(TypePtr type)
-      : Type{ TypeName::ARRAY }, arrType(type) {}
+  Array(TypePtr type) : Type{ TypeName::ARRAY }, arrType(type) {}
+  virtual std::string encode(
+      const std::unordered_map<std::string, std::string>& typeEncodings) const
+      override;
 
   TypePtr arrType;
 };
 
 struct Class : public Type {
   Class(std::string_view name) : Type{ TypeName::CLASS }, className(name) {}
+  virtual std::string encode(
+      const std::unordered_map<std::string, std::string>& typeEncodings) const
+      override;
 
   std::string className;
 };

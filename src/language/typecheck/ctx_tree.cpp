@@ -58,11 +58,9 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
 }
 
 
-const Ctx::FnInfo& Ctx::CtxTree::lookupFn(
+const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
-    const string& name,
-    size_t line,
-    Ctx& logCtx) const {
+    const string& mangledName) const {
   // TODO: Remove when done
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupFn");
@@ -75,8 +73,7 @@ const Ctx::FnInfo& Ctx::CtxTree::lookupFn(
     const string& part = *revIter;
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
-      // Throws
-      logCtx.undefinedFn(qualifiers, name, line);
+      return nullptr;
     }
 
     child = iter->second.get();
@@ -92,22 +89,12 @@ const Ctx::FnInfo& Ctx::CtxTree::lookupFn(
     // - a Node with not exactly 1 child (can't resolve qualifiers)
     const CtxPtr& maybeCtx = child->ctx;
     if (maybeCtx) {
-      const Ctx::FnInfo* fnInfo = maybeCtx->lookupFn(name);
-      if (fnInfo) {
-        return *fnInfo;
-      }
-      // TODO: I think we should allow resolution to keep searching if the
-      // function wasn't found in this context (e.g., if I have file.prez
-      // and folder/file.prez and I call file::func(), but func() is only
-      // in folder/file.prez, this should still resolve)
-      // Throws
-      logCtx.undefinedFn(qualifiers, name, line);
+      return maybeCtx->lookupFn(mangledName);
     }
 
     currentMap = &child->children;
     if (currentMap->size() != 1) {
-      // Throws
-      logCtx.undefinedFn(qualifiers, name, line);
+      return nullptr;
     }
 
     child = currentMap->cbegin()->second.get();

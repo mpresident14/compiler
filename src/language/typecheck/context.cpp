@@ -11,17 +11,24 @@
 using namespace std;
 
 
-Ctx::Ctx(string_view filename) : filename_(filename), logger(filename) {}
+Ctx::Ctx(
+    string_view filename,
+    std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
+    std::shared_ptr<std::unordered_map<std::string, std::string>> typeEncodings)
+    : filename_(filename),
+      logger(filename),
+      fnEncodings_(fnEncodings),
+      typeEncodings_(typeEncodings) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
 Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 
-const string& Ctx::getCurrentFn() const noexcept { return currentFn; }
+const std::string& Ctx::getFilename() const noexcept { return filename_; }
 
-void Ctx::setCurrentFn(string_view fnName) { currentFn = fnName; }
+const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
-const string& Ctx::getFilename() const noexcept { return filename_; }
+void Ctx::setCurrentRetType(TypePtr type) noexcept { currentRetType_ = move(type); }
 
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
@@ -76,62 +83,91 @@ void Ctx::removeTemp(const string& var, size_t line) {
 
 
 void Ctx::insertFn(
-    string_view name,
+    std::string_view name,
+    string_view mangledName,
     const std::vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
   auto insertResult = fnMap.emplace(
-      name, FnInfo{ paramTypes, move(returnType), filename_, line });
+      mangledName, FnInfo{ paramTypes, move(returnType), filename_, line });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
+    // TODO: Output parameter types
     errStream << "Redefinition of function \"" << name
               << "\". Originally declared on line "
               << insertResult.first->second.line;
   }
 }
 
-// TODO: Handle function overloads (maybe by giving them different names
-// depending on params)
-const Ctx::FnInfo* Ctx::lookupFn(const string& name) {
-  auto iter = fnMap.find(name);
+
+const Ctx::FnInfo* Ctx::lookupFn(const string& mangledName) {
+  auto iter = fnMap.find(mangledName);
   if (iter == fnMap.end()) {
     return nullptr;
   }
   return &iter->second;
 }
 
-const Ctx ::  FnInfo& Ctx::lookupFn(const std::string& name, size_t line) {
-  const Ctx::FnInfo* fnInfo = lookupFn(name);
-  if (!fnInfo) {
-    undefinedFn({}, name, line);
-  }
-  return *fnInfo;
-}
 
-
-const Ctx::FnInfo& Ctx::lookupFnRec(
-    const std::vector<std::string> qualifiers,
-    const std::string& name,
-    size_t line) {
+// TODO: Allow "from <file> import <function/class>""
+const Ctx::FnInfo* Ctx::lookupFnRec(
+    const std::vector<std::string>& qualifiers,
+    const std::string& mangledName) {
   if (qualifiers.empty()) {
     // If no qualifiers we only try our own context
-    const Ctx::FnInfo* fnInfo = lookupFn(name);
-    if (!fnInfo) {
-      undefinedFn(qualifiers, name, line);
-    }
-    return *fnInfo;
+    const Ctx::FnInfo* fnInfo = lookupFn(mangledName);
+    return fnInfo;
   }
-  return ctxTree_.lookupFn(qualifiers, name, line, *this);
+
+  const Ctx::FnInfo* fnInfo = ctxTree_.lookupFn(qualifiers, mangledName);
+  return fnInfo;
 }
 
 
+// TODO: Show parameters, possibly suggest alternatives
 void Ctx::undefinedFn(
-    const vector<string> qualifiers,
+    const vector<string>& qualifiers,
     const string& fnName,
+    const std::vector<TypePtr>& paramTypes,
     size_t line) {
-  string fullFn = boost::join(qualifiers, "::").append("::").append(fnName);
-  logger.logFatal(line, "Undefined function " + fullFn);
+  ostringstream err;
+  err << "Undefined function "
+      << boost::join(qualifiers, "::").append("::").append(fnName)
+      << '(';
+  if (!paramTypes.empty()) {
+    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend()); ++iter) {
+      err << **iter << ',';
+    }
+    err << *paramTypes.back();
+  }
+  err << ')';
+
+  logger.logFatal(line, err.str());
 }
+
+
+optional<string> Ctx::mangleWithParams(string_view fnName, const std::vector<TypePtr>& paramTypes) {
+  // TODO: Remove runPrez and printInt when applicable
+  if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
+    return {};
+  }
+
+  string newName = string("_").append(fnName);
+  for (const TypePtr& type : paramTypes) {
+    newName.append(type->encode(*typeEncodings_)).push_back('_');
+  }
+  return { newName };
+}
+
+// TODO: Use file encodings
+string Ctx::mangleWithFile(string_view fnName, string_view filename) {
+  string newName = string("_").append(fnName);
+  filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
+  newName.append(filename).push_back('_');
+  replace(newName.begin(), newName.end(), '/', '_');
+  return newName;
+}
+
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

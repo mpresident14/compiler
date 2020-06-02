@@ -7,12 +7,12 @@
 #include "src/language/typecheck/type.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
-#include <utility>
 #include <tuple>
-#include <optional>
+#include <utility>
+#include <vector>
 
 namespace language {
 
@@ -22,7 +22,7 @@ public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&, Ctx&) = 0;
-  virtual void addToContext(Ctx& ctx) const  = 0;
+  virtual void addToContext(Ctx& ctx) = 0;
   constexpr size_t getLine() const noexcept { return line_; }
 
 protected:
@@ -76,7 +76,8 @@ public:
   virtual void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx);
+      assem::Label* ifFalse,
+      Ctx& ctx);
 
   im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx);
   constexpr size_t getLine() const noexcept { return line_; }
@@ -100,7 +101,9 @@ public:
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
-      std::unordered_map<std::string, Program>& initializedProgs);
+      std::unordered_map<std::string, Program>& initializedProgs,
+      std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
+      std::shared_ptr<std::unordered_map<std::string, std::string>> typeEncodings);
   const Ctx& getCtx() const noexcept { return *ctx_; }
 
 private:
@@ -122,13 +125,14 @@ public:
       std::unique_ptr<Block>&& body,
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
-  void addToContext(Ctx& ctx) const override;
+  void addToContext(Ctx& ctx) override;
   /* Check if for no return at end of function and handle accordingly */
   void checkForReturn(Ctx& ctx);
 
 private:
   TypePtr returnType_;
   std::string name_;
+  std::optional<std::string> mangledName_;
   std::vector<TypePtr> paramTypes_;
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
@@ -178,7 +182,11 @@ private:
 class CallExpr;
 class CallStmt : public Stmt {
 public:
-  CallStmt(std::vector<std::string>&& qualifiers, std::string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallStmt(
+      std::vector<std::string>&& qualifiers,
+      std::string_view name,
+      std::vector<ExprPtr>&& params,
+      size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
 
 private:
@@ -296,7 +304,8 @@ public:
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx) override;
+      assem::Label* ifFalse,
+      Ctx& ctx) override;
 
 private:
   ExprPtr e_;
@@ -313,7 +322,8 @@ public:
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx) override;
+      assem::Label* ifFalse,
+      Ctx& ctx) override;
 
   const ExprPtr& getExpr1() const noexcept { return e1_; }
   const ExprPtr& getExpr2() const noexcept { return e2_; }
@@ -325,19 +335,23 @@ private:
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      im::ROp rOp, Ctx& ctx);
+      im::ROp rOp,
+      Ctx& ctx);
   void asBoolAnd(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx);
+      assem::Label* ifFalse,
+      Ctx& ctx);
   void asBoolOr(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx);
+      assem::Label* ifFalse,
+      Ctx& ctx);
   void asBoolXor(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
-      assem::Label* ifFalse, Ctx& ctx);
+      assem::Label* ifFalse,
+      Ctx& ctx);
 
   ExprPtr e1_;
   ExprPtr e2_;
@@ -360,7 +374,11 @@ private:
 
 class CallExpr : public Expr {
 public:
-  CallExpr(std::vector<std::string>&& qualifiers, std::string_view name, std::vector<ExprPtr>&& params, size_t line);
+  CallExpr(
+      std::vector<std::string>&& qualifiers,
+      std::string_view name,
+      std::vector<ExprPtr>&& params,
+      size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr(Ctx& ctx) override;
 
@@ -396,14 +414,12 @@ private:
 
 
 std::string newLabel();
-/* Mangle all user functions based on the filename (non-user functions begin with '_')
- * Return empty if function doesn't need to be mangled */
-std::optional<std::string> mangleFnName(std::string_view fnName, std::string_view filename);
 std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr> argsToImExprs(
     const std::vector<std::string>& qualifiers,
     const std::string& fnName,
     const std::vector<ExprPtr>& params,
-    size_t line, Ctx& ctx);
+    size_t line,
+    Ctx& ctx);
 
 }  // namespace language
 
