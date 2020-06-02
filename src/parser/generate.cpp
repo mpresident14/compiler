@@ -385,7 +385,7 @@ void constructFn(ostream& out) {
 }
 
 void constructTokenObjFn(ostream& out, const GrammarData& gd) {
-  out << R"(optional<StackObj> constructTokenObj(int token, string_view str) {
+  out << R"(optional<StackObj> constructTokenObj(int token, string_view str, size_t currentLine) {
       switch (token) {)";
   size_t numTokens = gd.tokens.size();
   for (size_t i = 0; i < numTokens; ++i) {
@@ -430,11 +430,9 @@ void parserDFA(
  * LEXING *
  **********/
 
-void currentLineDecl(ostream& out) { out << "static size_t currentLine = 1;"; }
-
 void tokenizeFn(ostream& out) {
   out << R"(
-      optional<StackObj> getToken(string_view& input, bool& err) {
+      optional<StackObj> getToken(string_view& input, size_t& currentLine, bool& err) {
         size_t i = 0;
         const size_t len = input.size();
         size_t lastAcceptingPos;
@@ -468,7 +466,7 @@ void tokenizeFn(ostream& out) {
         }
 
         optional<StackObj> optStackObj =
-            constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos));
+            constructTokenObj(lastAcceptingToken, input.substr(0, lastAcceptingPos), currentLine);
         input = input.substr(lastAcceptingPos);
         currentLine += lastAcceptingNewlineCount;
         return optStackObj;
@@ -482,10 +480,11 @@ void tokenizeFn(ostream& out) {
 
         vector<StackObj> tokens;
         string_view inputView = input;
+        size_t currentLine = 1;
 
         while (!inputView.empty()) {
           bool err = false;
-          optional<StackObj> optStackObj = getToken(inputView, err);
+          optional<StackObj> optStackObj = getToken(inputView, currentLine, err);
           if (err) {
             ostringstream error;
             vector<string> prevTokenNames;
@@ -862,7 +861,6 @@ string parserCppCode(
   gdDecl(out, gd);
   startDecl(out, gd);
   stackObjDef(out, gd);
-  currentLineDecl(out);
   constructObjFn(out, gd);
   constructFn(out);
   constructTokenObjFn(out, gd);
@@ -901,7 +899,6 @@ string lexerCppCode(
   concreteDecl(out);
   variableDecl(out);
   gdDecl(out, gd);
-  currentLineDecl(out);
   constructTokenObjFn(out, gd);
   lexerDFA(out, gd);
   out << "} namespace " << namespaceName << '{';
