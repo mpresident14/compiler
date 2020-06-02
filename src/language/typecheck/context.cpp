@@ -8,6 +8,7 @@
 #include <unordered_set>
 
 #include <boost/algorithm/string/join.hpp>
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 
@@ -37,12 +38,12 @@ void Ctx::streamParamTypes(
 
 Ctx::Ctx(
     string_view filename,
-    std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
-    std::shared_ptr<std::unordered_map<std::string, std::string>> typeEncodings)
+    std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
+    std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds)
     : filename_(filename),
       logger(filename),
-      fnEncodings_(fnEncodings),
-      typeEncodings_(typeEncodings) {}
+      fileIds_(move(fileIds)),
+      typeIds_(move(typeIds)) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -216,27 +217,29 @@ void Ctx::undefinedFn(
 
 string Ctx::mangleFn(
     string_view fnName,
-    string_view filename,
+    const std::string& filename,
     const std::vector<TypePtr>& paramTypes) {
   // TODO: Remove runPrez and printInt when applicable
   if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
     return string(fnName);
   }
 
-  // TODO: Use file encodings
-  filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
-  string newName;
-  newName.append(filename).push_back('_');
-  replace(newName.begin(), newName.end(), '/', '_');
-
+  // filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
+  string newName(fnName);
+  // newName.append(filename).push_back('_');
+  // replace(newName.begin(), newName.end(), '/', '_');
+  newName.append(fileIds_->at(filename));
 
   for (const TypePtr& type : paramTypes) {
     newName.push_back('_');
-    newName.append(type->encode(*typeEncodings_));
+    newName.append(type->getId(*typeIds_));
   }
   return newName;
 }
 
+void Ctx::addFileId(size_t id, string_view filename) {
+  fileIds_->emplace(filename, to_string(id));
+}
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

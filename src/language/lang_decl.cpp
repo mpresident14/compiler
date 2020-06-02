@@ -6,6 +6,15 @@
 using namespace std;
 
 
+namespace {
+
+size_t newFileId() {
+  static size_t i = 0;
+  return i++;
+}
+
+}
+
 namespace language {
 
 
@@ -20,10 +29,11 @@ Program::Program(vector<string>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, Program>& initializedProgs,
-    shared_ptr<unordered_map<string, std::string>> fnEncodings,
-    shared_ptr<unordered_map<string, std::string>> typeEncodings) {
+    shared_ptr<unordered_map<string, std::string>> fileIds,
+    shared_ptr<unordered_map<string, std::string>> typeIds) {
   // Create a new context
-  ctx_ = make_shared<Ctx>(filename, fnEncodings, typeEncodings);
+  ctx_ = make_shared<Ctx>(filename, fileIds, typeIds);
+  ctx_->addFileId(newFileId(), filename);
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -37,11 +47,12 @@ void Program::initContext(
       // Mark as initialized before recursing to allow circular dependencies
       prog = &initializedProgs.emplace(import, parser::parse(importFile))
                   .first->second;
-      prog->initContext(import, initializedProgs, fnEncodings, typeEncodings);
+      prog->initContext(import, initializedProgs, fileIds, typeIds);
     } else {
       prog = &progsIter->second;
     }
 
+    // Put the import's context in our context tree
     if (!ctx_->getCtxTree().addCtx(import, prog->ctx_)) {
       ctx_->getLogger().logNote(0, "Duplicate import '" + import + "'");
     }

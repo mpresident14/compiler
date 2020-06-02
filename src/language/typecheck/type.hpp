@@ -23,8 +23,8 @@ enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS, ANY };
 struct Type {
   virtual ~Type(){}
   Type(TypeName name) : typeName(name) {}
-  virtual std::string encode(
-      const std::unordered_map<std::string, std::string>& typeEncodings) const;
+  virtual std::string getId(
+      const std::unordered_map<std::string, std::string>& typeIds) const;
 
   TypeName typeName;
 };
@@ -35,8 +35,8 @@ using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
   Array(TypePtr type) : Type{ TypeName::ARRAY }, arrType(type) {}
-  virtual std::string encode(
-      const std::unordered_map<std::string, std::string>& typeEncodings) const
+  virtual std::string getId(
+      const std::unordered_map<std::string, std::string>& typeIds) const
       override;
 
   TypePtr arrType;
@@ -44,8 +44,8 @@ struct Array : public Type {
 
 struct Class : public Type {
   Class(std::string_view name) : Type{ TypeName::CLASS }, className(name) {}
-  virtual std::string encode(
-      const std::unordered_map<std::string, std::string>& typeEncodings) const
+  virtual std::string getId(
+      const std::unordered_map<std::string, std::string>& typeIds) const
       override;
 
   std::string className;

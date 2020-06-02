@@ -72,9 +72,9 @@ public:
       std::ostream& err);
 
   Ctx(std::string_view filename,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
+      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>>
-          typeEncodings);
+          typeIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -129,11 +129,13 @@ public:
   // TODO: remove the optional when we get rid of printInt and runprez
   std::string mangleFn(
       std::string_view fnName,
-      std::string_view filename,
+      const std::string& filename,
       const std::vector<TypePtr>& paramTypes);
+  void addFileId(size_t id, std::string_view filename);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
+
 
 private:
   void removeTemp(const std::string& var, size_t line);
@@ -147,8 +149,8 @@ private:
   std::string filename_;
   Logger logger;
   CtxTree ctxTree_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> typeEncodings_;
+  std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
+  std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds_;
 };
 
 #endif  // CONTEXT_HPP

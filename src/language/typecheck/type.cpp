@@ -6,26 +6,26 @@
 
 using namespace std;
 
-std::string Type::encode(
+std::string Type::getId(
     const std::unordered_map<std::string, std::string>&) const {
   switch (typeName) {
     case TypeName::INT: return "i";
     case TypeName::BOOL: return "b";
     case TypeName::VOID: return "v";
     case TypeName::ANY: return "x";
-    default: throw invalid_argument("Type::encode");
+    default: throw invalid_argument("Type::getId");
   }
 }
 
-std::string Array::encode(
-    const std::unordered_map<std::string, std::string>& typeEncodings) const {
+std::string Array::getId(
+    const std::unordered_map<std::string, std::string>& typeIds) const {
 
-  return string("a_").append(arrType->encode(typeEncodings));
+  return string("a_").append(arrType->getId(typeIds));
 }
 
-std::string Class::encode(
-    const std::unordered_map<std::string, std::string>& typeEncodings) const  {
-  return typeEncodings.at(className);
+std::string Class::getId(
+    const std::unordered_map<std::string, std::string>& typeIds) const  {
+  return typeIds.at(className);
 }
 
 

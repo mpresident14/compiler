@@ -3,18 +3,18 @@
 #include "src/assembly/temp.hpp"
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/language.hpp"
-#include "src/main/parser.hpp"
 #include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
+#include "src/main/parser.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <vector>
 #include <stdexcept>
 #include <string.h>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 using namespace std;
 
@@ -22,8 +22,6 @@ using namespace std;
 /* Return true if no errors */
 bool compile(string_view srcFilename, string_view asmFilename) {
   unordered_map<string, language::Program> initializedProgs;
-  shared_ptr<unordered_map<string, std::string>> fnEncodings = make_shared<unordered_map<string, std::string>>();
-  shared_ptr<unordered_map<string, std::string>> typeEncodings = make_shared<unordered_map<string, std::string>>();
   Logger logger;
   bool hasErr = false;
   try {
@@ -33,12 +31,19 @@ bool compile(string_view srcFilename, string_view asmFilename) {
 
     // Mark as initiailized before recursing to allow circular dependencies
     // TODO: Catch and log (fatal?) parse errors
-    auto iter = initializedProgs.emplace(srcFilename, parser::parse(srcFile)).first;
+    auto iter =
+        initializedProgs.emplace(srcFilename, parser::parse(srcFile)).first;
+
+
+    // Recursively record all declarations
+    iter->second.initContext(
+        srcFilename,
+        initializedProgs,
+        make_shared<unordered_map<string, std::string>>(),
+        make_shared<unordered_map<string, std::string>>());
 
     // Convert to assembly
     vector<assem::Program> assemProgs;
-    // Recursively record all declarations
-    iter->second.initContext(srcFilename, initializedProgs, move(fnEncodings), move(typeEncodings));
     for (const auto& [filename, prog] : initializedProgs) {
       assemProgs.push_back(prog.toAssemProg());
       // Print any warnings or non-fatal errors
