@@ -5,3 +5,4 @@ int func() {
 int func(int n) {
   return n;
 }
+

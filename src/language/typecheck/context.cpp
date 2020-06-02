@@ -12,6 +12,20 @@
 using namespace std;
 
 
+namespace {
+  void streamParamTypes(const std::vector<TypePtr>& paramTypes, ostream& err) {
+    err << '(';
+    if (!paramTypes.empty()) {
+      for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
+          ++iter) {
+        err << **iter << ", ";
+      }
+      err << *paramTypes.back();
+    }
+    err << ')';
+  }
+}
+
 Ctx::Ctx(
     string_view filename,
     std::shared_ptr<std::unordered_map<std::string, std::string>> fnEncodings,
@@ -86,11 +100,26 @@ void Ctx::removeTemp(const string& var, size_t line) {
 
 
 void Ctx::insertFn(
-    std::string_view name,
+    const std::string& name,
     const std::vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
-  /* auto insertResult =  */
+  auto iterPair = fnMap.equal_range(name);
+  for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
+    const FnInfo& fnInfo = iter->second;
+    const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
+    if (equal(
+            paramTypes.cbegin(),
+            paramTypes.cend(),
+            fnParamTypes.cbegin(),
+            fnParamTypes.cend())) {
+      ostream& errStream = logger.logError(line);
+      errStream << "Redefinition of function \"" << name
+              << "\". Originally declared at " << fnInfo.declFile
+              << ", line " << fnInfo.line;
+      return;
+    }
+  }
   fnMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
   // TODO
   // if (!insertResult.second) {
@@ -139,21 +168,6 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     undefinedFn(infoAndIters.second, filename_, qualifiers, name, paramTypes, line);
   }
   return ctxTree_.lookupFn(qualifiers, name, paramTypes, *this, line);
-}
-
-
-namespace {
-  void streamParamTypes(const std::vector<TypePtr>& paramTypes, ostream& err) {
-    err << '(';
-    if (!paramTypes.empty()) {
-      for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
-          ++iter) {
-        err << **iter << ", ";
-      }
-      err << *paramTypes.back();
-    }
-    err << ')';
-  }
 }
 
 

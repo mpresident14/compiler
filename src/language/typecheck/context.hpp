@@ -84,7 +84,7 @@ public:
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
   void insertFn(
-      std::string_view name,
+      const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       TypePtr returnType,
       size_t line);
