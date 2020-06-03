@@ -15,18 +15,17 @@
 // TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data
 // member
 
-constexpr size_t OBJ_SIZE = 8;
-
 /* ANY used to proceed through errors */
-enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS, ANY };
+enum class TypeName { INT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
   virtual ~Type() {}
-  Type(TypeName name) : typeName(name) {}
+  Type(TypeName name, size_t nBytes) : typeName(name), numBytes(nBytes) {}
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const;
 
   TypeName typeName;
+  size_t numBytes;
 };
 
 // TODO: Shared pointer might make more sense, especially when we have more
@@ -34,7 +33,7 @@ struct Type {
 using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
-  Array(TypePtr type) : Type{ TypeName::ARRAY }, arrType(type) {}
+  Array(TypePtr type) : Type(TypeName::ARRAY, 8), arrType(type) {}
   virtual std::string getId(const std::unordered_map<std::string, std::string>&
                                 typeIds) const override;
 
@@ -42,7 +41,7 @@ struct Array : public Type {
 };
 
 struct Class : public Type {
-  Class(std::string_view name) : Type{ TypeName::CLASS }, className(name) {}
+  Class(std::string_view name) : Type(TypeName::CLASS, 8), className(name) {}
   virtual std::string getId(const std::unordered_map<std::string, std::string>&
                                 typeIds) const override;
 
@@ -55,9 +54,10 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
 
-const TypePtr intType = std::make_shared<Type>(TypeName::INT);
-const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL);
-const TypePtr voidType = std::make_shared<Type>(TypeName::VOID);
-const TypePtr anyType = std::make_shared<Type>(TypeName::ANY);
+const TypePtr intType = std::make_shared<Type>(TypeName::INT, 8);
+const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1);
+const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL, 1);
+const TypePtr voidType = std::make_shared<Type>(TypeName::VOID, 0);
+const TypePtr anyType = std::make_shared<Type>(TypeName::ANY, 0);
 
 #endif  // TYPE_HPP

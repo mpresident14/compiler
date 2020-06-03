@@ -14,7 +14,7 @@ namespace im {
 
 void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Operation(
-      string("movq $").append(to_string(n_)).append(", `D0"), {}, { temp }));
+      string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
 }
 
 
@@ -76,11 +76,11 @@ void BinOp::handleShifts(
   if (expr2_->getType() == ExprType::CONST) {
     asmCode.append(" $");
     asmCode.append(to_string(static_cast<Const*>(expr2_.get())->getInt()));
-    asmCode.append(", `D0");
+    asmCode.append(", `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
   } else {
     expr2_->toAssemInstrs(RCX, instrs);
-    asmCode.append(" %cl, `D0");
+    asmCode.append(" %cl, `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { RCX, temp }, { temp }));
   }
 }
@@ -93,7 +93,7 @@ void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
   instrs.emplace_back(new assem::Operation("cqto", { RAX }, { RDX }));
   // Divide %rax%rdx by t2, quotient in %rax, remainder in %rdx
   instrs.emplace_back(
-      new assem::Operation("idivq `S0", { t2, RAX, RDX }, { RAX, RDX }));
+      new assem::Operation("idivq `8S0", { t2, RAX, RDX }, { RAX, RDX }));
   if (isDiv) {
     // If division, move %rax into temp
     Temp(RAX).toAssemInstrs(temp, instrs);
@@ -119,7 +119,7 @@ void BinOp::handleOthers(
   int tRes = newTemp();
   instrs.emplace_back(new assem::Move(t1, tRes));
   instrs.emplace_back(new assem::Operation(
-      asmCode.append(" `S1, `D0"), { tRes, t2 }, { tRes }));
+      asmCode.append(" `8S1, `8D0"), { tRes, t2 }, { tRes }));
   instrs.emplace_back(new assem::Move(tRes, temp));
 }
 
@@ -128,11 +128,12 @@ void BinOp::handleOthers(
  * MemDeref *
  ************/
 
-MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
+MemDeref::MemDeref(ExprPtr&& addr, size_t numBytes)
+    : addr_(move(addr)), numBytes_(numBytes) {}
 
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t = addr_->toAssemInstrs(instrs);
-  instrs.emplace_back(new assem::Operation("movq (`S0), `D0", { t }, { temp }));
+  instrs.emplace_back(new assem::Operation("movq (`8S0), `8D0", { t }, { temp }));
 }
 
 /**************
@@ -161,7 +162,7 @@ void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   // symbol with respect to %rip. Essentially, it calculates the address of
   // symbol
   instrs.emplace_back(new assem::Operation(
-      string("leaq ").append(name_).append("(%rip), `D0"), {}, { temp }));
+      string("leaq ").append(name_).append("(%rip), `8D0"), {}, { temp }));
 }
 
 
@@ -202,7 +203,7 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     int t = addr_->toAssemInstrs(instrs);
     srcTemps.push_back(t);
     instrs.emplace_back(new assem::Operation(
-        "callq *`S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
+        "callq *`8S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
   }
 
   // Move result from %rax to temp if needed

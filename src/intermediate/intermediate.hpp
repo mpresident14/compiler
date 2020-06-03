@@ -258,7 +258,7 @@ private:
 /* *expr */
 class MemDeref : public Expr {
 public:
-  MemDeref(ExprPtr&& addr);
+  MemDeref(ExprPtr&& addr, size_t numBytes);
   constexpr ExprType getType() const noexcept override {
     return ExprType::MEM_DEREF;
   }
@@ -269,6 +269,7 @@ public:
 
 private:
   ExprPtr addr_;
+  size_t numBytes_;
 };
 
 

@@ -127,7 +127,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
       regsToPreserve.push_back(reg);
       // We'll add the pops to the back in this function, but just return the
       // pushes to avoid inserting at the beginning of the vector
-      pushInstrs.emplace_back(new Operation("pushq `S0", { reg }, {}));
+      pushInstrs.emplace_back(new Operation("pushq `8S0", { reg }, {}));
     }
   }
 
@@ -135,7 +135,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
   vector<InstrPtr> popInstrs;
   for (auto iter = regsToPreserve.crbegin(); iter != regsToPreserve.crend();
        ++iter) {
-    popInstrs.emplace_back(new Operation("popq `D0", {}, { *iter }));
+    popInstrs.emplace_back(new Operation("popq `8D0", {}, { *iter }));
   }
 
   return { move(pushInstrs), move(popInstrs) };

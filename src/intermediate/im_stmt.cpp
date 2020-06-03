@@ -107,7 +107,7 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   //     throw invalid_argument("Unrecognized relative operator.");
   // }
 
-  instrs.emplace_back(new assem::Operation("cmpq `S1, `S0", { t1, t2 }, {}));
+  instrs.emplace_back(new assem::Operation("cmpq `8S1, `8S0", { t1, t2 }, {}));
   instrs.emplace_back(
       new assem::CondJumpOp(op.append(ifTrue_->getName()), {}, {}, ifTrue_));
   instrs.emplace_back(
@@ -138,7 +138,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     e2_->toAssemInstrs(t2, instrs);
     static_cast<MemDeref*>(e1_.get())->getAddr()->toAssemInstrs(t1, instrs);
     instrs.emplace_back(
-        new assem::Operation("movq `S1, (`S0)", { t1, t2 }, {}));
+        new assem::Operation("movq `8S1, (`8S0)", { t1, t2 }, {}));
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }

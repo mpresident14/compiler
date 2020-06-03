@@ -6,11 +6,12 @@
 
 using namespace std;
 
-string Type::getId(
-    const unordered_map<string, string>&) const {
+string Type::getId(const unordered_map<string, string>&) const {
   switch (typeName) {
     case TypeName::INT:
       return "i";
+    case TypeName::CHAR:
+      return "c";
     case TypeName::BOOL:
       return "b";
     case TypeName::VOID:
@@ -22,13 +23,11 @@ string Type::getId(
   }
 }
 
-string Array::getId(
-    const unordered_map<string, string>& typeIds) const {
+string Array::getId(const unordered_map<string, string>& typeIds) const {
   return string("a_").append(arrType->getId(typeIds));
 }
 
-string Class::getId(
-    const unordered_map<string, string>& typeIds) const {
+string Class::getId(const unordered_map<string, string>& typeIds) const {
   return typeIds.at(className);
 }
 
@@ -61,6 +60,9 @@ ostream& operator<<(ostream& out, const Type& type) {
   switch (type.typeName) {
     case TypeName::INT:
       out << "int";
+      break;
+    case TypeName::CHAR:
+      out << "char";
       break;
     case TypeName::BOOL:
       out << "bool";

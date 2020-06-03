@@ -63,13 +63,13 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
                    e_->toImExprAssert(*boolType, ctx),
                    make_unique<im::Const>(1),
                    im::BOp::XOR),
-               make_unique<Type>(TypeName::BOOL) };
+               boolType };
     case UOp::NEG:
       return { make_unique<im::BinOp>(
                    make_unique<im::Const>(0),
                    e_->toImExprAssert(*intType, ctx),
                    im::BOp::MINUS),
-               make_unique<Type>(TypeName::INT) };
+               intType };
     default:
       throw invalid_argument("Unrecognized Uop");
   }
@@ -136,7 +136,7 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
                e1_->toImExprAssert(*intType, ctx),
                e2_->toImExprAssert(*intType, ctx),
                op),
-           make_unique<Type>(TypeName::INT) };
+           intType };
 }
 
 void BinaryOp::asBool(
@@ -302,18 +302,19 @@ NewArray::NewArray(TypePtr&& type, size_t numElems, size_t line)
 
 ExprInfo NewArray::toImExpr(Ctx&) {
   int t = newTemp();
-  vector<im::ExprPtr> mallocParams;
+  vector<im::ExprPtr> mallocParam;
   // Arrays will start with the number of elements they contain
-  mallocParams.emplace_back(new im::Const((numElems_ + 1) * OBJ_SIZE));
+  size_t arrSize = 8 + numElems_ * type_->numBytes;
+  mallocParam.emplace_back(new im::Const(arrSize));
 
   vector<im::StmtPtr> stmts;
   im::StmtPtr callMalloc = make_unique<im::Assign>(
       make_unique<im::Temp>(t),
       make_unique<im::CallExpr>(
-          make_unique<im::LabelAddr>("__malloc"), move(mallocParams), true));
+          make_unique<im::LabelAddr>("__malloc"), move(mallocParam), true));
 
   im::StmtPtr setSize = make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(t)),
+      make_unique<im::MemDeref>(make_unique<im::Temp>(t), type_->numBytes),
       make_unique<im::Const>(numElems_));
 
   // TODO: Zero/null initialize array
@@ -344,13 +345,14 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-  // Add 1 to skip the size field
+  // Add 8 bytes to skip the size field
+  size_t offset = 8 + index_ * type->numBytes;
   im::ExprPtr offsetAddr = make_unique<im::BinOp>(
       move(exprInfo.imExpr),
-      make_unique<im::Const>((index_ + 1) * OBJ_SIZE),
+      make_unique<im::Const>(offset),
       im::BOp::PLUS);
 
-  return { make_unique<im::MemDeref>(move(offsetAddr)),
+  return { make_unique<im::MemDeref>(move(offsetAddr), type->numBytes),
            static_cast<Array*>(type.get())->arrType };
 }
 

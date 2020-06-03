@@ -148,14 +148,15 @@ void Return::assignRegs(
 void tempToCode(
     ostream& out,
     int temp,
+    char numBytes,
     const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
-    out << static_cast<MachineReg>(temp);
+    out << regToString(static_cast<MachineReg>(temp), numBytes);
   } else {
 #ifdef DEBUG
     out << "%t" << -temp;
 #else
-    out << varToStackOffset.at(temp) << "(%rsp)";
+    out << varToStackOffset.at(temp) << '(' << regToString(RSP, numBytes) << ')';
 #endif
   }
 }
@@ -172,9 +173,9 @@ void Move::toCode(
   }
 
   out << "\tmovq ";
-  tempToCode(out, src_, varToStackOffset);
+  tempToCode(out, src_, '8', varToStackOffset);
   out << ", ";
-  tempToCode(out, dst_, varToStackOffset);
+  tempToCode(out, dst_, '8', varToStackOffset);
   out << '\n';
 }
 
@@ -187,18 +188,19 @@ void Operation::toCode(
   while (i < len) {
     char c = asmCode_.at(i);
     if (c == '`') {
-      c = asmCode_.at(i + 1);
+      char numBytes = asmCode_.at(i + 1);
+      c = asmCode_.at(i + 2);
       if (c == 'S') {
         tempToCode(
-            out, srcs_.at(digitToInt(asmCode_.at(i + 2))), varToStackOffset);
+            out, srcs_.at(digitToInt(asmCode_.at(i + 3))), numBytes, varToStackOffset);
       } else if (c == 'D') {
         tempToCode(
-            out, dsts_.at(digitToInt(asmCode_.at(i + 2))), varToStackOffset);
+            out, dsts_.at(digitToInt(asmCode_.at(i + 3))), numBytes, varToStackOffset);
       } else {
         // TODO: Remove this case when done
         throw runtime_error("Operation::toCode");
       }
-      i += 3;
+      i += 4;
     } else {
       out << c;
       ++i;
