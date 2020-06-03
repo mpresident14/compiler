@@ -149,15 +149,16 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
  */
 void addIfNewRule(
     DFARule&& rule,
-    queue<DFARule>& ruleQueue,
+    queue<const DFARule*>& ruleQueue,
     DFARuleSet& ruleSet) {
-  auto iter = ruleSet.find(rule);
-  if (iter == ruleSet.end()) {
-    ruleSet.insert(rule);
-    ruleQueue.push(move(rule));
-  } else if (!rule.lookahead.is_subset_of(iter->lookahead)) {
-    iter->lookahead |= rule.lookahead;
-    ruleQueue.push(move(rule));
+  // OK to move here because we only use rule again if it was not inserted into the set
+  auto p = ruleSet.insert(move(rule));
+  const DFARule& ruleRef = *p.first;
+  if (p.second) {
+    ruleQueue.push(&ruleRef);
+  } else if (!rule.lookahead.is_subset_of(ruleRef.lookahead)) {
+    ruleRef.lookahead |= rule.lookahead;
+    ruleQueue.push(&ruleRef);
   }
 }
 
@@ -167,7 +168,7 @@ void addIfNewRule(
  */
 void addRhses(
     const DFARule& fromRule,
-    queue<DFARule>& ruleQueue,
+    queue<const DFARule*>& ruleQueue,
     DFARuleSet& ruleSet,
     const GrammarData& gd,
     const BitSetVars& nulls,
@@ -235,7 +236,7 @@ void epsilonTransition(
     const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
-  queue<DFARule> ruleQueue;
+  queue<const DFARule*> ruleQueue;
 
   // Expand variables (epsilon transition) in the initial set of rules.
   for (const DFARule& rule : ruleSet) {
@@ -245,8 +246,7 @@ void epsilonTransition(
   // Keep expanding variables (epsilon transition) until we've determined all
   // the possible rule positions we could be in.
   while (!ruleQueue.empty()) {
-    DFARule& rule = ruleQueue.front();
-    addRhses(rule, ruleQueue, ruleSet, gd, nulls, firsts);
+    addRhses(*ruleQueue.front(), ruleQueue, ruleSet, gd, nulls, firsts);
     ruleQueue.pop();
   }
 }
@@ -290,8 +290,8 @@ vector<DFA_t::Node*> createTransitions(
     mtx.unlock();
   };
 
-  // vector<future<DFA_t::Node*>> eTransJobs;
   vector<future<void>> eTransJobs;
+  eTransJobs.reserve(numSymbols);
   for (size_t i = 0; i < numSymbols; ++i) {
     DFARuleSet& transitionRules = newTransitions[i];
     // Has a valid transition
@@ -539,6 +539,7 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
+
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,
