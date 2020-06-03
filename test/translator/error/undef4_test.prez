@@ -1,5 +1,0 @@
-bool f() {
-  int a = 2;
-  h(a);
-  return true;
-}

@@ -1,0 +1,19 @@
+import "import_test/folder/subfolder/file.prez"
+import "import_test/does_not_exist.prez"
+import "import_test/folder2/subfolder/file.prez"
+import "import_test/folder/subfolder/file.prez"
+import "import_test/other_file.prez"
+
+
+int func() {
+  return 6;
+}
+
+void runprez() {
+  folder2::subfolder::file::func(true);
+  otherFunc();
+  other_file::otherFunc(3);
+  file::func();
+  subfolder::file::func(4);
+  func(true || false);
+}

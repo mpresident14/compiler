@@ -1,0 +1,14 @@
+bool f1() {
+  return n;
+}
+
+int f2() {
+  int a = 4;
+  b = a;
+  return a;
+}
+
+void f3() {
+  bool b = g();
+  h(b);
+}

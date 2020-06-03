@@ -60,7 +60,7 @@ function(error_test TEST_NAME EXPECTED_OUT)
       NAME ${TEST_NAME}
       COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/test_error.py
           ${RUNTIME_OUTPUT_DIRECTORY}/main
-          ${ERROR_DIR}/${SRC_FILE}
+          ${SRC_FILE}
           ${GEN_DIR}/${ASM_FILE}
           ${EXPECTED_OUT})
 endfunction()
@@ -82,31 +82,44 @@ success_test(array_test "0,1,1,2,3")
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
 success_test(import_test "1,2,3,4,5,6,7" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
 
-# error_test(redef_test
-#     "('Error','2','Redefinition')
-#     ('Error','9','Redefinition')
-#     ('Error','13','Redefinition')
-#     ('Error','17','Redefinition')")
-# error_test(undef1_test "('Error','2','Undefined')")
-# error_test(undef2_test "('Error','3','Undefined')")
-# error_test(undef3_test "('Error','2','Undefined')")
-# error_test(undef4_test "('Error','3','Undefined')")
-# error_test(return_test
-#     "('Error','2','Expected')
-#     ('Error','7','Expected')
-#     ('Error','10','Non-void')")
-# error_test(param_test "('Error','2','Undefined')")
-# error_test(type_test
-#     "('Error','6','Expected')
-#     ('Error','7','Expected')
-#     ('Error','8','Expected')
-#     ('Error','9','Expected')
-#     ('Error','10','Expected')
-#     ('Error','11','Expected')
-#     ('Error','12','Expected')")
-# error_test(unused_test
-#     "('Warning','1','Unused')
-#     ('Warning','2','Unused')")
+error_test(redef_test
+    "('Error','2','Redefinition')
+    ('Error','9','Redefinition')
+    ('Error','13','Redefinition')
+    ('Error','17','Redefinition')")
+error_test(undef_test
+    "('Error','2','Undefined')
+    ('Error','7','Undefined')
+    ('Error','12','Undefined')
+    ('Error','13','Undefined')")
+error_test(return_test
+    "('Error','2','Expected')
+    ('Error','7','Expected')
+    ('Error','10','Non-void')")
+error_test(param_test
+    "('Error','2','Undefined')
+    ('Error','6','Undefined')")
+error_test(type_test
+    "('Error','6','Expected')
+    ('Error','7','Expected')
+    ('Error','8','Expected')
+    ('Error','9','Expected')
+    ('Error','10','Expected')
+    ('Error','11','Expected')
+    ('Error','12','Expected')")
+error_test(unused_test
+    "('Warning','1','Unused')
+    ('Warning','2','Unused')")
+
+error_test(bad_import_test
+    "('Error','2','Could')
+    ('Note','4','Duplicate')
+    ('Error','13','Undefined')
+    ('Error','14','Undefined')
+    ('Error','15','Undefined')
+    ('Error','16','Ambiguous')
+    ('Error','17','Ambiguous')
+    ('Error','18','Undefined')")
 
 
 add_custom_target(

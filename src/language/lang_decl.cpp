@@ -28,7 +28,7 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 
 void Program::initContext(
     string_view filename,
-    unordered_map<string, optional<Program>>& initializedProgs,
+    unordered_map<string, unique_ptr<Program>>& initializedProgs,
     shared_ptr<unordered_map<string, string>> fileIds,
     shared_ptr<unordered_map<string, string>> typeIds) {
   // Create a new context
@@ -40,19 +40,18 @@ void Program::initContext(
   for (const Import& imported : imports_) {
     const string& importName = imported.filename;
     auto progsIter = initializedProgs.find(importName);
-    optional<Program>* prog;
+    Program* prog = nullptr;
     if (progsIter == initializedProgs.end()) {
       // We haven't initialized this program yet
       // Mark as initialized before recursing to allow circular dependencies
       try {
-        // We use an empty optional as a placeholder to mark that we already
-        // tried to parse the program. This way, we don't try parsing it again
-        // if it is imported somewhere else
-        auto iter =
-            initializedProgs.emplace(importName, optional<Program>()).first;
-        iter->second = optional<Program>(parser::parse(importName));
-        prog = &iter->second;
-        (*prog)->initContext(importName, initializedProgs, fileIds, typeIds);
+        // We use a nullptr as a placeholder to mark that we already tried to
+        // parse the program. This way, we don't try parsing it again if it is
+        // imported somewhere else
+        auto iter = initializedProgs.emplace(importName, nullptr).first;
+        iter->second = make_unique<Program>(parser::parse(importName));
+        prog = iter->second.get();
+        prog->initContext(importName, initializedProgs, fileIds, typeIds);
       } catch (const runtime_error& e) {
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
@@ -62,12 +61,14 @@ void Program::initContext(
              << endl;
       }
     } else {
-      prog = &progsIter->second;
+      prog = progsIter->second.get();
     }
 
     // If the program parsed, put the import's context in our context tree
-    if (prog->has_value() &&
-        !ctx_->getCtxTree().addCtx(importName, (*prog)->ctx_)) {
+    // if (!prog || (prog->has_value() && !ctx_)) {
+    //   cout << "WAAAAHHHH!!!!" << endl;
+    // }
+    if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_)) {
       ctx_->getLogger().logNote(
           imported.line, "Duplicate import '" + importName + "'");
     }

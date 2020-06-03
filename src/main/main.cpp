@@ -25,17 +25,17 @@ using namespace std;
 
 /* Return true if no errors */
 bool compile(const string& srcFilename, const string& asmFilename) {
-  unordered_map<string, optional<language::Program>> initializedProgs;
+  unordered_map<string, std::unique_ptr<language::Program>> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
     // Mark as initiailized before recursing to allow circular dependencies
-    auto iter = initializedProgs
-                    .emplace(
-                        srcFilename,
-                        optional<language::Program>(parser::parse(srcFilename)))
-                    .first;
-
+    auto iter =
+        initializedProgs
+            .emplace(
+                srcFilename,
+                make_unique<language::Program>(parser::parse(srcFilename)))
+            .first;
 
     // Recursively record all declarations
     iter->second->initContext(
@@ -65,6 +65,8 @@ bool compile(const string& srcFilename, const string& asmFilename) {
     }
   } catch (const Logger::Exception&) {
     hasErr = true;
+  } catch (const runtime_error& e) {
+    logger.logError(0, e.what());
   } catch (const parser::ParseException& e) {
     hasErr = true;
     cerr << e.what() << endl;

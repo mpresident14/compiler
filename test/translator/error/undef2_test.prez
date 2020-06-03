@@ -1,5 +1,0 @@
-int g() {
-  int a = 4;
-  b = a;
-  return 2;
-}

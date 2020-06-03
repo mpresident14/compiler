@@ -78,7 +78,6 @@ int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
 const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
   auto iter = varMap.find(name);
   if (iter == varMap.end()) {
-    // We can't really continue from this error
     logger.logError(
         line, string("Undefined variable '").append(name).append("'"));
     return nullptr;
@@ -186,9 +185,9 @@ void Ctx::undefinedFn(
     const vector<TypePtr>& paramTypes,
     size_t line) {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
-  err << ". No imported file matches qualifiers.";
+  err << "'. No imported file matches qualifiers.";
 }
 
 void Ctx::undefinedFn(
@@ -202,13 +201,13 @@ void Ctx::undefinedFn(
         candidates,
     string_view searchedFile) {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
 
   if (candidates.first == candidates.second) {
-    err << "\nNo candidate functions in " << searchedFile;
+    err << "'\nNo candidate functions in " << searchedFile;
   } else {
-    err << "\nCandidate functions in " << searchedFile << ":";
+    err << "'\nCandidate functions in " << searchedFile << ":";
     for (auto iter = candidates.first; iter != candidates.second; ++iter) {
       const FnInfo& fnInfo = iter->second;
       err << "\n\tLine " << fnInfo.line << ": " << *fnInfo.returnType << ' '
