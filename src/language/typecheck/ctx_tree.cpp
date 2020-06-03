@@ -48,13 +48,13 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
   const string& firstPart = pathParts[0];
   auto mapIter = currentMap->find(firstPart);
   if (mapIter == currentMap->end()) {
-    Node* newNode = new Node{ ctx, {} };
+    Node* newNode = new Node{ ctx.get(), {} };
     currentMap->emplace(firstPart, NodePtr(newNode));
     return true;
   } else {
     NodePtr& child = mapIter->second;
     bool doesNotExist = child->ctx == nullptr;
-    child->ctx = move(ctx);
+    child->ctx = ctx.get();
     return doesNotExist;
   }
 }
@@ -95,7 +95,7 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     // tree until we find either:
     // - a Node with a non-null context (unique suffix)
     // - a Node with more than 1 child (ambiguous qualifier)
-    const CtxPtr& maybeCtx = child->ctx;
+    Ctx* maybeCtx = child->ctx;
     if (maybeCtx) {
       auto infoAndIters = maybeCtx->lookupFn(name, paramTypes);
       if (infoAndIters.first) {

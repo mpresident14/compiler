@@ -48,8 +48,9 @@ public:
   class CtxTree {
   public:
     struct Node {
-      /* non-nullptr if file exists at this level in directory tree */
-      CtxPtr ctx;
+      /* non-nullptr if file exists at this level in directory tree.
+       * The lifetime of the Ctx is controlled by the shared_ptr in a Program */
+      Ctx* ctx;
       std::unordered_map<std::string, std::unique_ptr<Node>> children;
     };
     using NodePtr = std::unique_ptr<Node>;
