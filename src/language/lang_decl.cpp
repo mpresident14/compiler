@@ -29,8 +29,8 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, optional<Program>>& initializedProgs,
-    shared_ptr<unordered_map<string, std::string>> fileIds,
-    shared_ptr<unordered_map<string, std::string>> typeIds) {
+    shared_ptr<unordered_map<string, string>> fileIds,
+    shared_ptr<unordered_map<string, string>> typeIds) {
   // Create a new context
   ctx_ = make_shared<Ctx>(filename, fileIds, typeIds);
   ctx_->addFileId(newFileId(), filename);

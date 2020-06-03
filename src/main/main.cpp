@@ -24,7 +24,7 @@ using namespace std;
 // <token>" or "no reduction" error)
 
 /* Return true if no errors */
-bool compile(const std::string& srcFilename, const std::string& asmFilename) {
+bool compile(const string& srcFilename, const string& asmFilename) {
   unordered_map<string, optional<language::Program>> initializedProgs;
   Logger logger;
   bool hasErr = false;
@@ -41,8 +41,8 @@ bool compile(const std::string& srcFilename, const std::string& asmFilename) {
     iter->second->initContext(
         srcFilename,
         initializedProgs,
-        make_shared<unordered_map<string, std::string>>(),
-        make_shared<unordered_map<string, std::string>>());
+        make_shared<unordered_map<string, string>>(),
+        make_shared<unordered_map<string, string>>());
 
     // Convert to assembly
     vector<assem::Program> assemProgs;

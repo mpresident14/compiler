@@ -14,9 +14,9 @@ using namespace std;
 
 namespace {
 
-std::string qualifiedFn(
-    std::vector<std::string> qualifiers,
-    std::string_view fnName) {
+string qualifiedFn(
+    vector<string> qualifiers,
+    string_view fnName) {
   if (qualifiers.empty()) {
     return string(fnName);
   }
@@ -26,7 +26,7 @@ std::string qualifiedFn(
 }  // namespace
 
 void Ctx::streamParamTypes(
-    const std::vector<TypePtr>& paramTypes,
+    const vector<TypePtr>& paramTypes,
     ostream& err) {
   err << '(';
   if (!paramTypes.empty()) {
@@ -42,8 +42,8 @@ void Ctx::streamParamTypes(
 
 Ctx::Ctx(
     string_view filename,
-    std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
-    std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds)
+    shared_ptr<unordered_map<string, string>> fileIds,
+    shared_ptr<unordered_map<string, string>> typeIds)
     : filename_(filename),
       logger(filename),
       fileIds_(move(fileIds)),
@@ -53,7 +53,7 @@ Logger& Ctx::getLogger() noexcept { return logger; }
 
 Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 
-const std::string& Ctx::getFilename() const noexcept { return filename_; }
+const string& Ctx::getFilename() const noexcept { return filename_; }
 
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
@@ -114,8 +114,8 @@ void Ctx::removeTemp(const string& var, size_t line) {
 
 
 void Ctx::insertFn(
-    const std::string& name,
-    const std::vector<TypePtr>& paramTypes,
+    const string& name,
+    const vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
   auto iterPair = fnMap.equal_range(name);
@@ -141,10 +141,10 @@ void Ctx::insertFn(
 
 pair<
     const Ctx::FnInfo*,
-    std::pair<
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>>
-Ctx::lookupFn(const string& name, const std::vector<TypePtr>& paramTypes) {
+    pair<
+        unordered_multimap<string, Ctx::FnInfo>::iterator,
+        unordered_multimap<string, Ctx::FnInfo>::iterator>>
+Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
   auto iterPair = fnMap.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
@@ -162,9 +162,9 @@ Ctx::lookupFn(const string& name, const std::vector<TypePtr>& paramTypes) {
 
 // TODO: Allow "from <file> import <function/class>" ???
 const Ctx::FnInfo* Ctx::lookupFnRec(
-    const std::vector<std::string>& qualifiers,
-    const std::string& name,
-    const std::vector<TypePtr>& paramTypes,
+    const vector<string>& qualifiers,
+    const string& name,
+    const vector<TypePtr>& paramTypes,
     size_t line) {
   if (qualifiers.empty()) {
     // If no qualifiers, we only try our own context
@@ -181,9 +181,9 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
 
 
 void Ctx::undefinedFn(
-    const std::vector<std::string>& qualifiers,
-    std::string_view fnName,
-    const std::vector<TypePtr>& paramTypes,
+    const vector<string>& qualifiers,
+    string_view fnName,
+    const vector<TypePtr>& paramTypes,
     size_t line) {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
@@ -193,14 +193,14 @@ void Ctx::undefinedFn(
 
 void Ctx::undefinedFn(
     const vector<string>& qualifiers,
-    std::string_view fnName,
-    const std::vector<TypePtr>& paramTypes,
+    string_view fnName,
+    const vector<TypePtr>& paramTypes,
     size_t line,
-    const std::pair<
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator,
-        std::unordered_multimap<std::string, Ctx::FnInfo>::iterator>&
+    const pair<
+        unordered_multimap<string, Ctx::FnInfo>::iterator,
+        unordered_multimap<string, Ctx::FnInfo>::iterator>&
         candidates,
-    std::string_view searchedFile) {
+    string_view searchedFile) {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
   streamParamTypes(paramTypes, err);
@@ -221,8 +221,8 @@ void Ctx::undefinedFn(
 
 string Ctx::mangleFn(
     string_view fnName,
-    const std::string& filename,
-    const std::vector<TypePtr>& paramTypes) {
+    const string& filename,
+    const vector<TypePtr>& paramTypes) {
   // TODO: Remove runPrez and printInt when applicable
   if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
     return string(fnName);

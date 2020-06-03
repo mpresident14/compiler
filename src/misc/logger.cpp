@@ -17,7 +17,7 @@ ostringstream& Logger::logNote(size_t line, string_view msg) {
   return log(MsgType::NOTE, line, msg);
 }
 
-std::ostringstream& Logger::log(MsgType msgType, std::string_view msg) {
+ostringstream& Logger::log(MsgType msgType, string_view msg) {
   switch (msgType) {
     case MsgType::ERROR:
       ++errorCount_;
@@ -76,7 +76,7 @@ const char* maybePlural(size_t n, const char* singular, const char* plural) {
 }  // namespace
 
 
-void Logger::streamLog(std::ostream& out) const {
+void Logger::streamLog(ostream& out) const {
   if (logs_.empty()) {
     return;
   }
@@ -85,7 +85,7 @@ void Logger::streamLog(std::ostream& out) const {
     out << filename_ << ":\n";
   }
 
-  for (const std::ostringstream& stream : logs_) {
+  for (const ostringstream& stream : logs_) {
     out << stream.str() << '\n';
   }
   out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
@@ -94,7 +94,7 @@ void Logger::streamLog(std::ostream& out) const {
       << maybePlural(noteCount_, " note\n\n", " notes\n\n");
 }
 
-void Logger::logFatal(size_t line, std::string_view msg) {
+void Logger::logFatal(size_t line, string_view msg) {
   logError(line, msg);
   throw Exception(*this);
 }
@@ -104,7 +104,7 @@ Logger::Exception::Exception(const Logger& logger) {
   if (!logger.filename_.empty()) {
     what_.append(logger.filename_).append(":\n");
   }
-  for (const std::ostringstream& stream : logger.logs_) {
+  for (const ostringstream& stream : logger.logs_) {
     what_.append(stream.str()).push_back('\n');
   }
 }

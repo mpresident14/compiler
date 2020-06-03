@@ -1,6 +1,6 @@
 import "import_test/file.prez"
 
 int func() {
-  return;
+  return 7;
 }
 

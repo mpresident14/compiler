@@ -63,7 +63,7 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
 const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
-    const std::vector<TypePtr>& paramTypes,
+    const vector<TypePtr>& paramTypes,
     Ctx& ctx,
     size_t line) const {
   list<string> filepath;

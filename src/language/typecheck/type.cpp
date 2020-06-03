@@ -6,8 +6,8 @@
 
 using namespace std;
 
-std::string Type::getId(
-    const std::unordered_map<std::string, std::string>&) const {
+string Type::getId(
+    const unordered_map<string, string>&) const {
   switch (typeName) {
     case TypeName::INT:
       return "i";
@@ -22,13 +22,13 @@ std::string Type::getId(
   }
 }
 
-std::string Array::getId(
-    const std::unordered_map<std::string, std::string>& typeIds) const {
+string Array::getId(
+    const unordered_map<string, string>& typeIds) const {
   return string("a_").append(arrType->getId(typeIds));
 }
 
-std::string Class::getId(
-    const std::unordered_map<std::string, std::string>& typeIds) const {
+string Class::getId(
+    const unordered_map<string, string>& typeIds) const {
   return typeIds.at(className);
 }
 
