@@ -23,7 +23,7 @@ std::string qualifiedFn(
   return boost::join(qualifiers, "::").append("::").append(fnName);
 }
 
-}
+}  // namespace
 
 void Ctx::streamParamTypes(
     const std::vector<TypePtr>& paramTypes,
@@ -130,8 +130,8 @@ void Ctx::insertFn(
       ostream& errStream = logger.logError(line);
       errStream << "Redefinition of function '" << name;
       Ctx::streamParamTypes(paramTypes, errStream);
-      errStream << "'. Originally declared at " << fnInfo.declFile
-                << ", line " << fnInfo.line;
+      errStream << "'. Originally declared at " << fnInfo.declFile << ", line "
+                << fnInfo.line;
       return;
     }
   }
@@ -186,7 +186,7 @@ void Ctx::undefinedFn(
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedFn(qualifiers, fnName)<< '\'';
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName) << '\'';
   streamParamTypes(paramTypes, err);
   err << ". No imported file matches qualifiers.";
 }

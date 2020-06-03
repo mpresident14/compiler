@@ -21,7 +21,7 @@ constexpr size_t OBJ_SIZE = 8;
 enum class TypeName { INT, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
-  virtual ~Type(){}
+  virtual ~Type() {}
   Type(TypeName name) : typeName(name) {}
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const;
@@ -35,18 +35,16 @@ using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
   Array(TypePtr type) : Type{ TypeName::ARRAY }, arrType(type) {}
-  virtual std::string getId(
-      const std::unordered_map<std::string, std::string>& typeIds) const
-      override;
+  virtual std::string getId(const std::unordered_map<std::string, std::string>&
+                                typeIds) const override;
 
   TypePtr arrType;
 };
 
 struct Class : public Type {
   Class(std::string_view name) : Type{ TypeName::CLASS }, className(name) {}
-  virtual std::string getId(
-      const std::unordered_map<std::string, std::string>& typeIds) const
-      override;
+  virtual std::string getId(const std::unordered_map<std::string, std::string>&
+                                typeIds) const override;
 
   std::string className;
 };

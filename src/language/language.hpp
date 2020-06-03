@@ -132,8 +132,7 @@ public:
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
-      std::unordered_map<std::string, std::optional<
-      Program>>& initializedProgs,
+      std::unordered_map<std::string, std::optional<Program>>& initializedProgs,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
   const Ctx& getCtx() const noexcept { return *ctx_; }
@@ -421,7 +420,8 @@ private:
 
 
 std::string newLabel();
-std::optional<std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr>> argsToImExprs(
+std::optional<std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr>>
+argsToImExprs(
     const std::vector<std::string>& qualifiers,
     const std::string& fnName,
     const std::vector<ExprPtr>& params,

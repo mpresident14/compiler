@@ -96,7 +96,8 @@ bool Return::spillTemps(vector<InstrPtr>&) {
 /**************
  * assignRegs *
  **************/
-/* Returns true if temp was assigned to a machine register, false otherwise (will be spilled) */
+/* Returns true if temp was assigned to a machine register, false otherwise
+ * (will be spilled) */
 bool assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
   auto iter = coloring.find(temp);
   if (iter != coloring.end()) {
@@ -151,11 +152,11 @@ void tempToCode(
   if (isRegister(temp)) {
     out << static_cast<MachineReg>(temp);
   } else {
-    #ifdef DEBUG
-      out << "%t" << -temp;
-    #else
-      out << varToStackOffset.at(temp) << "(%rsp)";
-    #endif
+#ifdef DEBUG
+    out << "%t" << -temp;
+#else
+    out << varToStackOffset.at(temp) << "(%rsp)";
+#endif
   }
 }
 

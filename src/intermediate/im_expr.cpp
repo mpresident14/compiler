@@ -12,8 +12,7 @@ namespace im {
  * Const *
  *********/
 
-void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Operation(
       string("movq $").append(to_string(n_)).append(", `D0"), {}, { temp }));
 }
@@ -37,8 +36,7 @@ int Temp::toAssemInstrs(vector<assem::InstrPtr>&) const { return t_; }
 BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop)
     : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
 
-void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   switch (bop_) {
     case BOp::LSHIFT:
       return handleShifts("shlq", temp, instrs);
@@ -87,10 +85,8 @@ void BinOp::handleShifts(
   }
 }
 
-void BinOp::handleDiv(
-    bool isDiv,
-    int temp,
-    vector<assem::InstrPtr>& instrs) const {
+void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
+    const {
   expr1_->toAssemInstrs(RAX, instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   // Sign-extend %rax into %rdx
@@ -118,11 +114,12 @@ void BinOp::handleOthers(
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   // Need to create a new temp first in case t1 or t2 is the same as temp
-  // TODO: Handle these cases separately so we don't waste instructions most of the time
+  // TODO: Handle these cases separately so we don't waste instructions most of
+  // the time
   int tRes = newTemp();
   instrs.emplace_back(new assem::Move(t1, tRes));
-  instrs.emplace_back(
-      new assem::Operation(asmCode.append(" `S1, `D0"), { tRes, t2 }, { tRes }));
+  instrs.emplace_back(new assem::Operation(
+      asmCode.append(" `S1, `D0"), { tRes, t2 }, { tRes }));
   instrs.emplace_back(new assem::Move(tRes, temp));
 }
 
@@ -133,8 +130,7 @@ void BinOp::handleOthers(
 
 MemDeref::MemDeref(ExprPtr&& addr) : addr_(move(addr)) {}
 
-void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t = addr_->toAssemInstrs(instrs);
   instrs.emplace_back(new assem::Operation("movq (`S0), `D0", { t }, { temp }));
 }
@@ -160,8 +156,7 @@ void DoThenEval::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
 
 LabelAddr::LabelAddr(const string& name) : name_(name) {}
 
-void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   // "leaq symbol(%rip), dst" looks like symbol + %rip, but actually means
   // symbol with respect to %rip. Essentially, it calculates the address of
   // symbol
@@ -182,8 +177,7 @@ CallExpr::CallExpr(
       hasReturnValue_(hasReturnValue) {}
 
 
-void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   // Move params into argument registers
   // TODO: If more than six params, need to put onto stack
   vector<int> srcTemps;

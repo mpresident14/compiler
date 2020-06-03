@@ -59,7 +59,6 @@ public:
   void logFatal(size_t line, std::string_view msg);
 
 private:
-
   std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
 
   std::string filename_ = "";

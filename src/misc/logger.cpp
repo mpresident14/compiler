@@ -70,10 +70,10 @@ bool Logger::hasErrors() const noexcept { return errorCount_ != 0; }
 
 
 namespace {
-  const char* maybePlural(size_t n, const char* singular, const char* plural) {
-    return n == 1 ? singular : plural;
-  }
+const char* maybePlural(size_t n, const char* singular, const char* plural) {
+  return n == 1 ? singular : plural;
 }
+}  // namespace
 
 
 void Logger::streamLog(std::ostream& out) const {
@@ -89,8 +89,9 @@ void Logger::streamLog(std::ostream& out) const {
     out << stream.str() << '\n';
   }
   out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
-      << warningCount_ << maybePlural(warningCount_, " warning, ", " warnings, ")
-      << noteCount_ << maybePlural(noteCount_, " note\n\n", " notes\n\n");
+      << warningCount_
+      << maybePlural(warningCount_, " warning, ", " warnings, ") << noteCount_
+      << maybePlural(noteCount_, " note\n\n", " notes\n\n");
 }
 
 void Logger::logFatal(size_t line, std::string_view msg) {

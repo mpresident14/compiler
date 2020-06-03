@@ -36,19 +36,20 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 void Function::toCode(ostream& out) {
   out << name_ << ":\n";
 
-  #ifdef DEBUG
-    for (const InstrPtr& instr : instrs_) {
-      instr->toCode(out, {});
-    }
-    return;
-  #endif
+#ifdef DEBUG
+  for (const InstrPtr& instr : instrs_) {
+    instr->toCode(out, {});
+  }
+  return;
+#endif
 
   FlowGraph fgraph(instrs_);
   fgraph.computeLiveness();
   InterferenceGraph igraph(fgraph);
   auto colorPair = igraph.color();
 
-  bitset<NUM_AVAIL_REGS> writtenRegs = regAlloc(colorPair.first, colorPair.second);
+  bitset<NUM_AVAIL_REGS> writtenRegs =
+      regAlloc(colorPair.first, colorPair.second);
   auto savesAndRestores = preserveRegs(writtenRegs);
   const vector<InstrPtr>& saves = savesAndRestores.first;
   const vector<InstrPtr>& restores = savesAndRestores.second;

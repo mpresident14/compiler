@@ -10,18 +10,18 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <optional>
 
 using namespace std;
 
-// TODO: Generate more informative parser errors by analyzing stack and remaining
-// tokens. Can also update the parser code itself (e.g., "expected <token>" or
-// "no reduction" error)
+// TODO: Generate more informative parser errors by analyzing stack and
+// remaining tokens. Can also update the parser code itself (e.g., "expected
+// <token>" or "no reduction" error)
 
 /* Return true if no errors */
 bool compile(const std::string& srcFilename, const std::string& asmFilename) {
@@ -30,8 +30,11 @@ bool compile(const std::string& srcFilename, const std::string& asmFilename) {
   bool hasErr = false;
   try {
     // Mark as initiailized before recursing to allow circular dependencies
-    auto iter =
-        initializedProgs.emplace(srcFilename, optional<language::Program>(parser::parse(srcFilename))).first;
+    auto iter = initializedProgs
+                    .emplace(
+                        srcFilename,
+                        optional<language::Program>(parser::parse(srcFilename)))
+                    .first;
 
 
     // Recursively record all declarations

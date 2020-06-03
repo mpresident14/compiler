@@ -19,7 +19,6 @@ optional<tuple<string, vector<im::ExprPtr>, TypePtr>> argsToImExprs(
     const vector<ExprPtr>& params,
     size_t line,
     Ctx& ctx) {
-
   vector<im::ExprPtr> paramImExprs;
   vector<TypePtr> paramTypes;
   size_t numParams = params.size();
@@ -30,12 +29,15 @@ optional<tuple<string, vector<im::ExprPtr>, TypePtr>> argsToImExprs(
     paramTypes.push_back(move(exprInfo.type));
   }
 
-  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers, fnName, paramTypes, line);
+  const Ctx::FnInfo* fnInfo =
+      ctx.lookupFnRec(qualifiers, fnName, paramTypes, line);
   if (!fnInfo) {
     return {};
   }
 
-  return {{ ctx.mangleFn(fnName, fnInfo->declFile, paramTypes), move(paramImExprs), fnInfo->returnType }};
+  return { { ctx.mangleFn(fnName, fnInfo->declFile, paramTypes),
+             move(paramImExprs),
+             fnInfo->returnType } };
 }
 
 }  // namespace language

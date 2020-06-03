@@ -13,7 +13,7 @@ size_t newFileId() {
   return i++;
 }
 
-}
+}  // namespace
 
 namespace language {
 
@@ -45,9 +45,11 @@ void Program::initContext(
       // We haven't initialized this program yet
       // Mark as initialized before recursing to allow circular dependencies
       try {
-        // We use an empty optional as a placeholder to mark that we already tried to parse the program.
-        // This way, we don't try parsing it again if it is imported somewhere else
-        auto iter = initializedProgs.emplace(importName, optional<Program>()).first;
+        // We use an empty optional as a placeholder to mark that we already
+        // tried to parse the program. This way, we don't try parsing it again
+        // if it is imported somewhere else
+        auto iter =
+            initializedProgs.emplace(importName, optional<Program>()).first;
         iter->second = optional<Program>(parser::parse(importName));
         prog = &iter->second;
         (*prog)->initContext(importName, initializedProgs, fileIds, typeIds);
@@ -55,15 +57,19 @@ void Program::initContext(
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
       } catch (const parser::ParseException& e) {
-        cerr << e.what() << "\n(Imported at " << filename << ", line "<< imported.line << ")\n" << endl;
+        cerr << e.what() << "\n(Imported at " << filename << ", line "
+             << imported.line << ")\n"
+             << endl;
       }
     } else {
       prog = &progsIter->second;
     }
 
     // If the program parsed, put the import's context in our context tree
-    if (prog->has_value() && !ctx_->getCtxTree().addCtx(importName, (*prog)->ctx_)) {
-      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + importName + "'");
+    if (prog->has_value() &&
+        !ctx_->getCtxTree().addCtx(importName, (*prog)->ctx_)) {
+      ctx_->getLogger().logNote(
+          imported.line, "Duplicate import '" + importName + "'");
     }
   }
 
@@ -133,7 +139,8 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Remove all parameters
   ctx.removeParams(paramNames_, line_);
 
-  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
+  imDecls.emplace_back(new im::Func(
+      ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
 void Func::checkForReturn(Ctx& ctx) {

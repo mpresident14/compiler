@@ -132,10 +132,11 @@ public:
   }
 
   /* Add a transition to an existing or new node */
-  template<typename T2 = T, typename V2 = V>
+  template <typename T2 = T, typename V2 = V>
   Node* addTransition(Node* node, T2&& transition, V2&& newNodeValue) {
     // No duplicate or updated transitions
-    auto transIterBool = node->transitions_.try_emplace(std::forward<T2>(transition), nullptr);
+    auto transIterBool =
+        node->transitions_.try_emplace(std::forward<T2>(transition), nullptr);
     if (!transIterBool.second) {
       // No duplicate or updated transitions
       return nullptr;

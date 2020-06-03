@@ -20,7 +20,8 @@ void test_parserWithConflicts() {
   generateParserCode(
       ParseInfo{
           BAD_GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
-      ParseFlags{ "test/parser/generated/bad_expr_parser", "" }, cerr);
+      ParseFlags{ "test/parser/generated/bad_expr_parser", "" },
+      cerr);
 
   TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
 }
@@ -32,7 +33,8 @@ int main() {
   generateParserCode(
       ParseInfo{
           GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
-      ParseFlags{ "test/parser/generated/expr_parser", "" }, cerr);
+      ParseFlags{ "test/parser/generated/expr_parser", "" },
+      cerr);
   test_parserWithConflicts();
 
   return 0;

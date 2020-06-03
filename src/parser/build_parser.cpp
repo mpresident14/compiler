@@ -12,10 +12,10 @@
 #include <queue>
 #include <sstream>
 #include <stdexcept>
+#include <string.h>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <string.h>
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
@@ -539,13 +539,13 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
-
-  buildParserDFA(gd, parseFlags).streamAsCode(
-      out,
-      "RuleData",
-      "int",
-      [&gd](const DFARuleSet& ruleSet) {
-        return ruleDataToCode(condenseRuleSet(ruleSet, gd));
-      },
-      [](int n) { return to_string(n); });
+  buildParserDFA(gd, parseFlags)
+      .streamAsCode(
+          out,
+          "RuleData",
+          "int",
+          [&gd](const DFARuleSet& ruleSet) {
+            return ruleDataToCode(condenseRuleSet(ruleSet, gd));
+          },
+          [](int n) { return to_string(n); });
 }

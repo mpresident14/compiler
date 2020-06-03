@@ -36,11 +36,7 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * If *
  ******/
 
-If::If(
-    ExprPtr&& boolE,
-    unique_ptr<Block>&& ifE,
-    StmtPtr&& elseE,
-    size_t line)
+If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line)
     : Stmt(line), boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
@@ -92,7 +88,10 @@ CallStmt::CallStmt(
     string_view name,
     vector<ExprPtr>&& params,
     size_t line)
-    : Stmt(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
+    : Stmt(line),
+      qualifiers_(move(qualifiers)),
+      name_(name),
+      params_(move(params)) {}
 
 void CallStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
@@ -155,8 +154,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     case ExprType::ARRAY_ACCESS: {
       ExprInfo lhsInfo = lhs_->toImExpr(ctx);
       imStmts.emplace_back(new im::Assign(
-          move(lhsInfo.imExpr),
-          rhs_->toImExprAssert(*lhsInfo.type, ctx)));
+          move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
       break;
     }
     default:
@@ -169,11 +167,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * VarDecl *
  ***********/
 
-VarDecl::VarDecl(
-    TypePtr&& type,
-    string_view name,
-    ExprPtr&& e,
-    size_t line)
+VarDecl::VarDecl(TypePtr&& type, string_view name, ExprPtr&& e, size_t line)
     : Stmt(line), type_(move(type)), name_(name), e_(move(e)) {}
 
 void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {

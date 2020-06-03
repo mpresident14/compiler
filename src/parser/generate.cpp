@@ -553,9 +553,9 @@ void ruleDataDecl(ostream& out) {
 
 void parseDecl(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
-  out << rootType << " parseString(const std::string& input);"
-      << rootType << " parse(std::istream& input);"
-      << rootType << " parse(const std::string& filename);";
+  out << rootType << " parseString(const std::string& input);" << rootType
+      << " parse(std::istream& input);" << rootType
+      << " parse(const std::string& filename);";
 }
 
 void parseExceptionDecl(ostream& out) {
@@ -770,17 +770,17 @@ void cppIncludes(ostream& out) {
       #include <algorithm>
       #include <climits>
       #include <cstddef>
+      #include <fstream>
       #include <functional>
       #include <memory>
       #include <optional>
       #include <sstream>
       #include <stdexcept>
       #include <streambuf>
+      #include <string.h>
       #include <string_view>
       #include <unordered_map>
       #include <vector>
-      #include <fstream>
-      #include <string.h>
 
       #include <prez/print_stuff.hpp>
     )";

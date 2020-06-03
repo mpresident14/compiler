@@ -5,16 +5,16 @@
 
 #include "src/assembly/temp.hpp"
 
+#include <bitset>
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <bitset>
-#include <string_view>
 
 namespace assem {
 
@@ -29,11 +29,14 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
-  // TODO: This needs to be tested with code that spills both spill regs, e.g. a leaq instruction
+  // TODO: This needs to be tested with code that spills both spill regs, e.g. a
+  // leaq instruction
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
-  /* Assigns temps to machine registers and keeps track of which machine registers are written */
+  /* Assigns temps to machine registers and keeps track of which machine
+   * registers are written */
   virtual void assignRegs(
-      const std::unordered_map<int, MachineReg>& coloring, std::bitset<NUM_AVAIL_REGS>& writtenRegs) = 0;
+      const std::unordered_map<int, MachineReg>& coloring,
+      std::bitset<NUM_AVAIL_REGS>& writtenRegs) = 0;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
@@ -73,8 +76,11 @@ public:
   void toCode(std::ostream& out) override;
 
 private:
-  std::bitset<NUM_AVAIL_REGS> regAlloc(const std::unordered_map<int, MachineReg>& coloring, const std::vector<int>& spilled);
-  std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> preserveRegs(const std::bitset<NUM_AVAIL_REGS>& writtenRegs);
+  std::bitset<NUM_AVAIL_REGS> regAlloc(
+      const std::unordered_map<int, MachineReg>& coloring,
+      const std::vector<int>& spilled);
+  std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> preserveRegs(
+      const std::bitset<NUM_AVAIL_REGS>& writtenRegs);
 
   std::string name_;
   std::vector<InstrPtr> instrs_;
@@ -104,7 +110,9 @@ public:
     return InstrType::LABEL;
   }
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg>& coloring, std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
+  void assignRegs(
+      const std::unordered_map<int, MachineReg>& coloring,
+      std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -123,7 +131,9 @@ public:
     return InstrType::MOVE;
   }
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg>& coloring, std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
+  void assignRegs(
+      const std::unordered_map<int, MachineReg>& coloring,
+      std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -149,7 +159,9 @@ public:
     return InstrType::OPER;
   }
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  void assignRegs(const std::unordered_map<int, MachineReg>& coloring, std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
+  void assignRegs(
+      const std::unordered_map<int, MachineReg>& coloring,
+      std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
   void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
@@ -203,7 +215,8 @@ public:
   }
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   virtual void assignRegs(
-      const std::unordered_map<int, MachineReg>& coloring, std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
+      const std::unordered_map<int, MachineReg>& coloring,
+      std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
   virtual void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;

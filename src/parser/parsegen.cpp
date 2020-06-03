@@ -1,6 +1,6 @@
+#include "src/misc/logger.hpp"
 #include "src/parser/config_parse.hpp"
 #include "src/parser/generate.hpp"
-#include "src/misc/logger.hpp"
 
 #include <iostream>
 #include <string>

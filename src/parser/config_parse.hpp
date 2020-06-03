@@ -14,8 +14,6 @@ struct ParseInfo {
   std::string addlCppCode;
 };
 
-ParseInfo parseConfig(
-    const std::string& filename,
-    std::ostream& warnings);
+ParseInfo parseConfig(const std::string& filename, std::ostream& warnings);
 
 #endif
