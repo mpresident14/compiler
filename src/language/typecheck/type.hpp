@@ -20,12 +20,14 @@ enum class TypeName { INT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
   virtual ~Type() {}
-  Type(TypeName name, size_t nBytes) : typeName(name), numBytes(nBytes) {}
+  constexpr Type(TypeName name, u_char nBytes, bool integral = false)
+    : typeName(name), numBytes(nBytes), isIntegral(integral) {}
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const;
 
   TypeName typeName;
-  size_t numBytes;
+  u_char numBytes;
+  bool isIntegral;
 };
 
 // TODO: Shared pointer might make more sense, especially when we have more
@@ -54,8 +56,8 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
 
-const TypePtr intType = std::make_shared<Type>(TypeName::INT, 8);
-const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1);
+const TypePtr intType = std::make_shared<Type>(TypeName::INT, 8, true);
+const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1, true);
 const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL, 1);
 const TypePtr voidType = std::make_shared<Type>(TypeName::VOID, 0);
 const TypePtr anyType = std::make_shared<Type>(TypeName::ANY, 0);

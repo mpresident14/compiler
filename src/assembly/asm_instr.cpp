@@ -148,15 +148,15 @@ void Return::assignRegs(
 void tempToCode(
     ostream& out,
     int temp,
-    char numBytes,
+    char bytesChar,
     const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
-    out << regToString(static_cast<MachineReg>(temp), numBytes);
+    out << regToString(static_cast<MachineReg>(temp), bytesChar);
   } else {
 #ifdef DEBUG
     out << "%t" << -temp;
 #else
-    out << varToStackOffset.at(temp) << '(' << regToString(RSP, numBytes) << ')';
+    out << varToStackOffset.at(temp) << '(' << regToString(RSP, bytesChar) << ')';
 #endif
   }
 }
@@ -188,14 +188,14 @@ void Operation::toCode(
   while (i < len) {
     char c = asmCode_.at(i);
     if (c == '`') {
-      char numBytes = asmCode_.at(i + 1);
+      char bytesChar = asmCode_.at(i + 1);
       c = asmCode_.at(i + 2);
       if (c == 'S') {
         tempToCode(
-            out, srcs_.at(digitToInt(asmCode_.at(i + 3))), numBytes, varToStackOffset);
+            out, srcs_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
       } else if (c == 'D') {
         tempToCode(
-            out, dsts_.at(digitToInt(asmCode_.at(i + 3))), numBytes, varToStackOffset);
+            out, dsts_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
       } else {
         // TODO: Remove this case when done
         throw runtime_error("Operation::toCode");

@@ -124,6 +124,18 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
  * Assign *
  **********/
 
+namespace {
+  char toInstrLetter(char bytesChar) {
+    switch (bytesChar) {
+      case '8': return 'q';
+      case '4': return 'l';
+      case '2': return 'w';
+      case '1': return 'b';
+      default: throw invalid_argument("toInstrLetter: " + to_string(bytesChar));
+    }
+  }
+}
+
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
 void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
@@ -136,9 +148,17 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     int t1 = newTemp();
     int t2 = newTemp();
     e2_->toAssemInstrs(t2, instrs);
-    static_cast<MemDeref*>(e1_.get())->getAddr()->toAssemInstrs(t1, instrs);
+    const MemDeref* memDeref = static_cast<MemDeref*>(e1_.get());
+    memDeref->getAddr()->toAssemInstrs(t1, instrs);
+
+    char bytesChar = memDeref->getNumBytes() + '0';
+    string asmOp = "mov";
+    asmOp.push_back(toInstrLetter(bytesChar));
+    asmOp.append(" `");
+    asmOp.push_back(bytesChar);
+    asmOp.append("S1, (`8S0)");
     instrs.emplace_back(
-        new assem::Operation("movq `8S1, (`8S0)", { t1, t2 }, {}));
+        new assem::Operation(move(asmOp), { t1, t2 }, {}));
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }

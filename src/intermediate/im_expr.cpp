@@ -128,12 +128,31 @@ void BinOp::handleOthers(
  * MemDeref *
  ************/
 
-MemDeref::MemDeref(ExprPtr&& addr, size_t numBytes)
+namespace {
+  void addInstrLetter(char bytesChar, string& str) {
+    switch (bytesChar) {
+      case '8': return;
+      case '4': str.append("sl");
+      case '2': str.append("sw");
+      case '1': str.append("sb");
+      default: throw invalid_argument("addInstrLetter: " + to_string(bytesChar));
+    }
+  }
+}
+
+MemDeref::MemDeref(ExprPtr&& addr, u_char numBytes)
     : addr_(move(addr)), numBytes_(numBytes) {}
 
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t = addr_->toAssemInstrs(instrs);
-  instrs.emplace_back(new assem::Operation("movq (`8S0), `8D0", { t }, { temp }));
+  string asmOp = "mov";
+
+  char bytesChar =  numBytes_ + '0';
+  addInstrLetter(bytesChar, asmOp);
+  asmOp.append("q (`");
+  asmOp.push_back(bytesChar);
+  asmOp.append("S0), `8D0");
+  instrs.emplace_back(new assem::Operation(move(asmOp), { t }, { temp }));
 }
 
 /**************

@@ -27,6 +27,13 @@ ExprInfo ConstInt::toImExpr(Ctx&) {
 }
 
 /*************
+ * ConstChar *
+ *************/
+ExprInfo ConstChar::toImExpr(Ctx&) {
+  return { make_unique<im::Const>(c_), charType };
+}
+
+/*************
  * ConstBool *
  *************/
 ExprInfo ConstBool::toImExpr(Ctx&) {
@@ -175,11 +182,15 @@ void BinaryOp::asBoolComp(
     assem::Label* ifFalse,
     im::ROp rOp,
     Ctx& ctx) {
-  // Make sure we are comparing two ints
-  im::ExprPtr imE1 = e1_->toImExprAssert(*intType, ctx);
-  im::ExprPtr imE2 = e2_->toImExprAssert(*intType, ctx);
+  // Make sure we are comparing two integral types
+  ExprInfo info1 = e1_->toImExpr(ctx);
+  ExprInfo info2 = e2_->toImExpr(ctx);
+  if (!(info1.type->isIntegral && info2.type->isIntegral)) {
+    ostream& err = ctx.getLogger().logError(line_, "Comparison operator requires integral types. Got ");
+    err << *info1.type << " and " << *info2.type;
+  }
   imStmts.emplace_back(
-      new im::CondJump(move(imE1), move(imE2), rOp, ifTrue, ifFalse));
+      new im::CondJump(move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
 }
 
 void BinaryOp::asBoolAnd(

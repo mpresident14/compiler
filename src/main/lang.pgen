@@ -76,13 +76,15 @@ FALSE       "false"
 VOID        "void"
 INT         "int"
 BOOL        "bool"
+CHAR        "char"
 
 IMPORT      "import"
 COLON2      "::"
 
 NUM         "0|[1-9][0-9]*"                        -> { int }    % stoi(string(#str)) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string } % #str %
-SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""             -> { string } % removeQuotes(#str) %
+SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""           -> { string } % removeQuotes(#str) %
+CHARLIT     "'.'"                                  -> { char }   % #str[1] %
 
 #prec
 
@@ -149,6 +151,7 @@ Expr -> { ExprPtr }
   := NUM                                      % make_unique<ConstInt>(#0, #line) %
    | TRUE                                     % make_unique<ConstBool>(true, #line) %
    | FALSE                                    % make_unique<ConstBool>(false, #line) %
+   | CHARLIT                                  % make_unique<ConstChar>(#0, #line) %
    | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
    | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
    | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
@@ -203,6 +206,7 @@ Param -> { pair<TypePtr, string> }
 NonVoidType -> { TypePtr }
   := INT                             % intType %
    | BOOL                            % boolType %
+   | CHAR                            % charType %
    | NonVoidType LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
 
 Type -> { TypePtr }

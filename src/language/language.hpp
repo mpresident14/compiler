@@ -46,6 +46,7 @@ protected:
 // member
 enum class ExprType {
   CONST_INT,
+  CONST_CHAR,
   CONST_BOOL,
   VAR,
   TEMP,
@@ -273,6 +274,16 @@ public:
 
 private:
   int n_;
+};
+
+class ConstChar : public Expr {
+public:
+  constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
+  ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+
+private:
+  char c_;
 };
 
 

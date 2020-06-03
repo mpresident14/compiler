@@ -12,7 +12,7 @@ vector<int> regsAsInts(const vector<MachineReg>& regs) {
   return ints;
 }
 
-string regToString(MachineReg machineReg, char numBytes) {
+string regToString(MachineReg machineReg, char bytesChar) {
   string ret = "%";
   bool isOriginal;
 
@@ -85,7 +85,7 @@ string regToString(MachineReg machineReg, char numBytes) {
       throw invalid_argument(to_string(machineReg) + " is not a register.");
   }
 
-  switch (numBytes) {
+  switch (bytesChar) {
     case '8':
       if (isOriginal) {
         ret.insert(ret.begin() + 1, 'r');
@@ -99,15 +99,20 @@ string regToString(MachineReg machineReg, char numBytes) {
       }
       break;
     case '2':
+      if (!isOriginal) {
+        ret.push_back('w');
+      }
+      break;
+    case '1':
       if (isOriginal) {
         ret[2] = 'l';
       } else {
         ret.push_back('b');
       }
-    case '1':
+      break;
     default:
-      throw invalid_argument(
-          to_string(numBytes) + " is not a valid register offset.");
+      throw invalid_argument("regToString: " +
+          to_string(bytesChar) + " is not a valid register offset.");
   }
 
   return ret;

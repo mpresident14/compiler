@@ -18,4 +18,10 @@ void printArr(int[] arr) {
 
 void runprez() {
   printArr(createArr());
+  char[] charArr = char[3];
+
+  charArr[0] = 'a';
+  if (charArr[0] == 'a') {
+    printInt(5);
+  }
 }
