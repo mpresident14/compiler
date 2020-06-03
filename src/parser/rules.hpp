@@ -67,7 +67,7 @@ public:
       for (int symbol : rule.symbols) {
         h2 += intHasher(symbol);
       }
-      size_t h3 = std::hash<size_t>()(rule.pos);
+      size_t h3 = intHasher((int)rule.pos);
       return h3 ^ h1 ^ (h2 << 1);
     }
   };
