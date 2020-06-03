@@ -1,5 +1,5 @@
 int func() {
-  return 2;
+  returna 2;
 }
 
 int func(int n) {

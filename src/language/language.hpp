@@ -132,7 +132,8 @@ public:
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
-      std::unordered_map<std::string, Program>& initializedProgs,
+      std::unordered_map<std::string, std::optional<
+      Program>>& initializedProgs,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
   const Ctx& getCtx() const noexcept { return *ctx_; }

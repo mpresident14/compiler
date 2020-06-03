@@ -6,32 +6,52 @@ using namespace std;
 Logger::Logger(string_view filename) : filename_(filename) {}
 
 ostringstream& Logger::logError(size_t line, string_view msg) {
-  ++errorCount_;
   return log(MsgType::ERROR, line, msg);
 }
 
 ostringstream& Logger::logWarning(size_t line, string_view msg) {
-  ++warningCount_;
   return log(MsgType::WARNING, line, msg);
 }
 
 ostringstream& Logger::logNote(size_t line, string_view msg) {
-  ++noteCount_;
   return log(MsgType::NOTE, line, msg);
 }
 
-ostringstream& Logger::log(MsgType type, size_t line, string_view msg) {
+std::ostringstream& Logger::log(MsgType msgType, std::string_view msg) {
+  switch (msgType) {
+    case MsgType::ERROR:
+      ++errorCount_;
+      break;
+    case MsgType::WARNING:
+      ++warningCount_;
+      break;
+    case MsgType::NOTE:
+      ++noteCount_;
+      break;
+    default:
+      throw invalid_argument("Unknown MsgType");
+  }
+  logs_.push_back(ostringstream());
+  ostringstream& error = logs_.back();
+  error << msg;
+  return error;
+}
+
+ostringstream& Logger::log(MsgType msgType, size_t line, string_view msg) {
   logs_.push_back(ostringstream());
   ostringstream& error = logs_.back();
 
-  switch (type) {
+  switch (msgType) {
     case MsgType::ERROR:
+      ++errorCount_;
       error << errorColored;
       break;
     case MsgType::WARNING:
+      ++warningCount_;
       error << warningColored;
       break;
     case MsgType::NOTE:
+      ++noteCount_;
       error << noteColored;
       break;
     default:

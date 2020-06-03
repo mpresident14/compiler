@@ -24,7 +24,7 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
   vector<string> pathParts = splitPath(importPath);
   unordered_map<string, NodePtr>* currentMap = &roots_;
 
-  // Iterate backwards through the parts of the path until we reach the first
+  // Iterate backwards through the parts of the qualifier path until we reach the first
   // one
   auto iterToFirst = prev(pathParts.crend());
   for (auto revIter = pathParts.crbegin(); revIter != iterToFirst; ++revIter) {
@@ -42,8 +42,8 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
     }
   }
 
-  // We've reached the first part of the path, so insert the context if
-  // it doesn't already exist (duplicate imports ok)
+  // We've reached the first part of the qualifier path, so insert the context if
+  // it doesn't already exist (duplicate imports ok, we log a note)
   // TODO: enforce importPath not empty, either in grammar or elsewhere
   const string& firstPart = pathParts[0];
   auto mapIter = currentMap->find(firstPart);
@@ -91,41 +91,39 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
   // We've reached the end of the path used to qualify the function, so
   // start looking for a context
   do {
-    // If this context is null, continue searching down the tree until
+    // If this context is null (not an exact match), continue searching down the tree until
     // we find either:
-    // - a non-null context (resolves to shortest path)
-    // - a Node with not exactly 1 child (can't resolve qualifiers)
+    // - a Node with a non-null context (unique suffix)
+    // - a Node with more than 1 child (ambiguous qualifier)
     const CtxPtr& maybeCtx = child->ctx;
     if (maybeCtx) {
       auto infoAndIters = maybeCtx->lookupFn(name, paramTypes);
       if (infoAndIters.first) {
         return infoAndIters.first;
       } else {
-        string searchedFile = boost::join(filepath, "/").append(".prez");
         ctx.undefinedFn(
             qualifiers,
             name,
             paramTypes,
             line,
             infoAndIters.second,
-            searchedFile);
+            boost::join(filepath, "/").append(".prez"));
         return nullptr;
       }
     }
 
     currentMap = &child->children;
     if (currentMap->empty()) {
-      throw runtime_error("Ctx::CtxTree::lookupFn::empty");
+      throw runtime_error("Ctx::CtxTree::lookupFn (empty)");
     }
+
     if (currentMap->size() > 1) {
       ostream& err = ctx.getLogger().logError(line);
-      string quals = boost::join(qualifiers, "::");
-      string path = boost::join(filepath, "::");
-      err << "Ambiguous qualifier for function '" << quals << "::" << name;
+      err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::") << "::" << name;
       Ctx::streamParamTypes(paramTypes, err);
       err << "'. Found";
       for (const auto& [part, _] : *currentMap) {
-        err << "\n\t" << part << "::" << path;
+        err << "\n\t" << part << "::" << boost::join(filepath, "::");
       }
       return nullptr;
     }

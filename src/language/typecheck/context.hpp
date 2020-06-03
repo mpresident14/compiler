@@ -25,13 +25,25 @@ public:
 
 
   struct FnInfo {
-    // TODO: Shouldn't need this field anymore
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
     std::string declFile;
     size_t line;
   };
 
+  /*
+   * Name resolution happens as follows:
+   * - If there is no qualifier, then only the current source file is searched
+   * - If there is a qualifier:
+   *    ~ If the qualifier is an exact match of an imported file path, that
+   *      file is searched
+   *    ~ Otherwise, if the qualifier represents a unique suffix identifying
+   *      an imported file path, that file is searched
+   *    ~ Otherwise, the name is undefined
+   * - In all cases, the overloads are resolved as normal within the file
+   * specified This approach allows one to easily identify which file a name is
+   * from just by looking at the imports.
+   */
 
   class CtxTree {
   public:
@@ -60,21 +72,18 @@ public:
 
   private:
     /* The roots specify .prez files that were imported
-     * Each level down represents a level up in the directory */
+     * Each level down in the context tree represents a level up in the
+     * directory tree */
     std::unordered_map<std::string, NodePtr> roots_;
   };
 
-  static std::string qualifiedFn(
-      std::vector<std::string> qualifiers,
-      std::string_view fnName);
   static void streamParamTypes(
       const std::vector<TypePtr>& paramTypes,
       std::ostream& err);
 
   Ctx(std::string_view filename,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
-      std::shared_ptr<std::unordered_map<std::string, std::string>>
-          typeIds);
+      std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -114,7 +123,8 @@ public:
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
-      const std::vector<TypePtr>& paramTypes, size_t line);
+      const std::vector<TypePtr>& paramTypes,
+      size_t line);
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,

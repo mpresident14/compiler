@@ -15,6 +15,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 using namespace std;
 
@@ -24,17 +25,17 @@ using namespace std;
 
 /* Return true if no errors */
 bool compile(const std::string& srcFilename, const std::string& asmFilename) {
-  unordered_map<string, language::Program> initializedProgs;
+  unordered_map<string, optional<language::Program>> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
     // Mark as initiailized before recursing to allow circular dependencies
     auto iter =
-        initializedProgs.emplace(srcFilename, parser::parse(srcFilename)).first;
+        initializedProgs.emplace(srcFilename, optional<language::Program>(parser::parse(srcFilename))).first;
 
 
     // Recursively record all declarations
-    iter->second.initContext(
+    iter->second->initContext(
         srcFilename,
         initializedProgs,
         make_shared<unordered_map<string, std::string>>(),
@@ -43,9 +44,11 @@ bool compile(const std::string& srcFilename, const std::string& asmFilename) {
     // Convert to assembly
     vector<assem::Program> assemProgs;
     for (const auto& [filename, prog] : initializedProgs) {
-      assemProgs.push_back(prog.toAssemProg());
-      // Print any warnings or non-fatal errors
-      hasErr |= prog.getCtx().hasErrors();
+      if (prog) {
+        assemProgs.push_back(prog->toAssemProg());
+        // Print any warnings or non-fatal errors
+        hasErr |= prog->getCtx().hasErrors();
+      }
     }
 
     // If we compiled successfully, write the assembly to the file
@@ -66,7 +69,9 @@ bool compile(const std::string& srcFilename, const std::string& asmFilename) {
 
   logger.streamLog();
   for (const auto& [filename, prog] : initializedProgs) {
-    prog.getCtx().displayLogs();
+    if (prog) {
+      prog->getCtx().displayLogs();
+    }
   }
 
   return hasErr;

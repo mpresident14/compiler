@@ -23,6 +23,8 @@ public:
 
   friend class Exception;
 
+  enum class MsgType { ERROR, WARNING, NOTE };
+
   static constexpr char errorColored[] = "\033[1;31mError\033[0m";
   static constexpr char warningColored[] = "\033[1;35mWarning\033[0m";
   static constexpr char noteColored[] = "\033[1;34mNote\033[0m";
@@ -38,6 +40,7 @@ public:
   std::ostringstream& logError(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logWarning(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logNote(size_t line = 0, std::string_view msg = "");
+  std::ostringstream& log(MsgType msgType, std::string_view msg = "");
   bool hasErrors() const noexcept;
   void streamLog(std::ostream& out = std::cerr) const;
 
@@ -56,9 +59,8 @@ public:
   void logFatal(size_t line, std::string_view msg);
 
 private:
-  enum class MsgType { ERROR, WARNING, NOTE };
 
-  std::ostringstream& log(MsgType type, size_t line, std::string_view msg);
+  std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
 
   std::string filename_ = "";
   std::vector<std::ostringstream> logs_;

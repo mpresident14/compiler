@@ -12,13 +12,17 @@
 
 using namespace std;
 
-std::string Ctx::qualifiedFn(
+namespace {
+
+std::string qualifiedFn(
     std::vector<std::string> qualifiers,
     std::string_view fnName) {
   if (qualifiers.empty()) {
     return string(fnName);
   }
   return boost::join(qualifiers, "::").append("::").append(fnName);
+}
+
 }
 
 void Ctx::streamParamTypes(
@@ -156,14 +160,14 @@ Ctx::lookupFn(const string& name, const std::vector<TypePtr>& paramTypes) {
   return { nullptr, move(iterPair) };
 }
 
-// TODO: Allow "from <file> import <function/class>""
+// TODO: Allow "from <file> import <function/class>" ???
 const Ctx::FnInfo* Ctx::lookupFnRec(
     const std::vector<std::string>& qualifiers,
     const std::string& name,
     const std::vector<TypePtr>& paramTypes,
     size_t line) {
   if (qualifiers.empty()) {
-    // If no qualifiers we only try our own context
+    // If no qualifiers, we only try our own context
     auto infoAndIters = lookupFn(name, paramTypes);
     if (infoAndIters.first) {
       return infoAndIters.first;
@@ -224,10 +228,7 @@ string Ctx::mangleFn(
     return string(fnName);
   }
 
-  // filename = filename.substr(0, filename.size() - sizeof(".prez") + 1);
   string newName(fnName);
-  // newName.append(filename).push_back('_');
-  // replace(newName.begin(), newName.end(), '/', '_');
   newName.append(fileIds_->at(filename));
 
   for (const TypePtr& type : paramTypes) {
