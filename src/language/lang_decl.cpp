@@ -32,7 +32,7 @@ void Program::initContext(
     shared_ptr<unordered_map<string, string>> fileIds,
     shared_ptr<unordered_map<string, string>> typeIds) {
   // Create a new context
-  ctx_ = make_shared<Ctx>(filename, fileIds, typeIds);
+  ctx_ = make_unique<Ctx>(filename, fileIds, typeIds);
   ctx_->addFileId(newFileId(), filename);
 
   // Go through the imports and build the context tree so we have access
@@ -68,7 +68,7 @@ void Program::initContext(
     // if (!prog || (prog->has_value() && !ctx_)) {
     //   cout << "WAAAAHHHH!!!!" << endl;
     // }
-    if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_)) {
+    if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_.get())) {
       ctx_->getLogger().logNote(
           imported.line, "Duplicate import '" + importName + "'");
     }

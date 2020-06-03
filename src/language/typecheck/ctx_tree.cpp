@@ -20,7 +20,7 @@ vector<string> splitPath(string_view importPath) {
 
 }  // namespace
 
-bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
+bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
   vector<string> pathParts = splitPath(importPath);
   unordered_map<string, NodePtr>* currentMap = &roots_;
 
@@ -48,13 +48,13 @@ bool Ctx::CtxTree::addCtx(string_view importPath, CtxPtr ctx) {
   const string& firstPart = pathParts[0];
   auto mapIter = currentMap->find(firstPart);
   if (mapIter == currentMap->end()) {
-    Node* newNode = new Node{ ctx.get(), {} };
+    Node* newNode = new Node{ ctx, {} };
     currentMap->emplace(firstPart, NodePtr(newNode));
     return true;
   } else {
     NodePtr& child = mapIter->second;
     bool doesNotExist = child->ctx == nullptr;
-    child->ctx = ctx.get();
+    child->ctx = ctx;
     return doesNotExist;
   }
 }

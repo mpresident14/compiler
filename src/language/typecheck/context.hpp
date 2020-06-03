@@ -14,7 +14,7 @@ class CtxTree;
 
 class Ctx {
 public:
-  using CtxPtr = std::shared_ptr<Ctx>;
+  using CtxPtr = std::unique_ptr<Ctx>;
 
   struct VarInfo {
     TypePtr type;
@@ -63,7 +63,7 @@ public:
     CtxTree& operator=(CtxTree&&) = default;
 
     /* Return true if successfully added, false if already exists */
-    bool addCtx(std::string_view importPath, CtxPtr ctx);
+    bool addCtx(std::string_view importPath, Ctx* ctx);
     const Ctx::FnInfo* lookupFn(
         const std::vector<std::string> qualifiers,
         const std::string& name,
