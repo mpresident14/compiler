@@ -70,8 +70,11 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       make_unique<im::MakeLabel>(newLabel());
   assem::Label* bodyLabel = mkBodyLabel->genInstr();
   assem::Label* doneLabel = mkDoneLabel->genInstr();
-  // TODO: Not sure if possible (easy) b/c of uniqptrs, but don't compute this
-  // twice
+  // TODO: This should first be a NOT(boolE) and reverse the labels, but asBool
+  // can destroy objects within an expression (see BinaryOp::toImExpr).
+  // Either write a clone() method or implement that function differently and
+  // collect the imStmts in a vector for insertion after the label (before moving
+  // into the UnaryOp)
   boolE_->asBool(imStmts, bodyLabel, doneLabel, ctx);
   imStmts.emplace_back(move(mkBodyLabel));
   body_->toImStmts(imStmts, ctx);
