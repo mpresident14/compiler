@@ -19,13 +19,16 @@ void printArr(int[] arr) {
 void main() {
   printArr(createArr());
 
-  char[] charArr = char[3];
+  char[] charArr = char[]{'a','b','c','d','e'};
   charArr[0] = 'a';
   if (charArr[0] == 'a') {
-    print(5);
+    print(charArr.length);
   }
 
-  int[] brackInit = int[] {6,7,8};
+  long[] lArr = long[8];
+  print(lArr.length);
+
+  int[] brackInit = int[] {13,21,34};
   print(brackInit[0]);
   print(brackInit[1]);
   print(brackInit[2]);

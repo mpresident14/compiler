@@ -141,25 +141,19 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
   switch (lhs_->getType()) {
-    case ExprType::VAR: {
-      const Ctx::VarInfo* varInfo =
-          ctx.lookupVar(static_cast<Var*>(lhs_.get())->getName(), line_);
-      if (!varInfo) {
-        // Undefined variable
-        return;
+    case ExprType::VAR: // Fall thru
+    case ExprType::MEMBER_ACCESS:
+      // Can't assign to length field of an array
+      if (lhsInfo.type->typeName == TypeName::ARRAY) {
+        break;
       }
-      imStmts.emplace_back(new im::Assign(
-          make_unique<im::Temp>(varInfo->temp),
-          rhs_->toImExprAssert(*varInfo->type, ctx)));
-      break;
-    }
-    case ExprType::ARRAY_ACCESS: {
-      ExprInfo lhsInfo = lhs_->toImExpr(ctx);
+      // Fall thru
+    case ExprType::ARRAY_ACCESS:
       imStmts.emplace_back(new im::Assign(
           move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
       break;
-    }
     default:
       throw invalid_argument(
           "Assign::toImStmts: Should be enforced by grammar");

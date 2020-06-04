@@ -503,7 +503,16 @@ MemberAccess::MemberAccess(
 
 
 ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
-  return { make_unique<im::Const>(0), intType };
+  ExprInfo eInfo = objExpr_->toImExpr(ctx);
+
+  // The only member of an array is length
+  if (eInfo.type->typeName == TypeName::ARRAY) {
+    if (member_ == "length") {
+      return { make_unique<im::MemDeref>(move(eInfo.imExpr), 8), longType };
+    }
+    ctx.getLogger().logError(line_, "Array has no member " + member_);
+    return dummyInfo();
+  }
 }
 
 /********
@@ -552,10 +561,10 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
 
   return move(exprInfo.imExpr);
 
-  warnNarrow:
-    ostream& warning = ctx.getLogger().logWarning(line_);
-    warning << "Narrowing conversion from " << eType << " to " << type;
-    return move(exprInfo.imExpr);
+warnNarrow:
+  ostream& warning = ctx.getLogger().logWarning(line_);
+  warning << "Narrowing conversion from " << eType << " to " << type;
+  return move(exprInfo.imExpr);
 }
 
 void Expr::asBool(
