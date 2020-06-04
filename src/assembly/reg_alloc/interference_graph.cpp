@@ -158,8 +158,6 @@ mainLoop:
     // to/from
     auto movePartners = moveMultimap_.equal_range(temp);
     for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
-    }
-    for (auto iter = movePartners.first; iter != movePartners.second; ++iter) {
       auto coloringIter = coloring.find(iter->second);
       if (coloringIter != coloring.end()) {
         moveRegs.set(coloringIter->second);

@@ -15,7 +15,7 @@
  */
 
 enum MachineReg {
-  RAX,
+  RAX = 0,
   RCX,
   RDX,
   RDI,
