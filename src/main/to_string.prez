@@ -1,0 +1,18 @@
+char[] intToString(int n) {
+  int num = n;
+  int numDigits = 0;
+  while (num != 0) {
+    num = num / 10;
+    numDigits = numDigits + 1;
+  }
+
+  num = n;
+  char[] str = char[numDigits];
+  int i = numDigits - 1;
+  while (num != 0) {
+    str[i] = num % 10 + '0';
+    num = num / 10;
+  }
+
+  return str;
+}
