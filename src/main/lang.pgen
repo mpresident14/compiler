@@ -162,36 +162,38 @@ Stmt -> { StmtPtr }
    | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
 
 Expr -> { ExprPtr }
-  := NUM                                      % make_unique<ConstInt>(#0, #line) %
-   | TRUE                                     % make_unique<ConstBool>(true, #line) %
-   | FALSE                                    % make_unique<ConstBool>(false, #line) %
-   | CHARLIT                                  % make_unique<ConstChar>(#0, #line) %
-   | MINUS Expr   #prec UNARY_MINUS           % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
-   | BANG Expr                                % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
-   | Expr PLUS Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
-   | Expr MINUS Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
-   | Expr STAR Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
-   | Expr FSLASH Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
-   | Expr MOD Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::MOD) %
-   | Expr BIT_AND Expr                        % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
-   | Expr BIT_OR Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
-   | Expr XOR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::XOR) %
-   | Expr LSHIFT Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::LSHIFT) %
-   | Expr RSHIFT Expr                         % make_unique<BinaryOp>(move(#0), move(#2), BOp::RSHIFT) %
-   | Expr AND Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
-   | Expr OR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
-   | Expr EQEQ Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %
-   | Expr NEQ Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::NEQ) %
-   | Expr LT Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::LT) %
-   | Expr GT Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::GT) %
-   | Expr LTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
-   | Expr GTE Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
-   | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
-   | Qualifiers IDENT LPAREN Exprs RPAREN     % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
-   | NonVoidType LBRACKET Expr RBRACKET       % make_unique<NewArray>(move(#0), move(#2), #line) %
-   | LValue                                   % move(#0) %
-   | LPAREN Expr RPAREN                       % move(#1) %
+  := NUM                                         % make_unique<ConstInt>(#0, #line) %
+   | TRUE                                        % make_unique<ConstBool>(true, #line) %
+   | FALSE                                       % make_unique<ConstBool>(false, #line) %
+   | CHARLIT                                     % make_unique<ConstChar>(#0, #line) %
+   | MINUS Expr   #prec UNARY_MINUS              % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
+   | BANG Expr                                   % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
+   | Expr PLUS Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
+   | Expr MINUS Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
+   | Expr STAR Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
+   | Expr FSLASH Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
+   | Expr MOD Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::MOD) %
+   | Expr BIT_AND Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
+   | Expr BIT_OR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
+   | Expr XOR Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::XOR) %
+   | Expr LSHIFT Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LSHIFT) %
+   | Expr RSHIFT Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::RSHIFT) %
+   | Expr AND Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
+   | Expr OR Expr                                % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
+   | Expr EQEQ Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %
+   | Expr NEQ Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::NEQ) %
+   | Expr LT Expr                                % make_unique<BinaryOp>(move(#0), move(#2), BOp::LT) %
+   | Expr GT Expr                                % make_unique<BinaryOp>(move(#0), move(#2), BOp::GT) %
+   | Expr LTE Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
+   | Expr GTE Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
+   | Expr QMARK Expr COLON Expr                  % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
+   | IDENT LPAREN Exprs RPAREN                   % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
+   | Qualifiers IDENT LPAREN Exprs RPAREN        % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
+   | NonVoidType LBRACKET Expr RBRACKET          % make_unique<NewArray>(move(#0), move(#2), #line) %
+   | NonVoidType LBRACKET RBRACKET
+     LBRACE Exprs RBRACE                         % make_unique<NewArray>(move(#0), move(#4), #line) %
+   | LValue                                      % move(#0) %
+   | LPAREN Expr RPAREN                          % move(#1) %
 
 
 LValue -> { ExprPtr }

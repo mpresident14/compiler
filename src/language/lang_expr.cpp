@@ -322,8 +322,19 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 NewArray::NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line)
     : Expr(line), type_(move(type)), numElems_(move(numElems)) {}
 
+NewArray::NewArray(TypePtr&& type, vector<ExprPtr>&& elems, size_t line)
+    : Expr(line), type_(move(type)), numElems_(nullptr), elems_(move(elems)) {}
+
+
 ExprInfo NewArray::toImExpr(Ctx& ctx) {
-  int tArrAddr = newTemp();
+  if (numElems_) {
+    return toImExprLen(ctx);
+  }
+  return toImExprElems(ctx);
+}
+
+
+ExprInfo NewArray::toImExprLen(Ctx& ctx) {
   int tLen = newTemp();
 
   // Store the length of the array in a temporary
@@ -341,6 +352,7 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
       move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
 
   // Allocate the correct number of bytes
+  int tArrAddr = newTemp();
   vector<im::ExprPtr> mallocBytes;
   mallocBytes.emplace_back(move(arrBytes));
   im::StmtPtr callMalloc = make_unique<im::Assign>(
@@ -360,6 +372,64 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
   stmts.push_back(move(storeLen));
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
+
+  return { make_unique<im::DoThenEval>(
+               move(stmts), make_unique<im::Temp>(tArrAddr)),
+           make_unique<Array>(type_) };
+}
+
+
+ExprInfo NewArray::toImExprElems(Ctx& ctx) {
+  size_t len = elems_.size();
+  size_t elemSize = type_->numBytes;
+
+  // Compute the size of the array in bytes
+  im::ExprPtr mul = make_unique<im::BinOp>(
+      make_unique<im::Const>(len),
+      make_unique<im::Const>(elemSize),
+      im::BOp::MUL);
+  im::ExprPtr arrBytes = make_unique<im::BinOp>(
+      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
+
+  vector<im::StmtPtr> stmts;
+
+  // Allocate the correct number of bytes
+  int tArrAddr = newTemp();
+  vector<im::ExprPtr> mallocBytes;
+  mallocBytes.emplace_back(move(arrBytes));
+  stmts.push_back(make_unique<im::Assign>(
+      make_unique<im::Temp>(tArrAddr),
+      make_unique<im::CallExpr>(
+          make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true)));
+
+  // Set the size of the array in the first 8 bytes
+  stmts.push_back(make_unique<im::Assign>(
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8),
+      make_unique<im::Const>(len)));
+
+  // Add 8 to tArrAddr (move past size)
+  int tNextElem = newTemp();
+  stmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(tNextElem),
+        make_unique<im::BinOp>(
+            make_unique<im::Temp>(tArrAddr),
+            make_unique<im::Const>(8),
+            im::BOp::PLUS)));
+
+  for (ExprPtr& elem : elems_) {
+    // Assign the element
+    stmts.push_back(make_unique<im::Assign>(
+        make_unique<im::MemDeref>(make_unique<im::Temp>(tNextElem), elemSize),
+        elem->toImExprAssert(*type_, ctx)));
+
+    // Update the assignment address
+    stmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(tNextElem),
+        make_unique<im::BinOp>(
+            make_unique<im::Temp>(tNextElem),
+            make_unique<im::Const>(elemSize),
+            im::BOp::PLUS)));
+  }
 
   return { make_unique<im::DoThenEval>(
                move(stmts), make_unique<im::Temp>(tArrAddr)),

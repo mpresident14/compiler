@@ -24,4 +24,9 @@ void main() {
   if (charArr[0] == 'a') {
     print(5);
   }
+
+  int[] brackInit = int[] {6,7,8};
+  print(brackInit[0]);
+  print(brackInit[1]);
+  print(brackInit[2]);
 }

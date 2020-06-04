@@ -423,12 +423,17 @@ private:
 class NewArray : public Expr {
 public:
   NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line);
+  NewArray(TypePtr&& type, std::vector<ExprPtr>&& elems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
   ExprInfo toImExpr(Ctx& ctx) override;
 
 private:
+  ExprInfo toImExprLen(Ctx& ctx);
+  ExprInfo toImExprElems(Ctx& ctx);
+
   TypePtr type_;
   ExprPtr numElems_;
+  std::vector<ExprPtr> elems_;
 };
 
 
