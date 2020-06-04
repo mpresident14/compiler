@@ -143,17 +143,16 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   ExprInfo eInfo2 = e2_->toImExpr(ctx);
   TypePtr& type1 = eInfo1.type;
   TypePtr& type2 = eInfo2.type;
-  if (!isIntegral(*type1 )) {
+  if (!isIntegral(*type1)) {
     // TODO: Specify which operator
-    ctx.getLogger().logError(e1_->getLine(), "Binary operator expected integral types");
+    ctx.getLogger().logError(
+        e1_->getLine(), "Binary operator expected integral types");
   }
-  if (!isIntegral(*type2 )) {
-    ctx.getLogger().logError(e2_->getLine(), "Binary operator expected integral types");
+  if (!isIntegral(*type2)) {
+    ctx.getLogger().logError(
+        e2_->getLine(), "Binary operator expected integral types");
   }
-  return { make_unique<im::BinOp>(
-              move(eInfo1.imExpr),
-              move(eInfo2.imExpr),
-              op),
+  return { make_unique<im::BinOp>(move(eInfo1.imExpr), move(eInfo2.imExpr), op),
            type1->numBytes > type2->numBytes ? move(type1) : move(type2) };
 }
 
@@ -362,7 +361,8 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
 
-  return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(tArrAddr)),
+  return { make_unique<im::DoThenEval>(
+               move(stmts), make_unique<im::Temp>(tArrAddr)),
            make_unique<Array>(type_) };
 }
 
@@ -414,9 +414,17 @@ Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) {
 
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
+  const Type& eType = *exprInfo.type;
   // TODO: Use isConvertible here later
-  if (*exprInfo.type != type) {
-    ctx.typeError(type, *exprInfo.type, line_);
+  if (eType != type) {
+    if (isIntegral(eType) && isIntegral(type)) {
+      if (type.numBytes < eType.numBytes) {
+        ostream& warning = ctx.getLogger().logWarning(line_);
+        warning << "Narrowing conversion from " << eType << " to " << type;
+      }
+    }else {
+      ctx.typeError(type, eType, line_);
+    }
   }
   return move(exprInfo.imExpr);
 }
