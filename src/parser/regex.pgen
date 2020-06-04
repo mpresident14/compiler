@@ -33,12 +33,12 @@
     while (i < len) {
       char c = str[i];
       if (c == '\\' && i != len) {
-        ret.append(1, escape(str[i+1]));
+        ret.push_back(escape(str[i+1]));
         i += 2;
-        continue;
+      } else {
+        ret.push_back(c);
+        ++i;
       }
-      ret.append(1, c);
-      ++i;
     }
     return ret;
   }

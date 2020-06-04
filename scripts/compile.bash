@@ -1,7 +1,10 @@
 #!/bin/bash
 
 FILE=$1
+BASE="/home/mpresident/cs/compiler"
 
-make -j8 main && cd .. && bin/main src/main/"$FILE".prez log/"$FILE".s \
-&& gcc -g -o bin/"$FILE" log/"$FILE".s src/main/syscall.s src/main/runtime.c \
-&& bin/"$FILE"
+cd "$BASE"/build && make -j8 main \
+&& "$BASE"/bin/main "$BASE"/src/main/"$FILE".prez "$BASE"/log/"$FILE".s \
+&& as "$BASE"/log/"$FILE".s "$BASE"/src/main/syscall.s -o "$BASE"/bin/"$FILE".o \
+&& ld "$BASE"/bin/"$FILE".o -o "$BASE"/bin/"$FILE" \
+&& "$BASE"/bin/"$FILE"

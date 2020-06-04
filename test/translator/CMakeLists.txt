@@ -94,15 +94,15 @@ error_test(undef_test
     ('Error','13','Undefined')")
 error_test(return_test
     "('Error','2','Expected')
-    ('Error','7','Expected')
-    ('Error','10','Non-void')")
+    ('Error','7','Expected')")
+  #  ('Error','10','Non-void')")
 error_test(param_test
     "('Error','2','Undefined')
     ('Error','6','Undefined')")
 error_test(type_test
     "('Error','6','Expected')
     ('Error','7','Expected')
-    ('Error','8','Expected')
+    ('Error','8','Binary')
     ('Error','9','Expected')
     ('Error','10','Expected')
     ('Error','11','Expected')

@@ -222,19 +222,18 @@ string Ctx::mangleFn(
     string_view fnName,
     const string& filename,
     const vector<TypePtr>& paramTypes) {
-  // TODO: Remove runPrez and printInt when applicable
-  if (fnName.front() == '_' || fnName == "runprez" || fnName == "printInt") {
-    return string(fnName);
-  }
+  if (fnName.front() != '_') {
+    string newName = "_";
+    newName.append(fnName);
+    newName.append(fileIds_->at(filename));
 
-  string newName(fnName);
-  newName.append(fileIds_->at(filename));
-
-  for (const TypePtr& type : paramTypes) {
-    newName.push_back('_');
-    newName.append(type->getId(*typeIds_));
+    for (const TypePtr& type : paramTypes) {
+      newName.push_back('_');
+      newName.append(type->getId(*typeIds_));
+    }
+    return newName;
   }
-  return newName;
+  return string(fnName);
 }
 
 void Ctx::addFileId(size_t id, string_view filename) {

@@ -131,14 +131,22 @@ void BinOp::handleOthers(
 namespace {
   void addInstrLetter(char bytesChar, string& str) {
     switch (bytesChar) {
-      case '8': return;
-      case '4': str.append("sl");
-      case '2': str.append("sw");
-      case '1': str.append("sb");
-      default: throw invalid_argument("addInstrLetter: " + to_string(bytesChar));
+      case '8':
+        return;
+      case '4':
+        str.append("sl");
+        return;
+      case '2':
+        str.append("sw");
+        return;
+      case '1':
+        str.append("sb");
+        return;
+      default:
+        throw invalid_argument("addInstrLetter: " + to_string(bytesChar));
     }
   }
-}
+}  // namespace
 
 MemDeref::MemDeref(ExprPtr&& addr, u_char numBytes)
     : addr_(move(addr)), numBytes_(numBytes) {}
@@ -147,11 +155,9 @@ void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t = addr_->toAssemInstrs(instrs);
   string asmOp = "mov";
 
-  char bytesChar =  numBytes_ + '0';
+  char bytesChar = numBytes_ + '0';
   addInstrLetter(bytesChar, asmOp);
-  asmOp.append("q (`");
-  asmOp.push_back(bytesChar);
-  asmOp.append("S0), `8D0");
+  asmOp.append("q (`8S0), `8D0");
   instrs.emplace_back(new assem::Operation(move(asmOp), { t }, { temp }));
 }
 

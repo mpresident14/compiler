@@ -56,7 +56,7 @@ const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12,
 std::vector<int> regsAsInts(const std::vector<MachineReg>& regs);
 constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 
-// See https://wiki.cdot.senecacollege.ca/wiki/X86_64_Register_and_Instruction_Quick_Start
+// See https://www.google.com/search?q=x86-64+register+sizes&sxsrf=ALeKk00XGcYm9CEIDtkl5b5vE3VJzDF05A:1591242890593&source=lnms&tbm=isch&sa=X&ved=2ahUKEwjywvrZoefpAhUJv54KHaYCCQgQ_AUoAnoECAwQBA&biw=832&bih=851#imgrc=srauU5gulxAS2M
 std::string regToString(MachineReg machineReg, char numBytes);
 
 static int temp = -1;

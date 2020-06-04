@@ -384,17 +384,19 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
+  const Type& arrType = *static_cast<const Array&>(type).arrType;
+
   // Add 8 bytes to skip the size field
   im::ExprPtr imIndex = index_->toImExprAssert(
       isIntegral, "Operator[] requires an integral type", ctx);
   im::ExprPtr mul = make_unique<im::BinOp>(
-      move(imIndex), make_unique<im::Const>(type.numBytes), im::BOp::MUL);
+      move(imIndex), make_unique<im::Const>(arrType.numBytes), im::BOp::MUL);
   im::ExprPtr offset = make_unique<im::BinOp>(
       move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
   im::ExprPtr offsetAddr = make_unique<im::BinOp>(
       move(exprInfo.imExpr), move(offset), im::BOp::PLUS);
 
-  return { make_unique<im::MemDeref>(move(offsetAddr), type.numBytes),
+  return { make_unique<im::MemDeref>(move(offsetAddr), arrType.numBytes),
            static_cast<const Array*>(&type)->arrType };
 }
 

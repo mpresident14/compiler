@@ -157,7 +157,7 @@ private:
 class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts, size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
   friend class Func;
 
 private:
@@ -171,7 +171,7 @@ public:
      std::unique_ptr<Block>&& ifE,
      StmtPtr&& elseE,
      size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
   ExprPtr boolE_;
@@ -183,7 +183,7 @@ private:
 class While : public Stmt {
 public:
   While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
   ExprPtr boolE_;
@@ -198,7 +198,7 @@ public:
       std::string_view name,
       std::vector<ExprPtr>&& params,
       size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
   std::vector<std::string> qualifiers_;
@@ -210,7 +210,7 @@ private:
 class Return : public Stmt {
 public:
   Return(std::optional<ExprPtr>&& retValue, size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
   std::optional<ExprPtr> retValue_;
@@ -220,7 +220,7 @@ private:
 class Assign : public Stmt {
 public:
   Assign(ExprPtr&& lhs, ExprPtr&& rhs);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
   ExprPtr lhs_;
@@ -231,7 +231,7 @@ private:
 class VarDecl : public Stmt {
 public:
   VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -243,7 +243,14 @@ private:
 };
 
 
-// class Print : public
+class Print : public Stmt {
+public:
+  Print(ExprPtr&& expr, size_t line);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
+
+private:
+  ExprPtr expr_;
+};
 
 
 /********

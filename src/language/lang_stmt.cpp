@@ -158,7 +158,8 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       break;
     }
     default:
-      throw invalid_argument("Assign::toImStmts: Should be enforced by grammar");
+      throw invalid_argument(
+          "Assign::toImStmts: Should be enforced by grammar");
   }
 }
 
@@ -176,6 +177,39 @@ void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // Insert the variable into the context
   int temp = ctx.insertVar(name_, type_, line_);
   imStmts.emplace_back(new im::Assign(make_unique<im::Temp>(temp), move(rhs)));
+}
+
+
+/*********
+ * Print *
+ *********/
+
+Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
+
+void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  // TODO: Implicitly call a toString method to convert to char[]
+  int tCharsAddr = newTemp();
+
+  im::StmtPtr getArr = make_unique<im::Assign>(
+      make_unique<im::Temp>(tCharsAddr),
+      expr_->toImExprAssert(Array(charType), ctx));
+
+  vector<im::ExprPtr> printArgs;
+  // Address of the char*
+  printArgs.push_back(make_unique<im::BinOp>(
+      make_unique<im::Temp>(tCharsAddr),
+      make_unique<im::Const>(8),
+      im::BOp::PLUS));
+  // Number of bytes
+  printArgs.push_back(
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8));
+
+  im::StmtPtr callPrint = make_unique<im::CallStmt>(
+      make_unique<im::LabelAddr>("__print"),
+      move(printArgs));
+
+  imStmts.push_back(move(getArr));
+  imStmts.push_back(move(callPrint));
 }
 
 

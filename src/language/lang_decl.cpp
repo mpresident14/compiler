@@ -144,19 +144,22 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
       ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
-void Func::checkForReturn(Ctx& ctx) {
+void Func::checkForReturn(Ctx&) {
   vector<StmtPtr>& stmts = body_->stmts_;
   if (stmts.empty() || !(dynamic_cast<Return*>(stmts.back().get()))) {
     if (returnType_ == voidType) {
       // Add implicit return for functions with void return type if needed
       body_->stmts_.emplace_back(new Return({}, 0));
-    } else {
-      ctx.getLogger().logError(
-          line_,
-          string("Non-void function ")
-              .append(name_)
-              .append(" should return a value"));
     }
+    // TODO: The code below fails to address return values in, for example,
+    // and if-else block. This check needs to be done at the instruction level
+    // } else {
+    //   ctx.getLogger().logError(
+    //       line_,
+    //       string("Non-void function ")
+    //           .append(name_)
+    //           .append(" should return a value"));
+    // }
   }
 }
 

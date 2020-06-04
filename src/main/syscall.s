@@ -11,11 +11,16 @@ __mallocaddr:
 
 # Note: %rcx, %r11, and %rax are volatile across syscall
 
-.globl __setup
-__setup:
+.globl _start
+_start:
   callq __findheap
-  callq runprez
-  retq
+  callq _main0
+  callq __exit
+
+__exit:
+  movq $60, %rax  # syscall 60
+  movq $0, %rdi   # error code 0
+  syscall
 
 # Volatile: %rdi, %rcx, %r11, %rax
 __findheap:
@@ -64,8 +69,9 @@ LDONE:
   popq %r12
   retq
 
-__print:          # write(int fd, char* msg, size_t nbytes)
-  movq $1, %rax   # syscall 1
+.globl __print
+__print:          # print(char[], int)
+  movq $1, %rax   # syscall 1 (write(int fd, char* msg, size_t nbytes))
   movq %rsi, %rdx # nbytes
   movq %rdi, %rsi # msg
   movq $1, %rdi   # Write to stdout: fd = 1

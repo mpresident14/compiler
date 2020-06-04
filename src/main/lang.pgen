@@ -23,6 +23,17 @@
   string_view removeQuotes(string_view sv) {
     return sv.substr(1,sv.size() - 2);
   }
+
+  char maybeEscape(string_view str) {
+    if (str[0] == '\\') {
+      switch (str[1]) {
+        case 'n': return '\n';
+        case 't': return '\t';
+        default: return str[1];
+      }
+    }
+    return str[0];
+  }
 %
 
 
@@ -81,10 +92,12 @@ CHAR        "char"
 IMPORT      "import"
 COLON2      "::"
 
+PRINT       "print"
+
 NUM         "0|[1-9][0-9]*"                        -> { int }    % stoi(string(#str)) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string } % #str %
 SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""           -> { string } % removeQuotes(#str) %
-CHARLIT     "'.'"                                  -> { char }   % #str[1] %
+CHARLIT     "'(.|\\t|\\n)'"                        -> { char }   % maybeEscape(removeQuotes(#str)) %
 
 #prec
 
@@ -146,6 +159,7 @@ Stmt -> { StmtPtr }
    | LValue EQ Expr SEMI                         % make_unique<Assign>(move(#0), move(#2)) %
    | NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
    | Block                                       % move(#0) %
+   | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
 
 Expr -> { ExprPtr }
   := NUM                                      % make_unique<ConstInt>(#0, #line) %

@@ -105,7 +105,11 @@ string regToString(MachineReg machineReg, char bytesChar) {
       break;
     case '1':
       if (isOriginal) {
-        ret[2] = 'l';
+        if (ret[2] == 'i') {
+          ret.push_back('l');
+        } else {
+          ret[2] = 'l';
+        }
       } else {
         ret.push_back('b');
       }

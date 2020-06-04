@@ -1,4 +1,4 @@
-char[] intToString(int n) {
+char[] toString(int n) {
   int num = n;
   int numDigits = 0;
   while (num != 0) {
@@ -7,12 +7,49 @@ char[] intToString(int n) {
   }
 
   num = n;
-  char[] str = char[numDigits];
+  char[] str = char[numDigits + 1];
+  str[numDigits] = '\n';
   int i = numDigits - 1;
   while (num != 0) {
     str[i] = num % 10 + '0';
     num = num / 10;
+    i = i - 1;
   }
 
   return str;
+}
+
+char[] toString(bool b) {
+  if (b) {
+    char[] str = char[5];
+    str[0] = 't';
+    str[1] = 'r';
+    str[2] = 'u';
+    str[3] = 'e';
+    str[4] = '\n';
+    return str;
+  } else {
+    char[] str = char[6];
+    str[0] = 'f';
+    str[1] = 'a';
+    str[2] = 'l';
+    str[3] = 's';
+    str[4] = 'e';
+    str[5] = '\n';
+    return str;
+  }
+}
+
+char[] toString(char c) {
+  char[] str = char[2];
+  str[0] = c;
+  str[1] = '\n';
+  return str;
+}
+
+void main() {
+  print(toString(12345678));
+  print(toString(true));
+  print(toString(false));
+  print(toString('a'));
 }
