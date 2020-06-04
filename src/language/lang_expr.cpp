@@ -124,7 +124,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
     case BOp::XOR:
       // XOR is valid for both ints and bools
       // This translates e1_ twice, but oh well
-      if (e1_->toImExpr(ctx).type == intType) {
+      if (isIntegral(*e1_->toImExpr(ctx).type)) {
         return toImExprArith(im::BOp::XOR, ctx);
       }
       // Fall thru
@@ -139,11 +139,22 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
 }
 
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
+  ExprInfo eInfo1 = e1_->toImExpr(ctx);
+  ExprInfo eInfo2 = e2_->toImExpr(ctx);
+  TypePtr& type1 = eInfo1.type;
+  TypePtr& type2 = eInfo2.type;
+  if (!isIntegral(*type1 )) {
+    // TODO: Specify which operator
+    ctx.getLogger().logError(e1_->getLine(), "Binary operator expected integral types");
+  }
+  if (!isIntegral(*type2 )) {
+    ctx.getLogger().logError(e2_->getLine(), "Binary operator expected integral types");
+  }
   return { make_unique<im::BinOp>(
-               e1_->toImExprAssert(*intType, ctx),
-               e2_->toImExprAssert(*intType, ctx),
-               op),
-           intType };
+              move(eInfo1.imExpr),
+              move(eInfo2.imExpr),
+              op),
+           type1->numBytes > type2->numBytes ? move(type1) : move(type2) };
 }
 
 void BinaryOp::asBool(
