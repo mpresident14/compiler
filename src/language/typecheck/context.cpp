@@ -14,9 +14,7 @@ using namespace std;
 
 namespace {
 
-string qualifiedFn(
-    vector<string> qualifiers,
-    string_view fnName) {
+string qualifiedFn(vector<string> qualifiers, string_view fnName) {
   if (qualifiers.empty()) {
     return string(fnName);
   }
@@ -25,9 +23,7 @@ string qualifiedFn(
 
 }  // namespace
 
-void Ctx::streamParamTypes(
-    const vector<TypePtr>& paramTypes,
-    ostream& err) {
+void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
   err << '(';
   if (!paramTypes.empty()) {
     for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
@@ -147,6 +143,9 @@ Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
   auto iterPair = fnMap.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
+    // TODO: Conversion between integral types will complicate function lookup
+    // First check for exact matches, then for implicit conversion between
+    // integral types
     if (equal(
             paramTypes.cbegin(),
             paramTypes.cend(),
@@ -197,8 +196,7 @@ void Ctx::undefinedFn(
     size_t line,
     const pair<
         unordered_multimap<string, Ctx::FnInfo>::iterator,
-        unordered_multimap<string, Ctx::FnInfo>::iterator>&
-        candidates,
+        unordered_multimap<string, Ctx::FnInfo>::iterator>& candidates,
     string_view searchedFile) {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << qualifiedFn(qualifiers, fnName);

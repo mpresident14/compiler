@@ -85,9 +85,11 @@ TRUE        "true"
 FALSE       "false"
 
 VOID        "void"
+LONG        "long"
 INT         "int"
-BOOL        "bool"
+SHORT       "short"
 CHAR        "char"
+BOOL        "bool"
 
 IMPORT      "import"
 COLON2      "::"
@@ -220,9 +222,11 @@ Param -> { pair<TypePtr, string> }
   := NonVoidType IDENT         % { move(#0), #1 } %
 
 NonVoidType -> { TypePtr }
-  := INT                             % intType %
-   | BOOL                            % boolType %
+  := LONG                            % longType %
+   | INT                             % intType %
+   | SHORT                           % shortType %
    | CHAR                            % charType %
+   | BOOL                            % boolType %
    | NonVoidType LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
 
 Type -> { TypePtr }

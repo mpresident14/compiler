@@ -8,8 +8,12 @@ using namespace std;
 
 string Type::getId(const unordered_map<string, string>&) const {
   switch (typeName) {
+    case TypeName::LONG:
+      return "l";
     case TypeName::INT:
       return "i";
+    case TypeName::SHORT:
+      return "s";
     case TypeName::CHAR:
       return "c";
     case TypeName::BOOL:
@@ -58,8 +62,14 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept {
 
 ostream& operator<<(ostream& out, const Type& type) {
   switch (type.typeName) {
+    case TypeName::LONG:
+      out << "long";
+      break;
     case TypeName::INT:
       out << "int";
+      break;
+    case TypeName::SHORT:
+      out << "short";
       break;
     case TypeName::CHAR:
       out << "char";

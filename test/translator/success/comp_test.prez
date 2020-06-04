@@ -9,7 +9,7 @@ void main() {
     print(2);
   }
 
-  int n = 5;
+  long n = 5;
   if (n == 8) {
     print(-1);
   } else if (n < 8) {
@@ -22,7 +22,7 @@ void main() {
     print(4);
   }
 
-  int m = 5;
+  short m = 5;
   n = 3;
   if (m != n && m < n) {
     print(-1);

@@ -16,7 +16,7 @@
 // member
 
 /* ANY used to proceed through errors */
-enum class TypeName { INT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
+enum class TypeName { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
   virtual ~Type() {}
@@ -58,7 +58,9 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
 
-const TypePtr intType = std::make_shared<Type>(TypeName::INT, 8, true);
+const TypePtr longType = std::make_shared<Type>(TypeName::LONG, 8, true);
+const TypePtr intType = std::make_shared<Type>(TypeName::INT, 4, true);
+const TypePtr shortType = std::make_shared<Type>(TypeName::SHORT, 2, true);
 const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1, true);
 const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL, 1);
 const TypePtr voidType = std::make_shared<Type>(TypeName::VOID, 0);
