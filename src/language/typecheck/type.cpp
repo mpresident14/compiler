@@ -3,6 +3,7 @@
 #include "src/language/typecheck/context.hpp"
 
 #include <sstream>
+#include <limits>
 
 using namespace std;
 
@@ -35,6 +36,33 @@ string Class::getId(const unordered_map<string, string>& typeIds) const {
   return typeIds.at(className);
 }
 
+
+bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
+  if (isIntegral(from) && isIntegral(to)) {
+    // TODO: We don't want to report narrowing for short n = 3;
+    // Check if the expression is a const, and then if the number fits in the
+    // specified number of bytes
+    if (isNarrowing && to.numBytes < from.numBytes) {
+      *isNarrowing = true;
+    }
+    return true;
+  }
+  return false;
+}
+
+pair<long, long> minMaxValue(const Type& integralType) {
+  switch (integralType.typeName) {
+    case TypeName::LONG:
+      return {std::numeric_limits<long>::min(), std::numeric_limits<long>::max()};
+    case TypeName::INT:
+      return {std::numeric_limits<int>::min(), std::numeric_limits<int>::max()};
+    case TypeName::SHORT:
+      return {std::numeric_limits<short>::min(), std::numeric_limits<short>::max()};
+    case TypeName::CHAR:
+      return {std::numeric_limits<char>::min(), std::numeric_limits<char>::max()};
+    default: throw invalid_argument("minMaxValue: Not an integral type");
+  }
+}
 
 bool operator==(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == TypeName::ANY || t2.typeName == TypeName::ANY) {

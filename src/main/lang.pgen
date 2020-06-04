@@ -94,6 +94,8 @@ BOOL        "bool"
 IMPORT      "import"
 COLON2      "::"
 
+DOT         "\."
+
 PRINT       "print"
 
 NUM         "0|[1-9][0-9]*"                        -> { int }    % stoi(string(#str)) %
@@ -120,7 +122,7 @@ LSHIFT RSHIFT           #left
 PLUS MINUS              #left
 STAR FSLASH MOD         #left
 UNARY_MINUS BANG        #nonassoc
-LBRACKET                #left
+LBRACKET DOT            #left
 COLON2                  #left
 
 
@@ -191,6 +193,7 @@ Expr -> { ExprPtr }
    | Expr QMARK Expr COLON Expr                  % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
    | IDENT LPAREN Exprs RPAREN                   % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN        % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
+   | LPAREN NonVoidType RPAREN Expr              % make_unique<Cast>(move(#1), move(#3), #line) %
    | NonVoidType LBRACKET Expr RBRACKET          % make_unique<NewArray>(move(#0), move(#2), #line) %
    | NonVoidType LBRACKET RBRACKET
      LBRACE Exprs RBRACE                         % make_unique<NewArray>(move(#0), move(#4), #line) %
@@ -199,8 +202,9 @@ Expr -> { ExprPtr }
 
 
 LValue -> { ExprPtr }
-  := IDENT                        % make_unique<Var>(#0, #line) %
+  := IDENT                         % make_unique<Var>(#0, #line) %
    | Expr LBRACKET Expr RBRACKET   % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
+   | Expr DOT IDENT                % make_unique<MemberAccess>(move(#0), #2, #line) %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %

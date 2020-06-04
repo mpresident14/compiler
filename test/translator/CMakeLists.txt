@@ -80,6 +80,7 @@ success_test(function_test "1,2")
 success_test(callee_save_test "9,9")
 success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
 success_test(array_test "0,1,1,2,3,5,6,7,8")
+success_test(cast_test "!,!,15")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
 success_test(import_test "1,2,3,4,5,6,7" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")

@@ -1,0 +1,17 @@
+char f(short s) {
+  return (char) s;
+}
+
+void main() {
+  int n = 33;
+  char c = (char) n;
+  print(c);
+
+  long l = n;
+  c = f((short) l);
+  print(c);
+
+  char[] cArr = char[1];
+  cArr[0] = (char) 3855; // 0xF0F (Narrows to 0x0F = 15)
+  print((int) cArr[0]);
+}

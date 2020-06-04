@@ -314,6 +314,27 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
            move(get<2>(infoTuple)) };
 }
 
+/********
+ * Cast *
+ ********/
+
+// TODO: These casts will not truncate unless stored in an array
+// We really need to pass the size of an Expr down to the intermediate
+// level so that it can generate the proper assembly
+
+Cast::Cast(TypePtr&& toType, ExprPtr&& expr, size_t line)
+    : Expr(line), toType_(move(toType)), expr_(move(expr)) {}
+
+
+ExprInfo Cast::toImExpr(Ctx& ctx) {
+  ExprInfo eInfo = expr_->toImExpr(ctx);
+  if (!isConvertible(*eInfo.type, *toType_, nullptr)) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "No valid cast from " << *eInfo.type << " to " << *toType_;
+  }
+  return { move(eInfo.imExpr), move(toType_) };
+}
+
 
 /************
  * NewArray *
@@ -410,11 +431,11 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
   // Add 8 to tArrAddr (move past size)
   int tNextElem = newTemp();
   stmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(tNextElem),
-        make_unique<im::BinOp>(
-            make_unique<im::Temp>(tArrAddr),
-            make_unique<im::Const>(8),
-            im::BOp::PLUS)));
+      make_unique<im::Temp>(tNextElem),
+      make_unique<im::BinOp>(
+          make_unique<im::Temp>(tArrAddr),
+          make_unique<im::Const>(8),
+          im::BOp::PLUS)));
 
   for (ExprPtr& elem : elems_) {
     // Assign the element
@@ -470,6 +491,21 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
            static_cast<const Array*>(&type)->arrType };
 }
 
+/****************
+ * MemberAccess *
+ ****************/
+
+MemberAccess::MemberAccess(
+    ExprPtr&& objExpr,
+    std::string_view member,
+    size_t line)
+    : Expr(line), objExpr_(move(objExpr)), member_(member) {}
+
+
+ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
+  return { make_unique<im::Const>(0), intType };
+}
+
 /********
  * Expr *
  ********/
@@ -489,16 +525,37 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   const Type& eType = *exprInfo.type;
   // TODO: Use isConvertible here later
   if (eType != type) {
-    if (isIntegral(eType) && isIntegral(type)) {
-      if (type.numBytes < eType.numBytes) {
-        ostream& warning = ctx.getLogger().logWarning(line_);
-        warning << "Narrowing conversion from " << eType << " to " << type;
+    bool isNarrowing;
+    if (isConvertible(eType, type, &isNarrowing)) {
+      // TODO: We don't want to report narrowing for short n = 3;
+      // Check if the expression is a const, and then if the number fits in the
+      // specified number of bytes
+      if (isNarrowing) {
+        long n;
+        if (getType() == ExprType::CONST_INT) {
+          n = static_cast<ConstInt&>(*this).getInt();
+        } else if (getType() == ExprType::CONST_CHAR) {
+          n = static_cast<ConstChar&>(*this).getChar();
+        } else {
+          goto warnNarrow;
+        }
+
+        pair<long, long> limits = minMaxValue(type);
+        if (n < limits.first || n > limits.second) {
+          goto warnNarrow;
+        }
       }
-    }else {
+    } else {
       ctx.typeError(type, eType, line_);
     }
   }
+
   return move(exprInfo.imExpr);
+
+  warnNarrow:
+    ostream& warning = ctx.getLogger().logWarning(line_);
+    warning << "Narrowing conversion from " << eType << " to " << type;
+    return move(exprInfo.imExpr);
 }
 
 void Expr::asBool(

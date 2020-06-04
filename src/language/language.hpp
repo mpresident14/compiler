@@ -54,8 +54,10 @@ enum class ExprType {
   BINARY_OP,
   TERNARY_OP,
   CALL_EXPR,
+  CAST,
   NEW_ARRAY,
-  ARRAY_ACCESS
+  ARRAY_ACCESS,
+  MEMBER_ACCESS
 };
 
 
@@ -285,6 +287,7 @@ public:
   constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr(Ctx& ctx) override;
+  constexpr int getInt() const noexcept { return n_; }
 
 private:
   int n_;
@@ -295,6 +298,7 @@ public:
   constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
   ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
+  constexpr char getChar() const noexcept { return c_; }
 
 private:
   char c_;
@@ -420,6 +424,18 @@ private:
 };
 
 
+class Cast : public Expr {
+public:
+  Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
+  ExprType getType() const noexcept override { return ExprType::CAST; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+
+private:
+  TypePtr toType_;
+  ExprPtr expr_;
+};
+
+
 class NewArray : public Expr {
 public:
   NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line);
@@ -446,6 +462,18 @@ public:
 private:
   ExprPtr arrExpr_;
   ExprPtr index_;
+};
+
+
+class MemberAccess : public Expr {
+public:
+  MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
+  ExprType getType() const noexcept override { return ExprType::MEMBER_ACCESS; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+
+private:
+  ExprPtr objExpr_;
+  std::string member_;
 };
 
 
