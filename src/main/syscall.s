@@ -75,3 +75,15 @@ __print:          # print(char[], int)
   movq $1, %rdi   # Write to stdout: fd = 1
   syscall
   retq
+
+__println:
+  callq __print
+  subq $8, %rsp      # print newline at the end
+  movq $1, %rax
+  movq $1, %rdi
+  movq $10, (%rsp)   # '\n' = 10
+  leaq (%rsp), %rsi
+  movq $1, %rdx
+  syscall
+  addq $8, %rsp
+  retq

@@ -218,7 +218,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8));
 
   im::StmtPtr callPrint = make_unique<im::CallStmt>(
-      make_unique<im::LabelAddr>("__print"), move(printArgs));
+      make_unique<im::LabelAddr>("__println"), move(printArgs));
 
   imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));
