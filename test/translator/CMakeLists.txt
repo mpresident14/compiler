@@ -74,7 +74,7 @@ endfunction()
 include(CTest)
 
 success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-success_test(comp_test "1,2,3,4,5,6,7,8,9")
+success_test(comp_test "1,2,3,4,5,6,7,8,9,true")
 success_test(while_test "15,120")
 success_test(ternary_test "10,10")
 success_test(function_test "1,2")
