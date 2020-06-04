@@ -50,6 +50,8 @@ struct Class : public Type {
   std::string className;
 };
 
+constexpr bool isIntegral(const Type& t) { return t.isIntegral; }
+
 bool operator==(const Type& t1, const Type& t2) noexcept;
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 

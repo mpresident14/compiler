@@ -64,8 +64,10 @@ LDONE:
   popq %r12
   retq
 
-# print:
-#   movq $1, %rax
-#   movq $1, %rdi
-#   syscall
-#   retq
+__print:          # write(int fd, char* msg, size_t nbytes)
+  movq $1, %rax   # syscall 1
+  movq %rsi, %rdx # nbytes
+  movq %rdi, %rsi # msg
+  movq $1, %rdi   # Write to stdout: fd = 1
+  syscall
+  retq

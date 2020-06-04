@@ -175,14 +175,14 @@ Expr -> { ExprPtr }
    | Expr QMARK Expr COLON Expr               % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
    | IDENT LPAREN Exprs RPAREN                % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN     % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
-   | NonVoidType LBRACKET NUM RBRACKET        % make_unique<NewArray>(move(#0), #2, #line) %
+   | NonVoidType LBRACKET Expr RBRACKET       % make_unique<NewArray>(move(#0), move(#2), #line) %
    | LValue                                   % move(#0) %
    | LPAREN Expr RPAREN                       % move(#1) %
 
 
 LValue -> { ExprPtr }
   := IDENT                        % make_unique<Var>(#0, #line) %
-   | Expr LBRACKET NUM RBRACKET   % make_unique<ArrayAccess>(move(#0), #2, #line) %
+   | Expr LBRACKET Expr RBRACKET   % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %

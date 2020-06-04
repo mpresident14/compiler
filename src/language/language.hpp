@@ -80,6 +80,9 @@ public:
       assem::Label* ifFalse,
       Ctx& ctx);
 
+  template <typename F>
+  im::ExprPtr
+  toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx);
   im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx);
   constexpr size_t getLine() const noexcept { return line_; }
 
@@ -133,7 +136,8 @@ public:
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
-      std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
+      std::unordered_map<std::string, std::unique_ptr<Program>>&
+          initializedProgs,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
   const Ctx& getCtx() const noexcept { return *ctx_; }
@@ -237,6 +241,9 @@ private:
   std::string name_;
   ExprPtr e_;
 };
+
+
+// class Print : public
 
 
 /********
@@ -408,25 +415,25 @@ private:
 
 class NewArray : public Expr {
 public:
-  NewArray(TypePtr&& type, size_t numElems, size_t line);
+  NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
   ExprInfo toImExpr(Ctx& ctx) override;
 
 private:
   TypePtr type_;
-  size_t numElems_;
+  ExprPtr numElems_;
 };
 
 
 class ArrayAccess : public Expr {
 public:
-  ArrayAccess(ExprPtr&& expr, size_t index, size_t line);
+  ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
   ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) override;
 
 private:
-  ExprPtr expr_;
-  size_t index_;
+  ExprPtr arrExpr_;
+  ExprPtr index_;
 };
 
 

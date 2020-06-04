@@ -158,7 +158,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       break;
     }
     default:
-      ctx.getLogger().logError(line_, "Only lvalues can be assigned");
+      throw invalid_argument("Assign::toImStmts: Should be enforced by grammar");
   }
 }
 

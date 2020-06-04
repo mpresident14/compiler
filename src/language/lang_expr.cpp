@@ -186,11 +186,12 @@ void BinaryOp::asBoolComp(
   ExprInfo info1 = e1_->toImExpr(ctx);
   ExprInfo info2 = e2_->toImExpr(ctx);
   if (!(info1.type->isIntegral && info2.type->isIntegral)) {
-    ostream& err = ctx.getLogger().logError(line_, "Comparison operator requires integral types. Got ");
+    ostream& err = ctx.getLogger().logError(
+        line_, "Comparison operator requires integral types. Got ");
     err << *info1.type << " and " << *info2.type;
   }
-  imStmts.emplace_back(
-      new im::CondJump(move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
+  imStmts.emplace_back(new im::CondJump(
+      move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
 }
 
 void BinaryOp::asBoolAnd(
@@ -308,33 +309,49 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
  * NewArray *
  ************/
 
-NewArray::NewArray(TypePtr&& type, size_t numElems, size_t line)
-    : Expr(line), type_(move(type)), numElems_(numElems) {}
+NewArray::NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line)
+    : Expr(line), type_(move(type)), numElems_(move(numElems)) {}
 
-ExprInfo NewArray::toImExpr(Ctx&) {
-  int t = newTemp();
-  vector<im::ExprPtr> mallocParam;
-  // Arrays will start with the number of elements they contain
-  size_t arrSize = 8 + numElems_ * type_->numBytes;
-  mallocParam.emplace_back(new im::Const(arrSize));
+ExprInfo NewArray::toImExpr(Ctx& ctx) {
+  int tArrAddr = newTemp();
+  int tLen = newTemp();
 
-  vector<im::StmtPtr> stmts;
+  // Store the length of the array in a temporary
+  im::StmtPtr storeLen = make_unique<im::Assign>(
+      make_unique<im::Temp>(tLen),
+      numElems_->toImExprAssert(
+          isIntegral, "Array size requires an integral type", ctx));
+
+  // Compute the size of the array in bytes
+  im::ExprPtr mul = make_unique<im::BinOp>(
+      make_unique<im::Temp>(tLen),
+      make_unique<im::Const>(type_->numBytes),
+      im::BOp::MUL);
+  im::ExprPtr arrBytes = make_unique<im::BinOp>(
+      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
+
+  // Allocate the correct number of bytes
+  vector<im::ExprPtr> mallocBytes;
+  mallocBytes.emplace_back(move(arrBytes));
   im::StmtPtr callMalloc = make_unique<im::Assign>(
-      make_unique<im::Temp>(t),
+      make_unique<im::Temp>(tArrAddr),
       make_unique<im::CallExpr>(
-          make_unique<im::LabelAddr>("__malloc"), move(mallocParam), true));
+          make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
 
+  // Arrays will start with the number of elements they contain
   im::StmtPtr setSize = make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(t), type_->numBytes),
-      make_unique<im::Const>(numElems_));
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8),
+      make_unique<im::Temp>(tLen));
 
   // TODO: Zero/null initialize array
   // TODO: Throw if less than 0
 
+  vector<im::StmtPtr> stmts;
+  stmts.push_back(move(storeLen));
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
 
-  return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(t)),
+  return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(tArrAddr)),
            make_unique<Array>(type_) };
 }
 
@@ -342,34 +359,47 @@ ExprInfo NewArray::toImExpr(Ctx&) {
  * ArrayAccess *
  ***************/
 
-ArrayAccess::ArrayAccess(ExprPtr&& expr, size_t index, size_t line)
-    : Expr(line), expr_(move(expr)), index_(index) {}
+ArrayAccess::ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line)
+    : Expr(line), arrExpr_(move(arrExpr)), index_(move(index)) {}
 
 // TODO: Throw if out of range
 
 ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
-  ExprInfo exprInfo = expr_->toImExpr(ctx);
-  TypePtr& type = exprInfo.type;
-  if (type->typeName != TypeName::ARRAY) {
+  ExprInfo exprInfo = arrExpr_->toImExpr(ctx);
+  const Type& type = *exprInfo.type;
+  if (type.typeName != TypeName::ARRAY) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Operator[] can only be used on an arrays, not type " << *type;
+    err << "Operator[] can only be used on an arrays, not type " << type;
     return dummyInfo();
   }
 
   // Add 8 bytes to skip the size field
-  size_t offset = 8 + index_ * type->numBytes;
+  im::ExprPtr imIndex = index_->toImExprAssert(
+      isIntegral, "Operator[] requires an integral type", ctx);
+  im::ExprPtr mul = make_unique<im::BinOp>(
+      move(imIndex), make_unique<im::Const>(type.numBytes), im::BOp::MUL);
+  im::ExprPtr offset = make_unique<im::BinOp>(
+      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
   im::ExprPtr offsetAddr = make_unique<im::BinOp>(
-      move(exprInfo.imExpr),
-      make_unique<im::Const>(offset),
-      im::BOp::PLUS);
+      move(exprInfo.imExpr), move(offset), im::BOp::PLUS);
 
-  return { make_unique<im::MemDeref>(move(offsetAddr), type->numBytes),
-           static_cast<Array*>(type.get())->arrType };
+  return { make_unique<im::MemDeref>(move(offsetAddr), type.numBytes),
+           static_cast<const Array*>(&type)->arrType };
 }
 
 /********
  * Expr *
  ********/
+
+template <typename F>
+im::ExprPtr
+Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) {
+  ExprInfo exprInfo = toImExpr(ctx);
+  if (!condFn(*exprInfo.type)) {
+    ctx.getLogger().logError(line_, errMsg);
+  }
+  return move(exprInfo.imExpr);
+}
 
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
@@ -379,7 +409,6 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   }
   return move(exprInfo.imExpr);
 }
-
 
 void Expr::asBool(
     vector<im::StmtPtr>& imStmts,
