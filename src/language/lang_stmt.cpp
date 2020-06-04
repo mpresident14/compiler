@@ -187,15 +187,25 @@ void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  // TODO: Implicitly call a toString method to convert to char[]
-  int tCharsAddr = newTemp();
+  // TODO: Separate search path for function defined by language
+  vector<ExprPtr> toPrint;
+  toPrint.push_back(move(expr_));
+  im::ExprPtr callToString =
+      CallExpr(
+          { "home", "mpresident", "cs", "compiler", "src", "imports", "to_string" },
+          "toString",
+          move(toPrint),
+          line_)
+          .toImExpr(ctx)
+          .imExpr;
 
+  // Put the char[] in a temporary
+  int tCharsAddr = newTemp();
   im::StmtPtr getArr = make_unique<im::Assign>(
-      make_unique<im::Temp>(tCharsAddr),
-      expr_->toImExprAssert(Array(charType), ctx));
+      make_unique<im::Temp>(tCharsAddr), move(callToString));
 
   vector<im::ExprPtr> printArgs;
-  // Address of the char*
+  // Address of the char[]
   printArgs.push_back(make_unique<im::BinOp>(
       make_unique<im::Temp>(tCharsAddr),
       make_unique<im::Const>(8),
@@ -205,8 +215,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8));
 
   im::StmtPtr callPrint = make_unique<im::CallStmt>(
-      make_unique<im::LabelAddr>("__print"),
-      move(printArgs));
+      make_unique<im::LabelAddr>("__print"), move(printArgs));
 
   imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));

@@ -9,7 +9,7 @@ int func() {
   return 6;
 }
 
-void runprez() {
+void main() {
   folder2::subfolder::file::func(true);
   otherFunc();
   other_file::otherFunc(3);

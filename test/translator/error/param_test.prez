@@ -1,4 +1,4 @@
-void runprez() {
+void main() {
   add(1,2,4);
 }
 

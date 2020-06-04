@@ -7,7 +7,7 @@ void g() {
   int n = 4;
   int b = n;
   bool b = false;
-  printInt(b);
+  print(b);
 }
 
 int f(int n) {
@@ -18,4 +18,4 @@ bool h(int a, int b, bool a) {
   return a == b || a > b;
 }
 
-void runprez(){}
+void main(){}

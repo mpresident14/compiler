@@ -12,12 +12,12 @@ int add(int a, int b) {
   return a + b;
 }
 
-void runprez() {
-  printInt(file::func());
-  printInt(import_test::file::func());
-  printInt(other_file::otherFunc());
-  printInt(file::func(4));
-  printInt(import_test::file::func(4));
-  printInt(func());
-  printInt(folder::subfolder::file::func());
+void main() {
+  print(file::func());
+  print(import_test::file::func());
+  print(other_file::otherFunc());
+  print(file::func(4));
+  print(import_test::file::func(4));
+  print(func());
+  print(folder::subfolder::file::func());
 }

@@ -9,19 +9,19 @@ int[] createArr() {
 }
 
 void printArr(int[] arr) {
-  printInt(arr[0]);
-  printInt(arr[1]);
-  printInt(arr[2]);
-  printInt(arr[3]);
-  printInt(arr[4]);
+  print(arr[0]);
+  print(arr[1]);
+  print(arr[2]);
+  print(arr[3]);
+  print(arr[4]);
 }
 
-void runprez() {
+void main() {
   printArr(createArr());
 
   char[] charArr = char[3];
   charArr[0] = 'a';
   if (charArr[0] == 'a') {
-    printInt(5);
+    print(5);
   }
 }

@@ -22,7 +22,7 @@ int fib() {
   return s;
 }
 
-void runprez() {
+void main() {
   int a = 0;
   int b = a + 1;
   int c = b + a;
@@ -38,19 +38,19 @@ void runprez() {
   int m = l + k;
   int n = m + l;
 
-  printInt(a);
-  printInt(b);
-  printInt(c);
-  printInt(d);
-  printInt(e);
-  printInt(f);
-  printInt(g);
-  printInt(h);
-  printInt(i);
-  printInt(j);
-  printInt(k);
-  printInt(l);
-  printInt(m);
-  printInt(n);
-  printInt(fib());
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  print(f);
+  print(g);
+  print(h);
+  print(i);
+  print(j);
+  print(k);
+  print(l);
+  print(m);
+  print(n);
+  print(fib());
 }

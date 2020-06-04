@@ -1,4 +1,4 @@
-void runprez() {
+void main() {
 
   int i = 1;
   int sum = 0;
@@ -9,8 +9,8 @@ void runprez() {
     i = i + 1;
   }
 
-  printInt(sum);
-  printInt(product);
+  print(sum);
+  print(product);
 
   return;
 }

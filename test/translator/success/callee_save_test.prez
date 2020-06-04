@@ -13,7 +13,7 @@ int f() {
 }
 
 
-void runprez() {
+void main() {
   int a = 0;
   int b = a + 1;
   int c = b + 1;
@@ -24,6 +24,6 @@ void runprez() {
   int h = g + 1;
   int i = h + 1;
   int j = i + 1;
-  printInt(f());
-  printInt(j);
+  print(f());
+  print(j);
 }
