@@ -12,6 +12,8 @@ void main() {
   print(c);
 
   char[] cArr = char[1];
-  cArr[0] = (char) 3855; // 0xF0F (Narrows to 0x0F = 15)
+  cArr[0] = (char) 0xF0F; // Narrows to 0x0F = 15
   print((int) cArr[0]);
+  print((long) 6);
+  print((short) 6);
 }

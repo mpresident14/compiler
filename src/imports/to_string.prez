@@ -1,11 +1,19 @@
+char[] toString(short n) {
+  return toString((long) n);
+}
+
 char[] toString(int n) {
+  return toString((long) n);
+}
+
+char[] toString(long n) {
   if (n == 0) {
     char[] str = char[1];
     str[0] = '0';
     return str;
   }
 
-  int num = n;
+  long num = n;
   int numDigits = 0;
   while (num != 0) {
     num = num / 10;
