@@ -72,9 +72,8 @@ public:
   constexpr Expr(size_t line) : line_(line) {}
   virtual ~Expr() {}
   virtual ExprType getType() const noexcept = 0;
-  virtual ExprInfo toImExpr(Ctx& ctx) = 0;
-  virtual std::unique_ptr<Expr> clone() const = 0;
 
+  virtual ExprInfo toImExpr(Ctx& ctx) = 0;
   /* If this typechecks to a bool, add statements to jump to ifTrue it
    * evaluates to true and ifFalse if it evaluates to false. */
   virtual void asBool(
@@ -84,7 +83,8 @@ public:
       Ctx& ctx);
 
   template <typename F>
-  im::ExprPtr toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx);
+  im::ExprPtr
+  toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx);
   im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx);
   constexpr size_t getLine() const noexcept { return line_; }
 
@@ -287,7 +287,6 @@ public:
   constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
   constexpr int getInt() const noexcept { return n_; }
 
 private:
@@ -299,7 +298,6 @@ public:
   constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
   ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
   constexpr char getChar() const noexcept { return c_; }
 
 private:
@@ -312,7 +310,6 @@ public:
   constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
   ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   bool b_;
@@ -325,7 +322,6 @@ public:
   Var(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -339,7 +335,6 @@ public:
   UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
   ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
@@ -358,7 +353,6 @@ public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
   ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
@@ -405,7 +399,6 @@ public:
   TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
   ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   ExprPtr boolE_;
@@ -423,7 +416,6 @@ public:
       size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   std::vector<std::string> qualifiers_;
@@ -437,7 +429,6 @@ public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
   ExprType getType() const noexcept override { return ExprType::CAST; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   TypePtr toType_;
@@ -451,7 +442,6 @@ public:
   NewArray(TypePtr&& type, std::vector<ExprPtr>&& elems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   ExprInfo toImExprLen(Ctx& ctx);
@@ -468,7 +458,6 @@ public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
   ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   ExprPtr arrExpr_;
@@ -481,7 +470,6 @@ public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
   ExprType getType() const noexcept override { return ExprType::MEMBER_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
 
 private:
   ExprPtr objExpr_;

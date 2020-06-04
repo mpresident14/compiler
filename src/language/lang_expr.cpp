@@ -26,19 +26,11 @@ ExprInfo ConstInt::toImExpr(Ctx&) {
   return { make_unique<im::Const>(n_), intType };
 }
 
-ExprPtr ConstInt::clone() const {
-  return make_unique<ConstInt>(n_, line_);
-}
-
 /*************
  * ConstChar *
  *************/
 ExprInfo ConstChar::toImExpr(Ctx&) {
   return { make_unique<im::Const>(c_), charType };
-}
-
-ExprPtr ConstChar::clone() const {
-  return make_unique<ConstChar>(c_, line_);
 }
 
 /*************
@@ -48,19 +40,11 @@ ExprInfo ConstBool::toImExpr(Ctx&) {
   return { make_unique<im::Const>(b_), boolType };
 }
 
-ExprPtr ConstBool::clone() const {
-  return make_unique<ConstBool>(b_, line_);
-}
-
 /*******
  * Var *
  *******/
 
 Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
-
-ExprPtr Var::clone() const {
-  return make_unique<Var>(name_, line_);
-}
 
 ExprInfo Var::toImExpr(Ctx& ctx) {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
@@ -77,10 +61,6 @@ ExprInfo Var::toImExpr(Ctx& ctx) {
 
 UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line)
     : Expr(line), e_(move(e)), uOp_(uOp) {}
-
-ExprPtr UnaryOp::clone() const {
-  return make_unique<UnaryOp>(e_->clone(), uOp_, line_);
-}
 
 ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
   switch (uOp_) {
@@ -120,10 +100,6 @@ void UnaryOp::asBool(
  ************/
 BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp)
     : Expr(e1->getLine()), e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
-
-ExprPtr BinaryOp::clone() const {
-  return make_unique<BinaryOp>(e1_->clone(), e2_->clone(), bOp_);
-}
 
 ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
   switch (bOp_) {
@@ -278,10 +254,6 @@ TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
       e1_(move(e1)),
       e2_(move(e2)) {}
 
-ExprPtr TernaryOp::clone() const {
-  return make_unique<TernaryOp>(boolE_->clone(), e1_->clone(), e2_->clone());
-}
-
 /* This is really similar to If, but using If directy would force use to
  * use a Temp and also do typechecking twice for one of the expressions */
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
@@ -327,14 +299,6 @@ CallExpr::CallExpr(
       name_(name),
       params_(move(params)) {}
 
-ExprPtr CallExpr::clone() const {
-  vector<ExprPtr> newParams;
-  for (const ExprPtr& param : params_) {
-    newParams.push_back(param->clone());
-  }
-  return make_unique<CallExpr>(vector<string>(qualifiers_), name_, move(newParams), line_);
-}
-
 ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
   if (!infoTupleOpt) {
@@ -360,9 +324,6 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 Cast::Cast(TypePtr&& toType, ExprPtr&& expr, size_t line)
     : Expr(line), toType_(move(toType)), expr_(move(expr)) {}
 
-ExprPtr Cast::clone() const {
-  return make_unique<Cast>(TypePtr(toType_), expr_->clone(), line_);
-}
 
 ExprInfo Cast::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = expr_->toImExpr(ctx);
@@ -384,17 +345,6 @@ NewArray::NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line)
 NewArray::NewArray(TypePtr&& type, vector<ExprPtr>&& elems, size_t line)
     : Expr(line), type_(move(type)), numElems_(nullptr), elems_(move(elems)) {}
 
-ExprPtr NewArray::clone() const {
-  if (numElems_) {
-    return make_unique<NewArray>(TypePtr(type_), numElems_->clone(), line_);
-  }
-
-  vector<ExprPtr> newElems;
-  for (const ExprPtr& elem : elems_) {
-    newElems.push_back(elem->clone());
-  }
-  return make_unique<NewArray>(TypePtr(type_), move(newElems), line_);
-}
 
 ExprInfo NewArray::toImExpr(Ctx& ctx) {
   if (numElems_) {
@@ -513,10 +463,6 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
 ArrayAccess::ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line)
     : Expr(line), arrExpr_(move(arrExpr)), index_(move(index)) {}
 
-ExprPtr ArrayAccess::clone() const {
-    return make_unique<ArrayAccess>(arrExpr_->clone(), index_->clone(), line_);
-}
-
 // TODO: Throw if out of range
 
 ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
@@ -554,10 +500,6 @@ MemberAccess::MemberAccess(
     size_t line)
     : Expr(line), objExpr_(move(objExpr)), member_(member) {}
 
-
-ExprPtr MemberAccess::clone() const {
-    return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
-}
 
 ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = objExpr_->toImExpr(ctx);
