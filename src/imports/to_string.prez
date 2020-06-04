@@ -26,25 +26,12 @@ char[] toString(int n) {
 
 char[] toString(bool b) {
   if (b) {
-    char[] str = char[4];
-    str[0] = 't';
-    str[1] = 'r';
-    str[2] = 'u';
-    str[3] = 'e';
-    return str;
+    return char[] {'t', 'r', 'u', 'e'};
   } else {
-    char[] str = char[4];
-    str[0] = 'f';
-    str[1] = 'a';
-    str[2] = 'l';
-    str[3] = 's';
-    str[4] = 'e';
-    return str;
+    return char[] {'f', 'a', 'l', 's', 'e'};
   }
 }
 
 char[] toString(char c) {
-  char[] str = char[1];
-  str[0] = c;
-  return str;
+  return char[] {c};
 }
