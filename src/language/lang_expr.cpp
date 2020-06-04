@@ -181,8 +181,7 @@ void BinaryOp::asBool(
     case BOp::XOR:
       return asBoolXor(imStmts, ifTrue, ifFalse, ctx);
     default:
-      // Type error
-      return Expr::asBool(imStmts, ifTrue, ifFalse, ctx);
+      throw invalid_argument("BinaryOp::asBool");
   }
 }
 
@@ -513,6 +512,8 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();
   }
+
+  return dummyInfo();
 }
 
 /********
