@@ -1,7 +1,6 @@
 # Project's name
 project(translator_test)
 
-set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 set(SUCCESS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/success)
 file(GLOB IMPORTS LIST_DIRECTORIES false "${SRC}/imports/*")
 set(ERROR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/error)
@@ -27,14 +26,14 @@ function(success_test TEST_NAME EXPECTED_OUT)
   add_custom_command(
     OUTPUT
       ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
-      ${GEN_DIR}/${ASM_FILE}
+      ${LOG_DIRECTORY}/${ASM_FILE}
     WORKING_DIRECTORY ${SUCCESS_DIR}
     COMMAND #valgrind --leak-check=full
         ${RUNTIME_OUTPUT_DIRECTORY}/main
         ${SRC_FILE}
-        ${GEN_DIR}/${ASM_FILE}
+        ${LOG_DIRECTORY}/${ASM_FILE}
     COMMAND as
-        ${GEN_DIR}/${ASM_FILE}
+        ${LOG_DIRECTORY}/${ASM_FILE}
         ${SRC}/main/syscall.s
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
     COMMAND ld
@@ -64,7 +63,7 @@ function(error_test TEST_NAME EXPECTED_OUT)
       COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/test_error.py
           ${RUNTIME_OUTPUT_DIRECTORY}/main
           ${SRC_FILE}
-          ${GEN_DIR}/${ASM_FILE}
+          ${LOG_DIRECTORY}/${ASM_FILE}
           ${EXPECTED_OUT})
 endfunction()
 
@@ -140,6 +139,6 @@ set_tests_properties(
 
 
 # Remove generated files on make clean
-file(GLOB GENFILES LIST_DIRECTORIES false "${GEN_DIR}/*")
+file(GLOB GENFILES LIST_DIRECTORIES false "${LOG_DIRECTORY}/*")
 set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${GENFILES}")
-remove_gen_files("${GEN_DIR}")
+remove_gen_files("${LOG_DIRECTORY}")

@@ -41,7 +41,6 @@ __brk:
   retq
 
 
-.globl __malloc
 __malloc:
   pushq %r12
   pushq %r13
@@ -69,7 +68,6 @@ LDONE:
   popq %r12
   retq
 
-.globl __print
 __print:          # print(char[], int)
   movq $1, %rax   # syscall 1 (write(int fd, char* msg, size_t nbytes))
   movq %rsi, %rdx # nbytes

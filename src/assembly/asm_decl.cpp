@@ -20,7 +20,7 @@ Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
 void Program::toCode(ostream& asmFile) {
-  asmFile << ".text\n.globl main\n.align 16\n";
+  asmFile << ".text\n.align 16\n";
   for (DeclPtr& decl : decls_) {
     decl->toCode(asmFile);
   }
