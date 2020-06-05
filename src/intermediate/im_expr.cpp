@@ -327,20 +327,40 @@ ExprPtr HalfConst::optimize() {
     }
   }
 
-  // Multiplication as shifts, e.g. 36x = (x << 5) + (x << 2)
+  // Multiplication as shifts, e.g. 8x = x << 3 or 36x = (x << 5) + (x << 2)
   if (bOp_ == BOp::MUL) {
     vector<size_t> setBits = getSetBits(n_);
     if (setBits.size() == 1) {
       return make_unique<BinOp>(move(eOpt), setBits[0], BOp::LSHIFT);
     } else if (setBits.size() == 2) {
-      return make_unique<BinOp>(
-          make_unique<BinOp>(eOpt->clone(), setBits[0], BOp::LSHIFT),
-          make_unique<BinOp>(move(eOpt), setBits[1], BOp::LSHIFT),
-          BOp::PLUS);
+      vector<StmtPtr> stmts;
+      int t = newTemp();
+      stmts.emplace_back(make_unique<Assign>(new Temp(t), move(eOpt)));
+      return make_unique<DoThenEval>(
+          move(stmts),
+          make_unique<BinOp>(
+              make_unique<BinOp>(new Temp(t), setBits[0], BOp::LSHIFT),
+              make_unique<BinOp>(new Temp(t), setBits[1], BOp::LSHIFT),
+              BOp::PLUS));
     }
   }
 
   return make_unique<HalfConst>(move(eOpt), n_, bOp_);
+}
+
+/********
+ * Leaq *
+ ********/
+
+ExprPtr Leaq::optimize() {
+  return make_unique<Leaq>(e1_->optimize(), e2_->optimize(), n_);
+}
+
+/**********
+ * IncDec *
+ **********/
+ExprPtr IncDec::optimize() {
+  return make_unique<IncDec>(expr_->optimize(), inc_);
 }
 
 
