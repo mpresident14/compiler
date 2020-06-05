@@ -4,7 +4,9 @@ project(language)
 add_library(lang_lib
     lang_decl.cpp
     lang_stmt.cpp
-    lang_expr.cpp
+    lang_expr_ctor.cpp
+    lang_expr_toim.cpp
+    lang_expr_asbool.cpp
     typecheck/context.cpp
     typecheck/ctx_tree.cpp
     typecheck/type.cpp

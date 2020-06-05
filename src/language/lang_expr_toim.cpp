@@ -1,8 +1,4 @@
-#include "src/assembly/assembly.hpp"
 #include "src/language/language.hpp"
-
-#include <sstream>
-#include <utility>
 
 using namespace std;
 
@@ -16,6 +12,7 @@ language::ExprInfo dummyInfo() {
 }
 
 }  // namespace
+
 
 namespace language {
 
@@ -44,8 +41,6 @@ ExprInfo ConstBool::toImExpr(Ctx&) const {
  * Var *
  *******/
 
-Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
-
 ExprInfo Var::toImExpr(Ctx& ctx) const {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
   if (!varInfo) {
@@ -59,9 +54,6 @@ ExprInfo Var::toImExpr(Ctx& ctx) const {
  * UnaryOp *
  ***********/
 
-UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line)
-    : Expr(line), e_(move(e)), uOp_(uOp) {}
-
 ExprInfo UnaryOp::toImExpr(Ctx& ctx) const {
   switch (uOp_) {
     case UOp::NOT:
@@ -72,37 +64,18 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) const {
                    im::BOp::XOR),
                boolType };
     case UOp::NEG: {
-      ExprInfo eInfo = e_->toImExprAssert(isIntegral, "Unary minus requires an integer.", ctx);
-      return { make_unique<im::BinOp>(
-                   make_unique<im::Const>(0),
-                   move(eInfo.imExpr),
-                   im::BOp::MINUS),
-               move(eInfo.type) };
+      ExprInfo eInfo = e_->toImExprAssert(
+          isIntegral, "Unary minus requires an integer.", ctx);
+      return {
+        make_unique<im::BinOp>(
+            make_unique<im::Const>(0), move(eInfo.imExpr), im::BOp::MINUS),
+        move(eInfo.type)
+      };
     }
     default:
       throw invalid_argument("Unrecognized Uop");
   }
 }
-
-void UnaryOp::asBool(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  // Only valid for NOT
-  if (uOp_ == UOp::NOT) {
-    return e_->asBool(imStmts, ifFalse, ifTrue, !flipEquiv, ctx);
-  }
-  ctx.getLogger().logError(line_, "Cannot interpret unary minus at bool");
-}
-
-
-/************
- * BinaryOp *
- ************/
-BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp)
-    : Expr(e1->getLine()), e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
 
 
 namespace {
@@ -127,7 +100,8 @@ namespace {
     int temp = newTemp();
     vector<im::StmtPtr> imStmts;
 
-    boolE.asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
+    boolE.asBool(
+        imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
     imStmts.emplace_back(move(mkIfLabel));
     imStmts.emplace_back(
         new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
@@ -143,6 +117,10 @@ namespace {
 
 }  // namespace
 
+
+/************
+ * BinaryOp *
+ ************/
 
 ExprInfo BinaryOp::toImExpr(Ctx& ctx) const {
   switch (bOp_) {
@@ -178,6 +156,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) const {
   }
 }
 
+
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) const {
   ExprInfo eInfo1 = e1_->toImExpr(ctx);
   ExprInfo eInfo2 = e2_->toImExpr(ctx);
@@ -196,132 +175,9 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) const {
            type1->numBytes > type2->numBytes ? move(type1) : move(type2) };
 }
 
-void BinaryOp::asBool(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  switch (bOp_) {
-    case BOp::EQ:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::NEQ, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::EQ, ctx);
-    case BOp::NEQ:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::EQ, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::NEQ, ctx);
-    case BOp::LT:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::GTE, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::LT, ctx);
-    case BOp::LTE:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::GT, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::LTE, ctx);
-    case BOp::GT:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::LTE, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::GT, ctx);
-    case BOp::GTE:
-      if (flipEquiv) {
-        return asBoolComp(imStmts, ifFalse, ifTrue, im::ROp::LT, ctx);
-      }
-      return asBoolComp(imStmts, ifTrue, ifFalse, im::ROp::GTE, ctx);
-    case BOp::AND:
-      return asBoolAnd(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
-    case BOp::OR:
-      return asBoolOr(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
-    case BOp::XOR:
-      return asBoolXor(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
-    default:
-      throw invalid_argument("BinaryOp::asBool");
-  }
-}
-
-void BinaryOp::asBoolComp(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    im::ROp rOp,
-    Ctx& ctx) const {
-  // Make sure we are comparing two integral types
-  ExprInfo info1 = e1_->toImExpr(ctx);
-  ExprInfo info2 = e2_->toImExpr(ctx);
-  if (!(info1.type->isIntegral && info2.type->isIntegral)) {
-    ostream& err = ctx.getLogger().logError(
-        line_, "Comparison operator requires integral types. Got ");
-    err << *info1.type << " and " << *info2.type;
-  }
-  imStmts.emplace_back(new im::CondJump(
-      move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
-}
-
-void BinaryOp::asBoolAnd(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
-  assem::Label* midLabel = mkMidLabel->genInstr();
-  e1_->asBool(imStmts, midLabel, ifFalse, flipEquiv, ctx);
-  imStmts.emplace_back(move(mkMidLabel));
-  e2_->asBool(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
-}
-
-void BinaryOp::asBoolOr(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
-  assem::Label* midLabel = mkMidLabel->genInstr();
-  e1_->asBool(imStmts, ifTrue, midLabel, !flipEquiv, ctx);
-  imStmts.emplace_back(move(mkMidLabel));
-  e2_->asBool(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
-}
-
-/*
- * XOR doesn't short-circuit, so we can simply XOR the booleans and
- * compare to 0
- */
-void BinaryOp::asBoolXor(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  im::ExprPtr imXor = make_unique<im::BinOp>(
-      e1_->toImExprAssert(*boolType, ctx),
-      e2_->toImExprAssert(*boolType, ctx),
-      im::BOp::XOR);
-  if (flipEquiv) {
-    imStmts.emplace_back(new im::CondJump(
-        move(imXor), make_unique<im::Const>(0), im::ROp::EQ, ifFalse, ifTrue));
-  } else {
-    imStmts.emplace_back(new im::CondJump(
-        move(imXor), make_unique<im::Const>(0), im::ROp::NEQ, ifTrue, ifFalse));
-
-  }
-}
-
-
 /*************
  * TernaryOp *
  *************/
-TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
-    : Expr(boolE->getLine()),
-      boolE_(move(boolE)),
-      e1_(move(e1)),
-      e2_(move(e2)) {}
-
 
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) const {
   return ternaryEval(*boolE_, *e1_, *e2_, ctx);
@@ -331,16 +187,6 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) const {
 /************
  * CallExpr *
  ************/
-
-CallExpr::CallExpr(
-    vector<string>&& qualifiers,
-    string_view name,
-    vector<ExprPtr>&& params,
-    size_t line)
-    : Expr(line),
-      qualifiers_(move(qualifiers)),
-      name_(name),
-      params_(move(params)) {}
 
 ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
   auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
@@ -356,6 +202,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
            move(get<2>(infoTuple)) };
 }
 
+
 /********
  * Cast *
  ********/
@@ -363,11 +210,6 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
 // TODO: These casts will not truncate unless stored in an array
 // We really need to pass the size of an Expr down to the intermediate
 // level so that it can generate the proper assembly
-
-Cast::Cast(TypePtr&& toType, ExprPtr&& expr, size_t line)
-    : Expr(line), toType_(move(toType)), expr_(move(expr)) {}
-
-
 ExprInfo Cast::toImExpr(Ctx& ctx) const {
   ExprInfo eInfo = expr_->toImExpr(ctx);
   if (!isConvertible(*eInfo.type, *toType_, nullptr)) {
@@ -381,13 +223,6 @@ ExprInfo Cast::toImExpr(Ctx& ctx) const {
 /************
  * NewArray *
  ************/
-
-NewArray::NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line)
-    : Expr(line), type_(move(type)), numElems_(move(numElems)) {}
-
-NewArray::NewArray(TypePtr&& type, vector<ExprPtr>&& elems, size_t line)
-    : Expr(line), type_(move(type)), numElems_(nullptr), elems_(move(elems)) {}
-
 
 ExprInfo NewArray::toImExpr(Ctx& ctx) const {
   if (numElems_) {
@@ -403,8 +238,10 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) const {
   // Store the length of the array in a temporary
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
-      numElems_->toImExprAssert(
-          isIntegral, "Array size requires an integral type", ctx).imExpr);
+      numElems_
+          ->toImExprAssert(
+              isIntegral, "Array size requires an integral type", ctx)
+          .imExpr);
 
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
@@ -499,12 +336,10 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) const {
            make_unique<Array>(type_) };
 }
 
+
 /***************
  * ArrayAccess *
  ***************/
-
-ArrayAccess::ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line)
-    : Expr(line), arrExpr_(move(arrExpr)), index_(move(index)) {}
 
 // TODO: Throw if out of range
 
@@ -520,8 +355,11 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) const {
   const Type& arrType = *static_cast<const Array&>(type).arrType;
 
   // Add 8 bytes to skip the size field
-  im::ExprPtr imIndex = index_->toImExprAssert(
-      isIntegral, "Operator[] requires an integral type", ctx).imExpr;
+  im::ExprPtr imIndex =
+      index_
+          ->toImExprAssert(
+              isIntegral, "Operator[] requires an integral type", ctx)
+          .imExpr;
   im::ExprPtr mul = make_unique<im::BinOp>(
       move(imIndex), make_unique<im::Const>(arrType.numBytes), im::BOp::MUL);
   im::ExprPtr offset = make_unique<im::BinOp>(
@@ -536,14 +374,6 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) const {
 /****************
  * MemberAccess *
  ****************/
-
-MemberAccess::MemberAccess(
-    ExprPtr&& objExpr,
-    std::string_view member,
-    size_t line)
-    : Expr(line), objExpr_(move(objExpr)), member_(member) {}
-
-
 ExprInfo MemberAccess::toImExpr(Ctx& ctx) const {
   ExprInfo eInfo = objExpr_->toImExpr(ctx);
 
@@ -559,10 +389,10 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) const {
   return dummyInfo();
 }
 
+
 /********
  * Expr *
  ********/
-
 template <typename F>
 ExprInfo Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx)
     const {
@@ -572,6 +402,7 @@ ExprInfo Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx)
   }
   return exprInfo;
 }
+
 
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) const {
   ExprInfo exprInfo = toImExpr(ctx);
@@ -610,29 +441,5 @@ warnNarrow:
   warning << "Narrowing conversion from " << eType << " to " << type;
   return move(exprInfo.imExpr);
 }
-
-void Expr::asBool(
-    vector<im::StmtPtr>& imStmts,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse,
-    bool flipEquiv,
-    Ctx& ctx) const {
-  if (flipEquiv) {
-    imStmts.emplace_back(new im::CondJump(
-        toImExprAssert(*boolType, ctx),
-        make_unique<im::Const>(0),
-        im::ROp::EQ,
-        ifFalse,
-        ifTrue));
-  } else {
-    imStmts.emplace_back(new im::CondJump(
-        toImExprAssert(*boolType, ctx),
-        make_unique<im::Const>(0),
-        im::ROp::NEQ,
-        ifTrue,
-        ifFalse));
-  }
-}
-
 
 }  // namespace language
