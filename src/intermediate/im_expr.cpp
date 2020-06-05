@@ -102,6 +102,57 @@ void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
   }
 }
 
+namespace {
+  /* HalfConst will have already optimized to a shift, so we'll convert that to
+   * a leaq if possible */
+  bool isValidLeaq(int n) { return n <= 4; }
+}  // namespace
+
+
+ExprPtr BinOp::optimize() {
+  ExprPtr eOpt1 = expr1_->optimize();
+  ExprPtr eOpt2 = expr2_->optimize();
+
+  // Const optimization
+  if (eOpt2->getType() == ExprType::CONST) {
+    int n2 = static_cast<const Const*>(eOpt2.get())->getInt();
+    if (eOpt1->getType() == ExprType::CONST) {
+      // const OP const
+      int n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+      return make_unique<Const>(doOp(n1, n2));
+    } else {
+      // x OP const
+      return HalfConst(move(eOpt1), n2, bop_, false).optimize();
+    }
+  } else if (eOpt1->getType() == ExprType::CONST) {
+    // const OP x
+    int n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+    return HalfConst(move(eOpt2), n1, bop_, true).optimize();
+  }
+
+
+  // Leaq optimization: x + y*k, where k is 1,2,4, or 8
+  // Note that if k is one of these, HalfConst will already be optimized to
+  // a shift, so we act accordingly
+  if (bop_ == BOp::PLUS) {
+    HalfConst* halfConst = dynamic_cast<HalfConst*>(eOpt1.get());
+    if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
+        isValidLeaq(halfConst->n_)) {
+      return make_unique<Leaq>(
+          move(eOpt2), move(halfConst->expr_), halfConst->n_);
+    }
+
+    halfConst = dynamic_cast<HalfConst*>(eOpt2.get());
+    if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
+        isValidLeaq(halfConst->n_)) {
+      return make_unique<Leaq>(
+          move(eOpt1), move(halfConst->expr_), halfConst->n_);
+    }
+  }
+
+  return make_unique<BinOp>(move(eOpt1), move(eOpt2));
+}
+
 
 /************
  * MemDeref *
@@ -214,6 +265,82 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   if (hasReturnValue_) {
     instrs.emplace_back(new assem::Move(RAX, temp));
   }
+}
+
+namespace {
+  /* If the nonzero number has 2 or fewer set bits, returns their positions.
+   * Otherwise returns an empty vector */
+  vector<size_t> getSetBits(int n) {
+    vector<size_t> setBits;
+    size_t numShifts;
+    while (n != 0) {
+      if (n & 1) {
+        if (setBits.size() == 2) {
+          return {};
+        }
+        setBits.push_back(numShifts);
+      }
+      n >>= 1;
+      ++numShifts;
+    }
+    return setBits;
+  }
+}  // namespace
+
+/*************
+ * HalfConst *
+ *************/
+
+ExprPtr HalfConst::optimize() {
+  ExprPtr eOpt = expr_->optimize();
+
+  // Const optimization
+  if (n_ == 0) {
+    switch (bOp_) {
+      case BOp::PLUS:
+      case BOp::MINUS:
+      case BOp::OR:
+      case BOp::LSHIFT:
+      case BOp::RSHIFT:
+      case BOp::ARSHIFT:
+        return eOpt;
+      case BOp::MUL:
+      case BOp::AND:
+        return make_unique<Const>(0);
+      default:
+        return make_unique<HalfConst>(move(eOpt), n_, bOp_);
+    }
+  }
+
+  if (n_ == 1) {
+    switch (bOp_) {
+      case BOp::PLUS:
+        return make_unique<IncDec>(move(eOpt), true);
+      case BOp::MINUS:
+        return make_unique<IncDec>(move(eOpt), false);
+      case BOp::MUL:
+        return eOpt;
+      case BOp::MOD:
+        return make_unique<Const>(0);
+      default:
+        return make_unique<HalfConst>(move(eOpt), n_, bOp_);
+    }
+  }
+
+  // Multiplication as shifts, e.g. 36x = (x << 5) + (x << 2)
+  if (bOp_ == BOp::MUL) {
+    vector<size_t> setBits = getSetBits(n_);
+    if (setBits.size() == 1) {
+      return make_unique<BinOp>(move(eOpt), setBits[0], BOp::LSHIFT);
+    } else if (setBits.size() == 2) {
+      return make_unique<BinOp>(
+          make_unique<BinOp>(eOpt->clone(), setBits[0], BOp::LSHIFT),
+          make_unique<BinOp>(move(eOpt), setBits[1], BOp::LSHIFT),
+          BOp::PLUS);
+    }
+  }
+
+  return make_unique<HalfConst>(move(eOpt), n_, bOp_);
 }
 
 
