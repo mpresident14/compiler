@@ -11,3 +11,12 @@ void f(int p) {
   bool[] bArr = 3;
   bArr[0] = 9;
 }
+
+void g() {
+  long n = 0;
+  bool b2 = false;
+  bool b3 = true;
+  while (n < (b2 || b3)) {
+    n = n + 1;
+  }
+}

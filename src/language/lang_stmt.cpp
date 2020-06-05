@@ -46,12 +46,12 @@ void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkDoneLabel =
       make_unique<im::MakeLabel>(newLabel());
 
-  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), ctx);
-  imStmts.emplace_back(move(mkElseLabel));
-  elseE_->toImStmts(imStmts, ctx);
-  imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
+  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
   imStmts.emplace_back(move(mkIfLabel));
   ifE_->toImStmts(imStmts, ctx);
+  imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
+  imStmts.emplace_back(move(mkElseLabel));
+  elseE_->toImStmts(imStmts, ctx);
   imStmts.emplace_back(move(mkDoneLabel));
 }
 
@@ -75,10 +75,10 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // Either write a clone() method or implement that function differently and
   // collect the imStmts in a vector for insertion after the label (before moving
   // into the UnaryOp)
-  boolE_->asBool(imStmts, bodyLabel, doneLabel, ctx);
+  boolE_->asBool(imStmts, bodyLabel, doneLabel, true, ctx);
   imStmts.emplace_back(move(mkBodyLabel));
   body_->toImStmts(imStmts, ctx);
-  boolE_->asBool(imStmts, bodyLabel, doneLabel, ctx);
+  boolE_->asBool(imStmts, bodyLabel, doneLabel, false, ctx);
   imStmts.emplace_back(move(mkDoneLabel));
 }
 

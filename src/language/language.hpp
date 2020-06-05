@@ -73,19 +73,22 @@ public:
   virtual ~Expr() {}
   virtual ExprType getType() const noexcept = 0;
 
-  virtual ExprInfo toImExpr(Ctx& ctx) = 0;
+  virtual ExprInfo toImExpr(Ctx& ctx) const = 0;
   /* If this typechecks to a bool, add statements to jump to ifTrue it
-   * evaluates to true and ifFalse if it evaluates to false. */
+   * evaluates to true and ifFalse if it evaluates to false. If flipEquiv
+   * is true, it will evaluate the opposite operation and jump to the
+   * opposite labels. This allows us to eliminate consecutive jumps */
   virtual void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx);
+      bool flipEquiv,
+      Ctx& ctx) const;
 
   template <typename F>
   im::ExprPtr
-  toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx);
-  im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx);
+  toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) const;
+  im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx) const;
   constexpr size_t getLine() const noexcept { return line_; }
 
 protected:
@@ -286,7 +289,7 @@ class ConstInt : public Expr {
 public:
   constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
   constexpr int getInt() const noexcept { return n_; }
 
 private:
@@ -297,7 +300,7 @@ class ConstChar : public Expr {
 public:
   constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
   ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
   constexpr char getChar() const noexcept { return c_; }
 
 private:
@@ -309,7 +312,7 @@ class ConstBool : public Expr {
 public:
   constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
   ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   bool b_;
@@ -321,7 +324,7 @@ class Var : public Expr {
 public:
   Var(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -334,13 +337,14 @@ class UnaryOp : public Expr {
 public:
   UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
   ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx) override;
+      bool flipEquiv,
+      Ctx& ctx) const override;
 
 private:
   ExprPtr e_;
@@ -352,41 +356,45 @@ class BinaryOp : public Expr {
 public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
   ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx) override;
+      bool flipEquiv,
+      Ctx& ctx) const override;
 
   const ExprPtr& getExpr1() const noexcept { return e1_; }
   const ExprPtr& getExpr2() const noexcept { return e2_; }
   BOp getBOp() const noexcept { return bOp_; }
 
 private:
-  ExprInfo toImExprArith(im::BOp op, Ctx& ctx);
+  ExprInfo toImExprArith(im::BOp op, Ctx& ctx) const;
   void asBoolComp(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
       im::ROp rOp,
-      Ctx& ctx);
+      Ctx& ctx) const;
   void asBoolAnd(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx);
+      bool flipEquiv,
+      Ctx& ctx) const;
   void asBoolOr(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx);
+      bool flipEquiv,
+      Ctx& ctx) const;
   void asBoolXor(
       std::vector<im::StmtPtr>& imStmts,
       assem::Label* ifTrue,
       assem::Label* ifFalse,
-      Ctx& ctx);
+      bool flipEquiv,
+      Ctx& ctx) const;
 
   ExprPtr e1_;
   ExprPtr e2_;
@@ -398,7 +406,7 @@ class TernaryOp : public Expr {
 public:
   TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
   ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   ExprPtr boolE_;
@@ -415,7 +423,7 @@ public:
       std::vector<ExprPtr>&& params,
       size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   std::vector<std::string> qualifiers_;
@@ -428,7 +436,7 @@ class Cast : public Expr {
 public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
   ExprType getType() const noexcept override { return ExprType::CAST; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   TypePtr toType_;
@@ -441,11 +449,11 @@ public:
   NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line);
   NewArray(TypePtr&& type, std::vector<ExprPtr>&& elems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
-  ExprInfo toImExprLen(Ctx& ctx);
-  ExprInfo toImExprElems(Ctx& ctx);
+  ExprInfo toImExprLen(Ctx& ctx) const;
+  ExprInfo toImExprElems(Ctx& ctx) const;
 
   TypePtr type_;
   ExprPtr numElems_;
@@ -457,7 +465,7 @@ class ArrayAccess : public Expr {
 public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
   ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   ExprPtr arrExpr_;
@@ -469,7 +477,7 @@ class MemberAccess : public Expr {
 public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
   ExprType getType() const noexcept override { return ExprType::MEMBER_ACCESS; }
-  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprInfo toImExpr(Ctx& ctx) const override;
 
 private:
   ExprPtr objExpr_;
