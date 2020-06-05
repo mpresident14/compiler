@@ -1,7 +1,7 @@
 #include "src/intermediate/intermediate.hpp"
 
+#include <functional>
 #include <stdexcept>
-
 
 using namespace std;
 
@@ -49,22 +49,21 @@ void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     case BOp::MOD:
       return handleDiv(false, temp, instrs);
     case BOp::PLUS:
-      return handleOthers("addq", temp, instrs);
+      return handleOthers("addq", temp, instrs, plus<int>());
     case BOp::MINUS:
-      return handleOthers("subq", temp, instrs);
+      return handleOthers("subq", temp, instrs, minus<int>());
     case BOp::MUL:
-      return handleOthers("imulq", temp, instrs);
+      return handleOthers("imulq", temp, instrs, multiplies<int>());
     case BOp::AND:
-      return handleOthers("andq", temp, instrs);
+      return handleOthers("andq", temp, instrs, bit_and<int>());
     case BOp::OR:
-      return handleOthers("orq", temp, instrs);
+      return handleOthers("orq", temp, instrs, bit_or<int>());
     case BOp::XOR:
-      return handleOthers("xorq", temp, instrs);
+      return handleOthers("xorq", temp, instrs, bit_xor<int>());
     default:
       throw invalid_argument("Unrecognized binary operator.");
   }
 }
-
 
 void BinOp::handleShifts(
     string asmCode,
@@ -101,26 +100,6 @@ void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
     // If mod, move %rdx into temp
     Temp(RDX).toAssemInstrs(temp, instrs);
   }
-}
-
-
-void BinOp::handleOthers(
-    string asmCode,
-    int temp,
-    vector<assem::InstrPtr>& instrs) const {
-  // TODO: Specialize if expr1_ is a Const
-  // TODO: Leaq optimization
-  // TODO: Inc/deq optimization
-  int t1 = expr1_->toAssemInstrs(instrs);
-  int t2 = expr2_->toAssemInstrs(instrs);
-  // Need to create a new temp first in case t1 or t2 is the same as temp
-  // TODO: Handle these cases separately so we don't waste instructions most of
-  // the time
-  int tRes = newTemp();
-  instrs.emplace_back(new assem::Move(t1, tRes));
-  instrs.emplace_back(new assem::Operation(
-      asmCode.append(" `8S1, `8D0"), { tRes, t2 }, { tRes }));
-  instrs.emplace_back(new assem::Move(tRes, temp));
 }
 
 
