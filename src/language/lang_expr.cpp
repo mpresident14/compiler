@@ -71,12 +71,14 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) const {
                    make_unique<im::Const>(1),
                    im::BOp::XOR),
                boolType };
-    case UOp::NEG:
+    case UOp::NEG: {
+      ExprInfo eInfo = e_->toImExprAssert(isIntegral, "Unary minus requires an integer.", ctx);
       return { make_unique<im::BinOp>(
                    make_unique<im::Const>(0),
-                   e_->toImExprAssert(*intType, ctx),
+                   move(eInfo.imExpr),
                    im::BOp::MINUS),
-               intType };
+               move(eInfo.type) };
+    }
     default:
       throw invalid_argument("Unrecognized Uop");
   }
@@ -402,7 +404,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) const {
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
       numElems_->toImExprAssert(
-          isIntegral, "Array size requires an integral type", ctx));
+          isIntegral, "Array size requires an integral type", ctx).imExpr);
 
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
@@ -519,7 +521,7 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) const {
 
   // Add 8 bytes to skip the size field
   im::ExprPtr imIndex = index_->toImExprAssert(
-      isIntegral, "Operator[] requires an integral type", ctx);
+      isIntegral, "Operator[] requires an integral type", ctx).imExpr;
   im::ExprPtr mul = make_unique<im::BinOp>(
       move(imIndex), make_unique<im::Const>(arrType.numBytes), im::BOp::MUL);
   im::ExprPtr offset = make_unique<im::BinOp>(
@@ -562,13 +564,13 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) const {
  ********/
 
 template <typename F>
-im::ExprPtr Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx)
+ExprInfo Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx)
     const {
   ExprInfo exprInfo = toImExpr(ctx);
   if (!condFn(*exprInfo.type)) {
     ctx.getLogger().logError(line_, errMsg);
   }
-  return move(exprInfo.imExpr);
+  return exprInfo;
 }
 
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) const {

@@ -86,7 +86,7 @@ public:
       Ctx& ctx) const;
 
   template <typename F>
-  im::ExprPtr
+  ExprInfo
   toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) const;
   im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx) const;
   constexpr size_t getLine() const noexcept { return line_; }
