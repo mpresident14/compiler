@@ -59,8 +59,8 @@ CondJump::CondJump(
 void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   int t1 = newTemp();
   int t2 = newTemp();
-  e1_->toAssemInstrs(t1, instrs);
-  e2_->toAssemInstrs(t2, instrs);
+  e1_->optimize()->toAssemInstrs(t1, instrs);
+  e2_->optimize()->toAssemInstrs(t2, instrs);
   string op;
   switch (rop_) {
     case ROp::EQ:
@@ -84,39 +84,12 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     default:
       throw invalid_argument("Unrecognized relative operator.");
   }
-  // switch (rop_) {
-  //   case ROp::EQ:
-  //     op = "jne ";
-  //     break;
-  //   case ROp::NEQ:
-  //     op = "je ";
-  //     break;
-  //   case ROp::LT:
-  //     op = "jge ";
-  //     break;
-  //   case ROp::GT:
-  //     op = "jle ";
-  //     break;
-  //   case ROp::LTE:
-  //     op = "jg ";
-  //     break;
-  //   case ROp::GTE:
-  //     op = "jl ";
-  //     break;
-  //   default:
-  //     throw invalid_argument("Unrecognized relative operator.");
-  // }
 
   instrs.emplace_back(new assem::Operation("cmpq `8S1, `8S0", { t1, t2 }, {}));
   instrs.emplace_back(
       new assem::CondJumpOp(op.append(ifTrue_->getName()), {}, {}, ifTrue_));
   instrs.emplace_back(
       new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
-  // instrs.emplace_back(
-  //     new assem::CondJumpOp(op.append(ifFalse_->getName()), {}, {}, {
-  //     ifFalse_ }));
-  // instrs.emplace_back(
-  //     new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, { ifTrue_ }));
 }
 
 
@@ -139,16 +112,19 @@ namespace {
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
 void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  ExprType lhsType = e1_->getType();
+  ExprPtr eOpt1 = e1_->optimize();
+  ExprPtr eOpt2 = e2_->optimize();
+
+  ExprType lhsType = eOpt1->getType();
   if (lhsType == ExprType::TEMP) {
     // Move e2 into the Temp of e1
-    e2_->toAssemInstrs(static_cast<Temp*>(e1_.get())->getTemp(), instrs);
+    eOpt2->toAssemInstrs(static_cast<Temp*>(eOpt1.get())->getTemp(), instrs);
   } else if (lhsType == ExprType::MEM_DEREF) {
     // Move e2 into the address of e1
     int t1 = newTemp();
     int t2 = newTemp();
-    e2_->toAssemInstrs(t2, instrs);
-    const MemDeref* memDeref = static_cast<MemDeref*>(e1_.get());
+    eOpt2->toAssemInstrs(t2, instrs);
+    const MemDeref* memDeref = static_cast<MemDeref*>(eOpt1.get());
     memDeref->getAddr()->toAssemInstrs(t1, instrs);
 
     char bytesChar = memDeref->getNumBytes() + '0';
@@ -173,7 +149,7 @@ CallStmt::CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params)
     : addr_(move(addr)), params_(move(params)) {}
 
 void CallStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  CallExpr(move(addr_), move(params_), false).toAssemInstrs(0, instrs);
+  CallExpr(move(addr_), move(params_), false).optimize()->toAssemInstrs(0, instrs);
 }
 
 
@@ -185,7 +161,7 @@ ReturnStmt::ReturnStmt(ExprPtr&& retValue) : retValue_(move(retValue)) {}
 
 void ReturnStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   if (retValue_) {
-    retValue_->toAssemInstrs(RAX, instrs);
+    retValue_->optimize()->toAssemInstrs(RAX, instrs);
   }
   instrs.emplace_back(new assem::Return(retValue_ != nullptr));
 }

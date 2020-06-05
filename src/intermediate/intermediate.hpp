@@ -219,12 +219,10 @@ private:
   void handleDiv(bool isDiv, int temp, std::vector<assem::InstrPtr>& instrs)
       const;
 
-  template <typename BinaryOp>
   void handleOthers(
       std::string asmCode,
       int temp,
-      std::vector<assem::InstrPtr>& instrs,
-      const BinaryOp& bOp) const;
+      std::vector<assem::InstrPtr>& instrs) const;
 
   int doOp(int a, int b) const noexcept;
 
@@ -341,6 +339,7 @@ private:
 };
 
 
+/* See shouldTryHalfConst for valid BOps */
 class HalfConst : public Expr {
 public:
   HalfConst(ExprPtr&& expr, int n, BOp bOp, bool reversed);
