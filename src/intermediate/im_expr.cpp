@@ -219,14 +219,14 @@ ExprPtr BinOp::optimize() {
     if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
         isValidLeaq(halfConst->n_)) {
       return make_unique<Leaq>(
-          move(eOpt2), move(halfConst->expr_), halfConst->n_);
+          move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
     }
 
     halfConst = dynamic_cast<HalfConst*>(eOpt2.get());
     if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
         isValidLeaq(halfConst->n_)) {
       return make_unique<Leaq>(
-          move(eOpt1), move(halfConst->expr_), halfConst->n_);
+          move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
     }
   }
 

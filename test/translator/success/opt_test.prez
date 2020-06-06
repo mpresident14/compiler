@@ -1,0 +1,14 @@
+void main() {
+  long a = 2;
+  long b = a * 36;
+  b = b + 1;
+  long c = b + a * 8;
+  long d = 4 * b;
+  long e = c - 1;
+
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+}
