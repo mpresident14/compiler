@@ -115,8 +115,9 @@ string regToString(MachineReg machineReg, char bytesChar) {
       }
       break;
     default:
-      throw invalid_argument("regToString: " +
-          to_string(bytesChar) + " is not a valid register offset.");
+      throw invalid_argument(
+          "regToString: " + to_string(bytesChar) +
+          " is not a valid register offset.");
   }
 
   return ret;

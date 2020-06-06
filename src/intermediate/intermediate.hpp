@@ -48,22 +48,12 @@ public:
   /* Same as above but allow the Expr to determine the temp it is put into
    * (mainly to avoid unnecessary moves for Expr::Temp) */
   virtual int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const;
-  /* Return an optimized version of the expression. This object is invalidated */
+  /* Return an optimized version of the expression. This object is invalidated
+   */
   virtual std::unique_ptr<Expr> optimize() = 0;
 };
 
-enum class BOp {
-  PLUS,
-  MINUS,
-  MUL,
-  DIV,
-  MOD,
-  AND,
-  OR,
-  LSHIFT,
-  ARSHIFT,
-  XOR
-};
+enum class BOp { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, ARSHIFT, XOR };
 
 enum class ROp { EQ, NEQ, LT, GT, LTE, GTE };
 
@@ -352,7 +342,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-// private:
+  // private:
   ExprPtr expr_;
   int n_;
   BOp bOp_;
@@ -370,7 +360,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-// private:
+  // private:
   ExprPtr e1_;
   ExprPtr e2_;
   int n_;
@@ -387,7 +377,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-// private:
+  // private:
   ExprPtr expr_;
   bool inc_;
 };

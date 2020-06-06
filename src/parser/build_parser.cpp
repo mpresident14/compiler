@@ -151,7 +151,8 @@ void addIfNewRule(
     DFARule&& rule,
     queue<const DFARule*>& ruleQueue,
     DFARuleSet& ruleSet) {
-  // OK to move here because we only use rule again if it was not inserted into the set
+  // OK to move here because we only use rule again if it was not inserted into
+  // the set
   auto p = ruleSet.insert(move(rule));
   const DFARule& ruleRef = *p.first;
   if (p.second) {
@@ -539,7 +540,6 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
-
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,

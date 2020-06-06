@@ -2,8 +2,8 @@
 
 #include "src/language/typecheck/context.hpp"
 
-#include <sstream>
 #include <limits>
+#include <sstream>
 
 using namespace std;
 
@@ -53,14 +53,19 @@ bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
 pair<long, long> minMaxValue(const Type& integralType) {
   switch (integralType.typeName) {
     case TypeName::LONG:
-      return {std::numeric_limits<long>::min(), std::numeric_limits<long>::max()};
+      return { std::numeric_limits<long>::min(),
+               std::numeric_limits<long>::max() };
     case TypeName::INT:
-      return {std::numeric_limits<int>::min(), std::numeric_limits<int>::max()};
+      return { std::numeric_limits<int>::min(),
+               std::numeric_limits<int>::max() };
     case TypeName::SHORT:
-      return {std::numeric_limits<short>::min(), std::numeric_limits<short>::max()};
+      return { std::numeric_limits<short>::min(),
+               std::numeric_limits<short>::max() };
     case TypeName::CHAR:
-      return {std::numeric_limits<char>::min(), std::numeric_limits<char>::max()};
-    default: throw invalid_argument("minMaxValue: Not an integral type");
+      return { std::numeric_limits<char>::min(),
+               std::numeric_limits<char>::max() };
+    default:
+      throw invalid_argument("minMaxValue: Not an integral type");
   }
 }
 

@@ -2,8 +2,6 @@
 #include "src/assembly/reg_alloc/flow_graph.hpp"
 #include "src/assembly/reg_alloc/interference_graph.hpp"
 #include "src/assembly/temp.hpp"
-#include "src/language/typecheck/context.hpp"
-#include "src/language/typecheck/type.hpp"
 
 #include <stdexcept>
 

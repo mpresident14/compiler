@@ -46,7 +46,8 @@ void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkDoneLabel =
       make_unique<im::MakeLabel>(newLabel());
 
-  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
+  boolE_->asBool(
+      imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
   imStmts.emplace_back(move(mkIfLabel));
   ifE_->toImStmts(imStmts, ctx);
   imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
@@ -73,8 +74,8 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // TODO: This should first be a NOT(boolE) and reverse the labels, but asBool
   // can destroy objects within an expression (see BinaryOp::toImExpr).
   // Either write a clone() method or implement that function differently and
-  // collect the imStmts in a vector for insertion after the label (before moving
-  // into the UnaryOp)
+  // collect the imStmts in a vector for insertion after the label (before
+  // moving into the UnaryOp)
   boolE_->asBool(imStmts, bodyLabel, doneLabel, true, ctx);
   imStmts.emplace_back(move(mkBodyLabel));
   body_->toImStmts(imStmts, ctx);
@@ -143,7 +144,7 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprInfo lhsInfo = lhs_->toImExpr(ctx);
   switch (lhs_->getType()) {
-    case ExprType::VAR: // Fall thru
+    case ExprType::VAR:  // Fall thru
     case ExprType::MEMBER_ACCESS:
       // Can't assign to length field of an array
       if (lhsInfo.type->typeName == TypeName::ARRAY) {
@@ -187,14 +188,19 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // TODO: Separate search path for function defined by language
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
-  im::ExprPtr callToString =
-      CallExpr(
-          { "home", "mpresident", "cs", "compiler", "src", "imports", "to_string" },
-          "toString",
-          move(toPrint),
-          line_)
-          .toImExpr(ctx)
-          .imExpr;
+  im::ExprPtr callToString = CallExpr(
+                                 { "home",
+                                   "mpresident",
+                                   "cs",
+                                   "compiler",
+                                   "src",
+                                   "imports",
+                                   "to_string" },
+                                 "toString",
+                                 move(toPrint),
+                                 line_)
+                                 .toImExpr(ctx)
+                                 .imExpr;
 
   // Put the char[] in a temporary
   int tCharsAddr = newTemp();

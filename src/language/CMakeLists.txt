@@ -13,4 +13,4 @@ add_library(lang_lib
     utils.cpp)
 
 # Commented out to speed up compilation
-target_link_libraries(lang_lib my_parser_lib misc_lib)
+target_link_libraries(lang_lib my_parser_lib im_lib misc_lib)

@@ -3,7 +3,7 @@ project(main)
 
 add_executable(main main.cpp)
 add_library(my_parser_lib parser.cpp)
-target_link_libraries(main my_parser_lib lang_lib im_lib asm_lib)
+target_link_libraries(main my_parser_lib lang_lib)
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/parser.hpp ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp

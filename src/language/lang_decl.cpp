@@ -24,7 +24,8 @@ namespace language {
 
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {
-  imports_.push_back({"/home/mpresident/cs/compiler/src/imports/to_string.prez", 0});
+  imports_.push_back(
+      { "/home/mpresident/cs/compiler/src/imports/to_string.prez", 0 });
 }
 
 

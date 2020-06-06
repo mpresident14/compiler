@@ -141,6 +141,7 @@ void Return::assignRegs(
   return;
 }
 
+
 /**********
  * toCode *
  **********/
@@ -156,7 +157,8 @@ void tempToCode(
 #ifdef DEBUG
     out << "%t" << -temp;
 #else
-    out << varToStackOffset.at(temp) << '(' << regToString(RSP, bytesChar) << ')';
+    out << varToStackOffset.at(temp) << '(' << regToString(RSP, bytesChar)
+        << ')';
 #endif
   }
 }
@@ -192,10 +194,16 @@ void Operation::toCode(
       c = asmCode_.at(i + 2);
       if (c == 'S') {
         tempToCode(
-            out, srcs_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
+            out,
+            srcs_.at(digitToInt(asmCode_.at(i + 3))),
+            bytesChar,
+            varToStackOffset);
       } else if (c == 'D') {
         tempToCode(
-            out, dsts_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
+            out,
+            dsts_.at(digitToInt(asmCode_.at(i + 3))),
+            bytesChar,
+            varToStackOffset);
       } else {
         // TODO: Remove this case when done
         throw runtime_error("Operation::toCode");

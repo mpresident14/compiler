@@ -22,7 +22,7 @@ enum class TypeName { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 struct Type {
   virtual ~Type() {}
   constexpr Type(TypeName name, u_char nBytes, bool integral = false)
-    : typeName(name), numBytes(nBytes), isIntegral(integral) {}
+      : typeName(name), numBytes(nBytes), isIntegral(integral) {}
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const;
 

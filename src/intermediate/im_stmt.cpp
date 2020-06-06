@@ -100,14 +100,19 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
 namespace {
   char toInstrLetter(char bytesChar) {
     switch (bytesChar) {
-      case '8': return 'q';
-      case '4': return 'l';
-      case '2': return 'w';
-      case '1': return 'b';
-      default: throw invalid_argument("toInstrLetter: " + to_string(bytesChar));
+      case '8':
+        return 'q';
+      case '4':
+        return 'l';
+      case '2':
+        return 'w';
+      case '1':
+        return 'b';
+      default:
+        throw invalid_argument("toInstrLetter: " + to_string(bytesChar));
     }
   }
-}
+}  // namespace
 
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
@@ -133,8 +138,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     asmOp.append(" `");
     asmOp.push_back(bytesChar);
     asmOp.append("S1, (`8S0)");
-    instrs.emplace_back(
-        new assem::Operation(move(asmOp), { t1, t2 }, {}));
+    instrs.emplace_back(new assem::Operation(move(asmOp), { t1, t2 }, {}));
   } else {
     throw invalid_argument("Invalid ExprType for Assign LHS.");
   }
@@ -149,7 +153,9 @@ CallStmt::CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params)
     : addr_(move(addr)), params_(move(params)) {}
 
 void CallStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  CallExpr(move(addr_), move(params_), false).optimize()->toAssemInstrs(0, instrs);
+  CallExpr(move(addr_), move(params_), false)
+      .optimize()
+      ->toAssemInstrs(0, instrs);
 }
 
 
