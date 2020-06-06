@@ -36,11 +36,11 @@ ExprPtr Temp::optimize() { return make_unique<Temp>(t_); }
  * BinOp *
  *********/
 
-BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop)
-    : expr1_(move(expr1)), expr2_(move(expr2)), bop_(bop) {}
+BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bOp)
+    : expr1_(move(expr1)), expr2_(move(expr2)), bOp_(bOp) {}
 
 void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  switch (bop_) {
+  switch (bOp_) {
     case BOp::LSHIFT:
       return handleShifts("shlq", temp, instrs);
     case BOp::ARSHIFT:
@@ -133,104 +133,115 @@ void BinOp::handleOthers(
   }
 }
 
+
 namespace {
   /* HalfConst will have already optimized to a shift, so we'll convert that to
    * a leaq if possible */
-  bool isValidLeaq(int n) { return n <= 4; }
-
-  /* These are the operations that would benefit from being turned into a
-   * HalfConst */
-  bool shouldTryHalfConst(BOp bOp) {
-    switch (bOp) {
-      case BOp::LSHIFT:
-      case BOp::ARSHIFT:
-      case BOp::DIV:
-      case BOp::MOD:
-        return false;
-      case BOp::PLUS:
-      case BOp::MINUS:
-      case BOp::MUL:
-      case BOp::AND:
-      case BOp::OR:
-      case BOp::XOR:
-        return true;
-      default:
-        throw invalid_argument("shouldTryHalfConst");
-    }
+  bool isValidLeaq(HalfConst* halfConst) {
+    return halfConst && !halfConst->reversed_ &&
+           halfConst->bOp_ == BOp::LSHIFT && halfConst->n_ <= 4;
   }
 }  // namespace
 
 
-int BinOp::doOp(int a, int b) const noexcept {
-  switch (bop_) {
-    case BOp::LSHIFT:
-      return a << b;
-    case BOp::ARSHIFT:
-      return a >> b;
-    case BOp::DIV:
-      return a / b;
-    case BOp::MOD:
-      return a % b;
-    case BOp::PLUS:
-      return a + b;
-    case BOp::MINUS:
-      return a - b;
-    case BOp::MUL:
-      return a * b;
-    case BOp::AND:
-      return a & b;
-    case BOp::OR:
-      return a | b;
-    case BOp::XOR:
-      return a ^ b;
-    default:
-      throw invalid_argument("doOp");
-  }
-}
-
 ExprPtr BinOp::optimize() {
   ExprPtr eOpt1 = expr1_->optimize();
   ExprPtr eOpt2 = expr2_->optimize();
-  bool tryHalfConst = shouldTryHalfConst(bop_);
 
-  // Const optimization
-  if (eOpt2->getType() == ExprType::CONST) {
-    int n2 = static_cast<const Const*>(eOpt2.get())->getInt();
-    if (eOpt1->getType() == ExprType::CONST) {
-      // const OP const
-      int n1 = static_cast<const Const*>(eOpt1.get())->getInt();
-      return make_unique<Const>(doOp(n1, n2));
-    } else if (tryHalfConst) {
-      // x OP const
-      return HalfConst(move(eOpt1), n2, bop_, false).optimize();
-    }
-  } else if (tryHalfConst && eOpt1->getType() == ExprType::CONST) {
-    // const OP x
-    int n1 = static_cast<const Const*>(eOpt1.get())->getInt();
-    return HalfConst(move(eOpt2), n1, bop_, true).optimize();
+  if (ExprPtr optConst = optimizeConst(eOpt1, eOpt2)) {
+    return optConst;
   }
-
 
   // Leaq optimization: x + y*k, where k is 1,2,4, or 8
   // Note that if k is one of these, HalfConst will already be optimized to
   // a shift, so we act accordingly
-  if (bop_ == BOp::PLUS) {
+  if (bOp_ == BOp::PLUS) {
     HalfConst* halfConst = dynamic_cast<HalfConst*>(eOpt1.get());
-    if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
-        isValidLeaq(halfConst->n_)) {
+    if (isValidLeaq(halfConst)) {
       return make_unique<Leaq>(
           move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
     }
 
     halfConst = dynamic_cast<HalfConst*>(eOpt2.get());
-    if (halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
-        isValidLeaq(halfConst->n_)) {
+    if (isValidLeaq(halfConst)) {
       return make_unique<Leaq>(
           move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
     }
   }
 
-  return make_unique<BinOp>(move(eOpt1), move(eOpt2), bop_);
+  return make_unique<BinOp>(move(eOpt1), move(eOpt2), bOp_);
+}
+
+
+ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
+  // Denotes the operations that can be optimized by turning them into a
+  // HalfConst
+  bool tryHalfConst;
+  long (*op)(long, long);
+
+  switch (bOp_) {
+    case BOp::LSHIFT:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a << b; };
+      break;
+    case BOp::ARSHIFT:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a >> b; };
+      break;
+    case BOp::DIV:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a / b; };
+      break;
+    case BOp::MOD:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a % b; };
+      break;
+    case BOp::PLUS:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a + b; };
+      break;
+    case BOp::MINUS:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a - b; };
+      break;
+    case BOp::MUL:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a * b; };
+      break;
+    case BOp::AND:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a & b; };
+      break;
+    case BOp::OR:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a | b; };
+      break;
+    case BOp::XOR:
+      tryHalfConst = false;
+      op = [](long a, long b) { return a ^ b; };
+      break;
+    default:
+      throw invalid_argument("BinOp::optimizeConst");
+  }
+
+  // Const optimization
+  if (eOpt2->getType() == ExprType::CONST) {
+    long n2 = static_cast<const Const*>(eOpt2.get())->getInt();
+    if (eOpt1->getType() == ExprType::CONST) {
+      // const OP const
+      long n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+      return make_unique<Const>(op(n1, n2));
+    } else if (tryHalfConst) {
+      // x OP const
+      return HalfConst(move(eOpt1), n2, bOp_, false).optimize();
+    }
+  } else if (tryHalfConst && eOpt1->getType() == ExprType::CONST) {
+    // const OP x
+    long n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+    return HalfConst(move(eOpt2), n1, bOp_, true).optimize();
+  }
+
+  return nullptr;
 }
 
 
@@ -370,7 +381,7 @@ ExprPtr CallExpr::optimize() {
  * HalfConst *
  *************/
 
-HalfConst::HalfConst(ExprPtr&& expr, int n, BOp bOp, bool reversed)
+HalfConst::HalfConst(ExprPtr&& expr, long n, BOp bOp, bool reversed)
     : expr_(move(expr)), n_(n), bOp_(bOp), reversed_(reversed) {}
 
 void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
@@ -385,12 +396,25 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       asmCode = "addq";
       break;
     case BOp::MINUS:
+      if (reversed_) {
+        // const - x: Subtraction is non-commutative
+        expr_->toAssemInstrs(temp, instrs);
+        instrs.emplace_back(
+            new assem::Operation("negq `8D0", { temp }, { temp }));
+        instrs.emplace_back(new assem::Operation(
+            string("addq $").append(to_string(n_)).append(", `8D0"),
+            { temp },
+            { temp }));
+        return;
+      }
       asmCode = "subq";
       break;
     case BOp::MUL:
       if (n_ == -1) {
+        // x * - 1 = -n
         expr_->toAssemInstrs(temp, instrs);
-        instrs.emplace_back(new assem::Operation("negq `8D0", {temp}, {temp}));
+        instrs.emplace_back(
+            new assem::Operation("negq `8D0", { temp }, { temp }));
         return;
       }
       asmCode = "imulq";
@@ -408,22 +432,13 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       throw invalid_argument("HalfConst::toAssemInstrs");
   }
 
-  if (reversed_ && bOp_ == BOp::MINUS) {
-    int t = newTemp();
-    expr_->toAssemInstrs(t, instrs);
-    instrs.emplace_back(new assem::Operation(
-        string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
-    instrs.emplace_back(new assem::Operation(
-        asmCode.append(" `8S0, `8D0"), { t, temp }, { temp }));
-
-  } else {
-    expr_->toAssemInstrs(temp, instrs);
-    instrs.emplace_back(new assem::Operation(
-        asmCode.append(" $").append(to_string(n_)).append(", `8D0"),
-        { temp },
-        { temp }));
-  }
+  expr_->toAssemInstrs(temp, instrs);
+  instrs.emplace_back(new assem::Operation(
+      asmCode.append(" $").append(to_string(n_)).append(", `8D0"),
+      { temp },
+      { temp }));
 }
+
 
 namespace {
   /* If the nonzero number has 2 or fewer set bits, returns their positions.
@@ -445,9 +460,9 @@ namespace {
   }
 }  // namespace
 
+
 ExprPtr HalfConst::optimize() {
   ExprPtr eOpt = expr_->optimize();
-
   // Const optimization
   if (n_ == 0) {
     switch (bOp_) {
@@ -516,7 +531,7 @@ ExprPtr HalfConst::optimize() {
  * Leaq *
  ********/
 
-Leaq::Leaq(ExprPtr&& e1, ExprPtr&& e2, int n)
+Leaq::Leaq(ExprPtr&& e1, ExprPtr&& e2, u_char n)
     : e1_(move(e1)), e2_(move(e2)), n_(n) {}
 
 

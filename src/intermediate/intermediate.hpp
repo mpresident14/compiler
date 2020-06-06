@@ -195,7 +195,7 @@ private:
 
 class BinOp : public Expr {
 public:
-  BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bop);
+  BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bOp);
   constexpr ExprType getType() const noexcept override {
     return ExprType::BINOP;
   }
@@ -216,11 +216,11 @@ private:
       int temp,
       std::vector<assem::InstrPtr>& instrs) const;
 
-  int doOp(int a, int b) const noexcept;
+  ExprPtr optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2);
 
   ExprPtr expr1_;
   ExprPtr expr2_;
-  BOp bop_;
+  BOp bOp_;
 };
 
 
@@ -331,10 +331,14 @@ private:
 };
 
 
-/* See shouldTryHalfConst for valid BOps */
+/* Functions below are mainly used to produce more efficient assembly code
+ * via the optimize() method */
+
+
+/* See BinOp::optimizeConst for valid BOps */
 class HalfConst : public Expr {
 public:
-  HalfConst(ExprPtr&& expr, int n, BOp bOp, bool reversed);
+  HalfConst(ExprPtr&& expr, long n, BOp bOp, bool reversed);
   constexpr ExprType getType() const noexcept override {
     return ExprType::HALF_CONST;
   }
@@ -344,7 +348,7 @@ public:
 
   // private:
   ExprPtr expr_;
-  int n_;
+  long n_;
   BOp bOp_;
   bool reversed_;
 };
@@ -352,7 +356,7 @@ public:
 
 class Leaq : public Expr {
 public:
-  Leaq(ExprPtr&& e1, ExprPtr&& e2, int n);
+  Leaq(ExprPtr&& e1, ExprPtr&& e2, u_char n);
   constexpr ExprType getType() const noexcept override {
     return ExprType::LEAQ;
   }
@@ -363,7 +367,7 @@ public:
   // private:
   ExprPtr e1_;
   ExprPtr e2_;
-  int n_;
+  u_char n_;
 };
 
 
@@ -381,63 +385,6 @@ public:
   ExprPtr expr_;
   bool inc_;
 };
-
-// template <typename BinaryOp>
-// void BinOp::handleOthers(
-//     std::string asmCode,
-//     int temp,
-//     std::vector<assem::InstrPtr>& instrs,
-//     const BinaryOp& bOp) const {
-//   // TODO: Leaq optimization
-//   // TODO: Inc/deq optimization
-//   // TODO: Shift optimization for imulq
-//   using namespace std;
-
-//   // Const optimization
-//   if (expr2_->getType() == ExprType::CONST) {
-//     int n2 = static_cast<const Const*>(expr2_.get())->getInt();
-//     if (expr1_->getType() == ExprType::CONST) {
-//       // const OP const
-//       int n1 = static_cast<const Const*>(expr1_.get())->getInt();
-//       instrs.emplace_back(new assem::Operation(
-//           string("movq $").append(to_string(bOp(n1, n2))).append(", `8D0"),
-//           { },
-//           { temp }));
-//       return;
-//     } else {
-//       // x OP const
-//       expr1_->toAssemInstrs(temp, instrs);
-//       instrs.emplace_back(new assem::Operation(
-//           asmCode.append(" $").append(to_string(n2)).append(", `8D0"),
-//           { temp },
-//           { temp }));
-//       return;
-//     }
-//   } else if (expr1_->getType() == ExprType::CONST && asmCode != "subq") {
-//     // const OP x (OPs other than minus are commutative)
-//     int n1 = static_cast<const Const*>(expr1_.get())->getInt();
-//     expr2_->toAssemInstrs(temp, instrs);
-//     instrs.emplace_back(new assem::Operation(
-//         asmCode.append(" $").append(to_string(n1)).append(", `8D0"),
-//         { temp },
-//         { temp }));
-//     return;
-//   }
-
-
-//   int t1 = expr1_->toAssemInstrs(instrs);
-//   int t2 = expr2_->toAssemInstrs(instrs);
-//   // Need to create a new temp first in case t1 or t2 is the same as temp
-//   // TODO: Handle these cases separately so we don't waste instructions most
-//   of
-//   // the time
-//   int tRes = newTemp();
-//   instrs.emplace_back(new assem::Move(t1, tRes));
-//   instrs.emplace_back(new assem::Operation(
-//       asmCode.append(" `8S1, `8D0"), { tRes, t2 }, { tRes }));
-//   instrs.emplace_back(new assem::Move(tRes, temp));
-// }
-
 
 }  // namespace im
 
