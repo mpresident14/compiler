@@ -20,6 +20,8 @@ namespace language {
  * ConstInt *
  ************/
 ExprInfo ConstInt::toImExpr(Ctx&) const {
+  // NOTE: Constant integers are intType by default, but since we store them
+  // as a long, it allows an implicit conversion to longType if required
   return { make_unique<im::Const>(n_), intType };
 }
 

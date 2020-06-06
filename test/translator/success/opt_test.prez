@@ -7,12 +7,10 @@ void main() {
   long e = c - 1;
   long f = a * -1;
 
-
   print(a);
   print(b);
   print(c);
   print(d);
   print(e);
   print(f);
-
 }

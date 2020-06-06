@@ -98,11 +98,11 @@ DOT         "\."
 
 PRINT       "print"
 
-NUM         "0|[1-9][0-9]*"                        -> { int }    % stol(string(#str)) %
-HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { int }    % stol(string(#str), nullptr, 16) %
-IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string } % #str %
-SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""           -> { string } % removeQuotes(#str) %
-CHARLIT     "'(.|\\t|\\n)'"                        -> { char }   % maybeEscape(removeQuotes(#str)) %
+NUM         "0|[1-9][0-9]*"                        -> { long }    % stol(string(#str)) %
+HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { long }    % stol(string(#str), nullptr, 16) %
+IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string }  % #str %
+SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""           -> { string }  % removeQuotes(#str) %
+CHARLIT     "'(.|\\t|\\n)'"                        -> { char }    % maybeEscape(removeQuotes(#str)) %
 
 #prec
 
@@ -119,7 +119,7 @@ XOR                     #left
 BIT_OR                  #left
 BIT_AND                 #left
 EQEQ NEQ LT GT LTE GTE  #nonassoc
-LSHIFT ARSHIFT           #left
+LSHIFT ARSHIFT          #left
 PLUS MINUS              #left
 STAR FSLASH MOD         #left
 UNARY_MINUS BANG        #nonassoc

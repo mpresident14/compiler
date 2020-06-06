@@ -226,17 +226,17 @@ private:
 
 class Const : public Expr {
 public:
-  explicit constexpr Const(int n) : n_(n) {}
+  explicit constexpr Const(long n) : n_(n) {}
   constexpr ExprType getType() const noexcept override {
     return ExprType::CONST;
   }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
-  constexpr int getInt() const noexcept { return n_; }
+  constexpr long getInt() const noexcept { return n_; }
   ExprPtr optimize() override;
 
 private:
-  int n_;
+  long n_;
 };
 
 

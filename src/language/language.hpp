@@ -286,13 +286,13 @@ enum class BOp {
 
 class ConstInt : public Expr {
 public:
-  constexpr explicit ConstInt(int n, size_t line) : Expr(line), n_(n) {}
+  constexpr explicit ConstInt(long n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr(Ctx& ctx) const override;
-  constexpr int getInt() const noexcept { return n_; }
+  constexpr long getInt() const noexcept { return n_; }
 
 private:
-  int n_;
+  long n_;
 };
 
 class ConstChar : public Expr {
