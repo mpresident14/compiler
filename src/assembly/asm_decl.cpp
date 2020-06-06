@@ -49,17 +49,15 @@ void Function::toCode(ostream& out) {
   bitset<NUM_AVAIL_REGS> writtenRegs =
       regAlloc(colorPair.first, colorPair.second);
   auto savesAndRestores = preserveRegs(writtenRegs);
-  const vector<InstrPtr>& saves = savesAndRestores.first;
-  const vector<InstrPtr>& restores = savesAndRestores.second;
 
   // Push all registers that need to be saved at the beginning of the function
-  for (const InstrPtr& save : saves) {
+  for (const InstrPtr& save : savesAndRestores.first) {
     save->toCode(out, varToStackOffset_);
   }
   for (const InstrPtr& instr : instrs_) {
     // Need to pop before every return
     if (instr->getType() == InstrType::RETURN) {
-      for (const InstrPtr& restore : restores) {
+      for (const InstrPtr& restore : savesAndRestores.second) {
         restore->toCode(out, varToStackOffset_);
       }
     }
@@ -71,6 +69,7 @@ void Function::toCode(ostream& out) {
 bitset<NUM_AVAIL_REGS> Function::regAlloc(
     const unordered_map<int, MachineReg>& coloring,
     const vector<int>& spilled) {
+  // Assign each spilled temporary a spot on the stack
   for (int tempId : spilled) {
     if (!varToStackOffset_.contains(tempId)) {
       varToStackOffset_.emplace(tempId, 8 * varToStackOffset_.size());
@@ -80,34 +79,44 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
   // Allocate space on the stack for spilled variables
   size_t stackSpace = varToStackOffset_.size() * 8;
   vector<InstrPtr> newInstrs;
-  newInstrs.push_back(make_unique<Operation>(
-      "subq $" + to_string(stackSpace) + ", %rsp",
-      vector<int>{},
-      vector<int>{}));
+
+  bool needStackSpace;
+  if ((needStackSpace = stackSpace != 0)) {
+    newInstrs.emplace_back(
+        new Operation("subq $" + to_string(stackSpace) + ", %rsp", {}, {}));
+  }
 
   // Update the instructions and add them
-  // TODO: Lots of virtual function calls here, either use a switch
-  // or group them together
   bitset<NUM_AVAIL_REGS> writtenRegs;
   for (auto iter = instrs_.begin(); iter != instrs_.end(); ++iter) {
     InstrPtr& instr = *iter;
     InstrType type = instr->getType();
-    if (type == InstrType::JUMP_OP &&
-        static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
-      // Skip jumps immediately followed by the label to which they jump
-      // (Nothing to do)
-    } else if (type == InstrType::RETURN) {
-      // Deallocate space on the stack for spilled variables
-      newInstrs.push_back(make_unique<Operation>(
-          "addq $" + to_string(stackSpace) + ", %rsp",
-          vector<int>{},
-          vector<int>{}));
-      newInstrs.push_back(move(instr));
-    } else {
-      instr->assignRegs(coloring, writtenRegs);
-      if (instr->spillTemps(newInstrs)) {
-        newInstrs.push_back(move(instr));
-      }
+
+    switch (type) {
+      case InstrType::JUMP_OP:
+        if (static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
+          // Skip jumps immediately followed by the label to which they jump
+          break;
+        }
+        // Fall thru
+      case InstrType::COND_JUMP_OP:
+      case InstrType::OPER:
+      case InstrType::MOVE:
+        // Color the registers
+        instr->assignRegs(coloring, writtenRegs);
+        if (instr->spillTemps(newInstrs)) {
+          newInstrs.push_back(move(instr));
+        }
+        break;
+      case InstrType::RETURN:
+        if (needStackSpace) {
+          newInstrs.push_back(make_unique<Operation>(
+              "addq $" + to_string(stackSpace) + ", %rsp",
+              vector<int>{},
+              vector<int>{}));
+        }
+        // Fall thru
+      default: newInstrs.push_back(move(instr));
     }
   }
 
@@ -138,6 +147,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
 
   return { move(pushInstrs), move(popInstrs) };
 }
+
 
 /********
  * Ints *

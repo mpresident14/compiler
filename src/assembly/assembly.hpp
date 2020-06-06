@@ -29,8 +29,6 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
-  // TODO: This needs to be tested with code that spills both spill regs, e.g. a
-  // leaq instruction
   /* Returns true if this instruction still needs to be added */
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
   /* Assigns temps to machine registers and keeps track of which machine
