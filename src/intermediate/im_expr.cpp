@@ -43,8 +43,6 @@ void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   switch (bop_) {
     case BOp::LSHIFT:
       return handleShifts("shlq", temp, instrs);
-    case BOp::RSHIFT:
-      return handleShifts("shrq", temp, instrs);
     case BOp::ARSHIFT:
       return handleShifts("sarq", temp, instrs);
     case BOp::DIV:
@@ -112,23 +110,26 @@ void BinOp::handleOthers(
     std::vector<assem::InstrPtr>& instrs) const {
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
+  asmCode.append(" `8S1, `8D0");
+
+
   if (t1 == temp) {
-    instrs.emplace_back(new assem::Operation(
-        asmCode.append(" `8S1, `8D0"), { t1, t2 }, { t1 }));
+    instrs.emplace_back(
+        new assem::Operation(move(asmCode), { t1, t2 }, { t1 }));
   } else if (t2 == temp) {
     if (asmCode == "subq") {
       // Only subtraction is non-commutative
       instrs.emplace_back(new assem::Operation("negq `8D0", { t2 }, { t2 }));
       instrs.emplace_back(
-          new assem::Operation("addq `8S0, `8D0", { t1, t2 }, { t2 }));
+          new assem::Operation("addq `8S1, `8D0", { t2, t1 }, { t2 }));
     } else {
-      instrs.emplace_back(new assem::Operation(
-          asmCode.append(" `8S0, `8D0"), { t1, t2 }, { t2 }));
+      instrs.emplace_back(
+          new assem::Operation(move(asmCode), { t2, t1 }, { t2 }));
     }
   } else {
     instrs.emplace_back(new assem::Move(t1, temp));
-    instrs.emplace_back(new assem::Operation(
-        asmCode.append(" `8S1, `8D0"), { temp, t2 }, { temp }));
+    instrs.emplace_back(
+        new assem::Operation(move(asmCode), { temp, t2 }, { temp }));
   }
 }
 
@@ -137,11 +138,11 @@ namespace {
    * a leaq if possible */
   bool isValidLeaq(int n) { return n <= 4; }
 
-  /* These are the operations that would benefit from being turned into a HalfConst */
+  /* These are the operations that would benefit from being turned into a
+   * HalfConst */
   bool shouldTryHalfConst(BOp bOp) {
     switch (bOp) {
       case BOp::LSHIFT:
-      case BOp::RSHIFT:
       case BOp::ARSHIFT:
       case BOp::DIV:
       case BOp::MOD:
@@ -154,12 +155,38 @@ namespace {
       case BOp::XOR:
         return true;
       default:
-        throw invalid_argument("Unrecognized binary operator.");
+        throw invalid_argument("shouldTryHalfConst");
     }
   }
-
 }  // namespace
 
+
+int BinOp::doOp(int a, int b) const noexcept {
+  switch (bop_) {
+    case BOp::LSHIFT:
+      return a << b;
+    case BOp::ARSHIFT:
+      return a >> b;
+    case BOp::DIV:
+      return a / b;
+    case BOp::MOD:
+      return a % b;
+    case BOp::PLUS:
+      return a + b;
+    case BOp::MINUS:
+      return a - b;
+    case BOp::MUL:
+      return a * b;
+    case BOp::AND:
+      return a & b;
+    case BOp::OR:
+      return a | b;
+    case BOp::XOR:
+      return a ^ b;
+    default:
+      throw invalid_argument("doOp");
+  }
+}
 
 ExprPtr BinOp::optimize() {
   ExprPtr eOpt1 = expr1_->optimize();
@@ -353,18 +380,25 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       // Guaranteed to be of the form x << const, not const << x
       // Otherwise handled by BinOp (see BinOp::optimize)
       asmCode = "shlq";
+      break;
     case BOp::PLUS:
       asmCode = "addq";
+      break;
     case BOp::MINUS:
       asmCode = "subq";
+      break;
     case BOp::MUL:
       asmCode = "imulq";
+      break;
     case BOp::AND:
       asmCode = "andq";
+      break;
     case BOp::OR:
       asmCode = "orq";
+      break;
     case BOp::XOR:
       asmCode = "xorq";
+      break;
     default:
       throw invalid_argument("HalfConst::toAssemInstrs");
   }
@@ -372,14 +406,16 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   if (reversed_ && bOp_ == BOp::MINUS) {
     int t = expr_->toAssemInstrs(instrs);
     instrs.emplace_back(new assem::Operation(
-          string("movq $").append(to_string(n_)).append(", `8D0"), {}, {temp}));
+        string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
     instrs.emplace_back(new assem::Operation(
-        asmCode.append(" `8S0, `8D0"), {t, temp}, {temp}));
+        asmCode.append(" `8S0, `8D0"), { t, temp }, { temp }));
 
   } else {
     expr_->toAssemInstrs(temp, instrs);
     instrs.emplace_back(new assem::Operation(
-        asmCode.append(" $").append(to_string(n_)).append(", `8D0"), {temp}, {temp}));
+        asmCode.append(" $").append(to_string(n_)).append(", `8D0"),
+        { temp },
+        { temp }));
   }
 }
 
@@ -410,17 +446,19 @@ ExprPtr HalfConst::optimize() {
   if (n_ == 0) {
     switch (bOp_) {
       case BOp::PLUS:
-      case BOp::MINUS:
       case BOp::OR:
-      case BOp::LSHIFT:
-      case BOp::RSHIFT:
-      case BOp::ARSHIFT:
         return eOpt;
+      case BOp::MINUS:
+        return reversed_
+                   ? make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_)
+                   : move(eOpt);
       case BOp::MUL:
       case BOp::AND:
         return make_unique<Const>(0);
-      default:
+      case BOp::XOR:
         return make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_);
+      default:
+        throw invalid_argument("HalfConst::optimize(n == 0)");
     }
   }
 
@@ -429,13 +467,17 @@ ExprPtr HalfConst::optimize() {
       case BOp::PLUS:
         return make_unique<IncDec>(move(eOpt), true);
       case BOp::MINUS:
-        return make_unique<IncDec>(move(eOpt), false);
+        return reversed_ ? static_cast<ExprPtr>(make_unique<HalfConst>(
+                               move(eOpt), n_, bOp_, reversed_))
+                         : make_unique<IncDec>(move(eOpt), false);
       case BOp::MUL:
         return eOpt;
-      case BOp::MOD:
-        return make_unique<Const>(0);
-      default:
+      case BOp::AND:
+      case BOp::OR:
+      case BOp::XOR:
         return make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_);
+      default:
+        throw invalid_argument("HalfConst::optimize(n == 1)");
     }
   }
 
@@ -443,8 +485,8 @@ ExprPtr HalfConst::optimize() {
   if (bOp_ == BOp::MUL) {
     vector<size_t> setBits = getSetBits(n_);
     if (setBits.size() == 1) {
-      return make_unique<BinOp>(
-          move(eOpt), make_unique<Const>(setBits[0]), BOp::LSHIFT);
+      return make_unique<HalfConst>(
+          move(eOpt), setBits[0], BOp::LSHIFT, reversed_);
     } else if (setBits.size() == 2) {
       vector<StmtPtr> stmts;
       int t = newTemp();
@@ -452,14 +494,10 @@ ExprPtr HalfConst::optimize() {
       return make_unique<DoThenEval>(
           move(stmts),
           make_unique<BinOp>(
-              make_unique<BinOp>(
-                  make_unique<Temp>(t),
-                  make_unique<Const>(setBits[0]),
-                  BOp::LSHIFT),
-              make_unique<BinOp>(
-                  make_unique<Temp>(t),
-                  make_unique<Const>(setBits[1]),
-                  BOp::LSHIFT),
+              make_unique<HalfConst>(
+                  make_unique<Temp>(t), setBits[0], BOp::LSHIFT, reversed_),
+              make_unique<HalfConst>(
+                  make_unique<Temp>(t), setBits[1], BOp::LSHIFT, reversed_),
               BOp::PLUS));
     }
   }
@@ -472,17 +510,44 @@ ExprPtr HalfConst::optimize() {
  * Leaq *
  ********/
 
+Leaq::Leaq(ExprPtr&& e1, ExprPtr&& e2, int n)
+    : e1_(move(e1)), e2_(move(e2)), n_(n) {}
+
+
+void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
+  int t1 = e1_->toAssemInstrs(instrs);
+  int t2 = e2_->toAssemInstrs(instrs);
+  string asmCode =
+      string("leaq (`8S0, `8S1, ").append(to_string(n_)).append("), `8D0");
+  instrs.emplace_back(
+      new assem::Operation(move(asmCode), { t1, t2 }, { temp }));
+}
+
 ExprPtr Leaq::optimize() {
   return make_unique<Leaq>(e1_->optimize(), e2_->optimize(), n_);
 }
 
+
 /**********
  * IncDec *
  **********/
+
+IncDec::IncDec(ExprPtr&& expr, bool inc) : expr_(move(expr)), inc_(inc) {}
+
 ExprPtr IncDec::optimize() {
   return make_unique<IncDec>(expr_->optimize(), inc_);
 }
 
+
+void IncDec::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+    const {
+  expr_->toAssemInstrs(temp, instrs);
+  if (inc_) {
+    instrs.emplace_back(new assem::Operation("incq `8D0", { temp }, { temp }));
+  } else {
+    instrs.emplace_back(new assem::Operation("decq `8D0", { temp }, { temp }));
+  }
+}
 
 /********
  * Expr *

@@ -39,7 +39,10 @@ class Expr {
 public:
   virtual ~Expr() {}
   virtual constexpr ExprType getType() const noexcept = 0;
-  /* Add instructions that put the value of this Expr into this temp */
+  /* Add instructions that put the value of this Expr into this temp.
+   * Because of the way we wrote the spill code (i.e., poorly), any
+   * temp that is a destination must be marked with a D, even if it is also
+   * a source. */
   virtual void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const = 0;
   /* Same as above but allow the Expr to determine the temp it is put into
@@ -58,7 +61,6 @@ enum class BOp {
   AND,
   OR,
   LSHIFT,
-  RSHIFT,
   ARSHIFT,
   XOR
 };

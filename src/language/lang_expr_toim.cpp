@@ -136,7 +136,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) const {
       return toImExprArith(im::BOp::MOD, ctx);
     case BOp::LSHIFT:
       return toImExprArith(im::BOp::LSHIFT, ctx);
-    case BOp::RSHIFT:
+    case BOp::ARSHIFT:
       return toImExprArith(im::BOp::ARSHIFT, ctx);
     case BOp::BIT_AND:
       return toImExprArith(im::BOp::AND, ctx);

@@ -56,12 +56,12 @@ bool Move::spillTemps(vector<InstrPtr>& newInstrs) {
   // Src variable from stack into register
   if (!isRegister(src_)) {
     newInstrs.push_back(
-        make_unique<Move>(src_, isRegister(dst_) > 0 ? dst_ : SPILL_REGS[0]));
+        make_unique<Move>(src_, isRegister(dst_) ? dst_ : SPILL_REGS[0]));
   }
 
   if (!isRegister(dst_)) {
     newInstrs.push_back(
-        make_unique<Move>(isRegister(src_) > 0 ? src_ : SPILL_REGS[0], dst_));
+        make_unique<Move>(isRegister(src_) ? src_ : SPILL_REGS[0], dst_));
   }
 
   return false;

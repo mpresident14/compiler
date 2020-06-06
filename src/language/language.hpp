@@ -273,7 +273,7 @@ enum class BOp {
   BIT_OR,
   XOR,
   LSHIFT,
-  RSHIFT,
+  ARSHIFT,
   EQ,
   NEQ,
   GT,
