@@ -85,27 +85,18 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
 
 /************
- * CallStmt *
+ * ExprStmt *
  ************/
-CallStmt::CallStmt(
-    vector<string>&& qualifiers,
-    string_view name,
-    vector<ExprPtr>&& params,
-    size_t line)
-    : Stmt(line),
-      qualifiers_(move(qualifiers)),
-      name_(name),
-      params_(move(params)) {}
+ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
-void CallStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
-  if (!infoTupleOpt) {
-    // Undefined function
+void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  ExprType exprType = expr_->getType();
+  if (!(exprType == ExprType::CALL_EXPR)) {
+    ctx.getLogger().logWarning(line_, "The value of this expression is unused.");
     return;
   }
-  imStmts.emplace_back(new im::CallStmt(
-      make_unique<im::LabelAddr>(get<0>(*infoTupleOpt)),
-      move(get<1>(*infoTupleOpt))));
+
+  imStmts.emplace_back(new im::ExprStmt(expr_->toImExpr(ctx).imExpr));
 }
 
 
@@ -217,8 +208,8 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   printArgs.push_back(
       make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8));
 
-  im::StmtPtr callPrint = make_unique<im::CallStmt>(
-      make_unique<im::LabelAddr>("__println"), move(printArgs));
+  im::StmtPtr callPrint = make_unique<im::ExprStmt>(make_unique<im::CallExpr>(
+      make_unique<im::LabelAddr>("__println"), move(printArgs), false));
 
   imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));

@@ -167,14 +167,13 @@ private:
 
 
 /* Call function and discard result */
-class CallStmt : public Stmt {
+class ExprStmt : public Stmt {
 public:
-  CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params);
+  ExprStmt(ExprPtr&& expr);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
-  ExprPtr addr_;
-  std::vector<ExprPtr> params_;
+  ExprPtr expr_;
 };
 
 

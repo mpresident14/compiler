@@ -157,13 +157,12 @@ Stmt -> { StmtPtr }
   := IF LPAREN Expr RPAREN Block                 % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %
    | IF LPAREN Expr RPAREN Block ELSE Stmt       % make_unique<If>(move(#2), move(#4), move(#6), #line) %
    | WHILE LPAREN Expr RPAREN Block              % make_unique<While>(move(#2), move(#4), #line) %
-   | IDENT LPAREN Exprs RPAREN SEMI              % make_unique<CallStmt>(vector<string>(), #0, move(#2), #line) %
-   | Qualifiers IDENT LPAREN Exprs RPAREN SEMI   % make_unique<CallStmt>(move(#0), #1, move(#3), #line) %
    | RETURN SEMI                                 % make_unique<Return>(optional<ExprPtr>(), #line) %
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
    | LValue EQ Expr SEMI                         % make_unique<Assign>(move(#0), move(#2)) %
    | NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
    | Block                                       % move(#0) %
+   | Expr SEMI                                   % make_unique<ExprStmt>(move(#0), #line) %
    | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
 
 Expr -> { ExprPtr }

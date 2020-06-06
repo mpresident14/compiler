@@ -194,20 +194,14 @@ private:
   std::unique_ptr<Block> body_;
 };
 
-class CallExpr;
-class CallStmt : public Stmt {
+
+class ExprStmt : public Stmt {
 public:
-  CallStmt(
-      std::vector<std::string>&& qualifiers,
-      std::string_view name,
-      std::vector<ExprPtr>&& params,
-      size_t line);
+  ExprStmt(ExprPtr expr, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
 private:
-  std::vector<std::string> qualifiers_;
-  std::string name_;
-  std::vector<ExprPtr> params_;
+  ExprPtr expr_;
 };
 
 
@@ -484,14 +478,10 @@ private:
 };
 
 
-std::string newLabel();
-std::optional<std::tuple<std::string, std::vector<im::ExprPtr>, TypePtr>>
-argsToImExprs(
-    const std::vector<std::string>& qualifiers,
-    const std::string& fnName,
-    const std::vector<ExprPtr>& params,
-    size_t line,
-    Ctx& ctx);
+inline std::string newLabel() {
+  static int i = 0;
+  return "L" + std::to_string(i++);
+}
 
 }  // namespace language
 

@@ -8,6 +8,8 @@ using namespace assem;
 // TODO: Give errors for uninitialized variables
 // and warnings about defined but unused variables
 
+// TODO: If we have a movq %t1, %t2, and %t2 is not live afterwards, remove it
+
 // TODO(all files): Try to replace switch statements with virtual functions
 // where possible (possibly add another layer of abstraction like we did
 // for Operation, JumpOp and CondJumpOp)

@@ -146,16 +146,15 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
 
 
 /************
- * CallStmt *
+ * ExprStmt *
  ************/
 
-CallStmt::CallStmt(ExprPtr&& addr, std::vector<ExprPtr>&& params)
-    : addr_(move(addr)), params_(move(params)) {}
+ExprStmt::ExprStmt(ExprPtr&& expr) : expr_(move(expr)) {}
 
-void CallStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  CallExpr(move(addr_), move(params_), false)
-      .optimize()
-      ->toAssemInstrs(0, instrs);
+void ExprStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
+  // NOTE: This will create a wasted move to a new temp, but it will be removed
+  // in flowgraph.cpp when we find undefined variables
+  expr_->optimize()->toAssemInstrs(instrs);
 }
 
 

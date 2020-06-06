@@ -191,17 +191,28 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) const {
  ************/
 
 ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
-  auto infoTupleOpt = argsToImExprs(qualifiers_, name_, params_, line_, ctx);
-  if (!infoTupleOpt) {
+  vector<im::ExprPtr> paramImExprs;
+  vector<TypePtr> paramTypes;
+  size_t numParams = params_.size();
+  // Get types and convert params
+  for (size_t i = 0; i < numParams; ++i) {
+    ExprInfo exprInfo = params_[i]->toImExpr(ctx);
+    paramImExprs.push_back(move(exprInfo.imExpr));
+    paramTypes.push_back(move(exprInfo.type));
+  }
+
+  const Ctx::FnInfo* fnInfo =
+      ctx.lookupFnRec(qualifiers_, name_, paramTypes, line_);
+  if (!fnInfo) {
     // Undefined function
     return dummyInfo();
   }
-  auto& infoTuple = *infoTupleOpt;
+
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(get<0>(infoTuple)),
-               move(get<1>(infoTuple)),
-               get<2>(infoTuple) != voidType),
-           move(get<2>(infoTuple)) };
+               make_unique<im::LabelAddr>(ctx.mangleFn(name_, fnInfo->declFile, paramTypes)),
+               move(move(paramImExprs)),
+               fnInfo->returnType != voidType),
+           move(fnInfo->returnType) };
 }
 
 
