@@ -388,6 +388,11 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       asmCode = "subq";
       break;
     case BOp::MUL:
+      if (n_ == -1) {
+        expr_->toAssemInstrs(temp, instrs);
+        instrs.emplace_back(new assem::Operation("negq `8D0", {temp}, {temp}));
+        return;
+      }
       asmCode = "imulq";
       break;
     case BOp::AND:
@@ -404,7 +409,8 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   }
 
   if (reversed_ && bOp_ == BOp::MINUS) {
-    int t = expr_->toAssemInstrs(instrs);
+    int t = newTemp();
+    expr_->toAssemInstrs(t, instrs);
     instrs.emplace_back(new assem::Operation(
         string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
     instrs.emplace_back(new assem::Operation(

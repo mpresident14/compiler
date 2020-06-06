@@ -13,6 +13,12 @@ char[] toString(long n) {
     return str;
   }
 
+  bool isNeg = false;
+  if (n < 0) {
+    n = -n;
+    isNeg = true;
+  }
+
   long num = n;
   int numDigits = 0;
   while (num != 0) {
@@ -20,11 +26,16 @@ char[] toString(long n) {
     numDigits = numDigits + 1;
   }
 
+  long len = isNeg ? numDigits + 1 : numDigits;
+  char[] str = char[len];
+  long i = len - 1;
+  if (isNeg) {
+    str[0] = '-';
+  }
+
   num = n;
-  char[] str = char[numDigits];
-  int i = numDigits - 1;
   while (num != 0) {
-    str[i] = (char) num % 10 + '0';
+    str[i] = (char) (num % 10 + '0');
     num = num / 10;
     i = i - 1;
   }

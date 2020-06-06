@@ -68,7 +68,7 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) const {
           isIntegral, "Unary minus requires an integer.", ctx);
       return {
         make_unique<im::BinOp>(
-            make_unique<im::Const>(0), move(eInfo.imExpr), im::BOp::MINUS),
+            make_unique<im::Const>(-1), move(eInfo.imExpr), im::BOp::MUL),
         move(eInfo.type)
       };
     }
