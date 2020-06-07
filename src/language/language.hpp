@@ -60,6 +60,28 @@ enum class ExprType {
   MEMBER_ACCESS
 };
 
+enum class UOp { NEG, NOT };
+enum class BOp {
+  PLUS,
+  MUL,
+  MINUS,
+  DIV,
+  MOD,
+  BIT_AND,
+  BIT_OR,
+  XOR,
+  LSHIFT,
+  ARSHIFT,
+  EQ,
+  NEQ,
+  GT,
+  LT,
+  GTE,
+  LTE,
+  AND,
+  OR
+};
+
 
 struct ExprInfo {
   im::ExprPtr imExpr;
@@ -226,6 +248,17 @@ private:
 };
 
 
+class Update : public Stmt {
+public:
+  Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
+
+private:
+  ExprPtr lhs_;
+  ExprPtr rhs_;
+  BOp bOp_;
+};
+
 class VarDecl : public Stmt {
 public:
   VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
@@ -254,29 +287,6 @@ private:
 /********
  * Expr *
  ********/
-
-enum class UOp { NEG, NOT };
-enum class BOp {
-  PLUS,
-  MUL,
-  MINUS,
-  DIV,
-  MOD,
-  BIT_AND,
-  BIT_OR,
-  XOR,
-  LSHIFT,
-  ARSHIFT,
-  EQ,
-  NEQ,
-  GT,
-  LT,
-  GTE,
-  LTE,
-  AND,
-  OR
-};
-
 
 class ConstInt : public Expr {
 public:
@@ -475,6 +485,22 @@ public:
 private:
   ExprPtr objExpr_;
   std::string member_;
+};
+
+
+/* For my own convenience */
+class InfoHolder : public Expr {
+public:
+  InfoHolder(ExprInfo&& exprInfo, ExprType exprType, size_t line);
+  ExprType getType() const noexcept override { return exprType_; }
+  /* NOTE: This is not actually const (exprInfo_ is moved), do not call
+   * this method more than once (no use in While loops */
+  ExprInfo toImExpr(Ctx& ctx) const override;
+
+private:
+  mutable ExprInfo exprInfo_;
+  ExprType exprType_;
+  bool used_ = false;
 };
 
 

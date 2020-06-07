@@ -52,11 +52,24 @@ MINUS       "-"
 STAR        "\*"
 FSLASH      "/"
 MOD         "%"
-BIT_AND     "&"
-BIT_OR      "\|"
+BITAND      "&"
+BITOR       "\|"
 XOR         "^"
 LSHIFT      "<<"
-ARSHIFT      ">>"
+ARSHIFT     ">>"
+
+PLUSEQ      "\+="
+MINUSEQ     "-="
+STAREQ      "\*="
+FSLASHEQ    "/="
+MODEQ       "%="
+BITANDEQ    "&="
+BITOREQ     "\|="
+XOREQ       "^="
+LSHIFTEQ    "<<="
+ARSHIFTEQ   ">>="
+// INC         "++"
+// DEC         "--"
 
 AND         "&&"
 OR          "\|\|"
@@ -112,19 +125,19 @@ CHARLIT     "'(.|\\t|\\n)'"                        -> { char }    % maybeEscape(
 EPSILON1                #left
 EPSILON2                #left
 
-QMARK                   #right
-OR                      #left
-AND                     #left
-XOR                     #left
-BIT_OR                  #left
-BIT_AND                 #left
-EQEQ NEQ LT GT LTE GTE  #nonassoc
-LSHIFT ARSHIFT          #left
-PLUS MINUS              #left
-STAR FSLASH MOD         #left
-UNARY_MINUS BANG        #nonassoc
-LBRACKET DOT            #left
-COLON2                  #left
+QMARK                             #right
+OR                                #left
+AND                               #left
+XOR                               #left
+BITOR                             #left
+BITAND                            #left
+EQEQ NEQ LT GT LTE GTE            #nonassoc
+LSHIFT ARSHIFT                    #left
+PLUS MINUS                        #left
+STAR FSLASH MOD                   #left
+UNARY_MINUS BANG                  #nonassoc
+LPAREN LBRACKET DOT               #left
+COLON2                            #left
 
 
 #grammar
@@ -164,6 +177,16 @@ Stmt -> { StmtPtr }
    | Block                                       % move(#0) %
    | Expr SEMI                                   % make_unique<ExprStmt>(move(#0), #line) %
    | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
+   | LValue PLUSEQ Expr SEMI                     % make_unique<Update>(move(#0), BOp::PLUS, move(#2)) %
+   | LValue MINUSEQ Expr SEMI                    % make_unique<Update>(move(#0), BOp::MINUS, move(#2)) %
+   | LValue STAREQ Expr SEMI                     % make_unique<Update>(move(#0), BOp::MUL, move(#2)) %
+   | LValue FSLASHEQ Expr SEMI                   % make_unique<Update>(move(#0), BOp::DIV, move(#2)) %
+   | LValue MODEQ Expr SEMI                      % make_unique<Update>(move(#0), BOp::MOD, move(#2)) %
+   | LValue BITANDEQ Expr SEMI                   % make_unique<Update>(move(#0), BOp::BIT_AND, move(#2)) %
+   | LValue BITOREQ Expr SEMI                    % make_unique<Update>(move(#0), BOp::BIT_OR, move(#2)) %
+   | LValue XOREQ Expr SEMI                      % make_unique<Update>(move(#0), BOp::XOR, move(#2)) %
+   | LValue LSHIFTEQ Expr SEMI                   % make_unique<Update>(move(#0), BOp::LSHIFT, move(#2)) %
+   | LValue ARSHIFTEQ Expr SEMI                  % make_unique<Update>(move(#0), BOp::ARSHIFT, move(#2)) %
 
 Expr -> { ExprPtr }
   := NUM                                         % make_unique<ConstInt>(#0, #line) %
@@ -178,11 +201,11 @@ Expr -> { ExprPtr }
    | Expr STAR Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
    | Expr FSLASH Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
    | Expr MOD Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::MOD) %
-   | Expr BIT_AND Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
-   | Expr BIT_OR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
+   | Expr BITAND Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
+   | Expr BITOR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
    | Expr XOR Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::XOR) %
    | Expr LSHIFT Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::LSHIFT) %
-   | Expr ARSHIFT Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::ARSHIFT) %
+   | Expr ARSHIFT Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::ARSHIFT) %
    | Expr AND Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
    | Expr OR Expr                                % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
    | Expr EQEQ Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %

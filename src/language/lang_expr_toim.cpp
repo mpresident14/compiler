@@ -86,6 +86,7 @@ namespace {
    * boolean BinaryOp without moving the BinaryOp (to maintain constness).
    * This is really similar to If, but using If directy would force use to
    * use a Temp and also do typechecking twice for one of the expressions */
+  // TODO: The above statement is wrong I think. Do this.
   ExprInfo
   ternaryEval(const Expr& boolE, const Expr& e1, const Expr& e2, Ctx& ctx) {
     // Make sure expressions are the same type
@@ -209,7 +210,8 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
   }
 
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(ctx.mangleFn(name_, fnInfo->declFile, paramTypes)),
+               make_unique<im::LabelAddr>(
+                   ctx.mangleFn(name_, fnInfo->declFile, paramTypes)),
                move(move(paramImExprs)),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
@@ -453,6 +455,18 @@ warnNarrow:
   ostream& warning = ctx.getLogger().logWarning(line_);
   warning << "Narrowing conversion from " << eType << " to " << type;
   return move(exprInfo.imExpr);
+}
+
+
+/**************
+ * InfoHolder *
+ **************/
+
+ExprInfo InfoHolder::toImExpr(Ctx&) const {
+  if (used_) {
+    throw runtime_error("InfoHolder::toImExpr called twice");
+  }
+  return move(exprInfo_);
 }
 
 }  // namespace language

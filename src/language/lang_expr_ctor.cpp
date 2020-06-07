@@ -49,4 +49,7 @@ MemberAccess::MemberAccess(
     size_t line)
     : Expr(line), objExpr_(move(objExpr)), member_(member) {}
 
+InfoHolder::InfoHolder(ExprInfo&& exprInfo, ExprType exprType, size_t line)
+    : Expr(line), exprInfo_(move(exprInfo)), exprType_(exprType) {}
+
 }  // namespace language

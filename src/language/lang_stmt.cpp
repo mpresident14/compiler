@@ -71,11 +71,7 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       make_unique<im::MakeLabel>(newLabel());
   assem::Label* bodyLabel = mkBodyLabel->genInstr();
   assem::Label* doneLabel = mkDoneLabel->genInstr();
-  // TODO: This should first be a NOT(boolE) and reverse the labels, but asBool
-  // can destroy objects within an expression (see BinaryOp::toImExpr).
-  // Either write a clone() method or implement that function differently and
-  // collect the imStmts in a vector for insertion after the label (before
-  // moving into the UnaryOp)
+
   boolE_->asBool(imStmts, bodyLabel, doneLabel, true, ctx);
   imStmts.emplace_back(move(mkBodyLabel));
   body_->toImStmts(imStmts, ctx);
@@ -92,7 +88,8 @@ ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType exprType = expr_->getType();
   if (!(exprType == ExprType::CALL_EXPR)) {
-    ctx.getLogger().logWarning(line_, "The value of this expression is unused.");
+    ctx.getLogger().logWarning(
+        line_, "The value of this expression is unused.");
     return;
   }
 
@@ -135,13 +132,13 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprInfo lhsInfo = lhs_->toImExpr(ctx);
   switch (lhs_->getType()) {
-    case ExprType::VAR:  // Fall thru
     case ExprType::MEMBER_ACCESS:
       // Can't assign to length field of an array
       if (lhsInfo.type->typeName == TypeName::ARRAY) {
         break;
       }
       // Fall thru
+    case ExprType::VAR:  // Fall thru
     case ExprType::ARRAY_ACCESS:
       imStmts.emplace_back(new im::Assign(
           move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
@@ -152,6 +149,22 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   }
 }
 
+/**********
+ * Update *
+ **********/
+Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
+    : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
+
+void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  ExprInfo eInfo = lhs_->toImExpr(ctx);
+  ExprInfo eInfoCopy = { eInfo.imExpr->clone(), eInfo.type };
+  Assign(make_unique<InfoHolder>(move(eInfo), lhs_->getType(), lhs_->getLine()),
+      make_unique<BinaryOp>(
+          make_unique<InfoHolder>(move(eInfoCopy), lhs_->getType(), lhs_->getLine()),
+          move(rhs_),
+          bOp_))
+      .toImStmts(imStmts, ctx);
+}
 
 /***********
  * VarDecl *
