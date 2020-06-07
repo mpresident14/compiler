@@ -209,27 +209,27 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
       op = [](long a, long b) { return a % b; };
       break;
     case BOp::PLUS:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a + b; };
       break;
     case BOp::MINUS:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a - b; };
       break;
     case BOp::MUL:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a * b; };
       break;
     case BOp::AND:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a & b; };
       break;
     case BOp::OR:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a | b; };
       break;
     case BOp::XOR:
-      tryHalfConst = false;
+      tryHalfConst = true;
       op = [](long a, long b) { return a ^ b; };
       break;
     default:
