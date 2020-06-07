@@ -160,10 +160,6 @@ ExprPtr BinOp::optimize() {
   ExprPtr eOpt1 = expr1_->optimize();
   ExprPtr eOpt2 = expr2_->optimize();
 
-  if (ExprPtr optConst = optimizeConst(eOpt1, eOpt2)) {
-    return optConst;
-  }
-
   // Leaq optimization: x + y*k, where k is 1,2,4, or 8
   // Note that if k is one of these, HalfConst will already be optimized to
   // a shift, so we act accordingly
@@ -179,6 +175,10 @@ ExprPtr BinOp::optimize() {
       return make_unique<Leaq>(
           move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
     }
+  }
+
+  if (ExprPtr optConst = optimizeConst(eOpt1, eOpt2)) {
+    return optConst;
   }
 
   return make_unique<BinOp>(move(eOpt1), move(eOpt2), bOp_);

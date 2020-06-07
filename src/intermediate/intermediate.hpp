@@ -62,6 +62,7 @@ public:
   virtual int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const;
   /* Return an optimized version of the expression. This object is invalidated
    */
+  // TODO: Constant propagation
   virtual ExprPtr optimize() = 0;
 };
 
