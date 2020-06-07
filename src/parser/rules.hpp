@@ -30,10 +30,7 @@ public:
   }
 
   /* Given a rule "S -> A.B", returns "S -> AB." */
-  DFARule nextStep() const {
-    if (atEnd()) {
-      throw std::invalid_argument("Out of bounds");
-    }
+  DFARule nextStep() const noexcept {
     return { concrete, symbols, pos + 1, lookahead };
   }
 

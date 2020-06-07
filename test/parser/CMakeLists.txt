@@ -8,6 +8,7 @@ set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
 # Test executables
 add_executable(dfa_test dfa_test.cpp)
+add_executable(queue_set_test queue_set_test.cpp)
 
 add_executable(null_first_test null_first_test.cpp ${PARSER_SRC_DIR}/null_first.cpp)
 
@@ -76,6 +77,7 @@ add_custom_command(
 include(CTest)
 set(MYTESTS
     dfa_test
+    queue_set_test
     null_first_test
     build_parser_test
     regex_test

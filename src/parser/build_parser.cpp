@@ -2,6 +2,7 @@
 
 #include "src/misc/logger.hpp"
 #include "src/parser/null_first.hpp"
+#include "src/parser/queue_set.hpp"
 
 #include <chrono>
 #include <cstddef>
@@ -149,11 +150,9 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
  */
 void addIfNewRule(
     DFARule&& rule,
-    queue<const DFARule*>& ruleQueue,
+    QueueSet<const DFARule*>& ruleQueue,
     DFARuleSet& ruleSet) {
-  // OK to move here because we only use rule again if it was not inserted into
-  // the set
-  auto p = ruleSet.insert(move(rule));
+  auto p = ruleSet.insert(rule);
   const DFARule& ruleRef = *p.first;
   if (p.second) {
     ruleQueue.push(&ruleRef);
@@ -169,7 +168,7 @@ void addIfNewRule(
  */
 void addRhses(
     const DFARule& fromRule,
-    queue<const DFARule*>& ruleQueue,
+    QueueSet<const DFARule*>& ruleQueue,
     DFARuleSet& ruleSet,
     const GrammarData& gd,
     const BitSetVars& nulls,
@@ -220,10 +219,13 @@ void addRhses(
   }
 
   for (int concreteType : gd.variables[nextSymbol].concreteTypes) {
-    DFARule nextRule{
-      concreteType, gd.concretes[concreteType].argSymbols, 0, newLookahead
-    };
-    addIfNewRule(move(nextRule), ruleQueue, ruleSet);
+    addIfNewRule(
+        { concreteType,
+          gd.concretes[concreteType].argSymbols,
+          0,
+          newLookahead },
+        ruleQueue,
+        ruleSet);
   }
 }
 
@@ -237,7 +239,7 @@ void epsilonTransition(
     const GrammarData& gd,
     const BitSetVars& nulls,
     const vector<BitSetToks>& firsts) {
-  queue<const DFARule*> ruleQueue;
+  QueueSet<const DFARule*> ruleQueue;
 
   // Add the initial set of rules.
   for (const DFARule& rule : ruleSet) {
@@ -540,6 +542,7 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
+
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,
