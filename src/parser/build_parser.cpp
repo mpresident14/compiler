@@ -239,9 +239,9 @@ void epsilonTransition(
     const vector<BitSetToks>& firsts) {
   queue<const DFARule*> ruleQueue;
 
-  // Expand variables (epsilon transition) in the initial set of rules.
+  // Add the initial set of rules.
   for (const DFARule& rule : ruleSet) {
-    addRhses(rule, ruleQueue, ruleSet, gd, nulls, firsts);
+    ruleQueue.push(&rule);
   }
 
   // Keep expanding variables (epsilon transition) until we've determined all

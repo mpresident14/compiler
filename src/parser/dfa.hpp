@@ -58,9 +58,12 @@ public:
       return transitions_;
     }
 
+    size_t getId() const noexcept { return id_; }
+
   private:
     V value_;
     std::unordered_map<T, Node*, HashT, EqT> transitions_;
+    size_t id_;
   };
 
   friend struct Node;
@@ -154,7 +157,7 @@ public:
     Node* newNode = new Node(std::forward<V2>(newNodeValue));
     transIterBool.first->second = newNode;
     valueToNode_.emplace(&newNode->value_, newNode);
-    ++size_;
+    newNode->id_ = size_++;
     return newNode;
   }
 
