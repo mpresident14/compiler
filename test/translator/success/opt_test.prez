@@ -13,4 +13,8 @@ void main() {
   print(d);
   print(e);
   print(f);
+
+  long[] g = long[] {a,b,c,d,e,f};
+  print(g[a]);
+  g[0] = b + a * 8;
 }

@@ -145,19 +145,24 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     eOpt2->toAssemInstrs(static_cast<Temp*>(eOpt1.get())->getTemp(), instrs);
   } else if (lhsType == ExprType::MEM_DEREF) {
     // Move e2 into the address of e1
-    int t1 = newTemp();
-    int t2 = newTemp();
-    eOpt2->toAssemInstrs(t2, instrs);
+
+    // Of the form {tRhs, tAddr, tMult?}
+    vector<int> srcTemps;
+    srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
     const MemDeref* memDeref = static_cast<MemDeref*>(eOpt1.get());
-    memDeref->getAddr()->toAssemInstrs(t1, instrs);
+    srcTemps.push_back(memDeref->getAddr()->toAssemInstrs(instrs));
+    if (const ExprPtr& mult = memDeref->getMult()) {
+      srcTemps.push_back(mult->toAssemInstrs(instrs));
+    }
 
     char bytesChar = memDeref->getNumBytes() + '0';
     string asmOp = "mov";
     asmOp.push_back(toInstrLetter(bytesChar));
     asmOp.append(" `");
     asmOp.push_back(bytesChar);
-    asmOp.append("S1, (`8S0)");
-    instrs.emplace_back(new assem::Operation(move(asmOp), { t1, t2 }, {}));
+    asmOp.append("S0, ");
+    asmOp.append(memDeref->genAsmCode(1));
+    instrs.emplace_back(new assem::Operation(move(asmOp), move(srcTemps), {}, assem::MemRefs::DSTS));
   } else {
     ostringstream err;
     err << "Invalid ExprType for Assign LHS: " << lhsType;

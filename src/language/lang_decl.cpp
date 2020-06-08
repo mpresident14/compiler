@@ -68,9 +68,6 @@ void Program::initContext(
     }
 
     // If the program parsed, put the import's context in our context tree
-    // if (!prog || (prog->has_value() && !ctx_)) {
-    //   cout << "WAAAAHHHH!!!!" << endl;
-    // }
     if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_.get())) {
       ctx_->getLogger().logNote(
           imported.line, "Duplicate import '" + importName + "'");

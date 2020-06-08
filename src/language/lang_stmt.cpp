@@ -219,7 +219,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       im::BOp::PLUS));
   // Number of bytes
   printArgs.push_back(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8));
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8, 0, nullptr));
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(make_unique<im::CallExpr>(
       make_unique<im::LabelAddr>("__println"), move(printArgs), false));

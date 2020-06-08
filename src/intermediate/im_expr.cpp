@@ -1,6 +1,7 @@
 #include "src/intermediate/intermediate.hpp"
 
 #include <functional>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;
@@ -12,9 +13,7 @@ namespace im {
  * Const *
  *********/
 
-ExprPtr Const::clone() const {
-  return make_unique<Const>(n_);
-}
+ExprPtr Const::clone() const { return make_unique<Const>(n_); }
 
 void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Operation(
@@ -28,9 +27,7 @@ ExprPtr Const::optimize() { return make_unique<Const>(n_); }
  * Temp *
  *********/
 
-ExprPtr Temp::clone() const {
-  return make_unique<Temp>(t_);
-}
+ExprPtr Temp::clone() const { return make_unique<Temp>(t_); }
 
 void Temp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Move(t_, temp));
@@ -262,7 +259,8 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
  ************/
 
 ExprPtr MemDeref::clone() const {
-  return make_unique<MemDeref>(addr_->clone(), numBytes_);
+  return make_unique<MemDeref>(
+      addr_->clone(), numBytes_, offset_, mult_ ? mult_->clone() : nullptr);
 }
 
 namespace {
@@ -285,20 +283,41 @@ namespace {
   }
 }  // namespace
 
-MemDeref::MemDeref(ExprPtr&& addr, u_char numBytes)
-    : addr_(move(addr)), numBytes_(numBytes) {}
+MemDeref::MemDeref(ExprPtr&& addr, u_char numBytes, long offset, ExprPtr&& mult)
+    : addr_(move(addr)),
+      numBytes_(numBytes),
+      offset_(offset),
+      mult_(move(mult)) {}
 
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  int t = addr_->toAssemInstrs(instrs);
-  string asmOp = "mov";
+  vector<int> srcTemps;
+  srcTemps.push_back(addr_->toAssemInstrs(instrs));
+  if (mult_) {
+    srcTemps.push_back(mult_->toAssemInstrs(instrs));
+  }
 
+  string asmOp = "mov";
   addInstrLetter(numBytes_, asmOp);
-  asmOp.append("q (`8S0), `8D0");
-  instrs.emplace_back(new assem::Operation(move(asmOp), { t }, { temp }));
+  asmOp.append("q ").append(genAsmCode(0)).append(", `8D0");
+  instrs.emplace_back(
+      new assem::Operation(move(asmOp), move(srcTemps), { temp }, assem::MemRefs::SRCS));
 }
 
 ExprPtr MemDeref::optimize() {
-  return make_unique<MemDeref>(addr_->optimize(), numBytes_);
+  return make_unique<MemDeref>(addr_->optimize(), numBytes_, offset_, mult_ ? mult_->optimize() : nullptr);
+}
+
+string MemDeref::genAsmCode(size_t srcIndex) const {
+  ostringstream code;
+  if (offset_ != 0) {
+    code << offset_;
+  }
+  code << "(`8S" << srcIndex;
+  if (mult_) {
+    code << ", `8S" << srcIndex + 1 << ", " << to_string(numBytes_);
+  }
+  code << ')';
+  return code.str();
 }
 
 /**************
@@ -333,9 +352,7 @@ ExprPtr DoThenEval::optimize() {
  * LabelAddr *
  *************/
 
-ExprPtr LabelAddr::clone() const {
-  return make_unique<LabelAddr>(name_);
-}
+ExprPtr LabelAddr::clone() const { return make_unique<LabelAddr>(name_); }
 
 LabelAddr::LabelAddr(const string& name) : name_(name) {}
 
@@ -367,7 +384,8 @@ ExprPtr CallExpr::clone() const {
     paramsClone.push_back(param->clone());
   }
 
-  return make_unique<CallExpr>(addr_->clone(), move(paramsClone), hasReturnValue_);
+  return make_unique<CallExpr>(
+      addr_->clone(), move(paramsClone), hasReturnValue_);
 }
 
 void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
@@ -587,7 +605,7 @@ void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   string asmCode =
       string("leaq (`8S0, `8S1, ").append(to_string(n_)).append("), `8D0");
   instrs.emplace_back(
-      new assem::Operation(move(asmCode), { t1, t2 }, { temp }));
+      new assem::Operation(move(asmCode), { t1, t2 }, { temp }, assem::MemRefs::SRCS));
 }
 
 ExprPtr Leaq::optimize() {
@@ -631,17 +649,28 @@ int Expr::toAssemInstrs(vector<assem::InstrPtr>& instrs) const {
 
 std::ostream& operator<<(std::ostream& out, ExprType exprType) {
   switch (exprType) {
-    case ExprType::BINOP: return out << "BINOP";
-    case ExprType::CONST: return out << "BINOP";
-    case ExprType::TEMP: return out << "BINOP";
-    case ExprType::MEM_DEREF: return out << "BINOP";
-    case ExprType::DO_THEN_EVAL: return out << "BINOP";
-    case ExprType::LABEL_ADDR: return out << "BINOP";
-    case ExprType::CALL: return out << "BINOP";
-    case ExprType::HALF_CONST: return out << "BINOP";
-    case ExprType::LEAQ: return out << "BINOP";
-    case ExprType::INC_DEC: return out << "BINOP";
-    default: throw invalid_argument("im::ExprType: operator<<");
+    case ExprType::BINOP:
+      return out << "BINOP";
+    case ExprType::CONST:
+      return out << "CONST";
+    case ExprType::TEMP:
+      return out << "TEMP";
+    case ExprType::MEM_DEREF:
+      return out << "MEM_DEREF";
+    case ExprType::DO_THEN_EVAL:
+      return out << "DO_THEN_EVAL";
+    case ExprType::LABEL_ADDR:
+      return out << "DO_THEN_EVAL";
+    case ExprType::CALL:
+      return out << "CALL";
+    case ExprType::HALF_CONST:
+      return out << "HALF_CONST";
+    case ExprType::LEAQ:
+      return out << "LEAQ";
+    case ExprType::INC_DEC:
+      return out << "INC_DEC";
+    default:
+      throw invalid_argument("im::ExprType: operator<<");
   }
 }
 

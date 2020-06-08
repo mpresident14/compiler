@@ -212,7 +212,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) const {
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(
                    ctx.mangleFn(name_, fnInfo->declFile, paramTypes)),
-               move(move(paramImExprs)),
+               move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
 }
@@ -277,7 +277,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) const {
 
   // Arrays will start with the number of elements they contain
   im::StmtPtr setSize = make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8),
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8, 0, nullptr),
       make_unique<im::Temp>(tLen));
 
   // TODO: Zero/null initialize array
@@ -319,41 +319,41 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) const {
 
   // Set the size of the array in the first 8 bytes
   stmts.push_back(make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8),
+      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8, 0, nullptr),
       make_unique<im::Const>(len)));
 
-  // Add 8 to tArrAddr (move past size)
-  int tNextElem = newTemp();
-  stmts.push_back(make_unique<im::Assign>(
-      make_unique<im::Temp>(tNextElem),
-      make_unique<im::BinOp>(
-          make_unique<im::Temp>(tArrAddr),
-          make_unique<im::Const>(8),
-          im::BOp::PLUS)));
+  // // Add 8 to tArrAddr (move past size)
+  // int tNextElem = newTemp();
+  // stmts.push_back(make_unique<im::Assign>(
+  //     make_unique<im::Temp>(tNextElem),
+  //     make_unique<im::BinOp>(
+  //         make_unique<im::Temp>(tArrAddr),
+  //         make_unique<im::Const>(8),
+  //         im::BOp::PLUS)));
 
   // Only to i-1 b/c we don't need to update after the last one
-  for (size_t i = 0; i < len - 1; ++i) {
+  for (size_t i = 0; i < len; ++i) {
     const ExprPtr& elem = elems_[i];
     // Assign the element
     stmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(make_unique<im::Temp>(tNextElem), elemSize),
+        make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), elemSize, 8, make_unique<im::Const>(i)),
         elem->toImExprAssert(*type_, ctx)));
 
     // Update the assignment address
-    stmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(tNextElem),
-        make_unique<im::BinOp>(
-            make_unique<im::Temp>(tNextElem),
-            make_unique<im::Const>(elemSize),
-            im::BOp::PLUS)));
+    // stmts.push_back(make_unique<im::Assign>(
+    //     make_unique<im::Temp>(tNextElem),
+    //     make_unique<im::BinOp>(
+    //         make_unique<im::Temp>(tNextElem),
+    //         make_unique<im::Const>(elemSize),
+    //         im::BOp::PLUS)));
   }
 
-  // Assign the last element
-  if (len != 0) {
-    stmts.push_back(make_unique<im::Assign>(
-          make_unique<im::MemDeref>(make_unique<im::Temp>(tNextElem), elemSize),
-          elems_.back()->toImExprAssert(*type_, ctx)));
-  }
+  // // Assign the last element
+  // if (len != 0) {
+  //   stmts.push_back(make_unique<im::Assign>(
+  //         make_unique<im::MemDeref>(make_unique<im::Temp>(tNextElem), elemSize, 0, nullptr),
+  //         elems_.back()->toImExprAssert(*type_, ctx)));
+  // }
 
   return { make_unique<im::DoThenEval>(
                move(stmts), make_unique<im::Temp>(tArrAddr)),
@@ -378,20 +378,13 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) const {
 
   const Type& arrType = *static_cast<const Array&>(type).arrType;
 
-  // Add 8 bytes to skip the size field
   im::ExprPtr imIndex =
       index_
           ->toImExprAssert(
               isIntegral, "Operator[] requires an integral type", ctx)
           .imExpr;
-  im::ExprPtr mul = make_unique<im::BinOp>(
-      move(imIndex), make_unique<im::Const>(arrType.numBytes), im::BOp::MUL);
-  im::ExprPtr offset = make_unique<im::BinOp>(
-      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
-  im::ExprPtr offsetAddr = make_unique<im::BinOp>(
-      move(exprInfo.imExpr), move(offset), im::BOp::PLUS);
-
-  return { make_unique<im::MemDeref>(move(offsetAddr), arrType.numBytes),
+  // Add 8 bytes to skip the size field
+  return { make_unique<im::MemDeref>(move(exprInfo.imExpr), arrType.numBytes, 8, move(imIndex)),
            static_cast<const Array*>(&type)->arrType };
 }
 
@@ -404,7 +397,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) const {
   // The only member of an array is length
   if (eInfo.type->typeName == TypeName::ARRAY) {
     if (member_ == "length") {
-      return { make_unique<im::MemDeref>(move(eInfo.imExpr), 8), longType };
+      return { make_unique<im::MemDeref>(move(eInfo.imExpr), 8, 0, nullptr), longType };
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();

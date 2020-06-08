@@ -20,8 +20,12 @@ Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 Operation::Operation(
     string_view asmCode,
     vector<int>&& srcs,
-    vector<int>&& dsts)
-    : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)) {}
+    vector<int>&& dsts,
+    MemRefs memRefs)
+    : asmCode_(asmCode),
+      srcs_(move(srcs)),
+      dsts_(move(dsts)),
+      memRefs_(memRefs) {}
 
 JumpOp::JumpOp(
     string_view asmCode,
@@ -68,24 +72,48 @@ bool Move::spillTemps(vector<InstrPtr>& newInstrs) {
 }
 
 bool Operation::spillTemps(vector<InstrPtr>& newInstrs) {
-  // For each temporary src, if it is a var, then update it to a spill register
-  // and add an instruction to move it from the stack to the spill register
+  // For each temporary src, if it is a non-machine register, then update it to
+  // a spill register and add an instruction to move it from the stack to the
+  // spill register
   size_t numSpilled = 0;
-  size_t numSrcs = srcs_.size();
-  for (size_t i = 0; i < numSrcs; ++i) {
-    int src = srcs_.at(i);
-    if (!isRegister(src)) {
-      if (numSpilled == 2) {
-        throw runtime_error("More than two variables in this instruction.");
+  if (memRefs_ != MemRefs::SRCS) {
+    // The destinations might be memory references, so we put the sources in the
+    // spill registers
+    // - movq srcs, spilledSrcs
+    // - op spillSrcs, dsts
+    size_t numSrcs = srcs_.size();
+    for (size_t i = 0; i < numSrcs; ++i) {
+      int src = srcs_[i];
+      if (!isRegister(src)) {
+        int spillReg = SPILL_REGS[numSpilled++];
+        srcs_[i] = spillReg;
+        newInstrs.push_back(make_unique<Move>(src, spillReg));
       }
-      int spillReg = SPILL_REGS[numSpilled++];
-      srcs_.at(i) = spillReg;
-      newInstrs.push_back(make_unique<Move>(src, spillReg));
     }
+    // Insert the updated instruction
+    return true;
+  } else {
+    // The sources are memory references, so we put the destinations in the
+    // spill registers
+    // - op srcs, spillDsts
+    // - movq spillDsts, dsts
+    size_t numDsts = dsts_.size();
+    vector<int> newDsts;
+    vector<InstrPtr> spillInstrs;
+    for (size_t i = 0; i < numDsts; ++i) {
+      int dst = dsts_[i];
+      if (!isRegister(dst)) {
+        int spillReg = SPILL_REGS[numSpilled++];
+        dsts_[i] = spillReg;
+        spillInstrs.push_back(make_unique<Move>(spillReg, dst));
+      }
+    }
+    newInstrs.emplace_back(new Operation(asmCode_, move(srcs_), move(dsts_)));
+    for (InstrPtr& spillInstr : spillInstrs) {
+      newInstrs.push_back(move(spillInstr));
+    }
+    return false;
   }
-
-  // Insert the updated instruction
-  return true;
 }
 
 bool Return::spillTemps(vector<InstrPtr>&) {

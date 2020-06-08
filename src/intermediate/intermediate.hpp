@@ -280,7 +280,8 @@ private:
 /* *expr */
 class MemDeref : public Expr {
 public:
-  MemDeref(ExprPtr&& addr, u_char numBytes);
+  /* mult may be nullptr */
+  MemDeref(ExprPtr&& addr, u_char numBytes, long offset, ExprPtr&& mult);
   constexpr ExprType getType() const noexcept override {
     return ExprType::MEM_DEREF;
   }
@@ -289,12 +290,18 @@ public:
       const override;
   ExprPtr optimize() override;
 
+  std::string genAsmCode(size_t srcIndex) const;
+
   const ExprPtr& getAddr() const noexcept { return addr_; }
   u_char getNumBytes() const noexcept { return numBytes_; }
+  long getOffset() const noexcept { return offset_; }
+  const ExprPtr& getMult() const noexcept { return mult_; }
 
 private:
   ExprPtr addr_;
   u_char numBytes_;
+  long offset_;
+  ExprPtr mult_;
 };
 
 
