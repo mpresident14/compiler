@@ -322,38 +322,13 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) const {
       make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8, 0, nullptr),
       make_unique<im::Const>(len)));
 
-  // // Add 8 to tArrAddr (move past size)
-  // int tNextElem = newTemp();
-  // stmts.push_back(make_unique<im::Assign>(
-  //     make_unique<im::Temp>(tNextElem),
-  //     make_unique<im::BinOp>(
-  //         make_unique<im::Temp>(tArrAddr),
-  //         make_unique<im::Const>(8),
-  //         im::BOp::PLUS)));
-
-  // Only to i-1 b/c we don't need to update after the last one
   for (size_t i = 0; i < len; ++i) {
     const ExprPtr& elem = elems_[i];
     // Assign the element
     stmts.push_back(make_unique<im::Assign>(
         make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), elemSize, 8, make_unique<im::Const>(i)),
         elem->toImExprAssert(*type_, ctx)));
-
-    // Update the assignment address
-    // stmts.push_back(make_unique<im::Assign>(
-    //     make_unique<im::Temp>(tNextElem),
-    //     make_unique<im::BinOp>(
-    //         make_unique<im::Temp>(tNextElem),
-    //         make_unique<im::Const>(elemSize),
-    //         im::BOp::PLUS)));
   }
-
-  // // Assign the last element
-  // if (len != 0) {
-  //   stmts.push_back(make_unique<im::Assign>(
-  //         make_unique<im::MemDeref>(make_unique<im::Temp>(tNextElem), elemSize, 0, nullptr),
-  //         elems_.back()->toImExprAssert(*type_, ctx)));
-  // }
 
   return { make_unique<im::DoThenEval>(
                move(stmts), make_unique<im::Temp>(tArrAddr)),

@@ -113,15 +113,15 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
  **********/
 
 namespace {
-  char toInstrLetter(char bytesChar) {
+  char toInstrLetter(size_t bytesChar) {
     switch (bytesChar) {
-      case '8':
+      case 8:
         return 'q';
-      case '4':
+      case 4:
         return 'l';
-      case '2':
+      case 2:
         return 'w';
-      case '1':
+      case 1:
         return 'b';
       default:
         throw invalid_argument("toInstrLetter: " + to_string(bytesChar));
@@ -155,14 +155,11 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
       srcTemps.push_back(mult->toAssemInstrs(instrs));
     }
 
-    char bytesChar = memDeref->getNumBytes() + '0';
-    string asmOp = "mov";
-    asmOp.push_back(toInstrLetter(bytesChar));
-    asmOp.append(" `");
-    asmOp.push_back(bytesChar);
-    asmOp.append("S0, ");
-    asmOp.append(memDeref->genAsmCode(1));
-    instrs.emplace_back(new assem::Operation(move(asmOp), move(srcTemps), {}, assem::MemRefs::DSTS));
+    size_t numBytes = memDeref->getNumBytes();
+    ostringstream asmOp;
+    asmOp << "mov" << toInstrLetter(numBytes) << " `" << numBytes << "S0, "
+          << memDeref->genAsmCode(1);
+    instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, assem::MemRefs::DSTS));
   } else {
     ostringstream err;
     err << "Invalid ExprType for Assign LHS: " << lhsType;

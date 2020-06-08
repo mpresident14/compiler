@@ -314,7 +314,7 @@ string MemDeref::genAsmCode(size_t srcIndex) const {
   }
   code << "(`8S" << srcIndex;
   if (mult_) {
-    code << ", `8S" << srcIndex + 1 << ", " << to_string(numBytes_);
+    code << ", `8S" << srcIndex + 1 << ", " << (size_t) numBytes_;
   }
   code << ')';
   return code.str();
