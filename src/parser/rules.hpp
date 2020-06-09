@@ -35,8 +35,10 @@ public:
   }
 
   bool operator==(const DFARule& other) const noexcept {
-    return concrete == other.concrete && symbols == other.symbols &&
-           pos == other.pos && lookahead == other.lookahead;
+    // DFARules are uniquely identified by their concrete, position, and
+    // lookahead set.
+    return concrete == other.concrete && pos == other.pos &&
+           lookahead == other.lookahead;
   }
 
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
@@ -59,13 +61,7 @@ public:
   struct Hash {
     size_t operator()(const DFARule& rule) const noexcept {
       std::hash<int> intHasher;
-      size_t h1 = intHasher(rule.concrete);
-      size_t h2 = 0;
-      for (int symbol : rule.symbols) {
-        h2 += intHasher(symbol);
-      }
-      size_t h3 = intHasher((int)rule.pos);
-      return h3 ^ h1 ^ (h2 << 1);
+      return intHasher(rule.concrete) ^ (intHasher((int)rule.pos) << 1);
     }
   };
 
