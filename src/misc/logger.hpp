@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <set>
 
 class Logger {
 public:
@@ -40,7 +41,6 @@ public:
   std::ostringstream& logError(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logWarning(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logNote(size_t line = 0, std::string_view msg = "");
-  std::ostringstream& log(MsgType msgType, std::string_view msg = "");
   bool hasErrors() const noexcept;
   void streamLog(std::ostream& out = std::cerr) const;
 
@@ -59,6 +59,8 @@ public:
   void logFatal(size_t line, std::string_view msg);
 
 private:
+  std::set<std::string> sortLogs() const;
+
   std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
 
   std::string filename_ = "";

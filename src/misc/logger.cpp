@@ -1,5 +1,6 @@
 #include "src/misc/logger.hpp"
 
+
 using namespace std;
 
 
@@ -15,26 +16,6 @@ ostringstream& Logger::logWarning(size_t line, string_view msg) {
 
 ostringstream& Logger::logNote(size_t line, string_view msg) {
   return log(MsgType::NOTE, line, msg);
-}
-
-ostringstream& Logger::log(MsgType msgType, string_view msg) {
-  switch (msgType) {
-    case MsgType::ERROR:
-      ++errorCount_;
-      break;
-    case MsgType::WARNING:
-      ++warningCount_;
-      break;
-    case MsgType::NOTE:
-      ++noteCount_;
-      break;
-    default:
-      throw invalid_argument("Unknown MsgType");
-  }
-  logs_.push_back(ostringstream());
-  ostringstream& error = logs_.back();
-  error << msg;
-  return error;
 }
 
 ostringstream& Logger::log(MsgType msgType, size_t line, string_view msg) {
@@ -85,8 +66,8 @@ void Logger::streamLog(ostream& out) const {
     out << filename_ << ":\n";
   }
 
-  for (const ostringstream& stream : logs_) {
-    out << stream.str() << '\n';
+  for (const string& str : sortLogs()) {
+    out << str << '\n';
   }
   out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
       << warningCount_
@@ -99,13 +80,20 @@ void Logger::logFatal(size_t line, string_view msg) {
   throw Exception(*this);
 }
 
+std::set<std::string> Logger::sortLogs() const {
+  std::set<std::string> logSet;
+  for (const ostringstream& stream : logs_) {
+    logSet.insert(stream.str());
+  }
+  return logSet;
+}
 
 Logger::Exception::Exception(const Logger& logger) {
   if (!logger.filename_.empty()) {
     what_.append(logger.filename_).append(":\n");
   }
-  for (const ostringstream& stream : logger.logs_) {
-    what_.append(stream.str()).push_back('\n');
+  for (const string& str : logger.sortLogs()) {
+    what_.append(str).push_back('\n');
   }
 }
 
