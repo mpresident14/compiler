@@ -1,5 +1,7 @@
 #include "src/language/language.hpp"
 
+#include <climits>
+
 using namespace std;
 
 
@@ -15,6 +17,8 @@ language::ExprInfo dummyInfo() {
 
 
 namespace language {
+
+// TODO: Using a constant that is too big for stol should log an informative error
 
 /************
  * ConstInt *
@@ -240,12 +244,51 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
 
 
 ExprInfo NewArray::toImExprLen(Ctx& ctx) {
+  auto p = makeArrayStmts(*type_, move(numElems_), ctx);
+
+  return { make_unique<im::DoThenEval>(
+               move(p.first), make_unique<im::Temp>(p.second)),
+           make_unique<Array>(type_) };
+}
+
+
+ExprInfo NewArray::toImExprElems(Ctx& ctx) {
+  size_t len = elems_.size();
+  long maxLong = minMaxValue(*longType).second;
+  if (len > (size_t) maxLong) {
+    ostringstream& err = ctx.getLogger().logError(line_);
+    err << len << " is greater than the maximum array size " << maxLong;
+  }
+
+  auto p = makeArrayStmts(*type_, make_unique<ConstInt>(len, line_), ctx);
+  vector<im::StmtPtr>& stmts = p.first;
+  int tArrAddr = p.second;
+  u_char elemSize = type_->numBytes;
+
+  for (size_t i = 0; i < len; ++i) {
+    const ExprPtr& elem = elems_[i];
+    // Assign the element
+    stmts.push_back(make_unique<im::Assign>(
+        make_unique<im::MemDeref>(
+            make_unique<im::Temp>(tArrAddr),
+            elemSize,
+            8,
+            make_unique<im::Const>(i)),
+        elem->toImExprAssert(*type_, ctx)));
+  }
+
+  return { make_unique<im::DoThenEval>(
+               move(stmts), make_unique<im::Temp>(tArrAddr)),
+           make_unique<Array>(type_) };
+}
+
+std::pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
   int tLen = newTemp();
 
   // Store the length of the array in a temporary
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
-      numElems_
+      numElems
           ->toImExprAssert(
               isIntegral, "Array size requires an integral type", ctx)
           .imExpr);
@@ -253,7 +296,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) {
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
       make_unique<im::Temp>(tLen),
-      make_unique<im::Const>(type_->numBytes),
+      make_unique<im::Const>(type.numBytes),
       im::BOp::MUL);
   im::ExprPtr arrBytes = make_unique<im::BinOp>(
       move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
@@ -279,57 +322,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) {
   stmts.push_back(move(storeLen));
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
-
-  return { make_unique<im::DoThenEval>(
-               move(stmts), make_unique<im::Temp>(tArrAddr)),
-           make_unique<Array>(type_) };
-}
-
-
-// TODO: Use previous method
-ExprInfo NewArray::toImExprElems(Ctx& ctx) {
-  size_t len = elems_.size();
-  size_t elemSize = type_->numBytes;
-
-  // Compute the size of the array in bytes
-  im::ExprPtr mul = make_unique<im::BinOp>(
-      make_unique<im::Const>(len),
-      make_unique<im::Const>(elemSize),
-      im::BOp::MUL);
-  im::ExprPtr arrBytes = make_unique<im::BinOp>(
-      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
-
-  vector<im::StmtPtr> stmts;
-
-  // Allocate the correct number of bytes
-  int tArrAddr = newTemp();
-  vector<im::ExprPtr> mallocBytes;
-  mallocBytes.emplace_back(move(arrBytes));
-  stmts.push_back(make_unique<im::Assign>(
-      make_unique<im::Temp>(tArrAddr),
-      make_unique<im::CallExpr>(
-          make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true)));
-
-  // Set the size of the array in the first 8 bytes
-  stmts.push_back(make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8, 0, nullptr),
-      make_unique<im::Const>(len)));
-
-  for (size_t i = 0; i < len; ++i) {
-    const ExprPtr& elem = elems_[i];
-    // Assign the element
-    stmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(
-            make_unique<im::Temp>(tArrAddr),
-            elemSize,
-            8,
-            make_unique<im::Const>(i)),
-        elem->toImExprAssert(*type_, ctx)));
-  }
-
-  return { make_unique<im::DoThenEval>(
-               move(stmts), make_unique<im::Temp>(tArrAddr)),
-           make_unique<Array>(type_) };
+  return {move(stmts), tArrAddr};
 }
 
 
