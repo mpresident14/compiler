@@ -70,7 +70,8 @@ void BinaryOp::asBool(
     case BOp::XOR:
       return asBoolXor(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
     default:
-      throw invalid_argument("BinaryOp::asBool");
+      // Type error, let this function handle it
+      return Expr::asBool(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
   }
 }
 
