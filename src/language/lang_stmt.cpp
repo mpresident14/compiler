@@ -39,6 +39,7 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line)
     : Stmt(line), boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
 
+// TODO: Make sure elseE is another If or a Block
 void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
   unique_ptr<im::MakeLabel> mkElseLabel =
@@ -72,7 +73,7 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   assem::Label* bodyLabel = mkBodyLabel->genInstr();
   assem::Label* doneLabel = mkDoneLabel->genInstr();
 
-  boolE_->asBool(imStmts, bodyLabel, doneLabel, true, ctx);
+  boolE_->clone()->asBool(imStmts, bodyLabel, doneLabel, true, ctx);
   imStmts.emplace_back(move(mkBodyLabel));
   body_->toImStmts(imStmts, ctx);
   boolE_->asBool(imStmts, bodyLabel, doneLabel, false, ctx);

@@ -98,7 +98,4 @@ ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
 
-// InfoHolder::InfoHolder(ExprInfo&& exprInfo, ExprType exprType, size_t line)
-//     : Expr(line), exprInfo_(move(exprInfo)), exprType_(exprType) {}
-
 }  // namespace language

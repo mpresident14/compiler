@@ -14,12 +14,13 @@ void UnaryOp::asBool(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   // Only valid for NOT
   if (uOp_ == UOp::NOT) {
     return e_->asBool(imStmts, ifFalse, ifTrue, !flipEquiv, ctx);
   }
-  ctx.getLogger().logError(line_, "Cannot interpret unary minus at bool");
+  // Type error, let this function handle it
+  return Expr::asBool(imStmts, ifTrue, ifFalse, flipEquiv, ctx);
 }
 
 
@@ -31,7 +32,7 @@ void BinaryOp::asBool(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   switch (bOp_) {
     case BOp::EQ:
       if (flipEquiv) {
@@ -80,7 +81,7 @@ void BinaryOp::asBoolComp(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     im::ROp rOp,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   // Make sure we are comparing two integral types
   ExprInfo info1 = e1_->toImExpr(ctx);
   ExprInfo info2 = e2_->toImExpr(ctx);
@@ -98,7 +99,7 @@ void BinaryOp::asBoolAnd(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, midLabel, ifFalse, flipEquiv, ctx);
@@ -111,7 +112,7 @@ void BinaryOp::asBoolOr(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, ifTrue, midLabel, !flipEquiv, ctx);
@@ -129,7 +130,7 @@ void BinaryOp::asBoolXor(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   im::ExprPtr imXor = make_unique<im::BinOp>(
       e1_->toImExprAssert(*boolType, ctx),
       e2_->toImExprAssert(*boolType, ctx),
@@ -153,7 +154,7 @@ void Expr::asBool(
     assem::Label* ifTrue,
     assem::Label* ifFalse,
     bool flipEquiv,
-    Ctx& ctx) const {
+    Ctx& ctx) {
   if (flipEquiv) {
     imStmts.emplace_back(new im::CondJump(
         toImExprAssert(*boolType, ctx),
