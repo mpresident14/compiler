@@ -112,12 +112,12 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       ostringstream& err = ctx.getLogger().logError(line_);
       err << "Function has return type " << retType << " but may return void.";
     }
-    imStmts.emplace_back(new im::ReturnStmt(nullptr));
+    imStmts.push_back(make_unique<im::ReturnStmt>(nullptr));
   } else {
     // Make sure the function return type matches and translate the returned
     // expression
-    imStmts.emplace_back(
-        new im::ReturnStmt((*retValue_)->toImExprAssert(retType, ctx)));
+    imStmts.push_back(make_unique<im::ReturnStmt>(
+        (*retValue_)->toImExprAssert(retType, ctx)));
   }
 }
 
@@ -133,9 +133,10 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprInfo lhsInfo = lhs_->toImExpr(ctx);
   switch (lhs_->getType()) {
     case ExprType::MEMBER_ACCESS:
-      // Can't assign to length field of an array
       if (lhsInfo.type->typeName == TypeName::ARRAY) {
-        break;
+        ctx.getLogger().logError(
+            line_, "Cannot assign to length field of an array.");
+        return;
       }
       // Fall thru
     case ExprType::VAR:  // Fall thru
@@ -156,13 +157,8 @@ Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
     : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
 
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprInfo eInfo = lhs_->toImExpr(ctx);
-  ExprInfo eInfoCopy = { eInfo.imExpr->clone(), eInfo.type };
-  Assign(make_unique<InfoHolder>(move(eInfo), lhs_->getType(), lhs_->getLine()),
-      make_unique<BinaryOp>(
-          make_unique<InfoHolder>(move(eInfoCopy), lhs_->getType(), lhs_->getLine()),
-          move(rhs_),
-          bOp_))
+  ExprPtr lhsClone = lhs_->clone();
+  Assign(move(lhsClone), make_unique<BinaryOp>(move(lhs_), move(rhs_), bOp_))
       .toImStmts(imStmts, ctx);
 }
 
@@ -218,8 +214,8 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       make_unique<im::Const>(8),
       im::BOp::PLUS));
   // Number of bytes
-  printArgs.push_back(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tCharsAddr), 8, 0, nullptr));
+  printArgs.push_back(make_unique<im::MemDeref>(
+      make_unique<im::Temp>(tCharsAddr), 8, 0, nullptr));
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(make_unique<im::CallExpr>(
       make_unique<im::LabelAddr>("__println"), move(printArgs), false));

@@ -294,6 +294,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) const {
 }
 
 
+// TODO: Use previous method
 ExprInfo NewArray::toImExprElems(Ctx& ctx) const {
   size_t len = elems_.size();
   size_t elemSize = type_->numBytes;
@@ -399,13 +400,9 @@ ExprInfo Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx)
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) const {
   ExprInfo exprInfo = toImExpr(ctx);
   const Type& eType = *exprInfo.type;
-  // TODO: Use isConvertible here later
   if (eType != type) {
     bool isNarrowing;
     if (isConvertible(eType, type, &isNarrowing)) {
-      // TODO: We don't want to report narrowing for short n = 3;
-      // Check if the expression is a const, and then if the number fits in the
-      // specified number of bytes
       if (isNarrowing) {
         long n;
         if (getType() == ExprType::CONST_INT) {
@@ -439,11 +436,8 @@ warnNarrow:
  * InfoHolder *
  **************/
 
-ExprInfo InfoHolder::toImExpr(Ctx&) const {
-  if (used_) {
-    throw runtime_error("InfoHolder::toImExpr called twice");
-  }
-  return move(exprInfo_);
-}
+// ExprInfo InfoHolder::toImExpr(Ctx&) const {
+//   return move(exprInfo_);
+// }
 
 }  // namespace language

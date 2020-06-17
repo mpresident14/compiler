@@ -106,6 +106,7 @@ public:
       assem::Label* ifFalse,
       bool flipEquiv,
       Ctx& ctx) const;
+  virtual std::unique_ptr<Expr> clone() const = 0;
 
   template <typename F>
   ExprInfo toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) const;
@@ -293,6 +294,7 @@ public:
   constexpr explicit ConstInt(long n, size_t line) : Expr(line), n_(n) {}
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
   constexpr long getInt() const noexcept { return n_; }
 
 private:
@@ -304,6 +306,7 @@ public:
   constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
   ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
   constexpr char getChar() const noexcept { return c_; }
 
 private:
@@ -316,6 +319,7 @@ public:
   constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
   ExprType getType() const noexcept override { return ExprType::CONST_BOOL; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   bool b_;
@@ -328,6 +332,7 @@ public:
   Var(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
   const std::string& getName() const noexcept { return name_; }
 
@@ -341,6 +346,7 @@ public:
   UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
   ExprType getType() const noexcept override { return ExprType::UNARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
@@ -360,6 +366,7 @@ public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
   ExprType getType() const noexcept override { return ExprType::BINARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
   void asBool(
       std::vector<im::StmtPtr>& imStmts,
@@ -410,6 +417,7 @@ public:
   TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
   ExprType getType() const noexcept override { return ExprType::TERNARY_OP; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   ExprPtr boolE_;
@@ -427,6 +435,7 @@ public:
       size_t line);
   ExprType getType() const noexcept override { return ExprType::CALL_EXPR; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   std::vector<std::string> qualifiers_;
@@ -440,6 +449,7 @@ public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
   ExprType getType() const noexcept override { return ExprType::CAST; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   TypePtr toType_;
@@ -453,6 +463,7 @@ public:
   NewArray(TypePtr&& type, std::vector<ExprPtr>&& elems, size_t line);
   ExprType getType() const noexcept override { return ExprType::NEW_ARRAY; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   ExprInfo toImExprLen(Ctx& ctx) const;
@@ -469,6 +480,7 @@ public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
   ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   ExprPtr arrExpr_;
@@ -481,6 +493,7 @@ public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
   ExprType getType() const noexcept override { return ExprType::MEMBER_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) const override;
+  ExprPtr clone() const override;
 
 private:
   ExprPtr objExpr_;
@@ -489,19 +502,19 @@ private:
 
 
 /* For my own convenience */
-class InfoHolder : public Expr {
-public:
-  InfoHolder(ExprInfo&& exprInfo, ExprType exprType, size_t line);
-  ExprType getType() const noexcept override { return exprType_; }
-  /* NOTE: This is not actually const (exprInfo_ is moved), do not call
-   * this method more than once (no use in While loops */
-  ExprInfo toImExpr(Ctx& ctx) const override;
+// class InfoHolder : public Expr {
+// public:
+//   InfoHolder(ExprInfo&& exprInfo, ExprType exprType, size_t line);
+//   ExprType getType() const noexcept override { return exprType_; }
+//   /* NOTE: This is not actually const (exprInfo_ is moved), do not call
+//    * this method more than once (no use in While loops */
+//   ExprInfo toImExpr(Ctx& ctx) const override;
+//   ExprPtr clone() const override;
 
-private:
-  mutable ExprInfo exprInfo_;
-  ExprType exprType_;
-  bool used_ = false;
-};
+// private:
+//   mutable ExprInfo exprInfo_;
+//   ExprType exprType_;
+// };
 
 
 inline std::string newLabel() {
