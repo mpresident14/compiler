@@ -27,7 +27,6 @@ public:
 class Stmt {
 public:
   virtual ~Stmt(){};
-  virtual StmtPtr clone() const = 0;
   virtual void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) = 0;
 };
 
@@ -50,7 +49,6 @@ class Expr {
 public:
   virtual ~Expr() {}
   virtual constexpr ExprType getType() const noexcept = 0;
-  virtual ExprPtr clone() const = 0;
   /* Add instructions that put the value of this Expr into this temp.
    * Because of the way we wrote the spill code (i.e., poorly), any
    * temp that is a destination must be marked with a D, even if it is also
@@ -115,7 +113,6 @@ private:
 class MakeLabel : public Stmt {
 public:
   MakeLabel(const std::string& name);
-  StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
   /* Generates the instruction to create a label, stores it in the
    * data member, returns the raw pointer to it. We basically
@@ -132,7 +129,6 @@ private:
 class Jump : public Stmt {
 public:
   Jump(assem::Label* label);
-  StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
@@ -155,7 +151,6 @@ public:
       ROp rop,
       assem::Label* ifTrue,
       assem::Label* ifFalse);
-      StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
@@ -171,7 +166,6 @@ private:
 class Assign : public Stmt {
 public:
   Assign(ExprPtr&& e1, ExprPtr&& e2);
-  StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
@@ -184,7 +178,6 @@ private:
 class ExprStmt : public Stmt {
 public:
   ExprStmt(ExprPtr&& expr);
-  StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
@@ -196,7 +189,6 @@ class ReturnStmt : public Stmt {
 public:
   /* retValue may be null if returning void */
   ReturnStmt(ExprPtr&& retValue);
-  StmtPtr clone() const override;
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
 private:
@@ -214,7 +206,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::CONST;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   constexpr long getInt() const noexcept { return n_; }
@@ -231,7 +222,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::TEMP;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const override;
@@ -251,7 +241,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::BINOP;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -285,7 +274,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::MEM_DEREF;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -311,7 +299,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::DO_THEN_EVAL;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -329,7 +316,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::LABEL_ADDR;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -348,7 +334,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::CALL;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -371,7 +356,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::HALF_CONST;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -390,7 +374,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::LEAQ;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
@@ -408,7 +391,6 @@ public:
   constexpr ExprType getType() const noexcept override {
     return ExprType::INC_DEC;
   }
-  ExprPtr clone() const override;
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;

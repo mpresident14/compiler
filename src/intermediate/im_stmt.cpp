@@ -15,10 +15,6 @@ namespace im {
  *************/
 MakeLabel::MakeLabel(const std::string& name) : name_(move(name)) {}
 
-StmtPtr MakeLabel::clone() const {
-  return make_unique<MakeLabel>(name_);
-}
-
 void MakeLabel::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   if (instr_) {
     // Already generated the instruction
@@ -42,10 +38,6 @@ assem::Label* MakeLabel::genInstr() {
  ********/
 Jump::Jump(assem::Label* label) : label_(label) {}
 
-StmtPtr Jump::clone() const {
-  return make_unique<Jump>(label_);
-}
-
 void Jump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   instrs.emplace_back(
       new assem::JumpOp("jmp " + label_->getName(), {}, {}, label_));
@@ -67,9 +59,6 @@ CondJump::CondJump(
       ifTrue_(ifTrue),
       ifFalse_(ifFalse) {}
 
-StmtPtr CondJump::clone() const {
-  return make_unique<CondJump>(e1_->clone(), e2_->clone(), rop_, ifTrue_, ifFalse_);
-}
 
 void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   int t1 = newTemp();
@@ -131,10 +120,6 @@ namespace {
 
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
-StmtPtr Assign::clone() const {
-  return make_unique<Assign>(e1_->clone(), e2_->clone());
-}
-
 void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   ExprPtr eOpt1 = e1_->optimize();
   ExprPtr eOpt2 = e2_->optimize();
@@ -174,10 +159,6 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
 
 ExprStmt::ExprStmt(ExprPtr&& expr) : expr_(move(expr)) {}
 
-StmtPtr ExprStmt::clone() const {
-  return make_unique<ExprStmt>(expr_->clone());
-}
-
 
 void ExprStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   // NOTE: This will create a wasted move to a new temp, but it will be removed
@@ -191,13 +172,6 @@ void ExprStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
  **************/
 
 ReturnStmt::ReturnStmt(ExprPtr&& retValue) : retValue_(move(retValue)) {}
-
-StmtPtr ReturnStmt::clone() const {
-  if (retValue_) {
-    return make_unique<ReturnStmt>(retValue_->clone());
-  }
-  return make_unique<ReturnStmt>(nullptr);
-}
 
 void ReturnStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   if (retValue_) {

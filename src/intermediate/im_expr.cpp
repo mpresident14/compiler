@@ -13,8 +13,6 @@ namespace im {
  * Const *
  *********/
 
-ExprPtr Const::clone() const { return make_unique<Const>(n_); }
-
 void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Operation(
       string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
@@ -27,8 +25,6 @@ ExprPtr Const::optimize() { return make_unique<Const>(n_); }
  * Temp *
  *********/
 
-ExprPtr Temp::clone() const { return make_unique<Temp>(t_); }
-
 void Temp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   instrs.emplace_back(new assem::Move(t_, temp));
 }
@@ -40,10 +36,6 @@ ExprPtr Temp::optimize() { return make_unique<Temp>(t_); }
 /*********
  * BinOp *
  *********/
-
-ExprPtr BinOp::clone() const {
-  return make_unique<BinOp>(expr1_->clone(), expr2_->clone(), bOp_);
-}
 
 BinOp::BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bOp)
     : expr1_(move(expr1)), expr2_(move(expr2)), bOp_(bOp) {}
@@ -258,11 +250,6 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
  * MemDeref *
  ************/
 
-ExprPtr MemDeref::clone() const {
-  return make_unique<MemDeref>(
-      addr_->clone(), numBytes_, offset_, mult_ ? mult_->clone() : nullptr);
-}
-
 namespace {
   void addInstrLetter(u_char numBytes, string& str) {
     switch (numBytes) {
@@ -324,15 +311,6 @@ string MemDeref::genAsmCode(size_t srcIndex) const {
  * DoThenEval *
  **************/
 
-ExprPtr DoThenEval::clone() const {
-  vector<StmtPtr> stmtsClone;
-  for (const StmtPtr& stmt : stmts_) {
-    stmtsClone.push_back(stmt->clone());
-  }
-
-  return make_unique<DoThenEval>(move(stmtsClone), expr_->clone());
-}
-
 DoThenEval::DoThenEval(vector<StmtPtr>&& stmts, ExprPtr expr)
     : stmts_(move(stmts)), expr_(move(expr)) {}
 
@@ -351,8 +329,6 @@ ExprPtr DoThenEval::optimize() {
 /*************
  * LabelAddr *
  *************/
-
-ExprPtr LabelAddr::clone() const { return make_unique<LabelAddr>(name_); }
 
 LabelAddr::LabelAddr(const string& name) : name_(name) {}
 
@@ -377,16 +353,6 @@ CallExpr::CallExpr(
       params_(move(params)),
       hasReturnValue_(hasReturnValue) {}
 
-
-ExprPtr CallExpr::clone() const {
-  vector<ExprPtr> paramsClone;
-  for (const ExprPtr& param : params_) {
-    paramsClone.push_back(param->clone());
-  }
-
-  return make_unique<CallExpr>(
-      addr_->clone(), move(paramsClone), hasReturnValue_);
-}
 
 void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   // Move params into argument registers
@@ -436,11 +402,6 @@ ExprPtr CallExpr::optimize() {
 /*************
  * HalfConst *
  *************/
-
-ExprPtr HalfConst::clone() const {
-  return make_unique<HalfConst>(expr_->clone(), n_, bOp_, reversed_);
-}
-
 
 HalfConst::HalfConst(ExprPtr&& expr, long n, BOp bOp, bool reversed)
     : expr_(move(expr)), n_(n), bOp_(bOp), reversed_(reversed) {}
@@ -595,9 +556,6 @@ ExprPtr HalfConst::optimize() {
 Leaq::Leaq(ExprPtr&& e1, ExprPtr&& e2, u_char n)
     : e1_(move(e1)), e2_(move(e2)), n_(n) {}
 
-ExprPtr Leaq::clone() const {
-  return make_unique<Leaq>(e1_->clone(), e2_->clone(), n_);
-}
 
 void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t1 = e1_->toAssemInstrs(instrs);
@@ -616,10 +574,6 @@ ExprPtr Leaq::optimize() {
 /**********
  * IncDec *
  **********/
-
-ExprPtr IncDec::clone() const {
-  return make_unique<IncDec>(expr_->clone(), inc_);
-}
 
 IncDec::IncDec(ExprPtr&& expr, bool inc) : expr_(move(expr)), inc_(inc) {}
 
