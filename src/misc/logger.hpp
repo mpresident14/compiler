@@ -59,12 +59,15 @@ public:
   void logFatal(size_t line, std::string_view msg);
 
 private:
-  std::set<std::string> sortLogs() const;
-
+  std::set<std::pair<size_t, std::string>> sortLogs() const;
   std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
 
+  struct MsgInfo {
+    size_t line;
+    std::ostringstream msg;
+  };
+  std::vector<MsgInfo> logs_;
   std::string filename_ = "";
-  std::vector<std::ostringstream> logs_;
   size_t errorCount_ = 0;
   size_t warningCount_ = 0;
   size_t noteCount_ = 0;

@@ -19,8 +19,8 @@ ostringstream& Logger::logNote(size_t line, string_view msg) {
 }
 
 ostringstream& Logger::log(MsgType msgType, size_t line, string_view msg) {
-  logs_.push_back(ostringstream());
-  ostringstream& error = logs_.back();
+  logs_.push_back({line, ostringstream()});
+  ostringstream& error = logs_.back().msg;
 
   switch (msgType) {
     case MsgType::ERROR:
@@ -66,7 +66,7 @@ void Logger::streamLog(ostream& out) const {
     out << filename_ << ":\n";
   }
 
-  for (const string& str : sortLogs()) {
+  for (const auto& [_, str] : sortLogs()) {
     out << str << '\n';
   }
   out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
@@ -80,10 +80,10 @@ void Logger::logFatal(size_t line, string_view msg) {
   throw Exception(*this);
 }
 
-std::set<std::string> Logger::sortLogs() const {
-  std::set<std::string> logSet;
-  for (const ostringstream& stream : logs_) {
-    logSet.insert(stream.str());
+std::set<std::pair<size_t, std::string>> Logger::sortLogs() const {
+  std::set<std::pair<size_t, std::string>> logSet;
+  for (const auto& [line, stream] : logs_) {
+    logSet.insert({line, stream.str()});
   }
   return logSet;
 }
@@ -92,7 +92,7 @@ Logger::Exception::Exception(const Logger& logger) {
   if (!logger.filename_.empty()) {
     what_.append(logger.filename_).append(":\n");
   }
-  for (const string& str : logger.sortLogs()) {
+  for (const auto& [_, str] : logger.sortLogs()) {
     what_.append(str).push_back('\n');
   }
 }

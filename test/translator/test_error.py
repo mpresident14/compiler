@@ -42,10 +42,6 @@ if __name__ == "__main__":
     (msgType, line, firstWord) = make_tuple(check)
     expected.append(msgString(msgType, line, firstWord))
 
-  # Errors don't have to appear in exact order
-  errOutput.sort()
-  expected.sort()
-
   if len(errOutput) != len(expected) or not runTest(expected, errOutput):
     print("Failure...")
     print("Expected:")
