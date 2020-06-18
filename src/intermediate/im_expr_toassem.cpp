@@ -165,29 +165,36 @@ MemDeref::MemDeref(ExprPtr&& addr, u_char numBytes, long offset, ExprPtr&& mult)
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   vector<int> srcTemps;
   srcTemps.push_back(addr_->toAssemInstrs(instrs));
-  if (mult_) {
+
+  bool useMult = hasMult();
+  if (useMult) {
     srcTemps.push_back(mult_->toAssemInstrs(instrs));
   }
 
   string asmOp = "mov";
   addInstrLetter(numBytes_, asmOp);
-  asmOp.append("q ").append(genAsmCode(0)).append(", `8D0");
+  asmOp.append("q ").append(genAsmCode(0, useMult)).append(", `8D0");
   instrs.emplace_back(
       new assem::Operation(move(asmOp), move(srcTemps), { temp }, true));
 }
 
-
-string MemDeref::genAsmCode(size_t srcIndex) const {
+string MemDeref::genAsmCode(size_t srcIndex, bool useMult) const {
   ostringstream code;
   if (offset_ != 0) {
     code << offset_;
   }
   code << "(`8S" << srcIndex;
-  if (mult_) {
+
+  if (useMult) {
     code << ", `8S" << srcIndex + 1 << ", " << (size_t) numBytes_;
   }
   code << ')';
   return code.str();
+}
+
+bool MemDeref::hasMult() const noexcept {
+  const Const* constMult = dynamic_cast<const Const*>(mult_.get());
+  return mult_ && !(constMult && constMult->getInt() == 0);
 }
 
 /**************

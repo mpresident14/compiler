@@ -136,14 +136,15 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
     const MemDeref* memDeref = static_cast<MemDeref*>(eOpt1.get());
     srcTemps.push_back(memDeref->getAddr()->toAssemInstrs(instrs));
-    if (const ExprPtr& mult = memDeref->getMult()) {
-      srcTemps.push_back(mult->toAssemInstrs(instrs));
+    bool useMult = memDeref->hasMult();
+    if (useMult) {
+      srcTemps.push_back(memDeref->getMult()->toAssemInstrs(instrs));
     }
 
     size_t numBytes = memDeref->getNumBytes();
     ostringstream asmOp;
     asmOp << "mov" << toInstrLetter(numBytes) << " `" << numBytes << "S0, "
-          << memDeref->genAsmCode(1);
+          << memDeref->genAsmCode(1, useMult);
     instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {
     ostringstream err;

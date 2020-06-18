@@ -278,7 +278,9 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  std::string genAsmCode(size_t srcIndex) const;
+  /* Returns true if mult_ != nullptr && mult_ is not a constant 0 */
+  bool hasMult() const noexcept;
+  std::string genAsmCode(size_t srcIndex, bool useMult) const;
 
   const ExprPtr& getAddr() const noexcept { return addr_; }
   u_char getNumBytes() const noexcept { return numBytes_; }
