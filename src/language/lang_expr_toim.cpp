@@ -134,11 +134,11 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   if (!isIntegral(*type1)) {
     // TODO: Specify which operator
     ctx.getLogger().logError(
-        e1_->getLine(), "Binary operator expected integral types");
+        e1_->line_, "Binary operator expected integral types");
   }
   if (!isIntegral(*type2)) {
     ctx.getLogger().logError(
-        e2_->getLine(), "Binary operator expected integral types");
+        e2_->line_, "Binary operator expected integral types");
   }
   return { make_unique<im::BinOp>(move(eInfo1.imExpr), move(eInfo2.imExpr), op),
            type1->numBytes > type2->numBytes ? move(type1) : move(type2) };
@@ -161,12 +161,12 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
 
   string newVar = TempVar::newVar();
   unique_ptr<Block> ifBlock =
-      make_unique<Block>(vector<StmtPtr>{}, e1_->getLine());
+      make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
   ifBlock->stmts_.push_back(
       make_unique<Assign>(make_unique<TempVar>(newVar), move(e1_)));
 
   unique_ptr<Block> elseBlock =
-      make_unique<Block>(vector<StmtPtr>{}, e2_->getLine());
+      make_unique<Block>(vector<StmtPtr>{}, e2_->line_);
   elseBlock->stmts_.push_back(
       make_unique<Assign>(make_unique<TempVar>(newVar), move(e2_)));
 
@@ -418,9 +418,9 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
       if (isNarrowing) {
         long n;
         if (getType() == ExprType::CONST_INT) {
-          n = static_cast<const ConstInt&>(*this).getInt();
+          n = static_cast<const ConstInt&>(*this).n_;
         } else if (getType() == ExprType::CONST_CHAR) {
-          n = static_cast<const ConstChar&>(*this).getChar();
+          n = static_cast<const ConstChar&>(*this).c_;
         } else {
           goto warnNarrow;
         }

@@ -23,13 +23,13 @@ ExprPtr UnaryOp::clone() const {
 }
 
 BinaryOp::BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp)
-    : Expr(e1->getLine()), e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
+    : Expr(e1->line_), e1_(move(e1)), e2_(move(e2)), bOp_(bOp) {}
 ExprPtr BinaryOp::clone() const {
   return make_unique<BinaryOp>(e1_->clone(), e2_->clone(), bOp_);
 }
 
 TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
-    : Expr(boolE->getLine()),
+    : Expr(boolE->line_),
       boolE_(move(boolE)),
       e1_(move(e1)),
       e2_(move(e2)) {}

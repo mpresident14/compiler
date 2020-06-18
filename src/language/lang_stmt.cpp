@@ -23,7 +23,7 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     stmt->toImStmts(imStmts, ctx);
     // TODO: Maybe remove this and replace with StmtType
     if (VarDecl* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
-      newVars.emplace_back(varDecl->getName(), varDecl->getLine());
+      newVars.emplace_back(varDecl->name_, varDecl->line_);
     }
   }
 
@@ -128,7 +128,7 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  **********/
 
 Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
-    : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)) {}
+    : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType lhsExprType = lhs_->getType();
@@ -165,7 +165,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * Update *
  **********/
 Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
-    : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
+    : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
 
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprPtr lhsClone = lhs_->clone();

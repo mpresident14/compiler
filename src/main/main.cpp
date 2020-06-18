@@ -50,7 +50,7 @@ bool compile(const string& srcFilename, const string& asmFilename) {
       if (prog) {
         assemProgs.push_back(prog->toAssemProg());
         // Print any warnings or non-fatal errors
-        hasErr |= prog->getCtx().hasErrors();
+        hasErr |= prog->ctx_->hasErrors();
       }
     }
 
@@ -75,7 +75,7 @@ bool compile(const string& srcFilename, const string& asmFilename) {
   logger.streamLog();
   for (const auto& [filename, prog] : initializedProgs) {
     if (prog) {
-      prog->getCtx().displayLogs();
+      prog->ctx_->displayLogs();
     }
   }
 

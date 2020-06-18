@@ -23,9 +23,7 @@ public:
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&, Ctx&) = 0;
   virtual void addToContext(Ctx& ctx) = 0;
-  constexpr size_t getLine() const noexcept { return line_; }
 
-protected:
   size_t line_;
 };
 
@@ -36,9 +34,7 @@ public:
   /* If the statement typechecks, generate the corresponding intermediate
    * statements */
   virtual void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) = 0;
-  constexpr size_t getLine() const noexcept { return line_; }
 
-protected:
   size_t line_;
 };
 
@@ -112,9 +108,7 @@ public:
   template <typename F>
   ExprInfo toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx);
   im::ExprPtr toImExprAssert(const Type& type, Ctx& ctx);
-  constexpr size_t getLine() const noexcept { return line_; }
 
-protected:
   size_t line_;
 };
 
@@ -141,7 +135,6 @@ public:
   /* Check if for no return at end of function and handle accordingly */
   void checkForReturn(Ctx& ctx);
 
-private:
   TypePtr returnType_;
   std::string name_;
   std::optional<std::string> mangledName_;
@@ -168,9 +161,7 @@ public:
           initializedProgs,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
-  const Ctx& getCtx() const noexcept { return *ctx_; }
 
-private:
   im::Program toImProg() const;
 
   std::vector<Import> imports_;
@@ -199,7 +190,6 @@ public:
      size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr boolE_;
   std::unique_ptr<Block> ifE_;
   StmtPtr elseE_;
@@ -211,7 +201,6 @@ public:
   While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr boolE_;
   std::unique_ptr<Block> body_;
 };
@@ -222,7 +211,6 @@ public:
   ExprStmt(ExprPtr expr, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr expr_;
 };
 
@@ -232,7 +220,6 @@ public:
   Return(std::optional<ExprPtr>&& retValue, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   std::optional<ExprPtr> retValue_;
 };
 
@@ -242,7 +229,6 @@ public:
   Assign(ExprPtr&& lhs, ExprPtr&& rhs);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr lhs_;
   ExprPtr rhs_;
 };
@@ -253,7 +239,6 @@ public:
   Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr lhs_;
   ExprPtr rhs_;
   BOp bOp_;
@@ -264,11 +249,7 @@ public:
   VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-  const std::string& getName() const noexcept { return name_; }
-
-
-private:
-  TypePtr type_;  // TODO Have a reference here???
+  TypePtr type_;
   std::string name_;
   ExprPtr e_;
 };
@@ -279,7 +260,6 @@ public:
   Print(ExprPtr&& expr, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-private:
   ExprPtr expr_;
 };
 
@@ -294,9 +274,7 @@ public:
   ExprType getType() const noexcept override { return ExprType::CONST_INT; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
-  constexpr long getInt() const noexcept { return n_; }
 
-private:
   long n_;
 };
 
@@ -306,9 +284,7 @@ public:
   ExprType getType() const noexcept override { return ExprType::CONST_CHAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
-  constexpr char getChar() const noexcept { return c_; }
 
-private:
   char c_;
 };
 
@@ -320,7 +296,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   bool b_;
 };
 
@@ -335,7 +310,6 @@ public:
 
   const std::string& getName() const noexcept { return name_; }
 
-private:
   std::string name_;
 };
 
@@ -354,7 +328,6 @@ public:
       bool flipEquiv,
       Ctx& ctx) override;
 
-private:
   ExprPtr e_;
   UOp uOp_;
 };
@@ -374,9 +347,10 @@ public:
       bool flipEquiv,
       Ctx& ctx) override;
 
-  const ExprPtr& getExpr1() const noexcept { return e1_; }
-  const ExprPtr& getExpr2() const noexcept { return e2_; }
-  BOp getBOp() const noexcept { return bOp_; }
+
+  ExprPtr e1_;
+  ExprPtr e2_;
+  BOp bOp_;
 
 private:
   ExprInfo toImExprArith(im::BOp op, Ctx& ctx);
@@ -404,10 +378,6 @@ private:
       assem::Label* ifFalse,
       bool flipEquiv,
       Ctx& ctx);
-
-  ExprPtr e1_;
-  ExprPtr e2_;
-  BOp bOp_;
 };
 
 
@@ -418,7 +388,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   ExprPtr boolE_;
   ExprPtr e1_;
   ExprPtr e2_;
@@ -436,7 +405,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   std::vector<std::string> qualifiers_;
   std::string name_;
   std::vector<ExprPtr> params_;
@@ -450,7 +418,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   TypePtr toType_;
   ExprPtr expr_;
 };
@@ -464,6 +431,11 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
+
+  TypePtr type_;
+  ExprPtr numElems_;
+  std::vector<ExprPtr> elems_;
+
 private:
   /* Returns the statements to create the array as well as the temp containing
    * the address of the new array */
@@ -471,10 +443,6 @@ private:
   makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx);
   ExprInfo toImExprLen(Ctx& ctx);
   ExprInfo toImExprElems(Ctx& ctx);
-
-  TypePtr type_;
-  ExprPtr numElems_;
-  std::vector<ExprPtr> elems_;
 };
 
 
@@ -485,7 +453,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   ExprPtr arrExpr_;
   ExprPtr index_;
 };
@@ -498,7 +465,6 @@ public:
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-private:
   ExprPtr objExpr_;
   std::string member_;
 };
@@ -512,7 +478,8 @@ public:
   ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
-  /* If not initialized, adds the variable with the specified type to the context */
+  /* If not initialized, adds the variable with the specified type to the
+   * context */
   void maybeInit(TypePtr rhsType, Ctx& ctx);
 
 
