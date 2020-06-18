@@ -72,10 +72,17 @@ int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
 
 
 const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
-  auto iter = varMap.find(name);
-  if (iter == varMap.end()) {
+  const VarInfo* varInfo = lookupTempVar(name);
+  if (!varInfo) {
     logger.logError(
         line, string("Undefined variable '").append(name).append("'"));
+  }
+  return varInfo;
+}
+
+const Ctx::VarInfo* Ctx::lookupTempVar(const string& name) {
+  auto iter = varMap.find(name);
+  if (iter == varMap.end()) {
     return nullptr;
   }
   VarInfo& varInfo = iter->second;

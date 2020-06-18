@@ -18,7 +18,8 @@ language::ExprInfo dummyInfo() {
 
 namespace language {
 
-// TODO: Using a constant that is too big for stol should log an informative error
+// TODO: Using a constant that is too big for stol should log an informative
+// error
 
 /************
  * ConstInt *
@@ -147,39 +148,35 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
  * TernaryOp *
  *************/
 
-/* This is really similar to If, but using If directly would require a Temp class
- * (since VarDecls are removed at the end of a block) and we would have to convert
+/* This is really similar to If, but using If directly would require a Temp
+ * class (since VarDecls are removed at the end of a block) and we would have to
+ * convert
  * one of the expressions twice in order to make sure they are the same type */
-// TODO: If needed elsewhere, create a Temp type and declare it in the if part. Then
-// the else piece can handle the typechecking
+// TODO: If needed elsewhere, create a Temp type and declare it in the if part.
+// Then the else piece can handle the typechecking
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   // Make sure expressions are the same type
-    ExprInfo exprInfo = e1_->toImExpr(ctx);
-    im::ExprPtr imExpr2 = e2_->toImExprAssert(*exprInfo.type, ctx);
+  // ExprInfo exprInfo = e1_->toImExpr(ctx);
+  // im::ExprPtr imExpr2 = e2_->toImExprAssert(*exprInfo.type, ctx);
 
-    unique_ptr<im::MakeLabel> mkIfLabel =
-        make_unique<im::MakeLabel>(newLabel());
-    unique_ptr<im::MakeLabel> mkElseLabel =
-        make_unique<im::MakeLabel>(newLabel());
-    unique_ptr<im::MakeLabel> mkDoneLabel =
-        make_unique<im::MakeLabel>(newLabel());
+  string newVar = TempVar::newVar();
+  unique_ptr<Block> ifBlock =
+      make_unique<Block>(vector<StmtPtr>{}, e1_->getLine());
+  ifBlock->stmts_.push_back(
+      make_unique<Assign>(make_unique<TempVar>(newVar), move(e1_)));
 
-    int temp = newTemp();
-    vector<im::StmtPtr> imStmts;
+  unique_ptr<Block> elseBlock =
+      make_unique<Block>(vector<StmtPtr>{}, e2_->getLine());
+  elseBlock->stmts_.push_back(
+      make_unique<Assign>(make_unique<TempVar>(newVar), move(e2_)));
 
-    boolE_->asBool(
-        imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
-    imStmts.emplace_back(move(mkIfLabel));
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(exprInfo.imExpr)));
-    imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
-    imStmts.emplace_back(move(mkElseLabel));
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), move(imExpr2)));
-    imStmts.emplace_back(move(mkDoneLabel));
-    return { make_unique<im::DoThenEval>(
-                 move(imStmts), make_unique<im::Temp>(temp)),
-             move(exprInfo.type) };
+  vector<im::StmtPtr> imStmts;
+  If(move(boolE_), move(ifBlock), move(elseBlock), line_)
+      .toImStmts(imStmts, ctx);
+
+  ExprInfo exprInfo = TempVar(newVar).toImExpr(ctx);
+  return { make_unique<im::DoThenEval>(move(imStmts), move(exprInfo.imExpr)),
+           move(exprInfo.type) };
 }
 
 
@@ -255,7 +252,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) {
 ExprInfo NewArray::toImExprElems(Ctx& ctx) {
   size_t len = elems_.size();
   long maxLong = minMaxValue(*longType).second;
-  if (len > (size_t) maxLong) {
+  if (len > (size_t)maxLong) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << len << " is greater than the maximum array size " << maxLong;
   }
@@ -282,7 +279,8 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
            make_unique<Array>(type_) };
 }
 
-std::pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
+std::pair<vector<im::StmtPtr>, int>
+NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
   int tLen = newTemp();
 
   // Store the length of the array in a temporary
@@ -322,7 +320,7 @@ std::pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(const Type& type, E
   stmts.push_back(move(storeLen));
   stmts.push_back(move(callMalloc));
   stmts.push_back(move(setSize));
-  return {move(stmts), tArrAddr};
+  return { move(stmts), tArrAddr };
 }
 
 
@@ -371,6 +369,30 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   }
 
   return dummyInfo();
+}
+
+
+/***********
+ * TempVar *
+ ***********/
+
+string TempVar::newVar() {
+  static size_t i = 0;
+  return "_" + to_string(i++);
+}
+
+ExprInfo TempVar::toImExpr(Ctx& ctx) {
+  const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, 0);
+  if (!varInfo) {
+    throw invalid_argument("TempVar::toImExpr");
+  }
+  return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
+}
+
+void TempVar::maybeInit(TypePtr rhsType, Ctx& ctx) {
+  if (!ctx.lookupTempVar(name_)) {
+    ctx.insertVar(name_, move(rhsType), 0);
+  }
 }
 
 

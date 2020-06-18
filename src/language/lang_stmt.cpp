@@ -131,23 +131,33 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->getLine()), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
-  switch (lhs_->getType()) {
-    case ExprType::MEMBER_ACCESS:
-      if (lhsInfo.type->typeName == TypeName::ARRAY) {
-        ctx.getLogger().logError(
-            line_, "Cannot assign to length field of an array.");
-        return;
-      }
-      // Fall thru
-    case ExprType::VAR:  // Fall thru
-    case ExprType::ARRAY_ACCESS:
-      imStmts.emplace_back(new im::Assign(
-          move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
-      break;
-    default:
-      throw invalid_argument(
-          "Assign::toImStmts: Should be enforced by grammar");
+  ExprType lhsExprType = lhs_->getType();
+  if (lhsExprType == ExprType::TEMP_VAR) {
+    TempVar* tempVar = static_cast<TempVar*>(lhs_.get());
+    ExprInfo rhsInfo = rhs_->toImExpr(ctx);
+    tempVar->maybeInit(rhsInfo.type, ctx);
+    imStmts.emplace_back(new im::Assign(
+        tempVar->toImExprAssert(*rhsInfo.type, ctx), move(rhsInfo.imExpr)));
+  } else {
+    ExprInfo lhsInfo = lhs_->toImExpr(ctx);
+    switch (lhsExprType) {
+      case ExprType::MEMBER_ACCESS:
+        if (lhsInfo.type->typeName == TypeName::ARRAY) {
+          ctx.getLogger().logError(
+              line_, "Cannot assign to length field of an array.");
+          return;
+        }
+        // Fall thru
+      case ExprType::VAR:
+        // Fall thru
+      case ExprType::ARRAY_ACCESS:
+        imStmts.emplace_back(new im::Assign(
+            move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
+        break;
+      default:
+        throw invalid_argument(
+            "Assign::toImStmts: Should be enforced by grammar");
+    }
   }
 }
 

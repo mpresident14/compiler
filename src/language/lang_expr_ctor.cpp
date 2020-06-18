@@ -7,22 +7,14 @@ using namespace std;
 
 namespace language {
 
-ExprPtr ConstInt::clone() const {
-  return make_unique<ConstInt>(n_, line_);
-}
+ExprPtr ConstInt::clone() const { return make_unique<ConstInt>(n_, line_); }
 
-ExprPtr ConstChar::clone() const {
-  return make_unique<ConstChar>(c_, line_);
-}
+ExprPtr ConstChar::clone() const { return make_unique<ConstChar>(c_, line_); }
 
-ExprPtr ConstBool::clone() const {
-  return make_unique<ConstBool>(b_, line_);
-}
+ExprPtr ConstBool::clone() const { return make_unique<ConstBool>(b_, line_); }
 
 Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
-ExprPtr Var::clone() const {
-  return make_unique<Var>(name_, line_);
-}
+ExprPtr Var::clone() const { return make_unique<Var>(name_, line_); }
 
 UnaryOp::UnaryOp(ExprPtr&& e, UOp uOp, size_t line)
     : Expr(line), e_(move(e)), uOp_(uOp) {}
@@ -59,7 +51,8 @@ ExprPtr CallExpr::clone() const {
   for (const ExprPtr& expr : params_) {
     paramsClone.push_back(expr->clone());
   }
-  return make_unique<CallExpr>(vector<string>(qualifiers_), name_, move(paramsClone), line_);
+  return make_unique<CallExpr>(
+      vector<string>(qualifiers_), name_, move(paramsClone), line_);
 }
 
 Cast::Cast(TypePtr&& toType, ExprPtr&& expr, size_t line)
@@ -79,7 +72,8 @@ ExprPtr NewArray::clone() const {
   for (const ExprPtr& expr : elems_) {
     elemsClone.push_back(expr->clone());
   }
-  return make_unique<NewArray>(TypePtr(type_), numElems_ ? numElems_->clone() : nullptr, line_);
+  return make_unique<NewArray>(
+      TypePtr(type_), numElems_ ? numElems_->clone() : nullptr, line_);
 }
 
 
@@ -97,5 +91,8 @@ MemberAccess::MemberAccess(
 ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
+
+TempVar::TempVar(string_view name) : Expr(0), name_(name) {}
+ExprPtr TempVar::clone() const { return make_unique<TempVar>(name_); }
 
 }  // namespace language

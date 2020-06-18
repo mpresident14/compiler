@@ -99,6 +99,7 @@ public:
 
   int insertVar(std::string_view name, TypePtr type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
+  const VarInfo* lookupTempVar(const std::string& name);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
   void insertFn(

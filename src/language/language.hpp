@@ -49,7 +49,6 @@ enum class ExprType {
   CONST_CHAR,
   CONST_BOOL,
   VAR,
-  TEMP,
   UNARY_OP,
   BINARY_OP,
   TERNARY_OP,
@@ -57,7 +56,8 @@ enum class ExprType {
   CAST,
   NEW_ARRAY,
   ARRAY_ACCESS,
-  MEMBER_ACCESS
+  MEMBER_ACCESS,
+  TEMP_VAR
 };
 
 enum class UOp { NEG, NOT };
@@ -186,9 +186,7 @@ class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts, size_t line);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
-  friend class Func;
 
-private:
   std::vector<StmtPtr> stmts_;
 };
 
@@ -503,6 +501,22 @@ public:
 private:
   ExprPtr objExpr_;
   std::string member_;
+};
+
+
+class TempVar : public Expr {
+public:
+  static std::string newVar();
+
+  TempVar(std::string_view name);
+  ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+  /* If not initialized, adds the variable with the specified type to the context */
+  void maybeInit(TypePtr rhsType, Ctx& ctx);
+
+
+  std::string name_;
 };
 
 
