@@ -34,10 +34,7 @@ JumpOp::JumpOp(
 
 
 namespace {
-
-  constexpr MachineReg SPILL_REGS[]{ R13, R14, R15 };
   constexpr int digitToInt(char c) noexcept { return c - '0'; }
-
 }  // namespace
 
 /*********

@@ -21,16 +21,16 @@ enum MachineReg {
   RDI,
   RSI,
   R8,
-  R9,
-  R10,
-  R11,
   // Assign preserved registers last
   RBX,
   R12,
-  // Not available for variable assignment
   R13,
   R14,
   R15,
+  // Not available for variable assignment
+  R9,
+  R10,
+  R11,
   RSP,
   RBP,
   NREGS,
@@ -52,6 +52,7 @@ const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12,
                                                        R14,
                                                        R15,
                                                        RBX };
+constexpr MachineReg SPILL_REGS[]{ R9, R10, R11 };
 
 std::vector<int> regsAsInts(const std::vector<MachineReg>& regs);
 constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
