@@ -9,6 +9,7 @@
   #include <memory>
   #include <vector>
   #include <string_view>
+  #include <sstream>
 
   using namespace std;
   using namespace language;
@@ -33,6 +34,17 @@
       }
     }
     return str[0];
+  }
+
+  long stolThrow(string_view str, size_t* idx, int base, size_t line) {
+    try {
+      return stol(string(str), idx, base);
+    } catch (const logic_error&) {
+      ostringstream err;
+      err << "Lexer \033[1;31merror\033[0m on line " << line << ": "
+          << str << " is out of range of any integral type";
+      throw parser::ParseException(err.str());
+    }
   }
 %
 
@@ -111,8 +123,8 @@ DOT         "\."
 
 PRINT       "print"
 
-NUM         "0|[1-9][0-9]*"                        -> { long }    % stol(string(#str)) %
-HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { long }    % stol(string(#str), nullptr, 16) %
+NUM         "0|[1-9][0-9]*"                        -> { long }    % stolThrow(#str, nullptr, 10, #line) %
+HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { long }    % stolThrow(#str, nullptr, 16, #line) %
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string }  % #str %
 SRCFILE     "\"([^\n]*/)*[^\n]*\.prez\""           -> { string }  % removeQuotes(#str) %
 CHARLIT     "'(.|\\t|\\n)'"                        -> { char }    % maybeEscape(removeQuotes(#str)) %

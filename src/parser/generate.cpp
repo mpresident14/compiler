@@ -119,6 +119,97 @@ string replaceAll(string_view str, char from, char to) {
   return s;
 }
 
+
+void streamSymbolNames(
+    ostream& out,
+    const vector<intptr_t>& symbols,
+    const GrammarData& gd) {
+  vector<string> symbolNames;
+  transform(
+      symbols.begin(),
+      symbols.end(),
+      back_inserter(symbolNames),
+      [&gd](int symbol) { return symbolToString(symbol, gd); });
+  out << symbolNames;
+}
+
+
+string convertArgNum(
+    string_view argIndexStr,
+    int argIndex,
+    const Concrete& concrete,
+    const GrammarData& gd) {
+  const vector<intptr_t>& argSymbols = concrete.argSymbols;
+  // These are user-provided numbers, so check the bounds
+  if (argIndex < 0) {
+    ostringstream& error = logger.logError(concrete.declLine);
+    error << "Index " << argIndex << " is < 0 for rule ";
+    streamSymbolNames(error, argSymbols, gd);
+    error << '\n';
+    return "";
+  }
+  if ((size_t)argIndex >= argSymbols.size()) {
+    ostringstream& error = logger.logError(concrete.declLine);
+    error << "Index " << argIndex
+          << " is greater than the number of elements in rule ";
+    streamSymbolNames(error, argSymbols, gd);
+    error << '\n';
+    return "";
+  }
+
+  int argSymbol = argSymbols[argIndex];
+  string symbolName = isToken(argSymbol)
+                          ? gd.tokens[tokenToFromIndex(argSymbol)].type
+                          : gd.variables[argSymbol].type;
+  // Make sure the symbol has data associated with it (only necessary for
+  // tokens)
+  if (symbolName.empty()) {
+    ostringstream& error = logger.logError(concrete.declLine);
+    error << "Token " << symbolToString(argSymbol, gd)
+          << " is passed as an argument, but has no data associated with it.\n";
+    return "";
+  }
+
+  return string("(*static_cast<")
+      .append(symbolName)
+      .append("*>(args[")
+      .append(argIndexStr)
+      .append("].releaseObj()))");
+}
+
+void replacePounds(
+    ostream& out,
+    const Concrete& concrete,
+    const GrammarData& gd) {
+  size_t i = 0;
+  string_view ctor = concrete.ctorExpr;
+  size_t len = ctor.size();
+  const char line[] = "line";
+
+  while (i < len) {
+    if (ctor[i] == '#') {
+      ++i;
+      string_view afterPound = ctor.substr(i);
+      if (afterPound.starts_with(line)) {
+        if (concrete.argSymbols.size() == 0) {
+          logger.logError(
+              concrete.declLine, "#line cannot be used with empty rule");
+        }
+        out << "args[0].getLine()";
+        i += sizeof(line) - 1;
+      } else {
+        size_t numDigits;
+        int argIndex = stoi(string(afterPound), &numDigits);
+        i += numDigits;
+        out << convertArgNum(
+            afterPound.substr(0, numDigits), argIndex, concrete, gd);
+      }
+    } else {
+      out << ctor[i++];
+    }
+  }
+}
+
 pair<string, string> getNamespaceAndGuard(string_view filePath) {
   string_view namespaceName = filePath.substr(filePath.find_last_of('/') + 1);
 
@@ -258,96 +349,6 @@ void startDecl(ostream& out, const GrammarData& gd) {
       << type << "&& r) : r_(move(r)) {}" << type << " r_; };";
 }
 
-void streamSymbolNames(
-    ostream& out,
-    const vector<intptr_t>& symbols,
-    const GrammarData& gd) {
-  vector<string> symbolNames;
-  transform(
-      symbols.begin(),
-      symbols.end(),
-      back_inserter(symbolNames),
-      [&gd](int symbol) { return symbolToString(symbol, gd); });
-  out << symbolNames;
-}
-
-
-string convertArgNum(
-    string_view argIndexStr,
-    int argIndex,
-    const Concrete& concrete,
-    const GrammarData& gd) {
-  const vector<intptr_t>& argSymbols = concrete.argSymbols;
-  // These are user-provided numbers, so check the bounds
-  if (argIndex < 0) {
-    ostringstream& error = logger.logError(concrete.declLine);
-    error << "Index " << argIndex << " is < 0 for rule ";
-    streamSymbolNames(error, argSymbols, gd);
-    error << '\n';
-    return "";
-  }
-  if ((size_t)argIndex >= argSymbols.size()) {
-    ostringstream& error = logger.logError(concrete.declLine);
-    error << "Index " << argIndex
-          << " is greater than the number of elements in rule ";
-    streamSymbolNames(error, argSymbols, gd);
-    error << '\n';
-    return "";
-  }
-
-  int argSymbol = argSymbols[argIndex];
-  string symbolName = isToken(argSymbol)
-                          ? gd.tokens[tokenToFromIndex(argSymbol)].type
-                          : gd.variables[argSymbol].type;
-  // Make sure the symbol has data associated with it (only necessary for
-  // tokens)
-  if (symbolName.empty()) {
-    ostringstream& error = logger.logError(concrete.declLine);
-    error << "Token " << symbolToString(argSymbol, gd)
-          << " is passed as an argument, but has no data associated with it.\n";
-    return "";
-  }
-
-  return string("(*static_cast<")
-      .append(symbolName)
-      .append("*>(args[")
-      .append(argIndexStr)
-      .append("].releaseObj()))");
-}
-
-void replacePounds(
-    ostream& out,
-    const Concrete& concrete,
-    const GrammarData& gd) {
-  size_t i = 0;
-  string_view ctor = concrete.ctorExpr;
-  size_t len = ctor.size();
-  const char line[] = "line";
-
-  while (i < len) {
-    if (ctor[i] == '#') {
-      ++i;
-      string_view afterPound = ctor.substr(i);
-      if (afterPound.starts_with(line)) {
-        if (concrete.argSymbols.size() == 0) {
-          logger.logError(
-              concrete.declLine, "#line cannot be used with empty rule");
-        }
-        out << "args[0].getLine()";
-        i += sizeof(line) - 1;
-      } else {
-        size_t numDigits;
-        int argIndex = stoi(string(afterPound), &numDigits);
-        i += numDigits;
-        out << convertArgNum(
-            afterPound.substr(0, numDigits), argIndex, concrete, gd);
-      }
-    } else {
-      out << ctor[i++];
-    }
-  }
-}
-
 void constructObjFn(ostream& out, const GrammarData& gd) {
   out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
@@ -398,7 +399,9 @@ void constructTokenObjFn(ostream& out, const GrammarData& gd) {
           << "return { StackObj(token, "
              "new "
           << token.type << '(';
-      replaceAll(out, token.ctorExpr, "#str", "str");
+      ostringstream temp;
+      replaceAll(temp, token.ctorExpr, "#line", "currentLine");
+      replaceAll(out, temp.str(), "#str", "str");
       out << "), currentLine) }; break;";
     }
   }

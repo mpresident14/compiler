@@ -56,7 +56,6 @@ bool compile(const string& srcFilename, const string& asmFilename) {
 
     // If we compiled successfully, write the assembly to the file
     if (!hasErr) {
-      // string_view::data() OK
       ofstream asmFile(asmFilename);
       logger.checkFile(asmFilename, asmFile);
       for (assem::Program& prog : assemProgs) {
