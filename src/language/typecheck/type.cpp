@@ -39,11 +39,12 @@ string Class::getId(const unordered_map<string, string>& typeIds) const {
 
 bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
   if (isIntegral(from) && isIntegral(to)) {
-    // TODO: We don't want to report narrowing for short n = 3;
-    // Check if the expression is a const, and then if the number fits in the
-    // specified number of bytes
-    if (isNarrowing && to.numBytes < from.numBytes) {
-      *isNarrowing = true;
+    if (isNarrowing) {
+      if (to.numBytes < from.numBytes) {
+        *isNarrowing = true;
+      } else {
+        *isNarrowing = false;
+      }
     }
     return true;
   }
