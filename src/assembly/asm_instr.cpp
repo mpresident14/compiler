@@ -2,8 +2,6 @@
 
 #include <stdexcept>
 
-#include <prez/print_stuff.hpp>
-
 using namespace std;
 
 namespace assem {
@@ -21,11 +19,11 @@ Operation::Operation(
     string_view asmCode,
     vector<int>&& srcs,
     vector<int>&& dsts,
-    MemRefs memRefs)
+    bool hasMemRefs)
     : asmCode_(asmCode),
       srcs_(move(srcs)),
       dsts_(move(dsts)),
-      memRefs_(memRefs) {}
+      hasMemRefs_(hasMemRefs) {}
 
 JumpOp::JumpOp(
     string_view asmCode,
@@ -37,7 +35,7 @@ JumpOp::JumpOp(
 
 namespace {
 
-  constexpr MachineReg SPILL_REGS[]{ R10, R11 };
+  constexpr MachineReg SPILL_REGS[]{ R13, R14, R15 };
   constexpr int digitToInt(char c) noexcept { return c - '0'; }
 
 }  // namespace
@@ -72,47 +70,55 @@ bool Move::spillTemps(vector<InstrPtr>& newInstrs) {
 }
 
 bool Operation::spillTemps(vector<InstrPtr>& newInstrs) {
-  // For each temporary src, if it is a non-machine register, then update it to
-  // a spill register and add an instruction to move it from the stack to the
-  // spill register
+  // For each temporary src (and maybe dst, see below), if it is a non-machine
+  // register, then update it to a spill register and add an instruction to move
+  // it from the stack to the spill register
   size_t numSpilled = 0;
-  if (memRefs_ != MemRefs::SRCS) {
-    // The destinations might be memory references, so we put the sources in the
-    // spill registers
-    // - movq srcs, spilledSrcs
-    // - op spillSrcs, dsts
-    size_t numSrcs = srcs_.size();
-    for (size_t i = 0; i < numSrcs; ++i) {
-      int src = srcs_[i];
-      if (!isRegister(src)) {
-        int spillReg = SPILL_REGS[numSpilled++];
-        srcs_[i] = spillReg;
-        newInstrs.push_back(make_unique<Move>(src, spillReg));
+  vector<InstrPtr> postOpInstrs;
+
+  // - movq srcs, spilledSrcs
+  size_t numSrcs = srcs_.size();
+  for (size_t i = 0; i < numSrcs; ++i) {
+    int src = srcs_[i];
+    if (!isRegister(src)) {
+      int spillReg = SPILL_REGS[numSpilled++];
+      srcs_[i] = spillReg;
+      newInstrs.push_back(make_unique<Move>(src, spillReg));
+      if (hasMemRefs_) {
+        // See comment below
+        postOpInstrs.push_back(make_unique<Move>(spillReg, src));
       }
     }
-    // Insert the updated instruction
-    return true;
-  } else {
-    // The sources are memory references, so we put the destinations in the
-    // spill registers
-    // - op srcs, spillDsts
+  }
+
+  if (hasMemRefs_) {
+    // The instruction contains memory references, so we cannot access the stack
+    // for the srcs or dsts. For example: "movq (%t1), %t2" cannot be "movq
+    // (8(%rsp)), %t2" or "movq (%t1), (16(%rsp))"
+    // - movq dsts, spillDsts
+    // - op spillSrcs, spillDsts
+    // - movq spilledSrcs, srcs
     // - movq spillDsts, dsts
     size_t numDsts = dsts_.size();
     vector<int> newDsts;
-    vector<InstrPtr> spillInstrs;
     for (size_t i = 0; i < numDsts; ++i) {
       int dst = dsts_[i];
       if (!isRegister(dst)) {
         int spillReg = SPILL_REGS[numSpilled++];
         dsts_[i] = spillReg;
-        spillInstrs.push_back(make_unique<Move>(spillReg, dst));
+        newInstrs.push_back(make_unique<Move>(dst, spillReg));
+        postOpInstrs.push_back(make_unique<Move>(spillReg, dst));
       }
     }
     newInstrs.emplace_back(new Operation(asmCode_, move(srcs_), move(dsts_)));
-    for (InstrPtr& spillInstr : spillInstrs) {
-      newInstrs.push_back(move(spillInstr));
+    for (InstrPtr& instr : postOpInstrs) {
+      newInstrs.push_back(move(instr));
     }
     return false;
+  } else {
+    // No memory references, just insert the instruction with the updated srcs
+    // - op spillSrcs, dsts
+    return true;
   }
 }
 
@@ -177,19 +183,21 @@ void Return::assignRegs(
 void tempToCode(
     ostream& out,
     int temp,
-    char bytesChar,
+    u_char numBytes,
     const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
-    out << regToString(static_cast<MachineReg>(temp), bytesChar);
+    out << regToString(static_cast<MachineReg>(temp), numBytes);
   } else {
 #ifdef DEBUG
     out << "%t" << -temp;
 #else
-    out << varToStackOffset.at(temp) << '(' << regToString(RSP, bytesChar)
+    out << varToStackOffset.at(temp) << '(' << regToString(RSP, numBytes)
         << ')';
 #endif
   }
 }
+
+void streamTemp(ostream& out, int temp) { tempToCode(out, temp, 8, {}); }
 
 void Label::toCode(ostream& out, const unordered_map<int, size_t>&) const {
   out << name_ << ":\n";
@@ -203,9 +211,9 @@ void Move::toCode(
   }
 
   out << "\tmovq ";
-  tempToCode(out, src_, '8', varToStackOffset);
+  tempToCode(out, src_, 8, varToStackOffset);
   out << ", ";
-  tempToCode(out, dst_, '8', varToStackOffset);
+  tempToCode(out, dst_, 8, varToStackOffset);
   out << '\n';
 }
 
@@ -218,7 +226,7 @@ void Operation::toCode(
   while (i < len) {
     char c = asmCode_.at(i);
     if (c == '`') {
-      char bytesChar = asmCode_.at(i + 1);
+      int bytesChar = digitToInt(asmCode_.at(i + 1));
       c = asmCode_.at(i + 2);
       if (c == 'S') {
         tempToCode(
@@ -264,17 +272,28 @@ void Label::toStream(ostream& out) const { out << name_ << ':'; }
 
 void Move::toStream(ostream& out) const {
   out << "MOVE"
-      << " [" << src_ << "] [" << dst_ << ']';
+      << " [";
+  streamTemp(out, src_);
+  out << "] [";
+  streamTemp(out, dst_);
+  out << ']';
 }
 
 void Operation::toStream(ostream& out) const {
   out << asmCode_ << ' ';
-  // Operators should be defined in the same namespace as the class so they
-  // can be found via ADL. Unfortunately, you can't add stuff to the std
-  // namespace, so we get this nonsense
-  detail::printContainerHelper(out, srcs_);
+  out << '[';
+  for (int src : srcs_) {
+    streamTemp(out, src);
+    out << ", ";
+  }
+  out << ']';
   out << ' ';
-  detail::printContainerHelper(out, dsts_);
+  out << '[';
+  for (int dst : dsts_) {
+    streamTemp(out, dst);
+    out << ", ";
+  }
+  out << ']';
 }
 
 void JumpOp::toStream(ostream& out) const {

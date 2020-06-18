@@ -287,7 +287,7 @@ void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   addInstrLetter(numBytes_, asmOp);
   asmOp.append("q ").append(genAsmCode(0)).append(", `8D0");
   instrs.emplace_back(
-      new assem::Operation(move(asmOp), move(srcTemps), { temp }, assem::MemRefs::SRCS));
+      new assem::Operation(move(asmOp), move(srcTemps), { temp }, true));
 }
 
 ExprPtr MemDeref::optimize() {
@@ -563,7 +563,7 @@ void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   string asmCode =
       string("leaq (`8S0, `8S1, ").append(to_string(n_)).append("), `8D0");
   instrs.emplace_back(
-      new assem::Operation(move(asmCode), { t1, t2 }, { temp }, assem::MemRefs::SRCS));
+      new assem::Operation(move(asmCode), { t1, t2 }, { temp }, true));
 }
 
 ExprPtr Leaq::optimize() {

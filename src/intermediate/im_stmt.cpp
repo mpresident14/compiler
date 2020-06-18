@@ -144,7 +144,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     ostringstream asmOp;
     asmOp << "mov" << toInstrLetter(numBytes) << " `" << numBytes << "S0, "
           << memDeref->genAsmCode(1);
-    instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, assem::MemRefs::DSTS));
+    instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {
     ostringstream err;
     err << "Invalid ExprType for Assign LHS: " << lhsType;

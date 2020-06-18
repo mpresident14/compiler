@@ -34,17 +34,30 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 void Function::toCode(ostream& out) {
   out << name_ << ":\n";
 
-#ifdef DEBUG
-  for (const InstrPtr& instr : instrs_) {
-    instr->toCode(out, {});
-  }
-  return;
-#endif
-
   FlowGraph fgraph(instrs_);
   fgraph.computeLiveness();
   InterferenceGraph igraph(fgraph);
   auto colorPair = igraph.color();
+
+#ifdef DEBUG
+  if (name_ == "_main0") {
+    cout << fgraph << endl;
+    cout << igraph << endl;
+  }
+  for (const InstrPtr& instr : instrs_) {
+    instr->toCode(out, {});
+  }
+  for (const auto& [temp, reg] : colorPair.first) {
+    if (!isRegister(temp)) {
+      out << "# %t" << -temp << " = " << regToString(reg, 8) << '\n';
+    }
+  }
+  out << "\n# SPILLED\n" << endl;
+  for (const auto& temp : colorPair.second) {
+    out << "# %t" << -temp << '\n';
+  }
+  return;
+#endif
 
   bitset<NUM_AVAIL_REGS> writtenRegs =
       regAlloc(colorPair.first, colorPair.second);
@@ -116,7 +129,8 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
               vector<int>{}));
         }
         // Fall thru
-      default: newInstrs.push_back(move(instr));
+      default:
+        newInstrs.push_back(move(instr));
     }
   }
 

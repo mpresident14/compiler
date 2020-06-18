@@ -193,7 +193,13 @@ mainLoop:
 
 std::ostream& operator<<(std::ostream& out, const InterferenceGraph& fgraph) {
   for (const auto& [temp, neighbors] : fgraph.graph_) {
-    out << temp << " -> " << neighbors << '\n';
+    streamTemp(out, temp);
+    out << " -> [";
+    for (int t : neighbors) {
+      streamTemp(out, t);
+      out << ", ";
+    }
+    out << "]\n";
   }
   return out;
 }

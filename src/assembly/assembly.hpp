@@ -147,10 +147,6 @@ private:
 };
 
 
-/* Specifies whether an operation has memory references in srcs, dsts, or
- * neither (needed for register spilling) */
-enum class MemRefs { NONE, SRCS, DSTS };
-
 /* An instruction that always falls thru to the next one */
 class Operation : public Instruction {
 public:
@@ -158,7 +154,7 @@ public:
       std::string_view asmCode,
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
-      MemRefs memRefs = MemRefs::NONE);
+      bool hasMemRefs = false);
   constexpr InstrType getType() const noexcept override {
     return InstrType::OPER;
   }
@@ -179,7 +175,7 @@ private:
   std::string asmCode_;
   std::vector<int> srcs_;
   std::vector<int> dsts_;
-  MemRefs memRefs_;
+  bool hasMemRefs_;
 };
 
 /* A jmp instruction. Guaranteed to jump, will not fall thru */
@@ -232,6 +228,9 @@ public:
 private:
   bool hasValue_;
 };
+
+/* For debugging */
+void streamTemp(std::ostream& out, int temp);
 
 
 }  // namespace assem

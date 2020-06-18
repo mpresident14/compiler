@@ -130,8 +130,19 @@ void FlowGraph::computeLiveness() {
 std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph) {
   for (const auto& instr : fgraph.instrs_) {
     const FlowGraph::Liveness& liveness = fgraph.nodes_.at(instr.get());
-    out << *instr << " -> IN:" << liveness.liveIn << " OUT:" << liveness.liveOut
-        << '\n';
+    out << *instr << " -> IN: ";
+    out << " [";
+    for (int t : liveness.liveIn) {
+      streamTemp(out, t);
+      out << ", ";
+    }
+    out << "] OUT: ";
+    out << " [";
+    for (int t : liveness.liveOut) {
+      streamTemp(out, t);
+      out << ", ";
+    }
+    out << "]\n\n";
   }
   return out;
 }

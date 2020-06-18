@@ -22,23 +22,23 @@ enum MachineReg {
   RSI,
   R8,
   R9,
+  R10,
+  R11,
   // Assign preserved registers last
   RBX,
   R12,
+  // Not available for variable assignment
   R13,
   R14,
   R15,
-  // Not available for variable assignment
-  R10,
-  R11,
   RSP,
   RBP,
   NREGS,
 };
 
-/* All registers except RSP, RBP, and the spill registers (R10 and R11) are
+/* All registers except RSP, RBP, and the spill registers (R13, R14 and R15) are
  * available for variables */
-constexpr size_t NUM_AVAIL_REGS = 12;
+constexpr size_t NUM_AVAIL_REGS = 11;
 
 const std::vector<MachineReg> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
 
@@ -58,7 +58,7 @@ constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 
 // See
 // https://www.google.com/search?q=x86-64+register+sizes&sxsrf=ALeKk00XGcYm9CEIDtkl5b5vE3VJzDF05A:1591242890593&source=lnms&tbm=isch&sa=X&ved=2ahUKEwjywvrZoefpAhUJv54KHaYCCQgQ_AUoAnoECAwQBA&biw=832&bih=851#imgrc=srauU5gulxAS2M
-std::string regToString(MachineReg machineReg, char numBytes);
+std::string regToString(MachineReg machineReg, u_char numBytes);
 
 static int temp = -1;
 inline int newTemp() noexcept { return temp--; }

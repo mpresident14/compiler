@@ -12,7 +12,7 @@ vector<int> regsAsInts(const vector<MachineReg>& regs) {
   return ints;
 }
 
-string regToString(MachineReg machineReg, char bytesChar) {
+string regToString(MachineReg machineReg, u_char bytesChar) {
   string ret = "%";
   bool isOriginal;
 
@@ -86,24 +86,24 @@ string regToString(MachineReg machineReg, char bytesChar) {
   }
 
   switch (bytesChar) {
-    case '8':
+    case 8:
       if (isOriginal) {
         ret.insert(ret.begin() + 1, 'r');
       }
       break;
-    case '4':
+    case 4:
       if (isOriginal) {
         ret.insert(ret.begin() + 1, 'e');
       } else {
         ret.push_back('d');
       }
       break;
-    case '2':
+    case 2:
       if (!isOriginal) {
         ret.push_back('w');
       }
       break;
-    case '1':
+    case 1:
       if (isOriginal) {
         if (ret[2] == 'i') {
           ret.push_back('l');
