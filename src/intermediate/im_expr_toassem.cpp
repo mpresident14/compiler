@@ -19,8 +19,20 @@ void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 }
 
 
-string Const::asmChunk(size_t, bool, size_t) const {
-  return "$" + to_string(n_);
+namespace {
+  long truncate(long n, size_t numBytes) {
+    switch (numBytes) {
+      case 8: return n;
+      case 4: return (int) n;
+      case 2: return (short) n;
+      case 1: return (char) n;
+      default: throw invalid_argument("truncate: " + to_string(numBytes));
+    }
+  }
+}
+
+string Const::asmChunk(size_t numBytes, bool, size_t) const {
+  return "$" + to_string(truncate(n_, numBytes));
 }
 
 /*********
@@ -76,7 +88,7 @@ void BinOp::handleShifts(
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
   if (expr2_->getType() == ExprType::CONST) {
-    asmCode.append(expr2_->asmChunk(/* All irrelevant */ 0, 0, 0))
+    asmCode.append(expr2_->asmChunk(8, 0, 0))
         .append(", `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
   } else {
