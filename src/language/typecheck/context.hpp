@@ -137,8 +137,7 @@ public:
           std::unordered_multimap<std::string, FnInfo>::iterator>& candidates,
       std::string_view searchedFile);
   /* Mangle all user functions based on the filename (non-user functions begin
-   * with '_') Return empty if function doesn't need to be mangled */
-  // TODO: remove the optional when we get rid of printInt and runprez
+   * with '_') Return the function name if it doesn't need to be mangled */
   std::string mangleFn(
       std::string_view fnName,
       const std::string& filename,
@@ -152,11 +151,8 @@ public:
 private:
   void removeTemp(const std::string& var, size_t line);
 
-  std::unordered_map<std::string, VarInfo> varMap;
-  // TODO: Remove initialization when we add a print() to the language
-  std::unordered_multimap<std::string, FnInfo> fnMap = {
-    { "printInt", FnInfo{ std::vector<TypePtr>{ intType }, voidType, "", 0 } }
-  };
+  std::unordered_map<std::string, VarInfo> varMap_;
+  std::unordered_multimap<std::string, FnInfo> fnMap_;
   TypePtr currentRetType_;
   std::string filename_;
   Logger logger;

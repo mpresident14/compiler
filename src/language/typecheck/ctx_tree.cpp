@@ -43,7 +43,6 @@ bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
 
   // We've reached the first part of the qualifier path, so insert the context
   // if it doesn't already exist (duplicate imports ok, we log a note)
-  // TODO: enforce importPath not empty, either in grammar or elsewhere
   const string& firstPart = pathParts[0];
   auto mapIter = currentMap->find(firstPart);
   if (mapIter == currentMap->end()) {

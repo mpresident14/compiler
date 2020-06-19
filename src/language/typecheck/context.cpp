@@ -60,7 +60,7 @@ void Ctx::setCurrentRetType(TypePtr type) noexcept {
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
   auto insertResult =
-      varMap.emplace(name, VarInfo{ move(type), temp, line, false });
+      varMap_.emplace(name, VarInfo{ move(type), temp, line, false });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
     errStream << "Redefinition of variable '" << name
@@ -81,8 +81,8 @@ const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
 }
 
 const Ctx::VarInfo* Ctx::lookupTempVar(const string& name) {
-  auto iter = varMap.find(name);
-  if (iter == varMap.end()) {
+  auto iter = varMap_.find(name);
+  if (iter == varMap_.end()) {
     return nullptr;
   }
   VarInfo& varInfo = iter->second;
@@ -106,12 +106,12 @@ void Ctx::removeParams(const vector<string>& params, size_t line) {
 void Ctx::removeTemp(const string& var, size_t line) {
   // If we had a variable redefinition error, we may have already removed this
   // variable
-  auto iter = varMap.find(var);
-  if (iter != varMap.end() && !iter->second.used) {
+  auto iter = varMap_.find(var);
+  if (iter != varMap_.end() && !iter->second.used) {
     logger.logWarning(
         line, string("Unused variable '").append(var).append("'"));
   }
-  varMap.erase(var);
+  varMap_.erase(var);
 }
 
 
@@ -120,7 +120,7 @@ void Ctx::insertFn(
     const vector<TypePtr>& paramTypes,
     TypePtr returnType,
     size_t line) {
-  auto iterPair = fnMap.equal_range(name);
+  auto iterPair = fnMap_.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const FnInfo& fnInfo = iter->second;
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
@@ -137,7 +137,7 @@ void Ctx::insertFn(
       return;
     }
   }
-  fnMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
+  fnMap_.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
 }
 
 
@@ -147,12 +147,9 @@ pair<
         unordered_multimap<string, Ctx::FnInfo>::iterator,
         unordered_multimap<string, Ctx::FnInfo>::iterator>>
 Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
-  auto iterPair = fnMap.equal_range(name);
+  auto iterPair = fnMap_.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
-    // TODO: Conversion between integral types will complicate function lookup
-    // First check for exact matches, then for implicit conversion between
-    // integral types
     if (equal(
             paramTypes.cbegin(),
             paramTypes.cend(),
