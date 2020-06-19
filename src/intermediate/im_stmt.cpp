@@ -59,39 +59,95 @@ CondJump::CondJump(
       ifTrue_(ifTrue),
       ifFalse_(ifFalse) {}
 
-
-void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  int t1 = newTemp();
-  int t2 = newTemp();
-  e1_->optimize()->toAssemInstrs(t1, instrs);
-  e2_->optimize()->toAssemInstrs(t2, instrs);
-  string op;
-  switch (rop_) {
-    case ROp::EQ:
-      op = "je ";
-      break;
-    case ROp::NEQ:
-      op = "jne ";
-      break;
-    case ROp::LT:
-      op = "jl ";
-      break;
-    case ROp::GT:
-      op = "jg ";
-      break;
-    case ROp::LTE:
-      op = "jle ";
-      break;
-    case ROp::GTE:
-      op = "jge ";
-      break;
-    default:
-      throw invalid_argument("Unrecognized relative operator.");
+namespace {
+  bool (*getRopFn(ROp rOp))(long, long) {
+    switch (rOp) {
+      case ROp::EQ:
+        return [](long a, long b) { return a == b; };
+      case ROp::NEQ:
+        return [](long a, long b) { return a != b; };
+      case ROp::LT:
+        return [](long a, long b) { return a < b; };
+      case ROp::GT:
+        return [](long a, long b) { return a > b; };
+      case ROp::LTE:
+        return [](long a, long b) { return a <= b; };
+      case ROp::GTE:
+        return [](long a, long b) { return a >= b; };
+      default:
+        throw invalid_argument("Unrecognized relative operator.");
+    }
   }
 
-  instrs.emplace_back(new assem::Operation("cmpq `8S1, `8S0", { t1, t2 }, {}));
-  instrs.emplace_back(
-      new assem::CondJumpOp(op.append(ifTrue_->getName()), {}, {}, ifTrue_));
+  string getRopAsm(ROp rOp, bool needsFlip) {
+    switch (rOp) {
+      case ROp::EQ:
+        return needsFlip ? "jne " : "je ";
+      case ROp::NEQ:
+        return needsFlip ? "je " : "jne ";
+      case ROp::LT:
+        return needsFlip ? "jge " : "jl ";
+      case ROp::GT:
+        return needsFlip ? "jle " : "jg ";
+      case ROp::LTE:
+        return needsFlip ? "jg " : "jle ";
+      case ROp::GTE:
+        return needsFlip ? "jl " : "jge ";
+      default:
+        throw invalid_argument("Unrecognized relative operator.");
+    }
+  }
+}  // namespace
+
+
+void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
+  ExprPtr eOpt1 = e1_->optimize();
+  ExprPtr eOpt2 = e2_->optimize();
+  string asmChunk1 = eOpt1->asmChunk(true, 0);
+  string asmChunk2 = eOpt2->asmChunk(true, 0);
+  vector<int> srcTemps;
+
+  bool needsFlip = false;
+  if (isConstChunk(asmChunk1)) {
+    if (isConstChunk(asmChunk2)) {
+      // Both constants, just evaluate at compile-time
+      bool (*opFn)(long, long) = getRopFn(rop_);
+      // TODO: Log warning about always true/false
+      bool res = opFn(
+          static_cast<const Const*>(eOpt1.get())->getInt(),
+          static_cast<const Const*>(eOpt2.get())->getInt());
+      if (res) {
+        instrs.emplace_back(
+            new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, ifTrue_));
+      } else {
+        instrs.emplace_back(
+            new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
+      }
+      return;
+    } else {
+      // "cmp reg, imm" is not legal, so we need to do "cmp imm, reg" and flip
+      // the operator
+      needsFlip = true;
+      srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
+    }
+  } else {
+    if (!isConstChunk(asmChunk2)) {
+      // asmChunk in the form "`<#><S|D><index>"
+      asmChunk1[3] = '1';
+      srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
+    }
+    srcTemps.push_back(eOpt1->toAssemInstrs(instrs));
+  }
+
+  ostringstream cmpAsm;
+  if (needsFlip) {
+    cmpAsm << "cmpq " << asmChunk1 << ", " << asmChunk2;
+  } else {
+    cmpAsm << "cmpq " << asmChunk2 << ", " << asmChunk1;
+  }
+  instrs.emplace_back(new assem::Operation(cmpAsm.str(), move(srcTemps), {}));
+  instrs.emplace_back(new assem::CondJumpOp(
+      getRopAsm(rop_, needsFlip).append(ifTrue_->getName()), {}, {}, ifTrue_));
   instrs.emplace_back(
       new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
 }
@@ -145,7 +201,8 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     ostringstream asmOp;
     asmOp << "mov" << toInstrLetter(numBytes) << " `" << numBytes << "S0, "
           << memDeref->genAsmCode(1, useMult);
-    instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
+    instrs.emplace_back(
+        new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {
     ostringstream err;
     err << "Invalid ExprType for Assign LHS: " << lhsType;
@@ -162,8 +219,9 @@ ExprStmt::ExprStmt(ExprPtr&& expr) : expr_(move(expr)) {}
 
 
 void ExprStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  // NOTE: This will create a wasted move to a new temp, but it will be removed
-  // in flowgraph.cpp when we find undefined variables
+  // NOTE: This will create a wasted move to a new temp since we don't need the
+  // return value, but it will be removed in flowgraph.cpp when we find
+  // undefined variables
   expr_->optimize()->toAssemInstrs(instrs);
 }
 

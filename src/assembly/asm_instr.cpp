@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include <prez/print_stuff.hpp>
+
 using namespace std;
 
 namespace assem {
@@ -239,6 +241,8 @@ void Operation::toCode(
             varToStackOffset);
       } else {
         // TODO: Remove this case when done
+        cout << asmCode_ << endl;
+        cout << srcs_ << endl;
         throw runtime_error("Operation::toCode");
       }
       i += 4;

@@ -58,6 +58,7 @@ public:
   /* Same as above but allow the Expr to determine the temp it is put into
    * (mainly to avoid unnecessary moves for Expr::Temp) */
   virtual int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const;
+  virtual std::string asmChunk(bool asSrc, size_t index) const;
   /* Return an optimized version of the expression. This object is invalidated
    */
   // TODO: Constant propagation
@@ -208,6 +209,7 @@ public:
   }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
+  std::string asmChunk(bool asSrc, size_t index) const override;
   constexpr long getInt() const noexcept { return n_; }
   ExprPtr optimize() override;
 
@@ -401,6 +403,11 @@ public:
   ExprPtr expr_;
   bool inc_;
 };
+
+
+constexpr bool isConstChunk(std::string_view asmChunk) noexcept {
+  return asmChunk.front() == '$';
+}
 
 }  // namespace im
 
