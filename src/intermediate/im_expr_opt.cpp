@@ -142,7 +142,17 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
  ************/
 
 ExprPtr MemDeref::optimize() {
-  return make_unique<MemDeref>(addr_->optimize(), numBytes_, offset_, mult_ ? mult_->optimize() : nullptr);
+  ExprPtr multOpt = mult_ ? mult_->optimize() : nullptr;
+
+  if (multOpt) {
+    // If multiplier is a constant, just increase the offset
+    if (const Const* constMult = dynamic_cast<const Const*>(mult_.get())) {
+      offset_ += constMult->getInt() * numBytes_;
+      multOpt = nullptr;
+    }
+  }
+
+  return make_unique<MemDeref>(offset_, addr_->optimize(), move(multOpt), numBytes_);
 }
 
 /**************

@@ -5,8 +5,8 @@
 #include "src/assembly/temp.hpp"
 
 #include <memory>
-#include <string>
 #include <ostream>
+#include <string>
 #include <vector>
 
 namespace im {
@@ -209,7 +209,8 @@ public:
   }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
-  std::string asmChunk(size_t numBytes, bool asSrc, size_t index) const override;
+  std::string asmChunk(size_t numBytes, bool asSrc, size_t index)
+      const override;
   constexpr long getInt() const noexcept { return n_; }
   ExprPtr optimize() override;
 
@@ -272,7 +273,7 @@ private:
 class MemDeref : public Expr {
 public:
   /* mult may be nullptr */
-  MemDeref(ExprPtr&& addr, u_char numBytes, long offset, ExprPtr&& mult);
+  MemDeref(long offset, ExprPtr&& addr, ExprPtr&& mult, u_char numBytes);
   constexpr ExprType getType() const noexcept override {
     return ExprType::MEM_DEREF;
   }
@@ -280,9 +281,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  /* Returns true if mult_ != nullptr && mult_ is not a constant 0 */
-  bool hasMult() const noexcept;
-  std::string genAsmCode(size_t srcIndex, bool useMult) const;
+  std::string genAsmCode(size_t srcIndex) const;
 
   const ExprPtr& getAddr() const noexcept { return addr_; }
   u_char getNumBytes() const noexcept { return numBytes_; }
@@ -290,10 +289,10 @@ public:
   const ExprPtr& getMult() const noexcept { return mult_; }
 
 private:
-  ExprPtr addr_;
-  u_char numBytes_;
   long offset_;
+  ExprPtr addr_;
   ExprPtr mult_;
+  u_char numBytes_;
 };
 
 

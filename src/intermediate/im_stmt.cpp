@@ -202,14 +202,13 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     }
 
     srcTemps.push_back(memDeref->getAddr()->toAssemInstrs(instrs));
-    bool useMult = memDeref->hasMult();
-    if (useMult) {
+    if (memDeref->getMult()) {
       srcTemps.push_back(memDeref->getMult()->toAssemInstrs(instrs));
     }
 
     ostringstream asmOp;
     asmOp << "mov" << toInstrLetter(numBytes) << ' ' << asmChunk2 << ", "
-          << memDeref->genAsmCode(tempIndex, useMult);
+          << memDeref->genAsmCode(tempIndex);
     instrs.emplace_back(
         new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {

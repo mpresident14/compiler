@@ -160,8 +160,7 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   // im::ExprPtr imExpr2 = e2_->toImExprAssert(*exprInfo.type, ctx);
 
   string newVar = TempVar::newVar();
-  unique_ptr<Block> ifBlock =
-      make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
+  unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
   ifBlock->stmts_.push_back(
       make_unique<Assign>(make_unique<TempVar>(newVar), move(e1_)));
 
@@ -267,10 +266,10 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
     // Assign the element
     stmts.push_back(make_unique<im::Assign>(
         make_unique<im::MemDeref>(
-            make_unique<im::Temp>(tArrAddr),
-            elemSize,
             8,
-            make_unique<im::Const>(i)),
+            make_unique<im::Temp>(tArrAddr),
+            make_unique<im::Const>(i),
+            elemSize),
         elem->toImExprAssert(*type_, ctx)));
   }
 
@@ -310,7 +309,7 @@ NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
 
   // Arrays will start with the number of elements they contain
   im::StmtPtr setSize = make_unique<im::Assign>(
-      make_unique<im::MemDeref>(make_unique<im::Temp>(tArrAddr), 8, 0, nullptr),
+      make_unique<im::MemDeref>(0, make_unique<im::Temp>(tArrAddr), nullptr, 8),
       make_unique<im::Temp>(tLen));
 
   // TODO: Zero/null initialize array
@@ -348,7 +347,7 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
           .imExpr;
   // Add 8 bytes to skip the size field
   return { make_unique<im::MemDeref>(
-               move(exprInfo.imExpr), arrType.numBytes, 8, move(imIndex)),
+               8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
            static_cast<const Array*>(&type)->arrType };
 }
 
@@ -361,7 +360,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   // The only member of an array is length
   if (eInfo.type->typeName == TypeName::ARRAY) {
     if (member_ == "length") {
-      return { make_unique<im::MemDeref>(move(eInfo.imExpr), 8, 0, nullptr),
+      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8),
                longType };
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
