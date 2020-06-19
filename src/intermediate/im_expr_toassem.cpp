@@ -76,9 +76,7 @@ void BinOp::handleShifts(
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
   if (expr2_->getType() == ExprType::CONST) {
-    asmCode.append(" $");
-    asmCode.append(to_string(static_cast<Const*>(expr2_.get())->getInt()));
-    asmCode.append(", `8D0");
+    asmCode.append(expr2_->asmChunk(/* All irrelevant */ 0,0,0)).append(", `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
   } else {
     expr2_->toAssemInstrs(RCX, instrs);
@@ -398,7 +396,7 @@ std::ostream& operator<<(std::ostream& out, ExprType exprType) {
     case ExprType::DO_THEN_EVAL:
       return out << "DO_THEN_EVAL";
     case ExprType::LABEL_ADDR:
-      return out << "DO_THEN_EVAL";
+      return out << "LABEL_ADDR";
     case ExprType::CALL:
       return out << "CALL";
     case ExprType::HALF_CONST:
@@ -412,7 +410,6 @@ std::ostream& operator<<(std::ostream& out, ExprType exprType) {
   }
 }
 
-// TODO: Change the size from 8 when we add this field to Expr
 std::string Expr::asmChunk(size_t numBytes, bool asSrc, size_t index) const {
   ostringstream ret;
   ret << '`' << numBytes << (asSrc ? 'S' : 'D') << index;
