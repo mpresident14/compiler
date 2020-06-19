@@ -299,7 +299,6 @@ NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
       make_unique<im::MemDeref>(0, make_unique<im::Temp>(tArrAddr), nullptr, 8),
       make_unique<im::Temp>(tLen));
 
-  // TODO: Zero/null initialize array
   // TODO: Throw if less than 0
 
   vector<im::StmtPtr> stmts;

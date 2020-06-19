@@ -180,7 +180,7 @@ Stmts -> { vector<StmtPtr> }
 
 Stmt -> { StmtPtr }
   := IF LPAREN Expr RPAREN Block                 % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %
-   | IF LPAREN Expr RPAREN Block ELSE Stmt       % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+   | IF LPAREN Expr RPAREN Block ELSE ElseStmt   % make_unique<If>(move(#2), move(#4), move(#6), #line) %
    | WHILE LPAREN Expr RPAREN Block              % make_unique<While>(move(#2), move(#4), #line) %
    | RETURN SEMI                                 % make_unique<Return>(optional<ExprPtr>(), #line) %
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
@@ -199,6 +199,11 @@ Stmt -> { StmtPtr }
    | LValue XOREQ Expr SEMI                      % make_unique<Update>(move(#0), BOp::XOR, move(#2)) %
    | LValue LSHIFTEQ Expr SEMI                   % make_unique<Update>(move(#0), BOp::LSHIFT, move(#2)) %
    | LValue ARSHIFTEQ Expr SEMI                  % make_unique<Update>(move(#0), BOp::ARSHIFT, move(#2)) %
+
+ElseStmt -> { StmtPtr }
+  := Block                                      % move(#0) %
+   | IF LPAREN Expr RPAREN Block ELSE ElseStmt  % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+
 
 Expr -> { ExprPtr }
   := NUM                                         % make_unique<ConstInt>(#0, #line) %
