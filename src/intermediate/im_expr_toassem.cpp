@@ -394,6 +394,12 @@ int Expr::toAssemInstrs(vector<assem::InstrPtr>& instrs) const {
   return temp;
 }
 
+std::string Expr::asmChunk(size_t numBytes, bool asSrc, size_t index) const {
+  ostringstream ret;
+  ret << '`' << numBytes << (asSrc ? 'S' : 'D') << index;
+  return ret.str();
+}
+
 std::ostream& operator<<(std::ostream& out, ExprType exprType) {
   switch (exprType) {
     case ExprType::BINOP:
@@ -421,10 +427,31 @@ std::ostream& operator<<(std::ostream& out, ExprType exprType) {
   }
 }
 
-std::string Expr::asmChunk(size_t numBytes, bool asSrc, size_t index) const {
-  ostringstream ret;
-  ret << '`' << numBytes << (asSrc ? 'S' : 'D') << index;
-  return ret.str();
+std::ostream& operator<<(std::ostream& out, BOp bOp) {
+  switch (bOp) {
+    case BOp::PLUS:
+      return out << "+";
+    case BOp::MUL:
+      return out << "*";
+    case BOp::MINUS:
+      return out << "-";
+    case BOp::DIV:
+      return out << "/";
+    case BOp::MOD:
+      return out << "%";
+    case BOp::AND:
+      return out << "&";
+    case BOp::OR:
+      return out << "|";
+    case BOp::XOR:
+      return out << "^";
+    case BOp::LSHIFT:
+      return out << "<<";
+    case BOp::ARSHIFT:
+      return out << ">>";
+    default:
+      throw invalid_argument("BOp::operator<<");
+  }
 }
 
 }  // namespace im

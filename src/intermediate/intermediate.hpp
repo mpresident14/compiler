@@ -69,6 +69,8 @@ enum class BOp { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, ARSHIFT, XOR };
 
 enum class ROp { EQ, NEQ, LT, GT, LTE, GTE };
 
+std::ostream& operator<<(std::ostream& out, BOp bOp);
+
 
 /********
  * Decl *

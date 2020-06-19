@@ -122,20 +122,30 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
   }
 }
 
+namespace {
+  bool checkIntegral(const Type& type, im::BOp op, size_t line, Ctx& ctx) {
+    if (!isIntegral(type)) {
+      ostringstream err;
+      err << "Binary operator " << op << " expected integral types, got "
+          << type;
+      ctx.getLogger().logError(line, err.str());
+      return false;
+    }
+    return true;
+  }
+}  // namespace
 
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   ExprInfo eInfo1 = e1_->toImExpr(ctx);
   ExprInfo eInfo2 = e2_->toImExpr(ctx);
   TypePtr& type1 = eInfo1.type;
   TypePtr& type2 = eInfo2.type;
-  if (!isIntegral(*type1)) {
-    // TODO: Specify which operator
-    ctx.getLogger().logError(
-        e1_->line_, "Binary operator expected integral types");
-  }
-  if (!isIntegral(*type2)) {
-    ctx.getLogger().logError(
-        e2_->line_, "Binary operator expected integral types");
+  // We are not using toImExprAssert(isIntegral) b/c need to access the types to
+  // figure out which type the result should be
+  bool isOk = checkIntegral(*type1, op, e1_->line_, ctx);
+  isOk &= checkIntegral(*type2, op, e2_->line_, ctx);
+  if (!isOk) {
+    return dummyInfo();
   }
   return { make_unique<im::BinOp>(move(eInfo1.imExpr), move(eInfo2.imExpr), op),
            type1->numBytes > type2->numBytes ? move(type1) : move(type2) };
@@ -149,12 +159,12 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   string newVar = TempVar::newVar();
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
   ifBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar, e1_->line_ ), move(e1_)));
+      make_unique<Assign>(make_unique<TempVar>(newVar, e1_->line_), move(e1_)));
 
   unique_ptr<Block> elseBlock =
       make_unique<Block>(vector<StmtPtr>{}, e2_->line_);
   elseBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar, e2_->line_ ), move(e2_)));
+      make_unique<Assign>(make_unique<TempVar>(newVar, e2_->line_), move(e2_)));
 
   vector<im::StmtPtr> imStmts;
   If(move(boolE_), move(ifBlock), move(elseBlock), line_)
@@ -374,15 +384,11 @@ ExprInfo TempVar::toImExpr(Ctx& ctx) {
   return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
 }
 
-bool TempVar::isInitialized(Ctx& ctx) {
-  return ctx.lookupTempVar(name_);
-}
+bool TempVar::isInitialized(Ctx& ctx) { return ctx.lookupTempVar(name_); }
 
 void TempVar::init(TypePtr rhsType, Ctx& ctx) {
   ctx.insertVar(name_, move(rhsType), 0);
 }
-
-
 
 
 /********
