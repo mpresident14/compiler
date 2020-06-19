@@ -152,7 +152,8 @@ ExprPtr MemDeref::optimize() {
     }
   }
 
-  return make_unique<MemDeref>(offset_, addr_->optimize(), move(multOpt), numBytes_);
+  return make_unique<MemDeref>(
+      offset_, addr_->optimize(), move(multOpt), numBytes_);
 }
 
 /**************
@@ -214,6 +215,11 @@ ExprPtr HalfConst::optimize() {
   // Const optimization
   if (n_ == 0) {
     switch (bOp_) {
+      case BOp::LSHIFT:
+        if (reversed_) {
+          throw invalid_argument("HalfConst::optimize(n == 0, LSHIFT)");
+        }
+        // Fall thru
       case BOp::PLUS:
       case BOp::OR:
         return eOpt;
@@ -243,6 +249,11 @@ ExprPtr HalfConst::optimize() {
         return eOpt;
       case BOp::AND:
       case BOp::OR:
+      case BOp::LSHIFT:
+        if (reversed_) {
+          throw invalid_argument("HalfConst::optimize(n == 0, LSHIFT)");
+        }
+        // Fall thru
       case BOp::XOR:
         return make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_);
       default:
