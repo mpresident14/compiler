@@ -9,8 +9,6 @@ using namespace std;
 
 namespace im {
 
-// TODO: Can I just use ints for labels other than actual functions???
-// String copying is a lot, especially b/c of SSO
 
 /*************
  * MakeLabel *
@@ -227,9 +225,6 @@ ExprStmt::ExprStmt(ExprPtr&& expr) : expr_(move(expr)) {}
 
 
 void ExprStmt::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  // NOTE: This will create a wasted move to a new temp since we don't need the
-  // return value, but it will be removed in flowgraph.cpp when we find
-  // undefined variables
   expr_->optimize()->toAssemInstrs(instrs);
 }
 

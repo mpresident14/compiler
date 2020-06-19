@@ -38,8 +38,7 @@ public:
   size_t line_;
 };
 
-// TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data
-// member
+
 enum class ExprType {
   CONST_INT,
   CONST_CHAR,

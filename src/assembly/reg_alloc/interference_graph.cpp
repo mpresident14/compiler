@@ -2,8 +2,6 @@
 
 #include <prez/print_stuff.hpp>
 
-// TODO: Move this and related files to x86gen/regalloc folder
-
 using namespace std;
 using namespace assem;
 
