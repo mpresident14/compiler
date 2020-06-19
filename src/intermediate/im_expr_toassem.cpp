@@ -19,7 +19,7 @@ void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 }
 
 
-string Const::asmChunk(bool, size_t) const {
+string Const::asmChunk(size_t, bool, size_t) const {
   return "$" + to_string(n_);
 }
 
@@ -413,11 +413,10 @@ std::ostream& operator<<(std::ostream& out, ExprType exprType) {
 }
 
 // TODO: Change the size from 8 when we add this field to Expr
-std::string Expr::asmChunk(bool asSrc, size_t index) const {
-  string ret = "`8";
-  ret.push_back(asSrc ? 'S' : 'D');
-  ret.append(to_string(index));
-  return ret;
+std::string Expr::asmChunk(size_t numBytes, bool asSrc, size_t index) const {
+  ostringstream ret;
+  ret << '`' << numBytes << (asSrc ? 'S' : 'D') << index;
+  return ret.str();
 }
 
 }  // namespace im

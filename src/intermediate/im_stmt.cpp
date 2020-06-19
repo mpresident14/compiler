@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <prez/print_stuff.hpp>
+
 using namespace std;
 
 namespace im {
@@ -103,8 +105,8 @@ namespace {
 void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   ExprPtr eOpt1 = e1_->optimize();
   ExprPtr eOpt2 = e2_->optimize();
-  string asmChunk1 = eOpt1->asmChunk(true, 0);
-  string asmChunk2 = eOpt2->asmChunk(true, 0);
+  string asmChunk1 = eOpt1->asmChunk(8, true, 0);
+  string asmChunk2 = eOpt2->asmChunk(8, true, 0);
   vector<int> srcTemps;
 
   bool needsFlip = false;
@@ -187,20 +189,27 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   } else if (lhsType == ExprType::MEM_DEREF) {
     // Move e2 into the address of e1
 
-    // Of the form {tRhs, tAddr, tMult?}
+    // Of the form {tRhs?, tAddr, tMult?}
     vector<int> srcTemps;
-    srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
+    size_t tempIndex = 0;
     const MemDeref* memDeref = static_cast<MemDeref*>(eOpt1.get());
+    size_t numBytes = memDeref->getNumBytes();
+
+    string asmChunk2 = eOpt2->asmChunk(numBytes, true, 0);
+    if (!isConstChunk(asmChunk2)) {
+      ++tempIndex;
+      srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
+    }
+
     srcTemps.push_back(memDeref->getAddr()->toAssemInstrs(instrs));
     bool useMult = memDeref->hasMult();
     if (useMult) {
       srcTemps.push_back(memDeref->getMult()->toAssemInstrs(instrs));
     }
 
-    size_t numBytes = memDeref->getNumBytes();
     ostringstream asmOp;
-    asmOp << "mov" << toInstrLetter(numBytes) << " `" << numBytes << "S0, "
-          << memDeref->genAsmCode(1, useMult);
+    asmOp << "mov" << toInstrLetter(numBytes) << ' ' << asmChunk2 << ", "
+          << memDeref->genAsmCode(tempIndex, useMult);
     instrs.emplace_back(
         new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {

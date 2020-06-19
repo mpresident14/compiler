@@ -240,9 +240,6 @@ void Operation::toCode(
             bytesChar,
             varToStackOffset);
       } else {
-        // TODO: Remove this case when done
-        cout << asmCode_ << endl;
-        cout << srcs_ << endl;
         throw runtime_error("Operation::toCode");
       }
       i += 4;
