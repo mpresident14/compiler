@@ -92,7 +92,7 @@ ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
 
-TempVar::TempVar(string_view name) : Expr(0), name_(name) {}
-ExprPtr TempVar::clone() const { return make_unique<TempVar>(name_); }
+TempVar::TempVar(string_view name, size_t line) : Expr(line), name_(name) {}
+ExprPtr TempVar::clone() const { return make_unique<TempVar>(name_, line_); }
 
 }  // namespace language

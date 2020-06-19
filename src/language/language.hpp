@@ -474,13 +474,13 @@ class TempVar : public Expr {
 public:
   static std::string newVar();
 
-  TempVar(std::string_view name);
+  TempVar(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
-  /* If not initialized, adds the variable with the specified type to the
-   * context */
-  void maybeInit(TypePtr rhsType, Ctx& ctx);
+
+  bool isInitialized(Ctx& ctx);
+  void init(TypePtr rhsType, Ctx& ctx);
 
 
   std::string name_;

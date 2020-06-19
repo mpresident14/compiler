@@ -61,7 +61,9 @@ constexpr bool isRegister(int temp) noexcept { return temp >= 0; }
 // https://www.google.com/search?q=x86-64+register+sizes&sxsrf=ALeKk00XGcYm9CEIDtkl5b5vE3VJzDF05A:1591242890593&source=lnms&tbm=isch&sa=X&ved=2ahUKEwjywvrZoefpAhUJv54KHaYCCQgQ_AUoAnoECAwQBA&biw=832&bih=851#imgrc=srauU5gulxAS2M
 std::string regToString(MachineReg machineReg, u_char numBytes);
 
-static int temp = -1;
-inline int newTemp() noexcept { return temp--; }
+inline int newTemp() noexcept {
+  static int temp = -1;
+  return temp--;
+}
 
 #endif

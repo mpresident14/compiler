@@ -89,8 +89,7 @@ ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType exprType = expr_->getType();
   if (!(exprType == ExprType::CALL_EXPR)) {
-    ctx.getLogger().logWarning(
-        line_, "The value of this expression is unused.");
+    ctx.getLogger().logWarning(line_, "Unused expression.");
     return;
   }
 
@@ -134,10 +133,16 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType lhsExprType = lhs_->getType();
   if (lhsExprType == ExprType::TEMP_VAR) {
     TempVar* tempVar = static_cast<TempVar*>(lhs_.get());
-    ExprInfo rhsInfo = rhs_->toImExpr(ctx);
-    tempVar->maybeInit(rhsInfo.type, ctx);
-    imStmts.emplace_back(new im::Assign(
-        tempVar->toImExprAssert(*rhsInfo.type, ctx), move(rhsInfo.imExpr)));
+    if (tempVar->isInitialized(ctx)) {
+      ExprInfo lhsInfo = tempVar->toImExpr(ctx);
+      imStmts.emplace_back(new im::Assign(
+          move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
+    } else {
+      ExprInfo rhsInfo = rhs_->toImExpr(ctx);
+      tempVar->init(rhsInfo.type, ctx);
+      imStmts.emplace_back(new im::Assign(
+          tempVar->toImExpr(ctx).imExpr, move(rhsInfo.imExpr)));
+    }
   } else {
     ExprInfo lhsInfo = lhs_->toImExpr(ctx);
     switch (lhsExprType) {

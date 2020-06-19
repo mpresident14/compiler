@@ -18,9 +18,6 @@ language::ExprInfo dummyInfo() {
 
 namespace language {
 
-// TODO: Using a constant that is too big for stol should log an informative
-// error
-
 /************
  * ConstInt *
  ************/
@@ -148,32 +145,22 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
  * TernaryOp *
  *************/
 
-/* This is really similar to If, but using If directly would require a Temp
- * class (since VarDecls are removed at the end of a block) and we would have to
- * convert
- * one of the expressions twice in order to make sure they are the same type */
-// TODO: If needed elsewhere, create a Temp type and declare it in the if part.
-// Then the else piece can handle the typechecking
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
-  // Make sure expressions are the same type
-  // ExprInfo exprInfo = e1_->toImExpr(ctx);
-  // im::ExprPtr imExpr2 = e2_->toImExprAssert(*exprInfo.type, ctx);
-
   string newVar = TempVar::newVar();
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
   ifBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar), move(e1_)));
+      make_unique<Assign>(make_unique<TempVar>(newVar, e1_->line_ ), move(e1_)));
 
   unique_ptr<Block> elseBlock =
       make_unique<Block>(vector<StmtPtr>{}, e2_->line_);
   elseBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar), move(e2_)));
+      make_unique<Assign>(make_unique<TempVar>(newVar, e2_->line_ ), move(e2_)));
 
   vector<im::StmtPtr> imStmts;
   If(move(boolE_), move(ifBlock), move(elseBlock), line_)
       .toImStmts(imStmts, ctx);
 
-  ExprInfo exprInfo = TempVar(newVar).toImExpr(ctx);
+  ExprInfo exprInfo = TempVar(newVar, line_).toImExpr(ctx);
   return { make_unique<im::DoThenEval>(move(imStmts), move(exprInfo.imExpr)),
            move(exprInfo.type) };
 }
@@ -388,11 +375,15 @@ ExprInfo TempVar::toImExpr(Ctx& ctx) {
   return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
 }
 
-void TempVar::maybeInit(TypePtr rhsType, Ctx& ctx) {
-  if (!ctx.lookupTempVar(name_)) {
-    ctx.insertVar(name_, move(rhsType), 0);
-  }
+bool TempVar::isInitialized(Ctx& ctx) {
+  return ctx.lookupTempVar(name_);
 }
+
+void TempVar::init(TypePtr rhsType, Ctx& ctx) {
+  ctx.insertVar(name_, move(rhsType), 0);
+}
+
+
 
 
 /********
