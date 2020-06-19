@@ -339,17 +339,21 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
  * Leaq *
  ********/
 
-Leaq::Leaq(ExprPtr&& e1, ExprPtr&& e2, u_char n)
-    : e1_(move(e1)), e2_(move(e2)), n_(n) {}
+Leaq::Leaq(long offset, ExprPtr&& e1, ExprPtr&& e2, u_char n)
+    : offset_(offset), e1_(move(e1)), e2_(move(e2)), n_(n) {}
 
 
 void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   int t1 = e1_->toAssemInstrs(instrs);
   int t2 = e2_->toAssemInstrs(instrs);
-  string asmCode =
-      string("leaq (`8S0, `8S1, ").append(to_string(n_)).append("), `8D0");
+  ostringstream asmCode;
+  asmCode << "leaq ";
+  if (offset_ != 0) {
+    asmCode << offset_;
+  }
+  asmCode << "(`8S0, `8S1, " << (size_t) n_ << "), `8D0";
   instrs.emplace_back(
-      new assem::Operation(move(asmCode), { t1, t2 }, { temp }, true));
+      new assem::Operation(asmCode.str(), { t1, t2 }, { temp }, true));
 }
 
 

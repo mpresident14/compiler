@@ -306,7 +306,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-private:
+// private:
   std::vector<StmtPtr> stmts_;
   ExprPtr expr_;
 };
@@ -373,7 +373,7 @@ public:
 
 class Leaq : public Expr {
 public:
-  Leaq(ExprPtr&& e1, ExprPtr&& e2, u_char n);
+  Leaq(long offset, ExprPtr&& e1, ExprPtr&& e2, u_char n);
   constexpr ExprType getType() const noexcept override {
     return ExprType::LEAQ;
   }
@@ -382,6 +382,7 @@ public:
   ExprPtr optimize() override;
 
   // private:
+  long offset_;
   ExprPtr e1_;
   ExprPtr e2_;
   u_char n_;

@@ -47,13 +47,13 @@ ExprPtr BinOp::optimize() {
     HalfConst* halfConst = dynamic_cast<HalfConst*>(eOpt1.get());
     if (isValidLeaq(halfConst)) {
       return make_unique<Leaq>(
-          move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
+          0, move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
     }
 
     halfConst = dynamic_cast<HalfConst*>(eOpt2.get());
     if (isValidLeaq(halfConst)) {
       return make_unique<Leaq>(
-          move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
+          0, move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
     }
   }
 
@@ -278,7 +278,24 @@ ExprPtr HalfConst::optimize() {
                   make_unique<Temp>(t), setBits[0], BOp::LSHIFT, reversed_),
               make_unique<HalfConst>(
                   make_unique<Temp>(t), setBits[1], BOp::LSHIFT, reversed_),
-              BOp::PLUS));
+              BOp::PLUS)
+              ->optimize());
+    }
+  }
+
+  // If expr is a leaq (which may be wrapped in a DoThenEval), just set the leaq
+  // offset to n_
+  if (bOp_ == BOp::PLUS) {
+    if (Leaq* leaq = dynamic_cast<Leaq*>(eOpt.get())) {
+      return make_unique<Leaq>(
+          leaq->offset_ + n_, move(leaq->e1_), move(leaq->e2_), leaq->n_);
+    } else if (DoThenEval* dte = dynamic_cast<DoThenEval*>(eOpt.get())) {
+      if (Leaq* leaq = dynamic_cast<Leaq*>(dte->expr_.get())) {
+        return make_unique<DoThenEval>(
+          move(dte->stmts_),
+          make_unique<Leaq>(
+              leaq->offset_ + n_, move(leaq->e1_), move(leaq->e2_), leaq->n_));
+      }
     }
   }
 
@@ -291,7 +308,7 @@ ExprPtr HalfConst::optimize() {
  ********/
 
 ExprPtr Leaq::optimize() {
-  return make_unique<Leaq>(e1_->optimize(), e2_->optimize(), n_);
+  return make_unique<Leaq>(offset_, e1_->optimize(), e2_->optimize(), n_);
 }
 
 
