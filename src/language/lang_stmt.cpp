@@ -21,7 +21,6 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<pair<string, size_t>> newVars;
   for (StmtPtr& stmt : stmts_) {
     stmt->toImStmts(imStmts, ctx);
-    // TODO: Maybe remove this and replace with StmtType
     if (VarDecl* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
       newVars.emplace_back(varDecl->name_, varDecl->line_);
     }
@@ -200,17 +199,12 @@ void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  // TODO: Separate search path for function defined by language
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
+  vector<string> toStringPath = Program::importPathParts;
+  toStringPath.push_back("to_string");
   im::ExprPtr callToString = CallExpr(
-                                 { "home",
-                                   "mpresident",
-                                   "cs",
-                                   "compiler",
-                                   "src",
-                                   "imports",
-                                   "to_string" },
+                                move(toStringPath),
                                  "toString",
                                  move(toPrint),
                                  line_)

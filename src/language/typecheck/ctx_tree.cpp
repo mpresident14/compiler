@@ -11,7 +11,6 @@ using namespace std;
 namespace {
 
 vector<string> splitPath(string_view importPath) {
-  // TODO: Does this/our parser handle absolute paths?
   importPath = importPath.substr(0, importPath.size() - sizeof(".prez") + 1);
   vector<string> pathParts;
   boost::split(pathParts, importPath, [](char c) { return c == '/'; });

@@ -153,6 +153,12 @@ struct Import {
 
 class Program {
 public:
+  static void setImportPath(std::string_view importPath);
+
+  /* Directory for imports provided by the language */
+  static std::string importDir;
+  static std::vector<std::string> importPathParts;
+
   Program(std::vector<Import>&& imports, std::vector<DeclPtr>&& decls);
   assem::Program toAssemProg() const;
   void initContext(

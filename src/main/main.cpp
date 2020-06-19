@@ -25,7 +25,7 @@ using namespace std;
 
 /* Return true if no errors */
 bool compile(const string& srcFilename, const string& asmFilename) {
-  unordered_map<string, std::unique_ptr<language::Program>> initializedProgs;
+  unordered_map<string, unique_ptr<language::Program>> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
@@ -83,6 +83,9 @@ bool compile(const string& srcFilename, const string& asmFilename) {
 
 
 int main(int, char** argv) {
+  #ifndef __INTELLISENSE__
+  language::Program::setImportPath(IMPORT_DIR);
+  #endif
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 

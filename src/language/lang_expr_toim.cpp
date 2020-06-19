@@ -265,7 +265,7 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
            make_unique<Array>(type_) };
 }
 
-std::pair<vector<im::StmtPtr>, int>
+pair<vector<im::StmtPtr>, int>
 NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
   int tLen = newTemp();
 
@@ -389,7 +389,7 @@ void TempVar::init(TypePtr rhsType, Ctx& ctx) {
  * Expr *
  ********/
 template <typename F>
-ExprInfo Expr::toImExprAssert(F&& condFn, std::string_view errMsg, Ctx& ctx) {
+ExprInfo Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
   if (!condFn(*exprInfo.type)) {
     ctx.getLogger().logError(line_, errMsg);

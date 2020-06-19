@@ -85,7 +85,7 @@ ExprPtr ArrayAccess::clone() const {
 
 MemberAccess::MemberAccess(
     ExprPtr&& objExpr,
-    std::string_view member,
+    string_view member,
     size_t line)
     : Expr(line), objExpr_(move(objExpr)), member_(member) {}
 ExprPtr MemberAccess::clone() const {

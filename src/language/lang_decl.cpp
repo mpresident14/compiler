@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#include <boost/algorithm/string/split.hpp>
+
 using namespace std;
 
 
@@ -22,10 +24,19 @@ namespace language {
  * Program *
  ***********/
 
+string Program::importDir = "";
+vector<string> Program::importPathParts = {};
+
+void Program::setImportPath(string_view importPath) {
+  importDir = importPath;
+  boost::split(importPathParts, importPath, [](char c) { return c == '/'; });
+}
+
+
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {
   imports_.push_back(
-      { "/home/mpresident/cs/compiler/src/imports/to_string.prez", 0 });
+      { importDir + "/to_string.prez", 0 });
 }
 
 
