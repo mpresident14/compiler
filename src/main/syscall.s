@@ -45,17 +45,18 @@ __malloc:
   pushq %r12
   pushq %r13
   movq __mallocaddr(%rip), %r12
-  movq __heaptop(%rip), %rcx
   movq %rdi, %r13
   # mallocAddr + numBytes
-  movq %r12, %rax
-  addq %r13, %rax
+  leaq (%r12, %r13), %rax
   # #if (mallocaddr + numBytes > __heaptop)
-  cmpq %rcx, %rax
+  cmpq __heaptop(%rip), %rax
   jbe LDONE
-  # TODO: Should allocate min(numBytes, 4096)
-  # heaptop = brk(4096)
+  # heaptop = brk(max(numBytes, 4096))
+  cmpq $4096, %rdi
+  jg LCONT
+L4096:
   movq $4096, %rdi
+LCONT:
   callq __brk
   movq %rax, __heaptop(%rip)
 LDONE:
