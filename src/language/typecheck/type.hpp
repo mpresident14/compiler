@@ -49,6 +49,7 @@ struct Class : public Type {
 constexpr bool isIntegral(const Type& t) { return t.isIntegral; }
 bool isConvertible(const Type& from, const Type& to, bool* isNarrowing);
 std::pair<long, long> minMaxValue(const Type& integralType);
+TypePtr smallestIntegral(long n);
 
 bool operator==(const Type& t1, const Type& t2) noexcept;
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;

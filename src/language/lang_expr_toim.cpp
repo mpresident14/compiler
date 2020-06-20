@@ -21,10 +21,11 @@ namespace language {
 /************
  * ConstInt *
  ************/
+
 ExprInfo ConstInt::toImExpr(Ctx&) {
-  // NOTE: Constant integers are intType by default, but since we store them
-  // as a long, it allows an implicit conversion to longType if required
-  return { make_unique<im::Const>(n_), intType };
+  // Constant integers are the smallest type possible so that we allow implicit
+  // conversion to larger types if required
+  return { make_unique<im::Const>(n_), smallestIntegral(n_) };
 }
 
 /*************
@@ -200,7 +201,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(
-                   ctx.mangleFn(name_, fnInfo->declFile, paramTypes)),
+                   ctx.mangleFn(name_, fnInfo->declFile, fnInfo->paramTypes)),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
@@ -407,34 +408,16 @@ ExprInfo Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
   const Type& eType = *exprInfo.type;
-  if (eType != type) {
-    bool isNarrowing;
-    if (isConvertible(eType, type, &isNarrowing)) {
-      if (isNarrowing) {
-        long n;
-        if (getType() == ExprType::CONST_INT) {
-          n = static_cast<const ConstInt&>(*this).n_;
-        } else if (getType() == ExprType::CONST_CHAR) {
-          n = static_cast<const ConstChar&>(*this).c_;
-        } else {
-          goto warnNarrow;
-        }
-
-        pair<long, long> limits = minMaxValue(type);
-        if (n < limits.first || n > limits.second) {
-          goto warnNarrow;
-        }
-      }
-    } else {
-      ctx.typeError(type, eType, line_);
+  bool isNarrowing;
+  if (isConvertible(eType, type, &isNarrowing)) {
+    if (isNarrowing) {
+      ostream& warning = ctx.getLogger().logWarning(line_);
+      warning << "Narrowing conversion from " << eType << " to " << type;
     }
+  } else {
+    ctx.typeError(type, eType, line_);
   }
 
-  return move(exprInfo.imExpr);
-
-warnNarrow:
-  ostream& warning = ctx.getLogger().logWarning(line_);
-  warning << "Narrowing conversion from " << eType << " to " << type;
   return move(exprInfo.imExpr);
 }
 

@@ -141,18 +141,16 @@ void Ctx::insertFn(
 }
 
 
-// TODO: Need to allow implicit conversions between integral types
 Ctx::FnLookupInfo Ctx::lookupFn(
     const string& name,
     const vector<TypePtr>& paramTypes) {
-
   vector<const FnInfo*> wideMatches;
   vector<const FnInfo*> narrowMatches;
   auto iterPair = fnMap_.equal_range(name);
 
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
-    bool isNarrowing;
+    bool isNarrowing = false;
     if (equal(
             paramTypes.cbegin(),
             paramTypes.cend(),
@@ -161,7 +159,7 @@ Ctx::FnLookupInfo Ctx::lookupFn(
       // Exact match
       return { FnLookupRes::FOUND,
                { std::vector<const FnInfo*>{ &iter->second } },
-               "" };
+               filename_ };
     } else if (equal(
                    paramTypes.cbegin(),
                    paramTypes.cend(),
@@ -178,7 +176,7 @@ Ctx::FnLookupInfo Ctx::lookupFn(
         // No need to keep track of narrowing matches if we already found a
         // widening match
         narrowMatches.push_back(&iter->second);
-      } else {
+      } else if (!isNarrowing) {
         wideMatches.push_back(&iter->second);
       }
     }
@@ -188,12 +186,12 @@ Ctx::FnLookupInfo Ctx::lookupFn(
   const vector<const FnInfo*>* matchVec =
       wideMatches.empty() ? &narrowMatches : &wideMatches;
   if (matchVec->size() > 1) {
-    return { FnLookupRes::MULTIPLE, { move(*matchVec) }, "" };
+    return { FnLookupRes::AMBIG_OVERLOAD, { move(*matchVec) }, filename_ };
   } else if (matchVec->size() == 1) {
     return { matchVec == &narrowMatches ? FnLookupRes::NARROWING
                                         : FnLookupRes::FOUND,
              { move(*matchVec) },
-             "" };
+             filename_ };
   } else {
     // No matches
     vector<const FnInfo*> candidates;
@@ -202,7 +200,7 @@ Ctx::FnLookupInfo Ctx::lookupFn(
         iterPair.second,
         back_inserter(candidates),
         [](const auto& p) { return &p.second; });
-    return { FnLookupRes::UNDEFINED, move(candidates), "" };
+    return { FnLookupRes::UNDEFINED, move(candidates), filename_ };
   }
 }
 
@@ -217,13 +215,24 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
                          : ctxTree_.lookupFn(qualifiers, name, paramTypes);
 
   switch (lookupInfo.res) {
-    case FnLookupRes::NARROWING:
-      logger.logError(line, "TODO: NARROWING error");
-      // Fall thru
+    case FnLookupRes::NARROWING: {
+      const FnInfo* fnInfo = get<0>(lookupInfo.candidates).front();
+      // This function duplicates some work we already did, but it would take
+      // more effort to keep track of the narrowing conversions as we search for
+      // a feasible overload
+      warnNarrow(paramTypes, fnInfo->paramTypes, line);
+      return fnInfo;
+    }
     case FnLookupRes::FOUND:
       return get<0>(lookupInfo.candidates).front();
-    case FnLookupRes::MULTIPLE:
-      logger.logError(line, "TODO: MULTIPLE error");
+    case FnLookupRes::AMBIG_OVERLOAD:
+      ambigOverload(
+          qualifiers,
+          name,
+          paramTypes,
+          line,
+          get<0>(lookupInfo.candidates),
+          lookupInfo.filename);
       return nullptr;
     case FnLookupRes::UNDEFINED:
       undefinedFn(
@@ -232,7 +241,7 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
           paramTypes,
           line,
           get<0>(lookupInfo.candidates),
-          filename_);
+          lookupInfo.filename);
       return nullptr;
     case FnLookupRes::BAD_QUALS:
       undefFnBadQuals(qualifiers, name, paramTypes, line);
@@ -300,6 +309,39 @@ void Ctx::undefFnAmbigQuals(
   err << "'. Found";
   for (const std::string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;
+  }
+}
+
+void Ctx::ambigOverload(
+    const vector<string>& qualifiers,
+    string_view fnName,
+    const vector<TypePtr>& paramTypes,
+    size_t line,
+    const vector<const Ctx::FnInfo*>& candidates,
+    string_view searchedFile) {
+  ostream& err = logger.logError(line);
+  err << "Call of overloaded function '" << qualifiedFn(qualifiers, fnName);
+  streamParamTypes(paramTypes, err);
+  err << "' is ambiguous. Candidate functions in " << searchedFile << ":";
+  for (const FnInfo* fnInfo : candidates) {
+    err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' '
+        << fnName;
+    streamParamTypes(fnInfo->paramTypes, err);
+  }
+}
+
+void Ctx::warnNarrow(
+    const vector<TypePtr>& fromTypes,
+    const vector<TypePtr>& toTypes,
+    size_t line) {
+  size_t len = fromTypes.size();
+  for (size_t i = 0; i < len; ++i) {
+    const Type& from = *fromTypes[i];
+    const Type& to = *toTypes[i];
+    if (from.numBytes > to.numBytes) {
+      ostringstream& warn = logger.logWarning(line);
+      warn << "Narrowing conversion from " << from << " to " << to;
+    }
   }
 }
 

@@ -35,7 +35,7 @@ public:
   enum class FnLookupRes {
     FOUND,
     UNDEFINED,
-    MULTIPLE,
+    AMBIG_OVERLOAD,
     NARROWING,
     BAD_QUALS,
     AMBIG_QUALS
@@ -151,29 +151,40 @@ public:
       size_t line,
       const std::vector<const std::string*> candidates,
       std::string_view searchedPath);
-  /* Mangle all user functions based on the filename (non-user functions begin
-   * with '_') Return the function name if it doesn't need to be mangled */
-  std::string mangleFn(
+  void ambigOverload(
+      const std::vector<std::string>& qualifiers,
       std::string_view fnName,
-      const std::string& filename,
-      const std::vector<TypePtr>& paramTypes);
-  void addFileId(size_t id, std::string_view filename);
-  void typeError(const Type& expected, const Type& got, size_t line);
-  void displayLogs() const;
-  bool hasErrors() const noexcept;
+      const std::vector<TypePtr>& paramTypes,
+      size_t line,
+      const std::vector<const FnInfo*>& candidates,
+      std::string_view searchedFile);
+  void warnNarrow(
+      const std::vector<TypePtr>& fromTypes,
+      const std::vector<TypePtr>& toTypes,
+      size_t line);
+    /* Mangle all user functions based on the filename (non-user functions begin
+     * with '_') Return the function name if it doesn't need to be mangled */
+    std::string mangleFn(
+        std::string_view fnName,
+        const std::string& filename,
+        const std::vector<TypePtr>& paramTypes);
+    void addFileId(size_t id, std::string_view filename);
+    void typeError(const Type& expected, const Type& got, size_t line);
+    void displayLogs() const;
+    bool hasErrors() const noexcept;
 
 
-private:
-  void removeTemp(const std::string& var, size_t line);
+  private:
+    void removeTemp(const std::string& var, size_t line);
 
-  std::unordered_map<std::string, VarInfo> varMap_;
-  std::unordered_multimap<std::string, FnInfo> fnMap_;
-  TypePtr currentRetType_;
-  std::string filename_;
-  Logger logger;
-  CtxTree ctxTree_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds_;
-};
+    std::unordered_map<std::string, VarInfo> varMap_;
+    std::unordered_multimap<std::string, FnInfo> fnMap_;
+    TypePtr currentRetType_;
+    std::string filename_;
+    Logger logger;
+    CtxTree ctxTree_;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds_;
+  };
 
 #endif  // CONTEXT_HPP

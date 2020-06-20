@@ -38,6 +38,13 @@ string Class::getId(const unordered_map<string, string>& typeIds) const {
 
 
 bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
+  if (from == to) {
+    if (isNarrowing) {
+      *isNarrowing = false;
+    }
+    return true;
+  }
+
   if (isIntegral(from) && isIntegral(to)) {
     if (isNarrowing) {
       if (to.numBytes < from.numBytes) {
@@ -48,6 +55,7 @@ bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
     }
     return true;
   }
+
   return false;
 }
 
@@ -68,6 +76,17 @@ pair<long, long> minMaxValue(const Type& integralType) {
     default:
       throw invalid_argument("minMaxValue: Not an integral type");
   }
+}
+
+TypePtr smallestIntegral(long n) {
+  static TypePtr constIntTypes[]{ shortType, intType, longType };
+  for (const TypePtr& type : constIntTypes) {
+    auto p = minMaxValue(*type);
+    if (p.first <= n && n <= p.second) {
+      return type;
+    }
+  }
+  throw invalid_argument("smallestIntegral");
 }
 
 bool operator==(const Type& t1, const Type& t2) noexcept {
