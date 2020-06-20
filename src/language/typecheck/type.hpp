@@ -13,9 +13,6 @@
  * Type *
  ********/
 
-// TODO: Benchmark virtual function call for getType() vs a <BaseClass>Type data
-// member
-
 /* ANY used to proceed through errors */
 enum class TypeName { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
@@ -31,8 +28,6 @@ struct Type {
   bool isIntegral;
 };
 
-// TODO: Shared pointer might make more sense, especially when we have more
-// complicated types like templates cuz we have a lot of copying
 using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {

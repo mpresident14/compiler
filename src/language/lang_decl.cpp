@@ -35,8 +35,7 @@ void Program::setImportPath(string_view importPath) {
 
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {
-  imports_.push_back(
-      { importDir + "/to_string.prez", 0 });
+  imports_.push_back({ importDir + "/to_string.prez", 0 });
 }
 
 
@@ -137,13 +136,24 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
 
   // Insert all the parameters as variables
-  // Move all parameters from argument registers into temporaries
+  // Move parameters from argument registers into temporaries
   //   (b/c if we call a function w/i this function, they will be overwritten)
   size_t numParams = paramTypes_.size();
-  for (size_t i = 0; i < numParams; ++i) {
+  size_t numRegParams = min(numParams, (size_t)6);
+  for (size_t i = 0; i < numRegParams; ++i) {
     int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
     imStmts.emplace_back(new im::Assign(
         make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
+  }
+
+  // Move extra parameters from stack into temporaries
+  for (size_t i = numRegParams; i < numParams; i++) {
+    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
+    size_t offset = 16 + 8 * (i - numRegParams);
+    imStmts.emplace_back(new im::Assign(
+        make_unique<im::Temp>(temp),
+        make_unique<im::MemDeref>(
+            offset, make_unique<im::Temp>(RBP), nullptr, 8)));
   }
 
   // Typecheck and compile the function

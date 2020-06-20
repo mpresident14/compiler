@@ -141,6 +141,7 @@ void Ctx::insertFn(
 }
 
 
+// TODO: Need to allow implicit conversions between integral types
 pair<
     const Ctx::FnInfo*,
     pair<

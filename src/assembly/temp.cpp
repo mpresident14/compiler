@@ -82,7 +82,7 @@ string regToString(MachineReg machineReg, u_char bytesChar) {
       ret.append("r15");
       break;
     default:
-      throw invalid_argument(to_string(machineReg) + " is not a register.");
+      throw invalid_argument("regToString" + to_string(machineReg) + " is not a register.");
   }
 
   switch (bytesChar) {

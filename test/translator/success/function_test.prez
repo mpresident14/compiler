@@ -10,6 +10,12 @@ bool isEqual(int a, int b) {
   return a == b;
 }
 
+long manyParams(int a, bool b, int c, long d, int e, int f, int g, char h) {
+  if (b) {
+    return a + c + d + e + f + g + h;
+  }
+}
+
 void main() {
   doNothing();
   print(inc(0));
@@ -19,4 +25,7 @@ void main() {
   if (isEqual(a, b)) {
     print(2);
   }
+
+  long d = 3;
+  print(manyParams(1,true,2,d,4,5,6,'a'));
 }

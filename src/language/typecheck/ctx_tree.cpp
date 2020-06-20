@@ -65,7 +65,6 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     Ctx& ctx,
     size_t line) const {
   list<string> filepath;
-  // TODO: Remove when done
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupFn");
   }

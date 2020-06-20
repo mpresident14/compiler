@@ -1,5 +1,6 @@
 #include "src/intermediate/intermediate.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <sstream>
 #include <stdexcept>
@@ -22,14 +23,19 @@ void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 namespace {
   long truncate(long n, size_t numBytes) {
     switch (numBytes) {
-      case 8: return n;
-      case 4: return (int) n;
-      case 2: return (short) n;
-      case 1: return (char) n;
-      default: throw invalid_argument("truncate: " + to_string(numBytes));
+      case 8:
+        return n;
+      case 4:
+        return (int)n;
+      case 2:
+        return (short)n;
+      case 1:
+        return (char)n;
+      default:
+        throw invalid_argument("truncate: " + to_string(numBytes));
     }
   }
-}
+}  // namespace
 
 string Const::asmChunk(size_t numBytes, bool, size_t) const {
   return "$" + to_string(truncate(n_, numBytes));
@@ -88,8 +94,7 @@ void BinOp::handleShifts(
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
   if (expr2_->getType() == ExprType::CONST) {
-    asmCode.append(expr2_->asmChunk(8, 0, 0))
-        .append(", `8D0");
+    asmCode.append(expr2_->asmChunk(8, 0, 0)).append(", `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
   } else {
     expr2_->toAssemInstrs(RCX, instrs);
@@ -250,17 +255,22 @@ CallExpr::CallExpr(
 
 
 void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  // Move params into argument registers
-  // TODO: If more than six params, need to put onto stack
   vector<int> srcTemps;
   size_t numParams = params_.size();
-  if (numParams > 6) {
-    throw runtime_error("TODO: More than 6 args not implemented yet");
-  }
-  for (size_t i = 0; i < numParams; ++i) {
+  size_t numRegParams = min(numParams, (size_t)6);
+
+  // Put up to 6 parameters in argument registers
+  for (size_t i = 0; i < numRegParams; ++i) {
     int argReg = ARG_REGS[i];
     params_[i]->toAssemInstrs(argReg, instrs);
     srcTemps.push_back(argReg);
+  }
+
+  // Put rest on the stack
+  for (long i = (long)numParams - 1; i >= 6; --i) {
+    cout << i << endl;
+    int t = params_[i]->toAssemInstrs(instrs);
+    instrs.emplace_back(new assem::Operation("pushq `8S0", { t }, {}));
   }
 
   if (addr_->getType() == ExprType::LABEL_ADDR) {
@@ -275,6 +285,15 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     srcTemps.push_back(t);
     instrs.emplace_back(new assem::Operation(
         "callq *`8S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
+  }
+
+  // Decrement stack for overflow parameters
+  size_t numStackParams = numParams - numRegParams;
+  if (numStackParams != 0) {
+    instrs.emplace_back(new assem::Operation(
+        string("addq $").append(to_string(numStackParams * 8)).append(", `8S0"),
+        { RSP },
+        {}));
   }
 
   // Move result from %rax to temp if needed
@@ -363,7 +382,7 @@ void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   if (offset_ != 0) {
     asmCode << offset_;
   }
-  asmCode << "(`8S0, `8S1, " << (size_t) n_ << "), `8D0";
+  asmCode << "(`8S0, `8S1, " << (size_t)n_ << "), `8D0";
   instrs.emplace_back(
       new assem::Operation(asmCode.str(), { t1, t2 }, { temp }, true));
 }

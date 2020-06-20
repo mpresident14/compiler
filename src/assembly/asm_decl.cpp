@@ -33,7 +33,7 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 
 void Function::toCode(ostream& out) {
   out << name_ << ":\n";
-  // Save the stack pointer
+  // Save the frame pointer
   out << "\tpushq %rbp\n" "\tmovq %rsp, %rbp\n";
 
   FlowGraph fgraph(instrs_);
@@ -75,7 +75,7 @@ void Function::toCode(ostream& out) {
       for (const InstrPtr& restore : savesAndRestores.second) {
         restore->toCode(out, varToStackOffset_);
       }
-      // Restore the stack pointer
+      // Restore the frame pointer
       out << "\tmovq %rbp, %rsp\n" "\tpopq %rbp\n";
     }
     instr->toCode(out, varToStackOffset_);
