@@ -268,7 +268,6 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 
   // Put rest on the stack
   for (long i = (long)numParams - 1; i >= 6; --i) {
-    cout << i << endl;
     int t = params_[i]->toAssemInstrs(instrs);
     instrs.emplace_back(new assem::Operation("pushq `8S0", { t }, {}));
   }

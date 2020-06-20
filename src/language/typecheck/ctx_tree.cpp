@@ -58,12 +58,10 @@ bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
 }
 
 
-const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
+Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
-    const vector<TypePtr>& paramTypes,
-    Ctx& ctx,
-    size_t line) const {
+    const vector<TypePtr>& paramTypes) const {
   list<string> filepath;
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupFn");
@@ -77,8 +75,8 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     filepath.push_front(part);
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
-      ctx.undefinedFn(qualifiers, name, paramTypes, line);
-      return nullptr;
+      // Qualifiers point to file that was not imported
+      return { FnLookupRes::BAD_QUALS, {}, ""} ;
     }
 
     child = iter->second.get();
@@ -94,19 +92,11 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     // - a Node with more than 1 child (ambiguous qualifier)
     Ctx* maybeCtx = child->ctx;
     if (maybeCtx) {
-      auto infoAndIters = maybeCtx->lookupFn(name, paramTypes);
-      if (infoAndIters.first) {
-        return infoAndIters.first;
-      } else {
-        ctx.undefinedFn(
-            qualifiers,
-            name,
-            paramTypes,
-            line,
-            infoAndIters.second,
-            boost::join(filepath, "/").append(".prez"));
-        return nullptr;
+      FnLookupInfo lookupInfo = maybeCtx->lookupFn(name, paramTypes);
+      if (lookupInfo.res != FnLookupRes::FOUND) {
+        lookupInfo.filename = boost::join(filepath, "/").append(".prez");
       }
+      return lookupInfo;
     }
 
     currentMap = &child->children;
@@ -115,15 +105,12 @@ const Ctx::FnInfo* Ctx::CtxTree::lookupFn(
     }
 
     if (currentMap->size() > 1) {
-      ostream& err = ctx.getLogger().logError(line);
-      err << "Ambiguous qualifier for function '"
-          << boost::join(qualifiers, "::") << "::" << name;
-      Ctx::streamParamTypes(paramTypes, err);
-      err << "'. Found";
+      // Qualifiers are ambiguous based on imports
+      vector<const string*> candidates;
       for (const auto& [part, _] : *currentMap) {
-        err << "\n\t" << part << "::" << boost::join(filepath, "::");
+        candidates.push_back(&part);
       }
-      return nullptr;
+      return { FnLookupRes::AMBIG_QUALS, move(candidates), boost::join(filepath, "::") };
     }
 
     const auto iter = currentMap->cbegin();

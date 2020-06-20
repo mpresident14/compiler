@@ -65,6 +65,7 @@ bool compile(const string& srcFilename, const string& asmFilename) {
   } catch (const Logger::Exception&) {
     hasErr = true;
   } /* catch (const runtime_error& e) {
+    // TODO: Catch file opening errors with Logger::Exceptions
     logger.logError(0, e.what());
   } */ catch (const parser::ParseException& e) {
     hasErr = true;

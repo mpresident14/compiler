@@ -8,6 +8,7 @@
 #include <ostream>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 class CtxTree;
@@ -29,6 +30,22 @@ public:
     TypePtr returnType;
     std::string declFile;
     size_t line;
+  };
+
+  enum class FnLookupRes {
+    FOUND,
+    UNDEFINED,
+    MULTIPLE,
+    NARROWING,
+    BAD_QUALS,
+    AMBIG_QUALS
+  };
+
+  struct FnLookupInfo {
+    FnLookupRes res;
+    std::variant<std::vector<const FnInfo*>, std::vector<const std::string*>>
+        candidates;
+    std::string filename;
   };
 
   /*
@@ -64,12 +81,10 @@ public:
 
     /* Return true if successfully added, false if already exists */
     bool addCtx(std::string_view importPath, Ctx* ctx);
-    const Ctx::FnInfo* lookupFn(
+    FnLookupInfo lookupFn(
         const std::vector<std::string> qualifiers,
         const std::string& name,
-        const std::vector<TypePtr>& paramTypes,
-        Ctx& ctx,
-        size_t line) const;
+        const std::vector<TypePtr>& paramTypes) const;
 
   private:
     /* The roots specify .prez files that were imported
@@ -113,29 +128,29 @@ public:
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       size_t line);
-  /* Only searches this context, nullptr if it doesn't exist
-   * Also returns the candidate functions with this name via
-   * an iterator range */
-  std::pair<
-      const FnInfo*,
-      std::pair<
-          std::unordered_multimap<std::string, FnInfo>::iterator,
-          std::unordered_multimap<std::string, FnInfo>::iterator>>
-  lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
-  void undefinedFn(
-      const std::vector<std::string>& qualifiers,
-      std::string_view fnName,
-      const std::vector<TypePtr>& paramTypes,
-      size_t line);
+  /* Only searches this context, empty candidate vector if it doesn't exist */
+  FnLookupInfo lookupFn(
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes);
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
       size_t line,
-      const std::pair<
-          std::unordered_multimap<std::string, FnInfo>::iterator,
-          std::unordered_multimap<std::string, FnInfo>::iterator>& candidates,
+      const std::vector<const FnInfo*>& candidates,
       std::string_view searchedFile);
+  void undefFnBadQuals(
+      const std::vector<std::string>& qualifiers,
+      std::string_view fnName,
+      const std::vector<TypePtr>& paramTypes,
+      size_t line);
+  void undefFnAmbigQuals(
+      const std::vector<std::string>& qualifiers,
+      std::string_view fnName,
+      const std::vector<TypePtr>& paramTypes,
+      size_t line,
+      const std::vector<const std::string*> candidates,
+      std::string_view searchedPath);
   /* Mangle all user functions based on the filename (non-user functions begin
    * with '_') Return the function name if it doesn't need to be mangled */
   std::string mangleFn(

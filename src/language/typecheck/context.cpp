@@ -142,25 +142,68 @@ void Ctx::insertFn(
 
 
 // TODO: Need to allow implicit conversions between integral types
-pair<
-    const Ctx::FnInfo*,
-    pair<
-        unordered_multimap<string, Ctx::FnInfo>::iterator,
-        unordered_multimap<string, Ctx::FnInfo>::iterator>>
-Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
+Ctx::FnLookupInfo Ctx::lookupFn(
+    const string& name,
+    const vector<TypePtr>& paramTypes) {
+
+  vector<const FnInfo*> wideMatches;
+  vector<const FnInfo*> narrowMatches;
   auto iterPair = fnMap_.equal_range(name);
+
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
+    bool isNarrowing;
     if (equal(
             paramTypes.cbegin(),
             paramTypes.cend(),
             fnParamTypes.cbegin(),
             fnParamTypes.cend())) {
-      return { &iter->second, move(iterPair) };
+      // Exact match
+      return { FnLookupRes::FOUND,
+               { std::vector<const FnInfo*>{ &iter->second } },
+               "" };
+    } else if (equal(
+                   paramTypes.cbegin(),
+                   paramTypes.cend(),
+                   fnParamTypes.cbegin(),
+                   fnParamTypes.cend(),
+                   [&isNarrowing](const TypePtr& from, const TypePtr& to) {
+                     bool b;
+                     bool res = isConvertible(*from, *to, &b);
+                     isNarrowing |= b;
+                     return res;
+                   })) {
+      // Implicit conversion match
+      if (isNarrowing && wideMatches.empty()) {
+        // No need to keep track of narrowing matches if we already found a
+        // widening match
+        narrowMatches.push_back(&iter->second);
+      } else {
+        wideMatches.push_back(&iter->second);
+      }
     }
   }
 
-  return { nullptr, move(iterPair) };
+  // Only try narrowing matches if there are no widening matches
+  const vector<const FnInfo*>* matchVec =
+      wideMatches.empty() ? &narrowMatches : &wideMatches;
+  if (matchVec->size() > 1) {
+    return { FnLookupRes::MULTIPLE, { move(*matchVec) }, "" };
+  } else if (matchVec->size() == 1) {
+    return { matchVec == &narrowMatches ? FnLookupRes::NARROWING
+                                        : FnLookupRes::FOUND,
+             { move(*matchVec) },
+             "" };
+  } else {
+    // No matches
+    vector<const FnInfo*> candidates;
+    transform(
+        iterPair.first,
+        iterPair.second,
+        back_inserter(candidates),
+        [](const auto& p) { return &p.second; });
+    return { FnLookupRes::UNDEFINED, move(candidates), "" };
+  }
 }
 
 // TODO: Allow "from <file> import <function/class>" ???
@@ -169,21 +212,70 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     const string& name,
     const vector<TypePtr>& paramTypes,
     size_t line) {
-  if (qualifiers.empty()) {
-    // If no qualifiers, we only try our own context
-    auto infoAndIters = lookupFn(name, paramTypes);
-    if (infoAndIters.first) {
-      return infoAndIters.first;
-    }
-    undefinedFn(
-        qualifiers, name, paramTypes, line, infoAndIters.second, filename_);
-    return nullptr;
+  FnLookupInfo lookupInfo =
+      qualifiers.empty() ? lookupFn(name, paramTypes)
+                         : ctxTree_.lookupFn(qualifiers, name, paramTypes);
+
+  switch (lookupInfo.res) {
+    case FnLookupRes::NARROWING:
+      logger.logError(line, "TODO: NARROWING error");
+      // Fall thru
+    case FnLookupRes::FOUND:
+      return get<0>(lookupInfo.candidates).front();
+    case FnLookupRes::MULTIPLE:
+      logger.logError(line, "TODO: MULTIPLE error");
+      return nullptr;
+    case FnLookupRes::UNDEFINED:
+      undefinedFn(
+          qualifiers,
+          name,
+          paramTypes,
+          line,
+          get<0>(lookupInfo.candidates),
+          filename_);
+      return nullptr;
+    case FnLookupRes::BAD_QUALS:
+      undefFnBadQuals(qualifiers, name, paramTypes, line);
+      return nullptr;
+    case FnLookupRes::AMBIG_QUALS:
+      undefFnAmbigQuals(
+          qualifiers,
+          name,
+          paramTypes,
+          line,
+          get<1>(lookupInfo.candidates),
+          lookupInfo.filename);
+      return nullptr;
+    default:
+      throw invalid_argument("Ctx::lookupFnRec");
   }
-  return ctxTree_.lookupFn(qualifiers, name, paramTypes, *this, line);
 }
 
 
 void Ctx::undefinedFn(
+    const vector<string>& qualifiers,
+    string_view fnName,
+    const vector<TypePtr>& paramTypes,
+    size_t line,
+    const vector<const FnInfo*>& candidates,
+    string_view searchedFile) {
+  ostream& err = logger.logError(line);
+  err << "Undefined function '" << qualifiedFn(qualifiers, fnName);
+  streamParamTypes(paramTypes, err);
+
+  if (candidates.empty()) {
+    err << "'\nNo candidate functions in " << searchedFile;
+  } else {
+    err << "'\nCandidate functions in " << searchedFile << ":";
+    for (const FnInfo* fnInfo : candidates) {
+      err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' '
+          << fnName;
+      streamParamTypes(fnInfo->paramTypes, err);
+    }
+  }
+}
+
+void Ctx::undefFnBadQuals(
     const vector<string>& qualifiers,
     string_view fnName,
     const vector<TypePtr>& paramTypes,
@@ -194,29 +286,20 @@ void Ctx::undefinedFn(
   err << "'. No imported file matches qualifiers.";
 }
 
-void Ctx::undefinedFn(
+void Ctx::undefFnAmbigQuals(
     const vector<string>& qualifiers,
     string_view fnName,
     const vector<TypePtr>& paramTypes,
     size_t line,
-    const pair<
-        unordered_multimap<string, Ctx::FnInfo>::iterator,
-        unordered_multimap<string, Ctx::FnInfo>::iterator>& candidates,
-    string_view searchedFile) {
+    const vector<const std::string*> candidates,
+    string_view searchedPath) {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedFn(qualifiers, fnName);
-  streamParamTypes(paramTypes, err);
-
-  if (candidates.first == candidates.second) {
-    err << "'\nNo candidate functions in " << searchedFile;
-  } else {
-    err << "'\nCandidate functions in " << searchedFile << ":";
-    for (auto iter = candidates.first; iter != candidates.second; ++iter) {
-      const FnInfo& fnInfo = iter->second;
-      err << "\n\tLine " << fnInfo.line << ": " << *fnInfo.returnType << ' '
-          << fnName;
-      streamParamTypes(fnInfo.paramTypes, err);
-    }
+  err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::")
+      << "::" << fnName;
+  Ctx::streamParamTypes(paramTypes, err);
+  err << "'. Found";
+  for (const std::string* cand : candidates) {
+    err << "\n\t" << *cand << "::" << searchedPath;
   }
 }
 
