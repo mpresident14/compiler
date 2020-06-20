@@ -52,6 +52,7 @@ std::pair<long, long> minMaxValue(const Type& integralType);
 TypePtr smallestIntegral(long n);
 
 bool operator==(const Type& t1, const Type& t2) noexcept;
+// Because I will inevitably call this one by mistake instead of the one above
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 

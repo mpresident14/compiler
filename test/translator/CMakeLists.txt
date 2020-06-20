@@ -116,7 +116,6 @@ error_test(type_test
 error_test(unused_test
     "('Warning','1','Unused')
     ('Warning','2','Unused')")
-
 error_test(bad_import_test
     "('Error','2','Could')
     ('Note','4','Duplicate')
@@ -126,6 +125,14 @@ error_test(bad_import_test
     ('Error','16','Ambiguous')
     ('Error','17','Ambiguous')
     ('Error','18','Undefined')")
+error_test(narrowing_test
+    "('Warning','2','Narrowing')
+    ('Warning','6','Narrowing')
+    ('Warning','7','Narrowing')
+    ('Warning','10','Narrowing')
+    ('Warning','11','Narrowing')
+    ('Warning','11','Narrowing')
+    ('Warning','11','Narrowing')")
 
 
 add_custom_target(
