@@ -33,6 +33,8 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 
 void Function::toCode(ostream& out) {
   out << name_ << ":\n";
+  // Save the stack pointer
+  out << "\tpushq %rbp\n" "\tmovq %rsp, %rbp\n";
 
   FlowGraph fgraph(instrs_);
   fgraph.computeLiveness();
@@ -73,6 +75,8 @@ void Function::toCode(ostream& out) {
       for (const InstrPtr& restore : savesAndRestores.second) {
         restore->toCode(out, varToStackOffset_);
       }
+      // Restore the stack pointer
+      out << "\tmovq %rbp, %rsp\n" "\tpopq %rbp\n";
     }
     instr->toCode(out, varToStackOffset_);
   }
@@ -122,12 +126,12 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
         }
         break;
       case InstrType::RETURN:
-        if (needStackSpace) {
-          newInstrs.push_back(make_unique<Operation>(
-              "addq $" + to_string(stackSpace) + ", %rsp",
-              vector<int>{},
-              vector<int>{}));
-        }
+        // if (needStackSpace) {
+        //   newInstrs.push_back(make_unique<Operation>(
+        //       "addq $" + to_string(stackSpace) + ", %rsp",
+        //       vector<int>{},
+        //       vector<int>{}));
+        // }
         // Fall thru
       default:
         newInstrs.push_back(move(instr));
