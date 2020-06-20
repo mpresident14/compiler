@@ -7,6 +7,7 @@ using namespace std;
 Logger::Logger(string_view filename) : filename_(filename) {}
 
 ostringstream& Logger::logError(size_t line, string_view msg) {
+  hasErrors_ = true;
   return log(MsgType::ERROR, line, msg);
 }
 
@@ -19,42 +20,19 @@ ostringstream& Logger::logNote(size_t line, string_view msg) {
 }
 
 ostringstream& Logger::log(MsgType msgType, size_t line, string_view msg) {
-  logs_.push_back({line, ostringstream()});
+  logs_.push_back({ msgType, line, ostringstream() });
   ostringstream& error = logs_.back().msg;
-
-  switch (msgType) {
-    case MsgType::ERROR:
-      ++errorCount_;
-      error << errorColored;
-      break;
-    case MsgType::WARNING:
-      ++warningCount_;
-      error << warningColored;
-      break;
-    case MsgType::NOTE:
-      ++noteCount_;
-      error << noteColored;
-      break;
-    default:
-      throw invalid_argument("Unknown MsgType");
-  }
-
-  if (line != 0) {
-    error << " on line " << line;
-  }
-  error << ": " << msg;
+  error << msg;
   return error;
 }
 
-
-bool Logger::hasErrors() const noexcept { return errorCount_ != 0; }
-
-
-namespace {
-const char* maybePlural(size_t n, const char* singular, const char* plural) {
-  return n == 1 ? singular : plural;
+void Logger::logFatal(size_t line, string_view msg) {
+  logError(line, msg);
+  throw Exception(*this);
 }
-}  // namespace
+
+
+bool Logger::hasErrors() const noexcept { return hasErrors_; }
 
 
 void Logger::streamLog(ostream& out) const {
@@ -66,35 +44,93 @@ void Logger::streamLog(ostream& out) const {
     out << filename_ << ":\n";
   }
 
-  for (const auto& [_, str] : sortLogs()) {
-    out << str << '\n';
+  MsgCounts counts;
+  for (const MsgInfo& msgInfo : sortLogs()) {
+    streamMsg(out, msgInfo, counts);
   }
-  out << errorCount_ << maybePlural(errorCount_, " error, ", " errors, ")
-      << warningCount_
-      << maybePlural(warningCount_, " warning, ", " warnings, ") << noteCount_
-      << maybePlural(noteCount_, " note\n\n", " notes\n\n");
+
+  streamCounts(out, counts);
 }
 
-void Logger::logFatal(size_t line, string_view msg) {
-  logError(line, msg);
-  throw Exception(*this);
-}
-
-std::set<std::pair<size_t, std::string>> Logger::sortLogs() const {
-  std::set<std::pair<size_t, std::string>> logSet;
-  for (const auto& [line, stream] : logs_) {
-    logSet.insert({line, stream.str()});
+std::set<Logger::MsgInfo> Logger::sortLogs() const {
+  std::set<MsgInfo> logSet;
+  for (const auto& [msgType, line, msg] : logs_) {
+    logSet.insert({ msgType, line, msg.str() });
   }
   return logSet;
 }
+
+bool operator<(
+    const Logger::MsgInfo& mi1,
+    const Logger::MsgInfo& mi2) noexcept {
+  auto lineCmp = mi1.line <=> mi2.line;
+  auto typeCmp =
+      static_cast<int>(mi1.msgType) <=> static_cast<int>(mi2.msgType);
+  if (lineCmp == 0) {
+    if (typeCmp == 0) {
+      return mi1.msg < mi2.msg;
+    } else {
+      return typeCmp < 0;
+    }
+  } else {
+    return lineCmp < 0;
+  }
+}
+
+
+void Logger::streamMsg(
+    std::ostream& out,
+    const MsgInfo& mi,
+    MsgCounts& counts) {
+  switch (mi.msgType) {
+    case MsgType::ERROR:
+      ++counts.errors;
+      out << errorColored;
+      break;
+    case MsgType::WARNING:
+      ++counts.warnings;
+      out << warningColored;
+      break;
+    case MsgType::NOTE:
+      ++counts.notes;
+      out << noteColored;
+      break;
+    default:
+      throw invalid_argument("Unknown MsgType");
+  }
+  if (mi.line != 0) {
+    out << " on line " << mi.line;
+  }
+  out << ": " << mi.msg << '\n';
+}
+
+namespace {
+
+const char* maybePlural(size_t n, const char* singular, const char* plural) {
+  return n == 1 ? singular : plural;
+}
+
+}  // namespace
+
+void Logger::streamCounts(std::ostream& out, const MsgCounts& counts) {
+  out << counts.errors << maybePlural(counts.errors, " error, ", " errors, ")
+      << counts.warnings
+      << maybePlural(counts.warnings, " warning, ", " warnings, ")
+      << counts.notes << maybePlural(counts.notes, " note\n\n", " notes\n\n");
+}
+
 
 Logger::Exception::Exception(const Logger& logger) {
   if (!logger.filename_.empty()) {
     what_.append(logger.filename_).append(":\n");
   }
-  for (const auto& [_, str] : logger.sortLogs()) {
-    what_.append(str).push_back('\n');
+
+  ostringstream msg;
+  MsgCounts counts;
+  for (const MsgInfo& msgInfo : logger.sortLogs()) {
+    Logger::streamMsg(msg, msgInfo, counts);
   }
+  what_.append(msg.str());
 }
 
 const char* Logger::Exception::what() const noexcept { return what_.c_str(); }

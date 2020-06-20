@@ -3,13 +3,13 @@
 
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string.h>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <set>
 
 class Logger {
 public:
@@ -41,8 +41,7 @@ public:
   std::ostringstream& logError(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logWarning(size_t line = 0, std::string_view msg = "");
   std::ostringstream& logNote(size_t line = 0, std::string_view msg = "");
-  bool hasErrors() const noexcept;
-  void streamLog(std::ostream& out = std::cerr) const;
+  void logFatal(size_t line, std::string_view msg);
 
   template <typename FStream>
   void checkFile(std::string_view filename, FStream& file) {
@@ -56,21 +55,38 @@ public:
     }
   }
 
-  void logFatal(size_t line, std::string_view msg);
+  bool hasErrors() const noexcept;
+  void streamLog(std::ostream& out = std::cerr) const;
+
 
 private:
-  std::set<std::pair<size_t, std::string>> sortLogs() const;
-  std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
-
   struct MsgInfo {
+    MsgType msgType;
+    size_t line;
+    std::string msg;
+  };
+  friend bool operator<(const MsgInfo& mi1, const MsgInfo& mi2) noexcept;
+
+  struct MsgCounts {
+    size_t errors = 0;
+    size_t warnings = 0;
+    size_t notes = 0;
+  };
+  static void
+  streamMsg(std::ostream& out, const MsgInfo& mi, MsgCounts& counts);
+  static void streamCounts(std::ostream& out, const MsgCounts& counts);
+
+  struct MsgInfoStream {
+    MsgType msgType;
     size_t line;
     std::ostringstream msg;
   };
-  std::vector<MsgInfo> logs_;
+  std::set<MsgInfo> sortLogs() const;
+  std::ostringstream& log(MsgType msgType, size_t line, std::string_view msg);
+
+  std::vector<MsgInfoStream> logs_;
   std::string filename_ = "";
-  size_t errorCount_ = 0;
-  size_t warningCount_ = 0;
-  size_t noteCount_ = 0;
+  bool hasErrors_ = false;
 };
 
 
