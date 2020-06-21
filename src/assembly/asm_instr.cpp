@@ -39,6 +39,111 @@ namespace {
   constexpr int digitToInt(char c) noexcept { return c - '0'; }
 }  // namespace
 
+
+/*****************
+ * updateLiveout *
+ *****************/
+
+namespace {
+
+  /* Returns true if a new element was inserted */
+  template <typename T, template <typename...> class Container>
+  bool setUnion(unordered_set<T>& to, const Container<T>& from) {
+    bool newInsertion = false;
+    for (const T& n : from) {
+      newInsertion |= to.insert(n).second;
+    }
+    return newInsertion;
+  }
+
+  template <typename T, template <typename...> class Container>
+  void setMinus(unordered_set<int>& to, const Container<int>& from) {
+    for (const T& n : from) {
+      to.erase(n);
+    }
+  }
+
+  bool updateIfNotEqual(
+      unordered_set<int>& oldSet,
+      const unordered_set<int>& newSet) {
+    if (oldSet != newSet) {
+      oldSet = move(newSet);
+      return true;
+    }
+    return false;
+  }
+}  // namespace
+
+
+bool Instruction::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction* nextInstr,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction falls through by default
+  return setUnion(liveOut, nodes.at(nextInstr).liveIn);
+}
+
+
+bool JumpOp::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction*,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction jumps unconditionally
+  return setUnion(liveOut, nodes.at(jump_).liveIn);
+}
+
+bool CondJumpOp::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction* nextInstr,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction may jump or fall through
+  return Instruction::updateLiveOut(liveOut, nextInstr, nodes) ||
+         JumpOp::updateLiveOut(liveOut, nextInstr, nodes);
+}
+
+bool Return::updateLiveOut(
+    std::unordered_set<int>&,
+    const Instruction*,
+    const std::unordered_map<const Instruction*, Liveness>&) const {
+  // Nothing is live after a return
+  return false;
+}
+
+/****************
+ * updateLiveIn *
+ ****************/
+
+bool Instruction::updateLiveIn(
+    std::unordered_set<int>& liveIn,
+    const std::unordered_set<int>& liveOut) const {
+  return setUnion(liveIn, liveOut);
+}
+
+bool Move::updateLiveIn(
+    std::unordered_set<int>& liveIn,
+    const std::unordered_set<int>& liveOut) const {
+  unordered_set<int> newLiveIn = liveOut;
+  newLiveIn.erase(dst_);
+  newLiveIn.insert(src_);
+  return updateIfNotEqual(liveIn, newLiveIn);
+}
+
+bool Operation::updateLiveIn(
+    std::unordered_set<int>& liveIn,
+    const std::unordered_set<int>& liveOut) const {
+  unordered_set<int> newLiveIn = liveOut;
+  setMinus<int, vector>(newLiveIn, dsts_);
+  setUnion(newLiveIn, srcs_);
+  return updateIfNotEqual(liveIn, newLiveIn);
+}
+
+bool Return::updateLiveIn(
+    std::unordered_set<int>& liveIn,
+    const std::unordered_set<int>&) const {
+  // %rax is live before only if we return a value
+  return hasValue_ && liveIn.insert(RAX).second;
+}
+
 /*********
  * spill *
  *********/

@@ -16,8 +16,13 @@
 #include <unordered_set>
 #include <vector>
 
-namespace assem {
 
+struct Liveness {
+  std::unordered_set<int> liveIn;
+  std::unordered_set<int> liveOut;
+};
+
+namespace assem {
 
 enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, COND_JUMP_OP, RETURN };
 
@@ -29,6 +34,13 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
+  virtual bool updateLiveOut(
+      std::unordered_set<int>& liveOut,
+      const Instruction* nextInstr,
+      const std::unordered_map<const Instruction*, Liveness>& nodes) const;
+  virtual bool updateLiveIn(
+      std::unordered_set<int>& liveIn,
+      const std::unordered_set<int>& liveOut) const;
   /* Returns true if this instruction still needs to be added */
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
   /* Assigns temps to machine registers and keeps track of which machine
@@ -129,6 +141,9 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::MOVE;
   }
+  bool updateLiveIn(
+      std::unordered_set<int>& liveIn,
+      const std::unordered_set<int>& liveOut) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
@@ -158,6 +173,9 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::OPER;
   }
+  bool updateLiveIn(
+      std::unordered_set<int>& liveIn,
+      const std::unordered_set<int>& liveOut) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
@@ -189,6 +207,11 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::JUMP_OP;
   }
+  bool updateLiveOut(
+      std::unordered_set<int>& liveOut,
+      const Instruction*,
+      const std::unordered_map<const Instruction*, Liveness>& nodes)
+      const override;
   virtual void toStream(std::ostream& out) const override;
 
   const Label* getJump() const noexcept { return jump_; }
@@ -205,6 +228,11 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::COND_JUMP_OP;
   }
+  bool updateLiveOut(
+      std::unordered_set<int>& liveOut,
+      const Instruction* nextInstr,
+      const std::unordered_map<const Instruction*, Liveness>& nodes)
+      const override;
 };
 
 
@@ -214,14 +242,22 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::RETURN;
   }
-  virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
-  virtual void assignRegs(
+  bool updateLiveOut(
+      std::unordered_set<int>& liveOut,
+      const Instruction* nextInstr,
+      const std::unordered_map<const Instruction*, Liveness>& nodes)
+      const override;
+  bool updateLiveIn(
+      std::unordered_set<int>& liveIn,
+      const std::unordered_set<int>& liveOut) const override;
+  bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
+  void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
-  virtual void toCode(
+  void toCode(
       std::ostream& out,
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
-  virtual void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out) const override;
 
   constexpr bool hasValue() const noexcept { return hasValue_; }
 
