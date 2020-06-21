@@ -39,6 +39,52 @@ namespace {
   constexpr int digitToInt(char c) noexcept { return c - '0'; }
 }  // namespace
 
+
+/*****************
+ * updateLiveout *
+ *****************/
+
+namespace {
+
+  /* Returns true if a new element was inserted */
+  template <typename T, template <typename...> class Container>
+  bool setUnion(unordered_set<T>& to, const Container<T>& from) {
+    bool newInsertion = false;
+    for (const T& n : from) {
+      newInsertion |= to.insert(n).second;
+    }
+    return newInsertion;
+  }
+
+}  // namespace
+
+
+bool Instruction::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction* prevInstr,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction falls through by default
+  return setUnion(liveOut, nodes.at(prevInstr).liveIn);
+}
+
+
+bool JumpOp::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction*,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction jumps unconditionally
+  return setUnion(liveOut, nodes.at(jump_).liveIn);
+}
+
+bool CondJumpOp::updateLiveOut(
+    std::unordered_set<int>& liveOut,
+    const Instruction* prevInstr,
+    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+  // Instruction may jump or fall through
+  return Instruction::updateLiveOut(liveOut, prevInstr, nodes) ||
+         JumpOp::updateLiveOut(liveOut, prevInstr, nodes);
+}
+
 /*********
  * spill *
  *********/

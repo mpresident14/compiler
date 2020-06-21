@@ -14,11 +14,6 @@
 
 class FlowGraph {
 public:
-  struct Liveness {
-    std::unordered_set<int> liveIn;
-    std::unordered_set<int> liveOut;
-  };
-
   FlowGraph(const std::vector<assem::InstrPtr>& instrs);
   ~FlowGraph() = default;
   FlowGraph(const FlowGraph& other) = delete;

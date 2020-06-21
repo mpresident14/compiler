@@ -87,16 +87,7 @@ void FlowGraph::computeLiveness() {
       }
 
       // Compute liveOut
-      if (type == InstrType::JUMP_OP || type == InstrType::COND_JUMP_OP) {
-        // Instruction jumps
-        const Label* jumpDst = static_cast<const JumpOp*>(instr)->getJump();
-        changed |= setUnion(node.liveOut, nodes_.at(jumpDst).liveIn);
-      }
-
-      if (type != InstrType::JUMP_OP) {
-        // Instruction falls through
-        changed |= setUnion(node.liveOut, nodes_.at(prev(iter)->get()).liveIn);
-      }
+      changed |= instr->updateLiveOut(node.liveOut, prev(iter)->get(), nodes_);
 
       // Compute liveIn
       unordered_set<int> newLiveIn = node.liveOut;
@@ -124,7 +115,7 @@ void FlowGraph::computeLiveness() {
 
 std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph) {
   for (const auto& instr : fgraph.instrs_) {
-    const FlowGraph::Liveness& liveness = fgraph.nodes_.at(instr.get());
+    const Liveness& liveness = fgraph.nodes_.at(instr.get());
     out << *instr << " -> IN: ";
     out << " [";
     for (int t : liveness.liveIn) {
@@ -146,7 +137,7 @@ const std::vector<InstrPtr>& FlowGraph::getInstrs() const noexcept {
   return instrs_;
 }
 
-const std::unordered_map<const Instruction*, FlowGraph::Liveness>&
+const std::unordered_map<const Instruction*, Liveness>&
 FlowGraph::getNodes() const noexcept {
   return nodes_;
 }
