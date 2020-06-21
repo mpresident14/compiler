@@ -40,7 +40,7 @@ Jump::Jump(assem::Label* label) : label_(label) {}
 
 void Jump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   instrs.emplace_back(
-      new assem::JumpOp("jmp " + label_->getName(), {}, {}, label_));
+      new assem::JumpOp("jmp " + label_->name_, {}, {}, label_));
 }
 
 
@@ -118,10 +118,10 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
           static_cast<const Const*>(eOpt2.get())->n_);
       if (res) {
         instrs.emplace_back(
-            new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, ifTrue_));
+            new assem::JumpOp("jmp " + ifTrue_->name_, {}, {}, ifTrue_));
       } else {
         instrs.emplace_back(
-            new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
+            new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
       }
       return;
     } else {
@@ -147,9 +147,9 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   }
   instrs.emplace_back(new assem::Operation(cmpAsm.str(), move(srcTemps), {}));
   instrs.emplace_back(new assem::CondJumpOp(
-      getRopAsm(rop_, needsFlip).append(ifTrue_->getName()), {}, {}, ifTrue_));
+      getRopAsm(rop_, needsFlip).append(ifTrue_->name_), {}, {}, ifTrue_));
   instrs.emplace_back(
-      new assem::JumpOp("jmp " + ifFalse_->getName(), {}, {}, ifFalse_));
+      new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
 }
 
 

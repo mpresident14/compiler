@@ -112,7 +112,7 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
     InstrPtr& instr = *iter;
     // Skip jumps immediately followed by the label to which they are jumping
     if (instr->getType() == InstrType::JUMP_OP &&
-        static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
+        static_cast<JumpOp*>(instr.get())->jump_ == next(iter)->get()) {
       continue;
     }
 

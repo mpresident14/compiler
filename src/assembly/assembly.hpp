@@ -139,9 +139,7 @@ public:
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
   void toStream(std::ostream& out) const override;
 
-  const std::string& getName() const noexcept { return name_; }
 
-private:
   std::string name_;
 };
 
@@ -167,10 +165,7 @@ public:
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
   void toStream(std::ostream& out) const override;
 
-  int getSrc() const noexcept { return src_; }
-  int getDst() const noexcept { return dst_; }
 
-private:
   int src_;
   int dst_;
 };
@@ -203,11 +198,7 @@ public:
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
   void toStream(std::ostream& out) const override;
 
-  const std::string& getAsm() const noexcept { return asmCode_; }
-  const std::vector<int>& getSrcs() const noexcept { return srcs_; }
-  const std::vector<int>& getDsts() const noexcept { return dsts_; }
 
-private:
   std::string asmCode_;
   std::vector<int> srcs_;
   std::vector<int> dsts_;
@@ -232,9 +223,7 @@ public:
       const override;
   virtual void toStream(std::ostream& out) const override;
 
-  const Label* getJump() const noexcept { return jump_; }
 
-private:
   Label* jump_;
 };
 
@@ -281,9 +270,7 @@ public:
       const std::unordered_map<int, size_t>& varToStackOffset) const override;
   void toStream(std::ostream& out) const override;
 
-  constexpr bool hasValue() const noexcept { return hasValue_; }
 
-private:
   bool hasValue_;
 };
 
