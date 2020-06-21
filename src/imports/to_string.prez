@@ -1,11 +1,3 @@
-char[] toString(short n) {
-  return toString((long) n);
-}
-
-char[] toString(int n) {
-  return toString((long) n);
-}
-
 char[] toString(long n) {
   if (n == 0) {
     char[] str = char[1];
