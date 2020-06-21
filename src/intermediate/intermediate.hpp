@@ -410,6 +410,7 @@ public:
 constexpr bool isConstChunk(std::string_view asmChunk) noexcept {
   return asmChunk.front() == '$';
 }
+const char* movExtendSuffix(u_char numBytes);
 
 }  // namespace im
 

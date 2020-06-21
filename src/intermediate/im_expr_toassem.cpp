@@ -156,25 +156,20 @@ void BinOp::handleOthers(
  * MemDeref *
  ************/
 
-namespace {
-  void addInstrLetter(u_char numBytes, string& str) {
-    switch (numBytes) {
-      case 8:
-        return;
-      case 4:
-        str.append("sl");
-        return;
-      case 2:
-        str.append("sw");
-        return;
-      case 1:
-        str.append("sb");
-        return;
-      default:
-        throw invalid_argument("addInstrLetter: " + to_string(numBytes));
-    }
+const char* movExtendSuffix(u_char numBytes) {
+  switch (numBytes) {
+    case 8:
+      return "";
+    case 4:
+      return "sl";
+    case 2:
+      return "sw";
+    case 1:
+      return "sb";
+    default:
+      throw invalid_argument("movExtendSuffix: " + to_string(numBytes));
   }
-}  // namespace
+}
 
 MemDeref::MemDeref(long offset, ExprPtr&& addr, ExprPtr&& mult, u_char numBytes)
     : offset_(offset),
@@ -190,11 +185,11 @@ void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     srcTemps.push_back(mult_->toAssemInstrs(instrs));
   }
 
-  string asmOp = "mov";
-  addInstrLetter(numBytes_, asmOp);
-  asmOp.append("q ").append(genAsmCode(0)).append(", `8D0");
+  ostringstream asmOp;
+  asmOp << "mov" << movExtendSuffix(numBytes_) << "q " << genAsmCode(0)
+        << ", `8D0";
   instrs.emplace_back(
-      new assem::Operation(move(asmOp), move(srcTemps), { temp }, true));
+      new assem::Operation(asmOp.str(), move(srcTemps), { temp }, true));
 }
 
 string MemDeref::genAsmCode(size_t srcIndex) const {
