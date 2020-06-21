@@ -5,10 +5,6 @@
 using namespace std;
 using namespace assem;
 
-// TODO(all files): Try to replace switch statements with virtual functions
-// where possible (possibly add another layer of abstraction like we did
-// for Operation, JumpOp and CondJumpOp)
-
 
 FlowGraph::FlowGraph(const vector<InstrPtr>& instrs) : instrs_(instrs) {
   for (const InstrPtr& instr : instrs) {

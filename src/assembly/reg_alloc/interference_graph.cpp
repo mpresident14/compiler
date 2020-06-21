@@ -5,16 +5,8 @@
 using namespace std;
 using namespace assem;
 
-/* To avoid having to call the default set constructor on every check */
-auto insertIfNotExists(
-    unordered_map<int, unordered_set<int>>& theMap,
-    int temp) {
-  auto iter = theMap.find(temp);
-  if (iter == theMap.end()) {
-    return theMap.emplace(temp, unordered_set<int>{}).first;
-  }
-  return iter;
-}
+
+namespace {
 
 auto removeNode(
     unordered_map<int, unordered_set<int>>& graphCopy,
@@ -24,6 +16,9 @@ auto removeNode(
   }
   return graphCopy.erase(iter);
 }
+
+}
+
 
 void buildStack(
     unordered_map<int, unordered_set<int>>& graphCopy,
@@ -80,41 +75,7 @@ void buildStack(
  */
 InterferenceGraph::InterferenceGraph(const FlowGraph& fgraph) {
   for (const auto& [instr, liveness] : fgraph.getNodes()) {
-    switch (instr->getType()) {
-      case InstrType::MOVE: {
-        int moveSrc = static_cast<const Move*>(instr)->getSrc();
-        int moveDst = static_cast<const Move*>(instr)->getDst();
-        unordered_set<int>& moveNeighbors =
-            insertIfNotExists(graph_, moveDst)->second;
-        for (int temp : liveness.liveOut) {
-          if (temp != moveSrc && temp != moveDst) {
-            insertIfNotExists(graph_, temp)->second.insert(moveDst);
-            moveNeighbors.insert(temp);
-          }
-        }
-
-        // Add to moveMultimap for biased coloring
-        moveMultimap_.emplace(moveSrc, moveDst);
-        moveMultimap_.emplace(moveDst, moveSrc);
-        break;
-      }
-      case InstrType::OPER:  // Fall Thru
-      case InstrType::JUMP_OP:
-      case InstrType::COND_JUMP_OP:
-        for (int opDst : static_cast<const Operation*>(instr)->getDsts()) {
-          unordered_set<int>& opNeighbors =
-              insertIfNotExists(graph_, opDst)->second;
-          for (int temp : liveness.liveOut) {
-            if (temp != opDst) {
-              insertIfNotExists(graph_, temp)->second.insert(opDst);
-              opNeighbors.insert(temp);
-            }
-          }
-        }
-        break;
-      // Nothing for InstrType::RETURN because I don't write to anything
-      default:;
-    }
+    instr->calcInterference(liveness.liveOut, graph_, moveMultimap_);
   }
 }
 

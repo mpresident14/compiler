@@ -141,6 +141,74 @@ bool Return::updateLiveIn(
   return hasValue_ && liveIn.insert(RAX).second;
 }
 
+
+/********************
+ * calcInterference *
+ ********************/
+
+namespace {
+
+  unordered_set<int>& getNeighbors(
+      unordered_map<int, unordered_set<int>>& theMap,
+      int temp) {
+    auto iter = theMap.find(temp);
+    if (iter == theMap.end()) {
+      return theMap.emplace(temp, unordered_set<int>{}).first->second;
+    }
+    return iter->second;
+  }
+
+}  // namespace
+
+void Move::calcInterference(
+    const std::unordered_set<int>& liveOut,
+    std::unordered_map<int, std::unordered_set<int>>& igraph,
+    std::unordered_multimap<int, int>& moveMap) const {
+  unordered_set<int>& moveNeighbors = getNeighbors(igraph, dst_);
+  for (int temp : liveOut) {
+    if (temp != src_ && temp != dst_) {
+      getNeighbors(igraph, temp).insert(dst_);
+      moveNeighbors.insert(temp);
+    }
+  }
+
+  // Add to move multimap for biased coloring
+  moveMap.emplace(src_, dst_);
+  moveMap.emplace(dst_, src_);
+}
+
+
+void Operation::calcInterference(
+    const std::unordered_set<int>& liveOut,
+    std::unordered_map<int, std::unordered_set<int>>& igraph,
+    std::unordered_multimap<int, int>&) const {
+  for (int dst : dsts_) {
+    unordered_set<int>& opNeighbors = getNeighbors(igraph, dst);
+    for (int temp : liveOut) {
+      if (temp != dst) {
+        getNeighbors(igraph, temp).insert(dst);
+        opNeighbors.insert(temp);
+      }
+    }
+  }
+}
+
+void Return::calcInterference(
+    const std::unordered_set<int>&,
+    std::unordered_map<int, std::unordered_set<int>>&,
+    std::unordered_multimap<int, int>&) const {
+  // Nothing to do because Return doesn't write to anything
+  return;
+}
+
+void Label::calcInterference(
+    const std::unordered_set<int>&,
+    std::unordered_map<int, std::unordered_set<int>>&,
+    std::unordered_multimap<int, int>&) const {
+  // Nothing to do because Label doesn't write to anything
+  return;
+}
+
 /*********
  * spill *
  *********/

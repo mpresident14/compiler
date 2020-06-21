@@ -34,7 +34,8 @@ Function::Function(string_view name, vector<InstrPtr>&& instrs)
 void Function::toCode(ostream& out) {
   out << name_ << ":\n";
   // Save the frame pointer
-  out << "\tpushq %rbp\n" "\tmovq %rsp, %rbp\n";
+  out << "\tpushq %rbp\n"
+         "\tmovq %rsp, %rbp\n";
 
   FlowGraph fgraph(instrs_);
   fgraph.computeLiveness();
@@ -69,6 +70,7 @@ void Function::toCode(ostream& out) {
   for (const InstrPtr& save : savesAndRestores.first) {
     save->toCode(out, varToStackOffset_);
   }
+
   for (const InstrPtr& instr : instrs_) {
     // Need to pop before every return
     if (instr->getType() == InstrType::RETURN) {
@@ -76,7 +78,8 @@ void Function::toCode(ostream& out) {
         restore->toCode(out, varToStackOffset_);
       }
       // Restore the frame pointer
-      out << "\tmovq %rbp, %rsp\n" "\tpopq %rbp\n";
+      out << "\tmovq %rbp, %rsp\n"
+             "\tpopq %rbp\n";
     }
     instr->toCode(out, varToStackOffset_);
   }
@@ -107,34 +110,15 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
   bitset<NUM_AVAIL_REGS> writtenRegs;
   for (auto iter = instrs_.begin(); iter != instrs_.end(); ++iter) {
     InstrPtr& instr = *iter;
-    InstrType type = instr->getType();
+    // Skip jumps immediately followed by the label to which they are jumping
+    if (instr->getType() == InstrType::JUMP_OP &&
+        static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
+      continue;
+    }
 
-    switch (type) {
-      case InstrType::JUMP_OP:
-        if (static_cast<JumpOp*>(instr.get())->getJump() == next(iter)->get()) {
-          // Skip jumps immediately followed by the label to which they jump
-          break;
-        }
-        // Fall thru
-      case InstrType::COND_JUMP_OP:
-      case InstrType::OPER:
-      case InstrType::MOVE:
-        // Color the registers
-        instr->assignRegs(coloring, writtenRegs);
-        if (instr->spillTemps(newInstrs)) {
-          newInstrs.push_back(move(instr));
-        }
-        break;
-      case InstrType::RETURN:
-        // if (needStackSpace) {
-        //   newInstrs.push_back(make_unique<Operation>(
-        //       "addq $" + to_string(stackSpace) + ", %rsp",
-        //       vector<int>{},
-        //       vector<int>{}));
-        // }
-        // Fall thru
-      default:
-        newInstrs.push_back(move(instr));
+    instr->assignRegs(coloring, writtenRegs);
+    if (instr->spillTemps(newInstrs)) {
+      newInstrs.push_back(move(instr));
     }
   }
 

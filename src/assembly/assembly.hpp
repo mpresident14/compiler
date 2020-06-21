@@ -34,13 +34,19 @@ class Instruction {
 public:
   virtual ~Instruction() {}
   virtual InstrType getType() const noexcept = 0;
+  /* Returns true if liveOut changed */
   virtual bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
       const std::unordered_map<const Instruction*, Liveness>& nodes) const;
+  /* Returns true if liveIn changed */
   virtual bool updateLiveIn(
       std::unordered_set<int>& liveIn,
       const std::unordered_set<int>& liveOut) const;
+  virtual void calcInterference(
+      const std::unordered_set<int>& liveOut,
+      std::unordered_map<int, std::unordered_set<int>>& igraph,
+      std::unordered_multimap<int, int>& moveMap) const = 0;
   /* Returns true if this instruction still needs to be added */
   virtual bool spillTemps(std::vector<InstrPtr>& newInstrs) = 0;
   /* Assigns temps to machine registers and keeps track of which machine
@@ -120,6 +126,10 @@ public:
   constexpr InstrType getType() const noexcept override {
     return InstrType::LABEL;
   }
+  void calcInterference(
+      const std::unordered_set<int>& liveOut,
+      std::unordered_map<int, std::unordered_set<int>>& igraph,
+      std::unordered_multimap<int, int>& moveMap) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
@@ -144,6 +154,10 @@ public:
   bool updateLiveIn(
       std::unordered_set<int>& liveIn,
       const std::unordered_set<int>& liveOut) const override;
+  void calcInterference(
+      const std::unordered_set<int>& liveOut,
+      std::unordered_map<int, std::unordered_set<int>>& igraph,
+      std::unordered_multimap<int, int>& moveMap) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
@@ -176,6 +190,10 @@ public:
   bool updateLiveIn(
       std::unordered_set<int>& liveIn,
       const std::unordered_set<int>& liveOut) const override;
+  void calcInterference(
+      const std::unordered_set<int>& liveOut,
+      std::unordered_map<int, std::unordered_set<int>>& igraph,
+      std::unordered_multimap<int, int>& moveMap) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
@@ -250,6 +268,10 @@ public:
   bool updateLiveIn(
       std::unordered_set<int>& liveIn,
       const std::unordered_set<int>& liveOut) const override;
+  void calcInterference(
+      const std::unordered_set<int>& liveOut,
+      std::unordered_map<int, std::unordered_set<int>>& igraph,
+      std::unordered_multimap<int, int>& moveMap) const override;
   bool spillTemps(std::vector<InstrPtr>& newInstrs) override;
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
