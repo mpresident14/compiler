@@ -481,15 +481,14 @@ public:
 
 class TempVar : public Expr {
 public:
-  static std::string newVar();
+  static std::string newVar(
+      TypePtr type,
+      Ctx& ctx);
 
   TempVar(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
-
-  bool isInitialized(Ctx& ctx);
-  void init(TypePtr rhsType, Ctx& ctx);
 
 
   std::string name_;

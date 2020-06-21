@@ -79,7 +79,7 @@ While::While(ExprPtr&& boolE, unique_ptr<Block> body, size_t line)
 
 const StmtPtr* While::lastStmt() const {
   const StmtPtr* last = body_->lastStmt();
-  return last ? last : (StmtPtr*) &body_;
+  return last ? last : (StmtPtr*)&body_;
 }
 
 void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
@@ -148,39 +148,19 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType lhsExprType = lhs_->getType();
-  if (lhsExprType == ExprType::TEMP_VAR) {
-    TempVar* tempVar = static_cast<TempVar*>(lhs_.get());
-    if (tempVar->isInitialized(ctx)) {
-      ExprInfo lhsInfo = tempVar->toImExpr(ctx);
-      imStmts.emplace_back(new im::Assign(
-          move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
-    } else {
-      ExprInfo rhsInfo = rhs_->toImExpr(ctx);
-      tempVar->init(rhsInfo.type, ctx);
-      imStmts.emplace_back(new im::Assign(
-          tempVar->toImExpr(ctx).imExpr, move(rhsInfo.imExpr)));
-    }
-  } else {
-    ExprInfo lhsInfo = lhs_->toImExpr(ctx);
-    switch (lhsExprType) {
-      case ExprType::MEMBER_ACCESS:
-        if (lhsInfo.type->typeName == TypeName::ARRAY) {
-          ctx.getLogger().logError(
-              line_, "Cannot assign to length field of an array.");
-          return;
-        }
-        // Fall thru
-      case ExprType::VAR:
-        // Fall thru
-      case ExprType::ARRAY_ACCESS:
-        imStmts.emplace_back(new im::Assign(
-            move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
-        break;
-      default:
-        throw invalid_argument(
-            "Assign::toImStmts: Should be enforced by grammar");
-    }
+  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
+
+  // TODO: This is wrong, need to check if MemberAccess::objExpr_ has type ARRAY
+  if (lhs_->getType() == ExprType::MEMBER_ACCESS &&
+      lhsInfo.type->typeName == TypeName::ARRAY) {
+    ctx.getLogger().logError(
+        line_, "Cannot assign to length field of an array.");
+    return;
   }
+
+
+  imStmts.emplace_back(new im::Assign(
+      move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
 }
 
 /**********
@@ -222,13 +202,10 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   toPrint.push_back(move(expr_));
   vector<string> toStringPath = Program::importPathParts;
   toStringPath.push_back("to_string");
-  im::ExprPtr callToString = CallExpr(
-                                move(toStringPath),
-                                 "toString",
-                                 move(toPrint),
-                                 line_)
-                                 .toImExpr(ctx)
-                                 .imExpr;
+  im::ExprPtr callToString =
+      CallExpr(move(toStringPath), "toString", move(toPrint), line_)
+          .toImExpr(ctx)
+          .imExpr;
 
   // Put the char[] in a temporary
   int tCharsAddr = newTemp();
@@ -257,9 +234,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * Stmt *
  ********/
 
-const StmtPtr* Stmt::lastStmt() const {
-  return nullptr;
-}
+const StmtPtr* Stmt::lastStmt() const { return nullptr; }
 
 
 }  // namespace language
