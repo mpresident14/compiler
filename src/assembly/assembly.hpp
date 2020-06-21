@@ -38,7 +38,7 @@ public:
   virtual bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
-      const std::unordered_map<const Instruction*, Liveness>& nodes) const;
+      const std::unordered_map<const Instruction*, Liveness>& fgraph) const;
   /* Returns true if liveIn changed */
   virtual bool updateLiveIn(
       std::unordered_set<int>& liveIn,

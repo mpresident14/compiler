@@ -77,27 +77,27 @@ namespace {
 bool Instruction::updateLiveOut(
     std::unordered_set<int>& liveOut,
     const Instruction* nextInstr,
-    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+    const std::unordered_map<const Instruction*, Liveness>& fgraph) const {
   // Instruction falls through by default
-  return setUnion(liveOut, nodes.at(nextInstr).liveIn);
+  return setUnion(liveOut, fgraph.at(nextInstr).liveIn);
 }
 
 
 bool JumpOp::updateLiveOut(
     std::unordered_set<int>& liveOut,
     const Instruction*,
-    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+    const std::unordered_map<const Instruction*, Liveness>& fgraph) const {
   // Instruction jumps unconditionally
-  return setUnion(liveOut, nodes.at(jump_).liveIn);
+  return setUnion(liveOut, fgraph.at(jump_).liveIn);
 }
 
 bool CondJumpOp::updateLiveOut(
     std::unordered_set<int>& liveOut,
     const Instruction* nextInstr,
-    const std::unordered_map<const Instruction*, Liveness>& nodes) const {
+    const std::unordered_map<const Instruction*, Liveness>& fgraph) const {
   // Instruction may jump or fall through
-  return Instruction::updateLiveOut(liveOut, nextInstr, nodes) ||
-         JumpOp::updateLiveOut(liveOut, nextInstr, nodes);
+  return Instruction::updateLiveOut(liveOut, nextInstr, fgraph) ||
+         JumpOp::updateLiveOut(liveOut, nextInstr, fgraph);
 }
 
 bool Return::updateLiveOut(
