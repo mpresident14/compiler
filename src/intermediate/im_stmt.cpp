@@ -157,22 +157,20 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
  * Assign *
  **********/
 
-namespace {
-  char toInstrLetter(size_t bytesChar) {
-    switch (bytesChar) {
-      case 8:
-        return 'q';
-      case 4:
-        return 'l';
-      case 2:
-        return 'w';
-      case 1:
-        return 'b';
-      default:
-        throw invalid_argument("toInstrLetter: " + to_string(bytesChar));
-    }
+char movSuffix(size_t numBytes) {
+  switch (numBytes) {
+    case 8:
+      return 'q';
+    case 4:
+      return 'l';
+    case 2:
+      return 'w';
+    case 1:
+      return 'b';
+    default:
+      throw invalid_argument("movSuffix: " + to_string(numBytes));
   }
-}  // namespace
+}
 
 Assign::Assign(ExprPtr&& e1, ExprPtr&& e2) : e1_(move(e1)), e2_(move(e2)) {}
 
@@ -205,7 +203,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     }
 
     ostringstream asmOp;
-    asmOp << "mov" << toInstrLetter(numBytes) << ' ' << asmChunk2 << ", "
+    asmOp << "mov" << movSuffix(numBytes) << ' ' << asmChunk2 << ", "
           << memDeref->genAsmCode(tempIndex);
     instrs.emplace_back(
         new assem::Operation(asmOp.str(), move(srcTemps), {}, true));

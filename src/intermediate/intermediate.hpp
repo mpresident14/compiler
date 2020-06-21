@@ -38,6 +38,7 @@ enum class ExprType {
   DO_THEN_EVAL,
   LABEL_ADDR,
   CALL,
+  CAST,
   HALF_CONST,
   LEAQ,
   INC_DEC
@@ -350,6 +351,22 @@ private:
 };
 
 
+class Cast : public Expr {
+  public:
+  Cast(ExprPtr&& expr, u_char toNumBytes);
+  constexpr ExprType getType() const noexcept override {
+    return ExprType::CAST;
+  }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
+      const override;
+  ExprPtr optimize() override;
+
+
+  ExprPtr expr_;
+  u_char toNumBytes_;
+};
+
+
 /* Functions below are mainly used to produce more efficient assembly code
  * via the optimize() method */
 
@@ -411,6 +428,7 @@ constexpr bool isConstChunk(std::string_view asmChunk) noexcept {
   return asmChunk.front() == '$';
 }
 const char* movExtendSuffix(u_char numBytes);
+char movSuffix(size_t numBytes);
 
 }  // namespace im
 

@@ -161,11 +161,11 @@ const char* movExtendSuffix(u_char numBytes) {
     case 8:
       return "";
     case 4:
-      return "sl";
+      return "slq";
     case 2:
-      return "sw";
+      return "swq";
     case 1:
-      return "sb";
+      return "sbq";
     default:
       throw invalid_argument("movExtendSuffix: " + to_string(numBytes));
   }
@@ -186,7 +186,7 @@ void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   }
 
   ostringstream asmOp;
-  asmOp << "mov" << movExtendSuffix(numBytes_) << "q " << genAsmCode(0)
+  asmOp << "mov" << movExtendSuffix(numBytes_) << ' ' << genAsmCode(0)
         << ", `8D0";
   instrs.emplace_back(
       new assem::Operation(asmOp.str(), move(srcTemps), { temp }, true));
@@ -294,6 +294,21 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   if (hasReturnValue_) {
     instrs.emplace_back(new assem::Move(RAX, temp));
   }
+}
+
+
+/********
+ * Cast *
+ ********/
+Cast::Cast(ExprPtr&& expr, u_char toNumBytes)
+    : expr_(move(expr)), toNumBytes_(toNumBytes) {}
+
+void Cast::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
+  int t = expr_->toAssemInstrs(instrs);
+  ostringstream asmOp;
+  asmOp << "mov" << movExtendSuffix(toNumBytes_) << " `" << (size_t)toNumBytes_
+        << "S0, `8D0";
+  instrs.emplace_back(new assem::Operation(asmOp.str(), {t}, { temp }));
 }
 
 

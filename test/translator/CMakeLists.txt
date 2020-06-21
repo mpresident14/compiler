@@ -80,7 +80,7 @@ success_test(function_test "1,2,118")
 success_test(callee_save_test "9,9")
 success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
 success_test(array_test "0,1,1,2,3,5,8,13,21,34")
-success_test(cast_test "!,!,15,6,6")
+success_test(cast_test "!,!,15,6,6,4096")
 success_test(opt_test "2,73,89,292,88,-2,89")
 success_test(update_test "1,2,4,1,9")
 

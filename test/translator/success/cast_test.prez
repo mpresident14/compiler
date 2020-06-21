@@ -16,4 +16,8 @@ void main() {
   print((int) cArr[0]);
   print((long) 6);
   print((short) 6);
+
+  l = 0xFFFF1000;
+  short s = (short) l;
+  print(s);
 }

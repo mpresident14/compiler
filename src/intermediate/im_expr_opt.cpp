@@ -184,6 +184,13 @@ ExprPtr CallExpr::optimize() {
       addr_->optimize(), move(optParams), hasReturnValue_);
 }
 
+/********
+ * Cast *
+ ********/
+
+ExprPtr Cast::optimize() {
+  return make_unique<Cast>(expr_->optimize(), toNumBytes_);
+}
 
 /*************
  * HalfConst *

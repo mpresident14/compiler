@@ -212,16 +212,14 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
  * Cast *
  ********/
 
-// TODO: These casts will not truncate unless stored in an array
-// We really need to pass the size of an Expr down to the intermediate
-// level so that it can generate the proper assembly
 ExprInfo Cast::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = expr_->toImExpr(ctx);
   if (!isConvertible(*eInfo.type, *toType_, nullptr)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
-  return { move(eInfo.imExpr), move(toType_) };
+  return { make_unique<im::Cast>(move(eInfo.imExpr), toType_->numBytes),
+           move(toType_) };
 }
 
 
