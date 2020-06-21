@@ -29,13 +29,19 @@ bool compile(const string& srcFilename, const string& asmFilename) {
   Logger logger;
   bool hasErr = false;
   try {
+    decltype(initializedProgs)::iterator iter;
+    try {
     // Mark as initiailized before recursing to allow circular dependencies
-    auto iter =
+    iter =
         initializedProgs
             .emplace(
                 srcFilename,
                 make_unique<language::Program>(parser::parse(srcFilename)))
             .first;
+    } catch (const runtime_error& e) {
+        // Catch "can't open file" error
+        logger.logFatal(0, e.what());
+    }
 
     // Recursively record all declarations
     iter->second->initContext(
@@ -64,10 +70,7 @@ bool compile(const string& srcFilename, const string& asmFilename) {
     }
   } catch (const Logger::Exception&) {
     hasErr = true;
-  } /* catch (const runtime_error& e) {
-    // TODO: Catch file opening errors with Logger::Exceptions
-    logger.logError(0, e.what());
-  } */ catch (const parser::ParseException& e) {
+  } catch (const parser::ParseException& e) {
     hasErr = true;
     cerr << e.what() << endl;
   }
