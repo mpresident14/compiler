@@ -99,8 +99,10 @@ error_test(undef_test
     ('Error','13','Undefined')")
 error_test(return_test
     "('Error','2','Expected')
-    ('Error','7','Expected')")
-  #  ('Error','10','Non-void')")
+    ('Error','7','Expected')
+    ('Error','16','Some')
+    ('Error','26','Some')
+    ('Error','32','Some')")
 error_test(param_test
     "('Error','2','Undefined')
     ('Error','6','Undefined')")

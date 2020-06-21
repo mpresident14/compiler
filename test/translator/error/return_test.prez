@@ -10,5 +10,25 @@ void voidFn() {
 bool boolFn() {
   bool b = true;
   bool c = false;
-  b = b || c;
+  return b || c;
+}
+
+int f() {}
+
+short g(short n) {
+  if (n == 1) {
+    return n;
+  } else {
+    return n+1;
+  }
+}
+
+long h(int n) {
+  if (n == 1) {
+    return n;
+  }
+}
+
+char[] j() {
+  while (true) {}
 }

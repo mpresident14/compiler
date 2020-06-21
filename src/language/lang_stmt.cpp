@@ -16,6 +16,15 @@ namespace language {
 Block::Block(vector<StmtPtr>&& stmts, size_t line)
     : Stmt(line), stmts_(move(stmts)) {}
 
+const StmtPtr* Block::lastStmt() const {
+  if (stmts_.empty()) {
+    return nullptr;
+  }
+  const StmtPtr* last = stmts_.back()->lastStmt();
+  return last ? last : &stmts_.back();
+}
+
+
 void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // Keep track of variables declared in this scope and their lines
   vector<pair<string, size_t>> newVars;
@@ -37,6 +46,11 @@ void Block::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
 If::If(ExprPtr&& boolE, unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line)
     : Stmt(line), boolE_(move(boolE)), ifE_(move(ifE)), elseE_(move(elseE)) {}
+
+const StmtPtr* If::lastStmt() const {
+  const StmtPtr* last = elseE_->lastStmt();
+  return last ? last : &elseE_;
+}
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
@@ -62,6 +76,11 @@ void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
 While::While(ExprPtr&& boolE, unique_ptr<Block> body, size_t line)
     : Stmt(line), boolE_(move(boolE)), body_(move(body)) {}
+
+const StmtPtr* While::lastStmt() const {
+  const StmtPtr* last = body_->lastStmt();
+  return last ? last : (StmtPtr*) &body_;
+}
 
 void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkBodyLabel =
@@ -231,6 +250,15 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
   imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));
+}
+
+
+/********
+ * Stmt *
+ ********/
+
+const StmtPtr* Stmt::lastStmt() const {
+  return nullptr;
 }
 
 
