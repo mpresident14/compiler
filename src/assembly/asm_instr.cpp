@@ -8,7 +8,6 @@ using namespace std;
 
 namespace assem {
 
-// TODO: Turn at()s into []s and make noexcept when all testing is complete.
 
 /****************
  * constructors *

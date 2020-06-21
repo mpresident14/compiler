@@ -10,7 +10,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -31,6 +30,9 @@ class Stmt {
 public:
   constexpr Stmt(size_t line) : line_(line) {}
   virtual ~Stmt() {}
+  /* Retrieves the last statement within this statement. Return nullptr if this
+   * statement does not contain any statements */
+  virtual const std::unique_ptr<Stmt>* lastStmt() const;
   /* If the statement typechecks, generate the corresponding intermediate
    * statements */
   virtual void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) = 0;
@@ -136,7 +138,6 @@ public:
 
   TypePtr returnType_;
   std::string name_;
-  std::optional<std::string> mangledName_;
   std::vector<TypePtr> paramTypes_;
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
@@ -181,6 +182,7 @@ public:
 class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts, size_t line);
+  const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   std::vector<StmtPtr> stmts_;
@@ -193,6 +195,7 @@ public:
      std::unique_ptr<Block>&& ifE,
      StmtPtr&& elseE,
      size_t line);
+  const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   ExprPtr boolE_;
@@ -204,6 +207,7 @@ public:
 class While : public Stmt {
 public:
   While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
+  const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   ExprPtr boolE_;
