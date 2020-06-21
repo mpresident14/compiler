@@ -118,10 +118,10 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
 
   // Const optimization
   if (eOpt2->getType() == ExprType::CONST) {
-    long n2 = static_cast<const Const*>(eOpt2.get())->getInt();
+    long n2 = static_cast<const Const*>(eOpt2.get())->n_;
     if (eOpt1->getType() == ExprType::CONST) {
       // const OP const
-      long n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+      long n1 = static_cast<const Const*>(eOpt1.get())->n_;
       return make_unique<Const>(op(n1, n2));
     } else if (tryHalfConst) {
       // x OP const
@@ -129,7 +129,7 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
     }
   } else if (tryHalfConst && eOpt1->getType() == ExprType::CONST) {
     // const OP x
-    long n1 = static_cast<const Const*>(eOpt1.get())->getInt();
+    long n1 = static_cast<const Const*>(eOpt1.get())->n_;
     return HalfConst(move(eOpt2), n1, bOp_, true).optimize();
   }
 
@@ -147,7 +147,7 @@ ExprPtr MemDeref::optimize() {
   if (multOpt) {
     // If multiplier is a constant, just increase the offset
     if (const Const* constMult = dynamic_cast<const Const*>(mult_.get())) {
-      offset_ += constMult->getInt() * numBytes_;
+      offset_ += constMult->n_ * numBytes_;
       multOpt = nullptr;
     }
   }

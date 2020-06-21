@@ -114,8 +114,8 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
       bool (*opFn)(long, long) = getRopFn(rop_);
       // TODO: Log warning about always true/false
       bool res = opFn(
-          static_cast<const Const*>(eOpt1.get())->getInt(),
-          static_cast<const Const*>(eOpt2.get())->getInt());
+          static_cast<const Const*>(eOpt1.get())->n_,
+          static_cast<const Const*>(eOpt2.get())->n_);
       if (res) {
         instrs.emplace_back(
             new assem::JumpOp("jmp " + ifTrue_->getName(), {}, {}, ifTrue_));
@@ -181,7 +181,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   ExprType lhsType = eOpt1->getType();
   if (lhsType == ExprType::TEMP) {
     // Move e2 into the Temp of e1
-    eOpt2->toAssemInstrs(static_cast<Temp*>(eOpt1.get())->getTemp(), instrs);
+    eOpt2->toAssemInstrs(static_cast<Temp*>(eOpt1.get())->t_, instrs);
   } else if (lhsType == ExprType::MEM_DEREF) {
     // Move e2 into the address of e1
 
@@ -189,7 +189,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     vector<int> srcTemps;
     size_t tempIndex = 0;
     const MemDeref* memDeref = static_cast<MemDeref*>(eOpt1.get());
-    size_t numBytes = memDeref->getNumBytes();
+    size_t numBytes = memDeref->numBytes_;
 
     string asmChunk2 = eOpt2->asmChunk(numBytes, true, 0);
     if (!isConstChunk(asmChunk2)) {
@@ -197,9 +197,9 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
       srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
     }
 
-    srcTemps.push_back(memDeref->getAddr()->toAssemInstrs(instrs));
-    if (memDeref->getMult()) {
-      srcTemps.push_back(memDeref->getMult()->toAssemInstrs(instrs));
+    srcTemps.push_back(memDeref->addr_->toAssemInstrs(instrs));
+    if (memDeref->mult_) {
+      srcTemps.push_back(memDeref->mult_->toAssemInstrs(instrs));
     }
 
     ostringstream asmOp;

@@ -270,7 +270,7 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   if (addr_->getType() == ExprType::LABEL_ADDR) {
     // If we are calling a function name, just call it directly
     instrs.emplace_back(new assem::Operation(
-        "callq " + static_cast<LabelAddr*>(addr_.get())->getName(),
+        "callq " + static_cast<LabelAddr*>(addr_.get())->name_,
         move(srcTemps),
         regsAsInts(CALLER_SAVE_REGS)));
   } else {

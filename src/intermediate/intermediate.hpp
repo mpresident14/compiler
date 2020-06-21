@@ -82,7 +82,6 @@ public:
   Program(std::vector<DeclPtr>&& decls);
   assem::Program toAssemProg() const;
 
-private:
   std::vector<DeclPtr> decls_;
 };
 
@@ -92,7 +91,6 @@ public:
   Func(const std::string& name, std::vector<StmtPtr>&& stmts);
   assem::DeclPtr toAssemDecl() override;
 
-private:
   std::string name_;
   std::vector<StmtPtr> stmts_;
 };
@@ -103,7 +101,6 @@ public:
   Ints(std::string_view label, std::vector<int>&& nums);
   assem::DeclPtr toAssemDecl() override;
 
-private:
   std::string label_;
   std::vector<int> nums_;
 };
@@ -124,7 +121,6 @@ public:
    * is constructed. */
   assem::Label* genInstr();
 
-private:
   std::string name_;
   std::unique_ptr<assem::Label> instr_ = nullptr;
 };
@@ -135,7 +131,6 @@ public:
   Jump(assem::Label* label);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-private:
   /* Owned by some MakeLabel or already in the assem::InstrPtr vector */
   assem::Label* label_;
 };
@@ -157,7 +152,6 @@ public:
       assem::Label* ifFalse);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-private:
   ExprPtr e1_;
   ExprPtr e2_;
   ROp rop_;
@@ -172,7 +166,6 @@ public:
   Assign(ExprPtr&& e1, ExprPtr&& e2);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-private:
   ExprPtr e1_;
   ExprPtr e2_;
 };
@@ -184,7 +177,6 @@ public:
   ExprStmt(ExprPtr&& expr);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-private:
   ExprPtr expr_;
 };
 
@@ -195,7 +187,6 @@ public:
   ReturnStmt(ExprPtr&& retValue);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
-private:
   ExprPtr retValue_;
 };
 
@@ -214,10 +205,8 @@ public:
       const override;
   std::string asmChunk(size_t numBytes, bool asSrc, size_t index)
       const override;
-  constexpr long getInt() const noexcept { return n_; }
   ExprPtr optimize() override;
 
-private:
   long n_;
 };
 
@@ -233,10 +222,7 @@ public:
   int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
-  constexpr int getTemp() const noexcept { return t_; }
 
-
-private:
   int t_;
 };
 
@@ -251,7 +237,6 @@ public:
       const override;
   ExprPtr optimize() override;
 
-private:
   void handleShifts(
       std::string asmCode,
       int temp,
@@ -286,12 +271,7 @@ public:
 
   std::string genAsmCode(size_t srcIndex) const;
 
-  const ExprPtr& getAddr() const noexcept { return addr_; }
-  u_char getNumBytes() const noexcept { return numBytes_; }
-  long getOffset() const noexcept { return offset_; }
-  const ExprPtr& getMult() const noexcept { return mult_; }
 
-private:
   long offset_;
   ExprPtr addr_;
   ExprPtr mult_;
@@ -309,7 +289,6 @@ public:
       const override;
   ExprPtr optimize() override;
 
-// private:
   std::vector<StmtPtr> stmts_;
   ExprPtr expr_;
 };
@@ -326,9 +305,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  const std::string& getName() const noexcept { return name_; }
 
-private:
   std::string name_;
 };
 
@@ -344,7 +321,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-private:
+
   ExprPtr addr_;
   std::vector<ExprPtr> params_;
   bool hasReturnValue_;
@@ -382,7 +359,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  // private:
+
   ExprPtr expr_;
   long n_;
   BOp bOp_;
@@ -400,7 +377,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  // private:
+
   long offset_;
   ExprPtr e1_;
   ExprPtr e2_;
@@ -418,7 +395,7 @@ public:
       const override;
   ExprPtr optimize() override;
 
-  // private:
+
   ExprPtr expr_;
   bool inc_;
 };
