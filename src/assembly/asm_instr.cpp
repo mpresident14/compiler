@@ -40,9 +40,9 @@ namespace {
 }  // namespace
 
 
-/*****************
- * updateLiveout *
- *****************/
+/********************
+ * updateLiveIn/Out *
+ ********************/
 
 namespace {
 
@@ -109,9 +109,6 @@ bool Return::updateLiveOut(
   return false;
 }
 
-/****************
- * updateLiveIn *
- ****************/
 
 bool Instruction::updateLiveIn(
     std::unordered_set<int>& liveIn,
