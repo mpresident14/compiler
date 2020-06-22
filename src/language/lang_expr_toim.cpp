@@ -156,25 +156,42 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
  * TernaryOp *
  *************/
 
-// TODO: Use ImWrapper
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
-  string newVar = TempVar::newVar(e1_->toImExpr(ctx).type, ctx);
-  unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
+  size_t e1Line = e1_->line_;
+  size_t e2Line = e2_->line_;
+  ExprInfo e1Info = e1_->toImExpr(ctx);
+  ExprInfo e2Info = e2_->toImExpr(ctx);
+  if (!isConvertible(*e1Info.type, *e2Info.type, nullptr)) {
+    ctx.getLogger().logError();
+  }
+  const TypePtr& widerType =
+      e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
+
+  int t = newTemp();
+  ExprPtr tempWrapper1 =
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
+  ExprPtr tempWrapper2 =
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
+  ExprPtr e1Wrapper =
+      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
+  ExprPtr e2Wrapper =
+      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
+
+  unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
   ifBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar, e1_->line_), move(e1_)));
+      make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
 
   unique_ptr<Block> elseBlock =
-      make_unique<Block>(vector<StmtPtr>{}, e2_->line_);
+      make_unique<Block>(vector<StmtPtr>{}, e2Line);
   elseBlock->stmts_.push_back(
-      make_unique<Assign>(make_unique<TempVar>(newVar, e2_->line_), move(e2_)));
+      make_unique<Assign>(move(tempWrapper2), move(e2Wrapper)));
 
   vector<im::StmtPtr> imStmts;
   If(move(boolE_), move(ifBlock), move(elseBlock), line_)
       .toImStmts(imStmts, ctx);
 
-  ExprInfo exprInfo = TempVar(newVar, line_).toImExpr(ctx);
-  return { make_unique<im::DoThenEval>(move(imStmts), move(exprInfo.imExpr)),
-           move(exprInfo.type) };
+  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(t)),
+           move(widerType) };
 }
 
 
@@ -371,28 +388,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
  * ImWrapper *
  *************/
 
-ExprInfo ImWrapper::toImExpr(Ctx& ctx) { return { move(imExpr_), type_ }; }
-
-
-/***********
- * TempVar *
- ***********/
-
-std::string TempVar::newVar(TypePtr type, Ctx& ctx) {
-  static size_t i = 0;
-  string var = "_" + to_string(i++);
-  ctx.insertVar(var, type, 0);
-  return var;
-}
-
-ExprInfo TempVar::toImExpr(Ctx& ctx) {
-  const Ctx::VarInfo* varInfo = ctx.lookupVar(var_, 0);
-  if (!varInfo) {
-    throw invalid_argument("TempVar::toImExpr");
-  }
-
-  return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
-}
+ExprInfo ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
 
 
 /********

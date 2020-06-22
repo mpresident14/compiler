@@ -174,6 +174,10 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     Assign(move(lhsClone), make_unique<BinaryOp>(move(lhs_), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
   } else {
+    // For memory dereferences, we have to ensure that we don't calculate them
+    // twice because then any side effects will be duplicated. Therefore, we
+    // calculate the address and save that to a temp before performing the
+    // update.
     size_t lhsLine = lhs_->line_;
     ExprInfo eInfo = lhs_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());

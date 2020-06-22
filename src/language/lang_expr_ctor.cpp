@@ -92,7 +92,4 @@ ExprPtr ImWrapper::clone() const {
   throw invalid_argument("No clone for ImWrapper");
 }
 
-TempVar::TempVar(string_view var, size_t line) : Expr(line), var_(var) {}
-ExprPtr TempVar::clone() const { return make_unique<TempVar>(var_, line_); }
-
 }  // namespace language

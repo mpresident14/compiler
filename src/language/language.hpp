@@ -492,20 +492,6 @@ public:
 };
 
 
-class TempVar : public Expr {
-public:
-  static std::string newVar(TypePtr type, Ctx& ctx);
-
-  TempVar(std::string_view var, size_t line);
-  ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
-  ExprInfo toImExpr(Ctx& ctx) override;
-  ExprPtr clone() const override;
-
-
-  std::string var_;
-};
-
-
 inline std::string newLabel() {
   static int i = 0;
   return "L" + std::to_string(i++);
