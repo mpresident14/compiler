@@ -140,7 +140,7 @@ ostream& operator<<(ostream& out, const Type& type) {
       out << static_cast<const Class&>(type).className;
       break;
     case TypeName::ANY:
-      out << "any";
+      out << "???";
       break;
     default:
       throw invalid_argument("Type::operator<<");
