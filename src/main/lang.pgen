@@ -80,8 +80,8 @@ BITOREQ     "\|="
 XOREQ       "^="
 LSHIFTEQ    "<<="
 ARSHIFTEQ   ">>="
-// INC         "++"
-// DEC         "--"
+INC         "\+\+"
+DEC         "--"
 
 AND         "&&"
 OR          "\|\|"
@@ -148,7 +148,7 @@ LSHIFT ARSHIFT                    #left
 PLUS MINUS                        #left
 STAR FSLASH MOD                   #left
 UNARY_MINUS BANG                  #nonassoc
-LPAREN LBRACKET DOT               #left
+LPAREN LBRACKET DOT INC DEC       #left
 COLON2                            #left
 
 
@@ -238,6 +238,8 @@ Expr -> { ExprPtr }
    | NonVoidType LBRACKET Expr RBRACKET          % make_unique<NewArray>(move(#0), move(#2), #line) %
    | NonVoidType LBRACKET RBRACKET
      LBRACE Exprs RBRACE                         % make_unique<NewArray>(move(#0), move(#4), #line) %
+   | Expr INC                                    % make_unique<IncDec>(move(#0), true, false, #line) %
+   | Expr DEC                                    % make_unique<IncDec>(move(#0), false, false, #line) %
    | LValue                                      % move(#0) %
    | LPAREN Expr RPAREN                          % move(#1) %
 

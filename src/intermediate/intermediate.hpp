@@ -261,7 +261,7 @@ public:
 class MemDeref : public Expr {
 public:
   /* mult may be nullptr */
-  MemDeref(long offset, ExprPtr&& addr, ExprPtr&& mult, u_char numBytes);
+  MemDeref(long offset, ExprPtr&& baseAddr, ExprPtr&& mult, u_char numBytes);
   constexpr ExprType getType() const noexcept override {
     return ExprType::MEM_DEREF;
   }
@@ -273,9 +273,12 @@ public:
 
 
   long offset_;
-  ExprPtr addr_;
+  ExprPtr baseAddr_;
   ExprPtr mult_;
   u_char numBytes_;
+
+protected:
+  ExprPtr optHelper();
 };
 
 
@@ -367,21 +370,15 @@ public:
 };
 
 
-class Leaq : public Expr {
+class Leaq : public MemDeref {
 public:
-  Leaq(long offset, ExprPtr&& e1, ExprPtr&& e2, u_char n);
+  using MemDeref::MemDeref;
   constexpr ExprType getType() const noexcept override {
     return ExprType::LEAQ;
   }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
       const override;
   ExprPtr optimize() override;
-
-
-  long offset_;
-  ExprPtr e1_;
-  ExprPtr e2_;
-  u_char n_;
 };
 
 

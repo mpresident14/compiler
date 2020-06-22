@@ -142,6 +142,11 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
  ************/
 
 ExprPtr MemDeref::optimize() {
+  return make_unique<MemDeref>(
+      offset_, baseAddr_->optimize(), optHelper(), numBytes_);
+}
+
+ExprPtr MemDeref::optHelper() {
   ExprPtr multOpt = mult_ ? mult_->optimize() : nullptr;
 
   if (multOpt) {
@@ -151,9 +156,7 @@ ExprPtr MemDeref::optimize() {
       multOpt = nullptr;
     }
   }
-
-  return make_unique<MemDeref>(
-      offset_, addr_->optimize(), move(multOpt), numBytes_);
+  return multOpt;
 }
 
 /**************
@@ -295,13 +298,13 @@ ExprPtr HalfConst::optimize() {
   if (bOp_ == BOp::PLUS) {
     if (Leaq* leaq = dynamic_cast<Leaq*>(eOpt.get())) {
       return make_unique<Leaq>(
-          leaq->offset_ + n_, move(leaq->e1_), move(leaq->e2_), leaq->n_);
+          leaq->offset_ + n_, move(leaq->baseAddr_), move(leaq->mult_), leaq->numBytes_);
     } else if (DoThenEval* dte = dynamic_cast<DoThenEval*>(eOpt.get())) {
       if (Leaq* leaq = dynamic_cast<Leaq*>(dte->expr_.get())) {
         return make_unique<DoThenEval>(
           move(dte->stmts_),
           make_unique<Leaq>(
-              leaq->offset_ + n_, move(leaq->e1_), move(leaq->e2_), leaq->n_));
+              leaq->offset_ + n_, move(leaq->baseAddr_), move(leaq->mult_), leaq->numBytes_));
       }
     }
   }
@@ -315,9 +318,9 @@ ExprPtr HalfConst::optimize() {
  ********/
 
 ExprPtr Leaq::optimize() {
-  return make_unique<Leaq>(offset_, e1_->optimize(), e2_->optimize(), n_);
+  return make_unique<Leaq>(
+      offset_, baseAddr_->optimize(), optHelper(), numBytes_);
 }
-
 
 /**********
  * IncDec *

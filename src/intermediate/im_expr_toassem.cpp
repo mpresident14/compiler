@@ -173,13 +173,13 @@ const char* movExtendSuffix(u_char numBytes) {
 
 MemDeref::MemDeref(long offset, ExprPtr&& addr, ExprPtr&& mult, u_char numBytes)
     : offset_(offset),
-      addr_(move(addr)),
+      baseAddr_(move(addr)),
       mult_(move(mult)),
       numBytes_(numBytes) {}
 
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   vector<int> srcTemps;
-  srcTemps.push_back(addr_->toAssemInstrs(instrs));
+  srcTemps.push_back(baseAddr_->toAssemInstrs(instrs));
 
   if (mult_) {
     srcTemps.push_back(mult_->toAssemInstrs(instrs));
@@ -200,7 +200,7 @@ string MemDeref::genAsmCode(size_t srcIndex) const {
   code << "(`8S" << srcIndex;
 
   if (mult_) {
-    code << ", `8S" << srcIndex + 1 << ", " << (size_t)numBytes_;
+    code << ", `8S" << srcIndex + 1 << ", " << (size_t) numBytes_;
   }
   code << ')';
   return code.str();
@@ -379,21 +379,17 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
  * Leaq *
  ********/
 
-Leaq::Leaq(long offset, ExprPtr&& e1, ExprPtr&& e2, u_char n)
-    : offset_(offset), e1_(move(e1)), e2_(move(e2)), n_(n) {}
-
-
 void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  int t1 = e1_->toAssemInstrs(instrs);
-  int t2 = e2_->toAssemInstrs(instrs);
-  ostringstream asmCode;
-  asmCode << "leaq ";
-  if (offset_ != 0) {
-    asmCode << offset_;
+  vector<int> srcTemps;
+  srcTemps.push_back(baseAddr_->toAssemInstrs(instrs));
+  if (mult_) {
+    srcTemps.push_back(mult_->toAssemInstrs(instrs));
   }
-  asmCode << "(`8S0, `8S1, " << (size_t)n_ << "), `8D0";
+
+  ostringstream asmCode;
+  asmCode << "leaq " << genAsmCode(0) << ", `8D0";
   instrs.emplace_back(
-      new assem::Operation(asmCode.str(), { t1, t2 }, { temp }, true));
+      new assem::Operation(asmCode.str(), move(srcTemps), { temp }, true));
 }
 
 

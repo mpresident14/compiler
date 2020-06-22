@@ -54,8 +54,8 @@ enum class ExprType {
   NEW_ARRAY,
   ARRAY_ACCESS,
   MEMBER_ACCESS,
+  INC_DEC,
   IM_WRAPPER,
-  TEMP_VAR
 };
 
 enum class UOp { NEG, NOT };
@@ -477,6 +477,20 @@ public:
 
   ExprPtr objExpr_;
   std::string member_;
+};
+
+
+class IncDec : public Expr {
+public:
+  IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line);
+  ExprType getType() const noexcept override { return ExprType::INC_DEC; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+
+
+  ExprPtr expr_;
+  bool inc_;
+  bool pre_;
 };
 
 

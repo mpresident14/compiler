@@ -187,7 +187,7 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
         make_unique<im::Temp>(t),
         make_unique<im::Leaq>(
             memDeref->offset_,
-            move(memDeref->addr_),
+            move(memDeref->baseAddr_),
             move(memDeref->mult_),
             memDeref->numBytes_)));
 

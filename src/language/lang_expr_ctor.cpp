@@ -86,6 +86,13 @@ ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
 
+IncDec::IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line)
+    : Expr(line), expr_(move(expr)), inc_(inc), pre_(pre) {}
+ExprPtr IncDec::clone() const {
+  return make_unique<IncDec>(expr_->clone(), inc_, pre_, line_);
+}
+
+
 ImWrapper::ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line)
     : Expr(line), imExpr_(move(imExpr)), type_(move(type)) {}
 ExprPtr ImWrapper::clone() const {

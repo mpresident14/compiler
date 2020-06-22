@@ -197,7 +197,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
       srcTemps.push_back(eOpt2->toAssemInstrs(instrs));
     }
 
-    srcTemps.push_back(memDeref->addr_->toAssemInstrs(instrs));
+    srcTemps.push_back(memDeref->baseAddr_->toAssemInstrs(instrs));
     if (memDeref->mult_) {
       srcTemps.push_back(memDeref->mult_->toAssemInstrs(instrs));
     }

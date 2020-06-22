@@ -181,8 +181,7 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   ifBlock->stmts_.push_back(
       make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
 
-  unique_ptr<Block> elseBlock =
-      make_unique<Block>(vector<StmtPtr>{}, e2Line);
+  unique_ptr<Block> elseBlock = make_unique<Block>(vector<StmtPtr>{}, e2Line);
   elseBlock->stmts_.push_back(
       make_unique<Assign>(move(tempWrapper2), move(e2Wrapper)));
 
@@ -358,6 +357,7 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
           ->toImExprAssert(
               isIntegral, "Operator[] requires an integral type", ctx)
           .imExpr;
+
   // Add 8 bytes to skip the size field
   return { make_unique<im::MemDeref>(
                8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
@@ -381,6 +381,61 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   }
 
   return dummyInfo();
+}
+
+
+/**********
+ * IncDec *
+ **********/
+
+ExprInfo IncDec::toImExpr(Ctx& ctx) {
+  BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
+  // post
+  vector<im::StmtPtr> imStmts;
+  if (expr_->getType() == ExprType::VAR) {
+    ExprInfo eInfo = expr_->clone()->toImExpr(ctx);
+    int t = newTemp();
+    int tVar = static_cast<im::Temp*>(eInfo.imExpr.get())->t_;
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(t), make_unique<im::Temp>(tVar)));
+    Update(move(expr_), bOp, make_unique<ConstInt>(1, line_)).toImStmts(imStmts, ctx);
+    return { make_unique<im::DoThenEval>(
+                 move(imStmts), make_unique<im::Temp>(t)),
+             move(eInfo.type) };
+  } else {
+    size_t eLine = expr_->line_;
+    ExprInfo eInfo = expr_->toImExpr(ctx);
+    im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
+
+    int t = newTemp();
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(t),
+        make_unique<im::Leaq>(
+            memDeref->offset_,
+            move(memDeref->baseAddr_),
+            move(memDeref->mult_),
+            memDeref->numBytes_)));
+
+    int t2 = newTemp();
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(t2),
+        make_unique<im::MemDeref>(
+            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_)));
+
+    Update(
+        make_unique<ImWrapper>(
+            make_unique<im::MemDeref>(
+                0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
+            eInfo.type,
+            eLine),
+        bOp,
+        make_unique<ConstInt>(1, line_))
+        .toImStmts(imStmts, ctx);
+
+    return { make_unique<im::DoThenEval>(
+                 move(imStmts), make_unique<im::Temp>(t2)),
+             move(eInfo.type) };
+  }
 }
 
 
