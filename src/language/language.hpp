@@ -54,6 +54,7 @@ enum class ExprType {
   NEW_ARRAY,
   ARRAY_ACCESS,
   MEMBER_ACCESS,
+  IM_WRAPPER,
   TEMP_VAR
 };
 
@@ -479,19 +480,29 @@ public:
 };
 
 
+class ImWrapper : public Expr {
+public:
+  ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line);
+  ExprType getType() const noexcept override { return ExprType::IM_WRAPPER; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+
+  im::ExprPtr imExpr_;
+  TypePtr type_;
+};
+
+
 class TempVar : public Expr {
 public:
-  static std::string newVar(
-      TypePtr type,
-      Ctx& ctx);
+  static std::string newVar(TypePtr type, Ctx& ctx);
 
-  TempVar(std::string_view name, size_t line);
+  TempVar(std::string_view var, size_t line);
   ExprType getType() const noexcept override { return ExprType::TEMP_VAR; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
 
-  std::string name_;
+  std::string var_;
 };
 
 

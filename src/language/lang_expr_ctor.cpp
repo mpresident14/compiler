@@ -29,10 +29,7 @@ ExprPtr BinaryOp::clone() const {
 }
 
 TernaryOp::TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2)
-    : Expr(boolE->line_),
-      boolE_(move(boolE)),
-      e1_(move(e1)),
-      e2_(move(e2)) {}
+    : Expr(boolE->line_), boolE_(move(boolE)), e1_(move(e1)), e2_(move(e2)) {}
 ExprPtr TernaryOp::clone() const {
   return make_unique<TernaryOp>(boolE_->clone(), e1_->clone(), e2_->clone());
 }
@@ -83,16 +80,19 @@ ExprPtr ArrayAccess::clone() const {
   return make_unique<ArrayAccess>(arrExpr_->clone(), index_->clone(), line_);
 }
 
-MemberAccess::MemberAccess(
-    ExprPtr&& objExpr,
-    string_view member,
-    size_t line)
+MemberAccess::MemberAccess(ExprPtr&& objExpr, string_view member, size_t line)
     : Expr(line), objExpr_(move(objExpr)), member_(member) {}
 ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
 
-TempVar::TempVar(string_view name, size_t line) : Expr(line), name_(name) {}
-ExprPtr TempVar::clone() const { return make_unique<TempVar>(name_, line_); }
+ImWrapper::ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line)
+    : Expr(line), imExpr_(move(imExpr)), type_(move(type)) {}
+ExprPtr ImWrapper::clone() const {
+  throw invalid_argument("No clone for ImWrapper");
+}
+
+TempVar::TempVar(string_view var, size_t line) : Expr(line), var_(var) {}
+ExprPtr TempVar::clone() const { return make_unique<TempVar>(var_, line_); }
 
 }  // namespace language

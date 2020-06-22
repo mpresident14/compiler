@@ -82,7 +82,7 @@ success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
 success_test(array_test "0,1,1,2,3,5,8,13,21,34")
 success_test(cast_test "!,!,15,6,6,4096")
 success_test(opt_test "2,73,89,292,88,-2,89")
-success_test(update_test "1,2,4,1,9")
+success_test(update_test "1,2,4,1,9,2,3,3")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
 success_test(import_test "1,2,3,4,5,6,7" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")

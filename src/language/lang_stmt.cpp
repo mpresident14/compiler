@@ -147,7 +147,6 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprType lhsExprType = lhs_->getType();
   ExprInfo lhsInfo = lhs_->toImExpr(ctx);
 
   // TODO: This is wrong, need to check if MemberAccess::objExpr_ has type ARRAY
@@ -170,9 +169,40 @@ Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
     : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
 
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprPtr lhsClone = lhs_->clone();
-  Assign(move(lhsClone), make_unique<BinaryOp>(move(lhs_), move(rhs_), bOp_))
-      .toImStmts(imStmts, ctx);
+  if (lhs_->getType() == ExprType::VAR) {
+    ExprPtr lhsClone = lhs_->clone();
+    Assign(move(lhsClone), make_unique<BinaryOp>(move(lhs_), move(rhs_), bOp_))
+        .toImStmts(imStmts, ctx);
+  } else {
+    size_t lhsLine = lhs_->line_;
+    ExprInfo eInfo = lhs_->toImExpr(ctx);
+    im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
+
+    int t = newTemp();
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::Temp>(t),
+        make_unique<im::Leaq>(
+            memDeref->offset_,
+            move(memDeref->addr_),
+            move(memDeref->mult_),
+            memDeref->numBytes_)));
+
+    ExprPtr memWrapper1 = make_unique<ImWrapper>(
+        make_unique<im::MemDeref>(
+            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
+        eInfo.type,
+        lhsLine);
+    ExprPtr memWrapper2 = make_unique<ImWrapper>(
+        make_unique<im::MemDeref>(
+            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
+        eInfo.type,
+        lhsLine);
+
+    Assign(
+        move(memWrapper1),
+        make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
+        .toImStmts(imStmts, ctx);
+  }
 }
 
 /***********

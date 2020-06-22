@@ -156,6 +156,7 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
  * TernaryOp *
  *************/
 
+// TODO: Use ImWrapper
 ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   string newVar = TempVar::newVar(e1_->toImExpr(ctx).type, ctx);
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1_->line_);
@@ -366,6 +367,13 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
 }
 
 
+/*************
+ * ImWrapper *
+ *************/
+
+ExprInfo ImWrapper::toImExpr(Ctx& ctx) { return { move(imExpr_), type_ }; }
+
+
 /***********
  * TempVar *
  ***********/
@@ -378,10 +386,11 @@ std::string TempVar::newVar(TypePtr type, Ctx& ctx) {
 }
 
 ExprInfo TempVar::toImExpr(Ctx& ctx) {
-  const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, 0);
+  const Ctx::VarInfo* varInfo = ctx.lookupVar(var_, 0);
   if (!varInfo) {
     throw invalid_argument("TempVar::toImExpr");
   }
+
   return { make_unique<im::Temp>(varInfo->temp), varInfo->type };
 }
 
