@@ -397,34 +397,42 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
     int tPostRes;
 
     if (!pre_) {
+      // movq var, tPostRes (post)
       tPostRes = newTemp();
       imStmts.push_back(make_unique<im::Assign>(
           make_unique<im::Temp>(tPostRes), make_unique<im::Temp>(tVar)));
     }
 
+    // var +/-= 1
     Update(move(lValue_), bOp, make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
+
+    // return var (pre) or tPostRes (post)
     return { make_unique<im::DoThenEval>(
-                 move(imStmts),
-                 make_unique<im::Temp>(pre_ ? tVar : tPostRes)),
+                 move(imStmts), make_unique<im::Temp>(pre_ ? tVar : tPostRes)),
              move(eInfo.type) };
 
   } else {
+    // As with Update, we have to make sure we don't duplicated any side effects
+    // by calculating the memory address twice
     size_t eLine = lValue_->line_;
     ExprInfo eInfo = lValue_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
+    // movq &expr, tAddr
     int tAddr = newTemp();
     imStmts.push_back(Update::assignAddr(tAddr, memDeref));
 
     int tPostRes;
     if (!pre_) {
+      // movq tAddr, tPosRes (post)
       tPostRes = newTemp();
       imStmts.push_back(make_unique<im::Assign>(
           make_unique<im::Temp>(tPostRes),
           Update::derefTemp(tAddr, memDeref->numBytes_)));
     }
 
+    // *tAddr +/-= 1
     Update(
         make_unique<ImWrapper>(
             Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
@@ -432,6 +440,7 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
 
+    // return *tAddr (pre) or *tPostRes (post)
     return { make_unique<im::DoThenEval>(
                  move(imStmts),
                  pre_ ? Update::derefTemp(tAddr, memDeref->numBytes_)
