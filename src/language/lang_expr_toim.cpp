@@ -127,8 +127,7 @@ namespace {
   bool checkIntegral(const Type& type, im::BOp op, size_t line, Ctx& ctx) {
     if (!isIntegral(type)) {
       ostringstream err;
-      err << "Binary operator " << op << " expected integral types, got "
-          << type;
+      err << "Operator " << op << " expected integral types, got " << type;
       ctx.getLogger().logError(line, err.str());
       return false;
     }
@@ -390,50 +389,53 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
 
 ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
-  // post
   vector<im::StmtPtr> imStmts;
+
   if (expr_->getType() == ExprType::VAR) {
     ExprInfo eInfo = expr_->clone()->toImExpr(ctx);
-    int t = newTemp();
+
+    int tPostRes;
     int tVar = static_cast<im::Temp*>(eInfo.imExpr.get())->t_;
-    imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(t), make_unique<im::Temp>(tVar)));
-    Update(move(expr_), bOp, make_unique<ConstInt>(1, line_)).toImStmts(imStmts, ctx);
+    if (!pre_) {
+      tPostRes = newTemp();
+      imStmts.push_back(make_unique<im::Assign>(
+          make_unique<im::Temp>(tPostRes), make_unique<im::Temp>(tVar)));
+    }
+
+    Update(move(expr_), bOp, make_unique<ConstInt>(1, line_))
+        .toImStmts(imStmts, ctx);
     return { make_unique<im::DoThenEval>(
-                 move(imStmts), make_unique<im::Temp>(t)),
+                 move(imStmts),
+                 make_unique<im::Temp>(pre_ ? tVar : tPostRes)),
              move(eInfo.type) };
+
   } else {
     size_t eLine = expr_->line_;
     ExprInfo eInfo = expr_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
-    int t = newTemp();
-    imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(t),
-        make_unique<im::Leaq>(
-            memDeref->offset_,
-            move(memDeref->baseAddr_),
-            move(memDeref->mult_),
-            memDeref->numBytes_)));
+    int tAddr = newTemp();
+    imStmts.push_back(Update::assignAddr(tAddr, memDeref));
 
-    int t2 = newTemp();
-    imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(t2),
-        make_unique<im::MemDeref>(
-            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_)));
+    int tPostRes;
+    if (!pre_) {
+      tPostRes = newTemp();
+      imStmts.push_back(make_unique<im::Assign>(
+          make_unique<im::Temp>(tPostRes),
+          Update::derefTemp(tAddr, memDeref->numBytes_)));
+    }
 
     Update(
         make_unique<ImWrapper>(
-            make_unique<im::MemDeref>(
-                0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
-            eInfo.type,
-            eLine),
+            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
 
     return { make_unique<im::DoThenEval>(
-                 move(imStmts), make_unique<im::Temp>(t2)),
+                 move(imStmts),
+                 pre_ ? Update::derefTemp(tAddr, memDeref->numBytes_)
+                      : (im::ExprPtr)make_unique<im::Temp>(tPostRes)),
              move(eInfo.type) };
   }
 }

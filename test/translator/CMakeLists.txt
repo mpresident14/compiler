@@ -109,7 +109,7 @@ error_test(param_test
 error_test(type_test
     "('Error','6','Expected')
     ('Error','7','Expected')
-    ('Error','8','Binary')
+    ('Error','8','Operator')
     ('Error','9','Expected')
     ('Error','10','Expected')
     ('Error','11','Expected')

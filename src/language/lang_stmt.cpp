@@ -105,7 +105,7 @@ ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprType exprType = expr_->getType();
-  if (!(exprType == ExprType::CALL_EXPR)) {
+  if (!(exprType == ExprType::CALL_EXPR || exprType == ExprType::INC_DEC)) {
     ctx.getLogger().logWarning(line_, "Unused expression.");
     return;
   }
@@ -147,8 +147,6 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
     : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
-
   if (lhs_->getType() == ExprType::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lhs_.get())
               ->objExpr_->toImExpr(ctx)
@@ -158,6 +156,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
+  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
   imStmts.emplace_back(new im::Assign(
       move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
 }
@@ -165,6 +164,22 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 /**********
  * Update *
  **********/
+
+std::unique_ptr<im::MemDeref> Update::derefTemp(int temp, u_char numBytes) {
+  return make_unique<im::MemDeref>(
+      0, make_unique<im::Temp>(temp), nullptr, numBytes);
+}
+
+std::unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref) {
+  return make_unique<im::Assign>(
+      make_unique<im::Temp>(temp),
+      make_unique<im::Leaq>(
+          memDeref->offset_,
+          move(memDeref->baseAddr_),
+          move(memDeref->mult_),
+          memDeref->numBytes_));
+}
+
 Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
     : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
 
@@ -183,24 +198,12 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
     int t = newTemp();
-    imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::Temp>(t),
-        make_unique<im::Leaq>(
-            memDeref->offset_,
-            move(memDeref->baseAddr_),
-            move(memDeref->mult_),
-            memDeref->numBytes_)));
+    imStmts.push_back(assignAddr(t, memDeref));
 
     ExprPtr memWrapper1 = make_unique<ImWrapper>(
-        make_unique<im::MemDeref>(
-            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
-        eInfo.type,
-        lhsLine);
+        derefTemp(t, memDeref->numBytes_), eInfo.type, lhsLine);
     ExprPtr memWrapper2 = make_unique<ImWrapper>(
-        make_unique<im::MemDeref>(
-            0, make_unique<im::Temp>(t), nullptr, memDeref->numBytes_),
-        eInfo.type,
-        lhsLine);
+        derefTemp(t, memDeref->numBytes_), eInfo.type, lhsLine);
 
     Assign(
         move(memWrapper1),

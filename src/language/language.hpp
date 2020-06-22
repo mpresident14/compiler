@@ -246,6 +246,9 @@ public:
 
 class Update : public Stmt {
 public:
+  static std::unique_ptr<im::MemDeref> derefTemp(int temp, u_char numBytes);
+  static std::unique_ptr<im::Assign> assignAddr(int temp, im::MemDeref* memDeref);
+
   Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 

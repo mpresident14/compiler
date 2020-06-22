@@ -148,6 +148,7 @@ LSHIFT ARSHIFT                    #left
 PLUS MINUS                        #left
 STAR FSLASH MOD                   #left
 UNARY_MINUS BANG                  #nonassoc
+PRE_INCDEC                        #right
 LPAREN LBRACKET DOT INC DEC       #left
 COLON2                            #left
 
@@ -238,6 +239,8 @@ Expr -> { ExprPtr }
    | NonVoidType LBRACKET Expr RBRACKET          % make_unique<NewArray>(move(#0), move(#2), #line) %
    | NonVoidType LBRACKET RBRACKET
      LBRACE Exprs RBRACE                         % make_unique<NewArray>(move(#0), move(#4), #line) %
+   | INC Expr     #prec PRE_INCDEC               % make_unique<IncDec>(move(#1), true, true, #line) %
+   | DEC Expr     #prec PRE_INCDEC               % make_unique<IncDec>(move(#1), false, true, #line) %
    | Expr INC                                    % make_unique<IncDec>(move(#0), true, false, #line) %
    | Expr DEC                                    % make_unique<IncDec>(move(#0), false, false, #line) %
    | LValue                                      % move(#0) %
