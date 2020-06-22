@@ -261,7 +261,7 @@ ExprPtr HalfConst::optimize() {
       case BOp::OR:
       case BOp::LSHIFT:
         if (reversed_) {
-          throw invalid_argument("HalfConst::optimize(n == 0, LSHIFT)");
+          throw invalid_argument("HalfConst::optimize(n == 1, LSHIFT)");
         }
         // Fall thru
       case BOp::XOR:
@@ -276,7 +276,7 @@ ExprPtr HalfConst::optimize() {
     vector<size_t> setBits = getSetBits(n_);
     if (setBits.size() == 1) {
       return make_unique<HalfConst>(
-          move(eOpt), setBits[0], BOp::LSHIFT, reversed_);
+          move(eOpt), setBits[0], BOp::LSHIFT, false);
     } else if (setBits.size() == 2) {
       vector<StmtPtr> stmts;
       int t = newTemp();
@@ -285,9 +285,9 @@ ExprPtr HalfConst::optimize() {
           move(stmts),
           make_unique<BinOp>(
               make_unique<HalfConst>(
-                  make_unique<Temp>(t), setBits[0], BOp::LSHIFT, reversed_),
+                  make_unique<Temp>(t), setBits[0], BOp::LSHIFT, false),
               make_unique<HalfConst>(
-                  make_unique<Temp>(t), setBits[1], BOp::LSHIFT, reversed_),
+                  make_unique<Temp>(t), setBits[1], BOp::LSHIFT, false),
               BOp::PLUS)
               ->optimize());
     }

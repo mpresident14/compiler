@@ -661,20 +661,6 @@ void tryReduceFn(ostream& out) {
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
   out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {
-        // vector<StackObj> stk;
-        // if (inputTokens.empty()) {
-        //   parseError(stk, inputTokens, 0);
-        // }
-
-        // stk.push_back(move(inputTokens[0]));
-        // vector<parser::Node*> dfaPath = { parser::root.get() };
-        // size_t i = 1;
-        // size_t inputSize = inputTokens.size();
-
-
-
-
-
         vector<StackObj> stk;
         vector<parser::Node*> dfaPath;
         size_t i = 0;

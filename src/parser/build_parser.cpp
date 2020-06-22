@@ -466,34 +466,27 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
     return RuleData{ {}, NONE };
   }
 
-  // Find the last token, if any
   int rulePrecedence = gd.concretes[reducibleRule->concrete].precedence;
-  auto ruleIter = find_if(
-      reducibleRule->symbols.crbegin(),
-      reducibleRule->symbols.crend(),
-      isToken);
+
   // If no override precedence and the rule has a token, check precedence of
   // last token
   int lastToken = NONE;
-  if (rulePrecedence == NONE && ruleIter != reducibleRule->symbols.crend()) {
-    lastToken = *ruleIter;
-    rulePrecedence = gd.tokens[tokenToFromIndex(lastToken)].precedence;
+  if (rulePrecedence == NONE) {
+    // Find the last token, if any
+    auto ruleIter = find_if(
+        reducibleRule->symbols.crbegin(),
+        reducibleRule->symbols.crend(),
+        isToken);
+    if (ruleIter != reducibleRule->symbols.crend()) {
+      lastToken = *ruleIter;
+      rulePrecedence = gd.tokens[tokenToFromIndex(lastToken)].precedence;
+    }
   }
 
   // Check for shift-reduce conflicts
   findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, gd);
 
-  // Reducible rule contains no tokens
-  if (lastToken == NONE) {
-    return RuleData{ optional(*reducibleRule), rulePrecedence };
-  }
-
-  // If there is rule precedence, get associativity
-  if (rulePrecedence == NONE) {
-    return RuleData{ optional(*reducibleRule), NONE };
-  } else {
-    return RuleData{ optional(*reducibleRule), rulePrecedence };
-  }
+  return RuleData{ optional(*reducibleRule), rulePrecedence };
 }
 
 
@@ -542,7 +535,6 @@ void condensedDFAToCode(
     ostream& out,
     const GrammarData& gd,
     const ParseFlags& parseFlags) {
-
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,

@@ -236,10 +236,10 @@ public:
 
 class Assign : public Stmt {
 public:
-  Assign(ExprPtr&& lhs, ExprPtr&& rhs);
+  Assign(ExprPtr&& lValue, ExprPtr&& rhs);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-  ExprPtr lhs_;
+  ExprPtr lValue_;
   ExprPtr rhs_;
 };
 
@@ -249,10 +249,10 @@ public:
   static std::unique_ptr<im::MemDeref> derefTemp(int temp, u_char numBytes);
   static std::unique_ptr<im::Assign> assignAddr(int temp, im::MemDeref* memDeref);
 
-  Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs);
+  Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
-  ExprPtr lhs_;
+  ExprPtr lValue_;
   ExprPtr rhs_;
   BOp bOp_;
 };
@@ -485,13 +485,13 @@ public:
 
 class IncDec : public Expr {
 public:
-  IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line);
+  IncDec(ExprPtr&& lValue, bool inc, bool pre, size_t line);
   ExprType getType() const noexcept override { return ExprType::INC_DEC; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
 
-  ExprPtr expr_;
+  ExprPtr lValue_;
   bool inc_;
   bool pre_;
 };

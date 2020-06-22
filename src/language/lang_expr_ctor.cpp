@@ -87,9 +87,9 @@ ExprPtr MemberAccess::clone() const {
 }
 
 IncDec::IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line)
-    : Expr(line), expr_(move(expr)), inc_(inc), pre_(pre) {}
+    : Expr(line), lValue_(move(expr)), inc_(inc), pre_(pre) {}
 ExprPtr IncDec::clone() const {
-  return make_unique<IncDec>(expr_->clone(), inc_, pre_, line_);
+  return make_unique<IncDec>(lValue_->clone(), inc_, pre_, line_);
 }
 
 

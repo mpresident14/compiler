@@ -148,8 +148,8 @@ LSHIFT ARSHIFT                    #left
 PLUS MINUS                        #left
 STAR FSLASH MOD                   #left
 UNARY_MINUS BANG                  #nonassoc
-PRE_INCDEC                        #right
-LPAREN LBRACKET DOT INC DEC       #left
+INC DEC PRE_INCDEC                #nonassoc
+LPAREN LBRACKET DOT               #left
 COLON2                            #left
 
 
@@ -239,10 +239,10 @@ Expr -> { ExprPtr }
    | NonVoidType LBRACKET Expr RBRACKET          % make_unique<NewArray>(move(#0), move(#2), #line) %
    | NonVoidType LBRACKET RBRACKET
      LBRACE Exprs RBRACE                         % make_unique<NewArray>(move(#0), move(#4), #line) %
-   | INC Expr     #prec PRE_INCDEC               % make_unique<IncDec>(move(#1), true, true, #line) %
-   | DEC Expr     #prec PRE_INCDEC               % make_unique<IncDec>(move(#1), false, true, #line) %
-   | Expr INC                                    % make_unique<IncDec>(move(#0), true, false, #line) %
-   | Expr DEC                                    % make_unique<IncDec>(move(#0), false, false, #line) %
+   | INC LValue     #prec PRE_INCDEC             % make_unique<IncDec>(move(#1), true, true, #line) %
+   | DEC LValue     #prec PRE_INCDEC             % make_unique<IncDec>(move(#1), false, true, #line) %
+   | LValue INC                                  % make_unique<IncDec>(move(#0), true, false, #line) %
+   | LValue DEC                                  % make_unique<IncDec>(move(#0), false, false, #line) %
    | LValue                                      % move(#0) %
    | LPAREN Expr RPAREN                          % move(#1) %
 
@@ -251,6 +251,10 @@ LValue -> { ExprPtr }
   := IDENT                         % make_unique<Var>(#0, #line) %
    | Expr LBRACKET Expr RBRACKET   % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
    | Expr DOT IDENT                % make_unique<MemberAccess>(move(#0), #2, #line) %
+
+   // The lines below prevent us from reducing on INC LValue for something like "--arr[2]"
+   | LValue LBRACKET Expr RBRACKET   % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
+   | LValue DOT IDENT                % make_unique<MemberAccess>(move(#0), #2, #line) %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %

@@ -245,7 +245,7 @@ void parseGrammarDef(size_t concNum) {
 
   if (tokenStream.maybeConsume(PREC)) {
     string tokenName = tokenStream.consumeString(IDENT);
-    int prec = -1;
+    int prec = NONE;
     // Look up the index of the token in the map
     auto iter = tokenNameToIndex.find(tokenName);
     if (iter == tokenNameToIndex.end()) {

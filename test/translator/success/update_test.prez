@@ -22,8 +22,7 @@ void main() {
   print(arr[0]);
 
   int[] otherArr = int[]{1,2,3};
-  foo(otherArr)[1] += 1; // Should only call foo() once!
-
+  foo(otherArr)[1] += 1;          // Should only call foo() once!
   print(otherArr[0]);
   print(otherArr[1]);
   print(otherArr[2]);

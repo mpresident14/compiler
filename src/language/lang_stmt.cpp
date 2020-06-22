@@ -143,12 +143,12 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * Assign *
  **********/
 
-Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
-    : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)) {}
+Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
+    : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  if (lhs_->getType() == ExprType::MEMBER_ACCESS &&
-      static_cast<MemberAccess*>(lhs_.get())
+  if (lValue_->getType() == ExprType::MEMBER_ACCESS &&
+      static_cast<MemberAccess*>(lValue_.get())
               ->objExpr_->toImExpr(ctx)
               .type->typeName == TypeName::ARRAY) {
     ctx.getLogger().logError(
@@ -156,9 +156,9 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
-  ExprInfo lhsInfo = lhs_->toImExpr(ctx);
+  ExprInfo lValueInfo = lValue_->toImExpr(ctx);
   imStmts.emplace_back(new im::Assign(
-      move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
+      move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
 }
 
 /**********
@@ -180,30 +180,30 @@ std::unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref)
           memDeref->numBytes_));
 }
 
-Update::Update(ExprPtr&& lhs, BOp bOp, ExprPtr&& rhs)
-    : Stmt(lhs->line_), lhs_(move(lhs)), rhs_(move(rhs)), bOp_(bOp) {}
+Update::Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs)
+    : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)), bOp_(bOp) {}
 
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  if (lhs_->getType() == ExprType::VAR) {
-    ExprPtr lhsClone = lhs_->clone();
-    Assign(move(lhsClone), make_unique<BinaryOp>(move(lhs_), move(rhs_), bOp_))
+  if (lValue_->getType() == ExprType::VAR) {
+    ExprPtr lValueClone = lValue_->clone();
+    Assign(move(lValueClone), make_unique<BinaryOp>(move(lValue_), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
   } else {
     // For memory dereferences, we have to ensure that we don't calculate them
     // twice because then any side effects will be duplicated. Therefore, we
     // calculate the address and save that to a temp before performing the
     // update.
-    size_t lhsLine = lhs_->line_;
-    ExprInfo eInfo = lhs_->toImExpr(ctx);
+    size_t lValueLine = lValue_->line_;
+    ExprInfo eInfo = lValue_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
     int t = newTemp();
     imStmts.push_back(assignAddr(t, memDeref));
 
     ExprPtr memWrapper1 = make_unique<ImWrapper>(
-        derefTemp(t, memDeref->numBytes_), eInfo.type, lhsLine);
+        derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
     ExprPtr memWrapper2 = make_unique<ImWrapper>(
-        derefTemp(t, memDeref->numBytes_), eInfo.type, lhsLine);
+        derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
 
     Assign(
         move(memWrapper1),

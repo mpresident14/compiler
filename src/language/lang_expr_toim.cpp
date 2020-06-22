@@ -391,18 +391,18 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
 
-  if (expr_->getType() == ExprType::VAR) {
-    ExprInfo eInfo = expr_->clone()->toImExpr(ctx);
-
-    int tPostRes;
+  if (lValue_->getType() == ExprType::VAR) {
+    ExprInfo eInfo = lValue_->clone()->toImExpr(ctx);
     int tVar = static_cast<im::Temp*>(eInfo.imExpr.get())->t_;
+    int tPostRes;
+
     if (!pre_) {
       tPostRes = newTemp();
       imStmts.push_back(make_unique<im::Assign>(
           make_unique<im::Temp>(tPostRes), make_unique<im::Temp>(tVar)));
     }
 
-    Update(move(expr_), bOp, make_unique<ConstInt>(1, line_))
+    Update(move(lValue_), bOp, make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
     return { make_unique<im::DoThenEval>(
                  move(imStmts),
@@ -410,8 +410,8 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
              move(eInfo.type) };
 
   } else {
-    size_t eLine = expr_->line_;
-    ExprInfo eInfo = expr_->toImExpr(ctx);
+    size_t eLine = lValue_->line_;
+    ExprInfo eInfo = lValue_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
     int tAddr = newTemp();
