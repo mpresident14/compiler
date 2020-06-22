@@ -135,6 +135,8 @@ error_test(narrowing_test
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')")
+error_test(bad_member_test
+    "('Error','3','Cannot')")
 
 
 add_custom_target(

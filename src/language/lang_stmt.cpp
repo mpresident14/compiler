@@ -149,14 +149,14 @@ Assign::Assign(ExprPtr&& lhs, ExprPtr&& rhs)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   ExprInfo lhsInfo = lhs_->toImExpr(ctx);
 
-  // TODO: This is wrong, need to check if MemberAccess::objExpr_ has type ARRAY
   if (lhs_->getType() == ExprType::MEMBER_ACCESS &&
-      lhsInfo.type->typeName == TypeName::ARRAY) {
+      static_cast<MemberAccess*>(lhs_.get())
+              ->objExpr_->toImExpr(ctx)
+              .type->typeName == TypeName::ARRAY) {
     ctx.getLogger().logError(
         line_, "Cannot assign to length field of an array.");
     return;
   }
-
 
   imStmts.emplace_back(new im::Assign(
       move(lhsInfo.imExpr), rhs_->toImExprAssert(*lhsInfo.type, ctx)));
