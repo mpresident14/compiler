@@ -1,0 +1,33 @@
+int[] foo(int[] arr) {
+  arr[0] += 1;
+  return arr;
+}
+
+void main() {
+  int[] otherArr = int[]{1,2,3};
+  foo(otherArr)[1]++;             // Should only call foo() once!
+  print(otherArr[0]);
+  print(otherArr[1]);
+  print(otherArr[2]);
+
+  long a = otherArr[0]--;
+  print(a);
+  print(otherArr[0]);
+
+  a = ++otherArr[1];
+  print(a);
+  print(otherArr[1]);
+
+  a++;
+  print(a);
+  --a;
+  print(a);
+
+  int b = 5 * a++;
+  print(b);
+  print(a);
+
+  b += ++a;
+  print(b);
+  print(a);
+}
