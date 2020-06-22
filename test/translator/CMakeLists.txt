@@ -115,7 +115,9 @@ error_test(type_test
     ('Error','10','Expected')
     ('Error','11','Expected')
     ('Error','12','Expected')
-    ('Error','19','Comparison')")
+    ('Error','19','Comparison')
+    ('Error','26','Operator')
+    ('Error','27','Operator')")
 error_test(unused_test
     "('Warning','1','Unused')
     ('Warning','2','Unused')")
