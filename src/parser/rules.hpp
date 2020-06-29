@@ -14,7 +14,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
 
-
+// TODO: Make this a class
 struct DFARule {
 public:
   constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
@@ -30,6 +30,7 @@ public:
   /* Given a rule "S -> A.B", returns "S -> AB." */
   DFARule nextStep() const noexcept { return { concrete, symbols, pos + 1, lookahead }; }
 
+  // TODO: Use a member variable here
   int getPrecedence(const GrammarData& gd) const {
     // If no override precedence and the rule has a token, check precedence of
    // last token

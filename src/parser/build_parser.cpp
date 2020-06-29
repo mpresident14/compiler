@@ -396,6 +396,34 @@ void reduceReduceConflict(
   cerr << endl;
 }
 
+template <typename Cmp>
+void findReduceReduceConflicts(const DFARule* rule, std::set<DFARule*, Cmp>& reducibleRules) {
+  for (const DFARule* redRule : reducibleRules) {
+    // Not a reduce-reduce conflict if the lookahead sets are disjoint
+    if (!rule->lookahead.intersects(redRule->lookahead)) {
+      continue;
+    }
+
+    // If these rules conflict, pick one based on the criteria above
+    int rulePrec = rule.getPrecedence(gd);
+    int redRulePrec = reducibleRule->getPrecedence(gd);
+    if (rulePrec == redRulePrec) {
+      reduceReduceConflict(*reducibleRule, rule, gd);
+      if (rule.concrete < reducibleRule->concrete) {
+        reducibleRules.erase(redRule);
+        reducibleRules.insert(rule);
+      }
+    } else if (rulePrec > redRulePrec) {
+      reducibleRules.erase(redRule);
+      reducibleRules.insert(rule);
+    }
+    return;
+  }
+
+  // No conflicts with any rules in the set
+  reducibleRules.insert(rule);
+}
+
 void findShiftReduceConflicts(
     const DFARule& reducibleRule,
     int rulePrecedence,
@@ -429,90 +457,86 @@ void findShiftReduceConflicts(
 
 
 struct RuleData {
-  std::optional<DFARule> reducibleRule;
+  DFARule reducibleRule;
   int precedence;
 
-  bool operator==(const RuleData rhs) const noexcept { return reducibleRule == rhs.reducibleRule; }
+  // TODO: Do I need this?
+  // bool operator==(const RuleData& rhs) const noexcept { return reducibleRule ==
+  // rhs.reducibleRule; }
 };
 
 /*
  * Remove the pieces of the ruleSet we do not need to actually run the DFA.
  * Also find any shift- or reduce-reduce conflicts
  */
-RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
-  const DFARule* reducibleRule = nullptr;
+vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
+  auto ruleCmp = [&gd](const DFARule* r1, const DFARule* r2) {
+    return r1->getPrecedence(gd) > r2->getPrecedence(gd);
+  };
+  std::set<DFARule*, decltype(ruleCmp)> reducibleRules;
+
   for (const DFARule& rule : ruleSet) {
-    if (rule.atEnd()) {
-      // If there is already a reducible rule, we try to resolve it by
-      // the rule's override precedence. Otherwise, it picks the first declared
-      if (reducibleRule) {
-        int rulePrec = rule.getPrecedence(gd);
-        int redRulePrec = reducibleRule->getPrecedence(gd);
-        if (rulePrec == redRulePrec) {
-          // TODO: Not a reduce-reduce conflict if the lookahead sets are disjoint (but then we need
-          // to allow multiple rules in condensed rule set)
-          reduceReduceConflict(*reducibleRule, rule, gd);
-          if (rule.concrete < reducibleRule->concrete) {
-            reducibleRule = &rule;
-          }
-        } else if (rulePrec > redRulePrec) {
-          reducibleRule = &rule;
-        }
-      } else {
-        reducibleRule = &rule;
-      }
+    if (!rule.atEnd()) {
+      continue;
     }
+    findReduceReduceConflicts(&rule, reducibleRules);
   }
 
-  // No reducible rules
-  if (reducibleRule == nullptr) {
-    return RuleData{ {}, NONE };
+  vector<RuleData> ruleData;
+  if (reducibleRules.empty()) {
+    return ruleData;
   }
 
   // Check for shift-reduce conflicts
-  int rulePrecedence = reducibleRule->getPrecedence(gd);
-  findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, gd);
-  return RuleData{ optional(*reducibleRule), rulePrecedence };
-}
-
-
-string ruleDataToCode(const RuleData& ruleData) {
-  ostringstream code;
-  code << "RuleData{";
-
-  if (ruleData.reducibleRule.has_value()) {
-    const DFARule& rule = *ruleData.reducibleRule;
-    // RuleData::reducibleRule::concrete
-    code << "optional<DFARule>{{" << to_string(rule.concrete) << ',';
-
-    // RuleData::reducibleRule::symbols
-    code << '{';
-    for_each(rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n) {
-      code << to_string(n) << ',';
-    });
-    code << "},";
-
-    // RuleData::reducibleRule::pos
-    code << to_string(rule.pos) << ',';
-
-    // RuleData::reducibleRule::lookahead
-    code << '{';
-    const boost::dynamic_bitset<>& lookahead = rule.lookahead;
-    size_t lookaheadLen = lookahead.size();
-    for (size_t i = 0; i < lookaheadLen; ++i) {
-      code << to_string(lookahead[i]) << ',';
-    }
-    code << "}}},";
-  } else {
-    code << "optional<DFARule>{},";
+  for (const DFARule* redRule : reducibleRules) {
+    int rulePrecedence = redRule->getPrecedence(gd);
+    findShiftReduceConflicts(*redRule, rulePrecedence, ruleSet, gd);
+    ruleData.push_back({ *redRule, rulePrecedence });
   }
 
-  // RuleData::precedence
-  code << to_string(ruleData.precedence) << '}';
-
-  return code.str();
+  return ruleData;
 }
 
+void toCode(ostream& code, const RuleData& ruleData) {
+  ostringstream code;
+  code << "RuleData>{";
+
+  const DFARule& rule = ruleData.reducibleRule;
+  // RuleData::reducibleRule::concrete
+  code << "DFARule{" << to_string(rule.concrete) << ',';
+
+  // RuleData::reducibleRule::symbols
+  code << '{';
+  for_each(
+      rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n) { code << to_string(n) << ','; });
+  code << "},";
+
+  // RuleData::reducibleRule::pos
+  code << to_string(rule.pos) << ',';
+
+  // RuleData::reducibleRule::lookahead
+  code << '{';
+  const boost::dynamic_bitset<>& lookahead = rule.lookahead;
+  size_t lookaheadLen = lookahead.size();
+  for (size_t i = 0; i < lookaheadLen; ++i) {
+    code << to_string(lookahead[i]) << ',';
+  }
+  code << "}},";
+  // RuleData::precedence
+  code << to_string(ruleData.precedence) << '}';
+}
+
+template <typename T>
+string toCode(const vector<T>& v) {
+  ostringstream code;
+  code << '{';
+  for_each(v.cbegin(), v.cend(), [&code](const T& item) {
+    toCode(code, item);
+    code << ',';
+  });
+  code << '}';
+  return code.str();
+}
 
 }  // namespace
 
@@ -521,8 +545,8 @@ void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& p
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,
-          "RuleData",
+          "vector<RuleData>",
           "int",
-          [&gd](const DFARuleSet& ruleSet) { return ruleDataToCode(condenseRuleSet(ruleSet, gd)); },
+          [&gd](const DFARuleSet& ruleSet) { return toCode(condenseRuleSet(ruleSet, gd)); },
           [](int n) { return to_string(n); });
 }
