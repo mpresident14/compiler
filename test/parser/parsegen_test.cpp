@@ -68,14 +68,12 @@ void testParse_noParse() {
   ostringstream expectedErr1;
   expectedErr1 << "Parse error on line 2:\n\tStack: "
                << vector<string>{ "Expr", "STAR", "INT", "INT" }
-               << "\n\tRemaining tokens: "
-               << vector<string>{ "STAR", "PLUS", "INT" };
+               << "\n\tRemaining tokens: " << vector<string>{ "STAR", "PLUS", "INT" };
 
   string err1 = TESTER.assertThrows([]() { parseString("3 * 2\n 34* + 5"); });
   TESTER.assertEquals(expectedErr1.str(), err1);
   TESTER.assertEquals(
-      "INT deleter called\nINT deleter called\nINT deleter called\n",
-      errBuffer.str());
+      "INT deleter called\nINT deleter called\nINT deleter called\n", errBuffer.str());
   // Clear errBuffer
   errBuffer.str("");
 }

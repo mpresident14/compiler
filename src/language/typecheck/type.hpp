@@ -20,8 +20,7 @@ struct Type {
   virtual ~Type() {}
   constexpr Type(TypeName name, u_char nBytes, bool integral = false)
       : typeName(name), numBytes(nBytes), isIntegral(integral) {}
-  virtual std::string getId(
-      const std::unordered_map<std::string, std::string>& typeIds) const;
+  virtual std::string getId(const std::unordered_map<std::string, std::string>& typeIds) const;
 
   TypeName typeName;
   u_char numBytes;
@@ -32,16 +31,16 @@ using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
   Array(TypePtr type) : Type(TypeName::ARRAY, 8), arrType(type) {}
-  virtual std::string getId(const std::unordered_map<std::string, std::string>&
-                                typeIds) const override;
+  virtual std::string getId(
+      const std::unordered_map<std::string, std::string>& typeIds) const override;
 
   TypePtr arrType;
 };
 
 struct Class : public Type {
   Class(std::string_view name) : Type(TypeName::CLASS, 8), className(name) {}
-  virtual std::string getId(const std::unordered_map<std::string, std::string>&
-                                typeIds) const override;
+  virtual std::string getId(
+      const std::unordered_map<std::string, std::string>& typeIds) const override;
 
   std::string className;
 };

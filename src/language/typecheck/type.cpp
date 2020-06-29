@@ -62,17 +62,13 @@ bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
 pair<long, long> minMaxValue(const Type& integralType) {
   switch (integralType.typeName) {
     case TypeName::LONG:
-      return { std::numeric_limits<long>::min(),
-               std::numeric_limits<long>::max() };
+      return { std::numeric_limits<long>::min(), std::numeric_limits<long>::max() };
     case TypeName::INT:
-      return { std::numeric_limits<int>::min(),
-               std::numeric_limits<int>::max() };
+      return { std::numeric_limits<int>::min(), std::numeric_limits<int>::max() };
     case TypeName::SHORT:
-      return { std::numeric_limits<short>::min(),
-               std::numeric_limits<short>::max() };
+      return { std::numeric_limits<short>::min(), std::numeric_limits<short>::max() };
     case TypeName::CHAR:
-      return { std::numeric_limits<char>::min(),
-               std::numeric_limits<char>::max() };
+      return { std::numeric_limits<char>::min(), std::numeric_limits<char>::max() };
     default:
       throw invalid_argument("minMaxValue: Not an integral type");
   }
@@ -97,11 +93,9 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == t2.typeName) {
     switch (t1.typeName) {
       case TypeName::ARRAY:
-        return static_cast<const Array&>(t1).arrType ==
-               static_cast<const Array&>(t2).arrType;
+        return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case TypeName::CLASS:
-        return static_cast<const Class&>(t1).className ==
-               static_cast<const Class&>(t2).className;
+        return static_cast<const Class&>(t1).className == static_cast<const Class&>(t2).className;
       default:
         return true;
     }
@@ -109,9 +103,7 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
   return false;
 }
 
-bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept {
-  return *t1 == *t2;
-}
+bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept { return *t1 == *t2; }
 
 ostream& operator<<(ostream& out, const Type& type) {
   switch (type.typeName) {

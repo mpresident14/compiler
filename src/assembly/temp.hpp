@@ -43,15 +43,10 @@ constexpr size_t NUM_AVAIL_REGS = 11;
 const std::vector<MachineReg> ARG_REGS{ RDI, RSI, RDX, RCX, R8, R9 };
 
 /* Not preserved across function calls */
-const std::vector<MachineReg> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI,
-                                                R8,  R9,  R10, R11 };
+const std::vector<MachineReg> CALLER_SAVE_REGS{ RAX, RCX, RDX, RDI, RSI, R8, R9, R10, R11 };
 
 /* Preserved across function calls */
-const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12,
-                                                       R13,
-                                                       R14,
-                                                       R15,
-                                                       RBX };
+const std::unordered_set<MachineReg> CALLEE_SAVE_REGS{ R12, R13, R14, R15, RBX };
 constexpr MachineReg SPILL_REGS[]{ R9, R10, R11 };
 
 std::vector<int> regsAsInts(const std::vector<MachineReg>& regs);

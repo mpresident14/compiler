@@ -69,14 +69,13 @@ Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
 
   const unordered_map<string, NodePtr>* currentMap = &roots_;
   const Node* child;
-  for (auto revIter = qualifiers.crbegin(); revIter != qualifiers.crend();
-       ++revIter) {
+  for (auto revIter = qualifiers.crbegin(); revIter != qualifiers.crend(); ++revIter) {
     const string& part = *revIter;
     filepath.push_front(part);
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
       // Qualifiers point to file that was not imported
-      return { FnLookupRes::BAD_QUALS, {}, ""} ;
+      return { FnLookupRes::BAD_QUALS, {}, "" };
     }
 
     child = iter->second.get();

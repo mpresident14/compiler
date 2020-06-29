@@ -66,10 +66,7 @@ struct MergeData {
     size_t operator()(const MergeData& mergeData) const noexcept {
       const vector<pair<RgxDFA::Node*, int>>& states = mergeData.states;
       return (size_t)accumulate(
-          states.cbegin(),
-          states.cend(),
-          0,
-          [](uintptr_t n, pair<const RgxDFA::Node*, int> node) {
+          states.cbegin(), states.cend(), 0, [](uintptr_t n, pair<const RgxDFA::Node*, int> node) {
             return n ^ (uintptr_t)node.first;
           });
     }
@@ -109,9 +106,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
         // Accepting the empty string will likely result in an infinite loop
         logger.logWarning(
             token.declLine,
-            string("The regex \"")
-                .append(token.regex)
-                .append("\" accepts the empty string"));
+            string("The regex \"").append(token.regex).append("\" accepts the empty string"));
         // Multiple regex DFAs accept the empty string. We pick the regex that
         // was listed first.
         if (stateToken == NONE) {

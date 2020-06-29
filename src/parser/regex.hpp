@@ -9,17 +9,7 @@
 
 #include <prez/print_stuff.hpp>
 
-enum class RgxType {
-  EMPTYSET,
-  EPSILON,
-  DOT,
-  CHARACTER,
-  ALT,
-  CONCAT,
-  STAR,
-  RANGE,
-  NOT
-};
+enum class RgxType { EMPTYSET, EPSILON, DOT, CHARACTER, ALT, CONCAT, STAR, RANGE, NOT };
 
 std::ostream& operator<<(std::ostream& out, RgxType type);
 
@@ -41,17 +31,11 @@ public:
     return out;
   }
 
-  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) {
-    return out << *rgx;
-  }
+  friend std::ostream& operator<<(std::ostream& out, Regex* rgx) { return out << *rgx; }
 
-  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) {
-    return out << *rgx;
-  }
+  friend std::ostream& operator<<(std::ostream& out, RgxPtr rgx) { return out << *rgx; }
 
-  friend bool operator==(const RgxPtr& r1, const RgxPtr& r2) noexcept {
-    return *r1 == *r2;
-  }
+  friend bool operator==(const RgxPtr& r1, const RgxPtr& r2) noexcept { return *r1 == *r2; }
 
   // NOTE: This could be dangerous because it is easy to forget to use
   // Regex::PtrHash and end up with std::hash<shared_ptr<Regex>>, but

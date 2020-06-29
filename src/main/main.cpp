@@ -31,16 +31,13 @@ bool compile(const string& srcFilename, const string& asmFilename) {
   try {
     decltype(initializedProgs)::iterator iter;
     try {
-    // Mark as initiailized before recursing to allow circular dependencies
-    iter =
-        initializedProgs
-            .emplace(
-                srcFilename,
-                make_unique<language::Program>(parser::parse(srcFilename)))
-            .first;
+      // Mark as initiailized before recursing to allow circular dependencies
+      iter = initializedProgs
+                 .emplace(srcFilename, make_unique<language::Program>(parser::parse(srcFilename)))
+                 .first;
     } catch (const runtime_error& e) {
-        // Catch "can't open file" error
-        logger.logFatal(0, e.what());
+      // Catch "can't open file" error
+      logger.logFatal(0, e.what());
     }
 
     // Recursively record all declarations
@@ -87,9 +84,9 @@ bool compile(const string& srcFilename, const string& asmFilename) {
 
 
 int main(int, char** argv) {
-  #ifndef __INTELLISENSE__
+#ifndef __INTELLISENSE__
   language::Program::setImportPath(IMPORT_DIR);
-  #endif
+#endif
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 

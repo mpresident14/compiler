@@ -60,8 +60,7 @@ void testParseError() {
   TESTER.assertEquals(expectedErr0.str(), err0);
 
   ostringstream expectedErr1;
-  expectedErr1 << "Parse error on line 1:\n\tStack: "
-               << vector<string>{ "Regex", "BAR", "STAR" }
+  expectedErr1 << "Parse error on line 1:\n\tStack: " << vector<string>{ "Regex", "BAR", "STAR" }
                << "\n\tRemaining tokens: " << vector<string>{ "CHAR" };
 
   string err1 = TESTER.assertThrows([]() { parseString("abc|*d"); });
@@ -132,19 +131,15 @@ void testHashFn() {
 }
 
 void testRgxDFAToCode_withNullableRegex() {
-  GrammarData gd = {
-    {
-        { "", "", NONE, Assoc::NONE, "", "", "a*", 0 },
-        { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*", 0 },
-        { "", "", NONE, Assoc::NONE, "", "", "for", 0 },
-    },
-    {},
-    {}
-  };
+  GrammarData gd = { {
+                         { "", "", NONE, Assoc::NONE, "", "", "a*", 0 },
+                         { "", "", NONE, Assoc::NONE, "", "", "[1-9][0-9]*", 0 },
+                         { "", "", NONE, Assoc::NONE, "", "", "for", 0 },
+                     },
+                     {},
+                     {} };
 
-  vector<pair<string, int>> patterns = { { "a*", 1 },
-                                         { "[1-9][0-9]*", 2 },
-                                         { "for", 3 } };
+  vector<pair<string, int>> patterns = { { "a*", 1 }, { "[1-9][0-9]*", 2 }, { "for", 3 } };
 
   ostringstream out;
   out.setstate(ios_base::badbit);

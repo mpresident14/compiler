@@ -72,8 +72,7 @@ private:
     size_t warnings = 0;
     size_t notes = 0;
   };
-  static void
-  streamMsg(std::ostream& out, const MsgInfo& mi, MsgCounts& counts);
+  static void streamMsg(std::ostream& out, const MsgInfo& mi, MsgCounts& counts);
   static void streamCounts(std::ostream& out, const MsgCounts& counts);
 
   struct MsgInfoStream {

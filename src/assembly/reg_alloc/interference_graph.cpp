@@ -17,12 +17,10 @@ auto removeNode(
   return graphCopy.erase(iter);
 }
 
-}
+}  // namespace
 
 
-void buildStack(
-    unordered_map<int, unordered_set<int>>& graphCopy,
-    stack<int>& stk) {
+void buildStack(unordered_map<int, unordered_set<int>>& graphCopy, stack<int>& stk) {
   size_t fewestNeighbors = SIZE_MAX;
   int tempFewestNeighbors;
   size_t origLen = graphCopy.size();
@@ -79,8 +77,7 @@ InterferenceGraph::InterferenceGraph(const FlowGraph& fgraph) {
   }
 }
 
-pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color()
-    const {
+pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color() const {
   unordered_map<int, unordered_set<int>> graphCopy(graph_);
   stack<int> stk;
   buildStack(graphCopy, stk);
@@ -96,11 +93,10 @@ pair<unordered_map<int, MachineReg>, vector<int>> InterferenceGraph::color()
   // Is this color reg available for temp?
   auto canColor = [this, &coloring](MachineReg reg, int temp) {
     const unordered_set<int>& neighbors = graph_.at(temp);
-    return none_of(
-        neighbors.cbegin(), neighbors.cend(), [&coloring, &reg](int neighbor) {
-          auto iter = coloring.find(neighbor);
-          return iter != coloring.end() && iter->second == reg;
-        });
+    return none_of(neighbors.cbegin(), neighbors.cend(), [&coloring, &reg](int neighbor) {
+      auto iter = coloring.find(neighbor);
+      return iter != coloring.end() && iter->second == reg;
+    });
   };
 
 mainLoop:

@@ -33,13 +33,9 @@ void computeNullabilities(
 
       const vector<vector<BitRef>>& disjunctions = equations[i];
       // Nullable if any of the conjunctions evaluate to true
-      bool newValue = any_of(
-          disjunctions.cbegin(),
-          disjunctions.cend(),
-          [](const vector<BitRef>& conj) {
-            return all_of(conj.cbegin(), conj.cend(), [](const BitRef& bitref) {
-              return bitref;
-            });
+      bool newValue =
+          any_of(disjunctions.cbegin(), disjunctions.cend(), [](const vector<BitRef>& conj) {
+            return all_of(conj.cbegin(), conj.cend(), [](const BitRef& bitref) { return bitref; });
           });
       if (newValue) {
         nullabilities.set(i);
@@ -56,9 +52,7 @@ struct UnionEquation {
 };
 
 /* Iterate to find the least fixed point */
-void computeFirsts(
-    vector<BitSetToks>& firsts,
-    const vector<UnionEquation>& equations) {
+void computeFirsts(vector<BitSetToks>& firsts, const vector<UnionEquation>& equations) {
   bool changed = true;
   while (changed) {
     changed = false;
@@ -97,8 +91,7 @@ BitSetVars getNullabilities(const GrammarData& gd) {
         break;
       }
       // Tokens are never nullable, so stop considering this rule
-      if (std::any_of(
-              rule.argSymbols.cbegin(), rule.argSymbols.cend(), isToken)) {
+      if (std::any_of(rule.argSymbols.cbegin(), rule.argSymbols.cend(), isToken)) {
         continue;
       }
       // Otherwise build the conjunction bitset
@@ -115,8 +108,7 @@ BitSetVars getNullabilities(const GrammarData& gd) {
 }
 
 
-std::pair<BitSetVars, std::vector<BitSetToks>> getNullsAndFirsts(
-    const GrammarData& gd) {
+std::pair<BitSetVars, std::vector<BitSetToks>> getNullsAndFirsts(const GrammarData& gd) {
   size_t numVars = gd.variables.size();
   size_t numTokens = gd.tokens.size();
 

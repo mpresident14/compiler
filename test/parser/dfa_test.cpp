@@ -49,8 +49,7 @@ void testConvert() {
   dfa.addTransition(node2, 5, "5"s);
   dfa.addTransition(node3, 5, "5"s);
 
-  DFAIntInt newDfa =
-      dfa.convert<int>([](const string& str) { return str.size(); });
+  DFAIntInt newDfa = dfa.convert<int>([](const string& str) { return str.size(); });
 
   TESTER.assertEquals(dfa.size(), newDfa.size());
   TESTER.assertEquals(4, newDfa.getRoot()->getValue());

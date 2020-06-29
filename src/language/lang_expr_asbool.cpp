@@ -86,12 +86,12 @@ void BinaryOp::asBoolComp(
   ExprInfo info1 = e1_->toImExpr(ctx);
   ExprInfo info2 = e2_->toImExpr(ctx);
   if (!(info1.type->isIntegral && info2.type->isIntegral)) {
-    ostream& err = ctx.getLogger().logError(
-        line_, "Comparison operator requires integral types. Got ");
+    ostream& err =
+        ctx.getLogger().logError(line_, "Comparison operator requires integral types. Got ");
     err << *info1.type << " and " << *info2.type;
   }
-  imStmts.emplace_back(new im::CondJump(
-      move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
+  imStmts.emplace_back(
+      new im::CondJump(move(info1.imExpr), move(info2.imExpr), rOp, ifTrue, ifFalse));
 }
 
 void BinaryOp::asBoolAnd(
@@ -132,15 +132,13 @@ void BinaryOp::asBoolXor(
     bool flipEquiv,
     Ctx& ctx) {
   im::ExprPtr imXor = make_unique<im::BinOp>(
-      e1_->toImExprAssert(*boolType, ctx),
-      e2_->toImExprAssert(*boolType, ctx),
-      im::BOp::XOR);
+      e1_->toImExprAssert(*boolType, ctx), e2_->toImExprAssert(*boolType, ctx), im::BOp::XOR);
   if (flipEquiv) {
-    imStmts.emplace_back(new im::CondJump(
-        move(imXor), make_unique<im::Const>(0), im::ROp::EQ, ifFalse, ifTrue));
+    imStmts.emplace_back(
+        new im::CondJump(move(imXor), make_unique<im::Const>(0), im::ROp::EQ, ifFalse, ifTrue));
   } else {
-    imStmts.emplace_back(new im::CondJump(
-        move(imXor), make_unique<im::Const>(0), im::ROp::NEQ, ifTrue, ifFalse));
+    imStmts.emplace_back(
+        new im::CondJump(move(imXor), make_unique<im::Const>(0), im::ROp::NEQ, ifTrue, ifFalse));
   }
 }
 
@@ -157,18 +155,10 @@ void Expr::asBool(
     Ctx& ctx) {
   if (flipEquiv) {
     imStmts.emplace_back(new im::CondJump(
-        toImExprAssert(*boolType, ctx),
-        make_unique<im::Const>(0),
-        im::ROp::EQ,
-        ifFalse,
-        ifTrue));
+        toImExprAssert(*boolType, ctx), make_unique<im::Const>(0), im::ROp::EQ, ifFalse, ifTrue));
   } else {
     imStmts.emplace_back(new im::CondJump(
-        toImExprAssert(*boolType, ctx),
-        make_unique<im::Const>(0),
-        im::ROp::NEQ,
-        ifTrue,
-        ifFalse));
+        toImExprAssert(*boolType, ctx), make_unique<im::Const>(0), im::ROp::NEQ, ifTrue, ifFalse));
   }
 }
 

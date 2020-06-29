@@ -121,11 +121,7 @@ struct GrammarData GRAMMAR_DATA = {
     { "REGEX_CONCATS", REGEX, NONE, { CONCATS }, "" },
     { "REGEX_STAR", REGEX, NONE, { REGEX, STAR }, "" },
     { "REGEX_NOT", REGEX, NONE, { NOT }, "" },
-    { "REGEX_RANGE",
-      REGEX,
-      NONE,
-      { LBRACKET, CHAR, DASH, CHAR, RBRACKET },
-      "" },
+    { "REGEX_RANGE", REGEX, NONE, { LBRACKET, CHAR, DASH, CHAR, RBRACKET }, "" },
     { "REGEX_GROUP", REGEX, NONE, { LPAREN, REGEX, RPAREN }, "" },
     { "REGEX_CHAR", REGEX, NONE, { CHAR }, "" },
     { "REGEX_BRACKET_CHAR", REGEX, NONE, { LBRACKET, CHAR, RBRACKET }, "" },
@@ -134,11 +130,7 @@ struct GrammarData GRAMMAR_DATA = {
     { "ALT_BRACKET", ALT, NONE, { LBRACKET, CONCATS, RBRACKET }, "" },
     { "NOT_CHAR", NOT, NONE, { LBRACKET, CARET, CHAR, RBRACKET }, "" },
     { "NOT_CONCATS", NOT, NONE, { LBRACKET, CARET, CONCATS, RBRACKET }, "" },
-    { "NOT_RANGE",
-      NOT,
-      NONE,
-      { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET },
-      "" },
+    { "NOT_RANGE", NOT, NONE, { LBRACKET, CARET, CHAR, DASH, CHAR, RBRACKET }, "" },
     { "ALTS_REGEX", ALTS, NONE, { REGEX, BAR, REGEX }, "" },
     { "ALTS_ALTS", ALTS, NONE, { ALTS, BAR, REGEX }, "" },
     { "CONCATS_REGEX", CONCATS, 4, { REGEX, REGEX }, "" },
@@ -295,9 +287,7 @@ vector<StackObj> lex(const string& input) {
         tokens.emplace_back(CARET, nullptr);
         caret = true;
         leftBracket = 2;
-      } else if (
-          c == '-' &&
-          ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
+      } else if (c == '-' && ((leftBracket == 2 && !caret) || (leftBracket == 3 && caret))) {
         tokens.emplace_back(DASH, nullptr);
         leftBracket = 4;
       } else if (c == '\\') {
@@ -358,10 +348,9 @@ using CondensedDFA = DFA<RuleData, int>;
 using CondensedNode = CondensedDFA::Node;
 
 const CondensedDFA PARSER_DFA =
-    buildParserDFA(GRAMMAR_DATA)
-        .convert<RuleData>([](const DFARuleSet& ruleSet) {
-          return condenseRuleSet(ruleSet, GRAMMAR_DATA);
-        });
+    buildParserDFA(GRAMMAR_DATA).convert<RuleData>([](const DFARuleSet& ruleSet) {
+      return condenseRuleSet(ruleSet, GRAMMAR_DATA);
+    });
 
 /* Construct a concrete object */
 void* constructObj(int concrete, StackObj* args) {
@@ -369,42 +358,33 @@ void* constructObj(int concrete, StackObj* args) {
     case REGEX_ALT:
       return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
     case REGEX_CONCATS:
-      return new Regex*(
-          new Concat(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
+      return new Regex*(new Concat(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
     case REGEX_STAR:
       return new Regex*(new Star(*static_cast<Regex**>(args[0].releaseObj())));
     case REGEX_NOT:
       return new Regex*(*static_cast<Regex**>(args[0].releaseObj()));
     case REGEX_RANGE:
       return new Regex*(new Range(
-          *static_cast<char*>(args[1].releaseObj()),
-          *static_cast<char*>(args[3].releaseObj())));
+          *static_cast<char*>(args[1].releaseObj()), *static_cast<char*>(args[3].releaseObj())));
     case REGEX_GROUP:
       return new Regex*(*static_cast<Regex**>(args[1].releaseObj()));
     case REGEX_CHAR:
-      return new Regex*(
-          new Character(*static_cast<char*>(args[0].releaseObj())));
+      return new Regex*(new Character(*static_cast<char*>(args[0].releaseObj())));
     case REGEX_BRACKET_CHAR:
-      return new Regex*(
-          new Character(*static_cast<char*>(args[1].releaseObj())));
+      return new Regex*(new Character(*static_cast<char*>(args[1].releaseObj())));
     case REGEX_DOT:
       return new Regex*(new Dot());
     case ALT_ALTS:
-      return new Regex*(
-          new Alt(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
+      return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[0].releaseObj()))));
     case ALT_BRACKET:
-      return new Regex*(
-          new Alt(move(*static_cast<RegexVector*>(args[1].releaseObj()))));
+      return new Regex*(new Alt(move(*static_cast<RegexVector*>(args[1].releaseObj()))));
     case NOT_CHAR:
-      return new Regex*(
-          new Not(new Character(*static_cast<char*>(args[2].releaseObj()))));
+      return new Regex*(new Not(new Character(*static_cast<char*>(args[2].releaseObj()))));
     case NOT_CONCATS:
-      return new Regex*(new Not(
-          new Alt(move(*static_cast<RegexVector*>(args[2].releaseObj())))));
+      return new Regex*(new Not(new Alt(move(*static_cast<RegexVector*>(args[2].releaseObj())))));
     case NOT_RANGE:
       return new Regex*(new Not(new Range(
-          *static_cast<char*>(args[2].releaseObj()),
-          *static_cast<char*>(args[4].releaseObj()))));
+          *static_cast<char*>(args[2].releaseObj()), *static_cast<char*>(args[4].releaseObj()))));
     case ALTS_REGEX:
       return new RegexVector(RegexVector(
           *static_cast<Regex**>(args[0].releaseObj()),
@@ -429,14 +409,10 @@ void* constructObj(int concrete, StackObj* args) {
 }
 
 StackObj construct(int concrete, StackObj* args) {
-  return StackObj(
-      GRAMMAR_DATA.concretes[concrete].varType, constructObj(concrete, args));
+  return StackObj(GRAMMAR_DATA.concretes[concrete].varType, constructObj(concrete, args));
 }
 
-void parseError(
-    vector<StackObj>& stk,
-    const vector<StackObj>& inputTokens,
-    size_t tokenPos) {
+void parseError(vector<StackObj>& stk, const vector<StackObj>& inputTokens, size_t tokenPos) {
   // Need StackObjs to deep delete their objects
   for_each(stk.begin(), stk.end(), mem_fun_ref(&StackObj::unrelease));
 
@@ -450,8 +426,7 @@ void parseError(
     return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
   };
 
-  transform(
-      stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
+  transform(stk.begin(), stk.end(), back_inserter(stkSymbolNames), stkObjToName);
   transform(
       inputTokens.begin() + tokenPos,
       inputTokens.end(),
@@ -490,9 +465,7 @@ int tryReduce(
           rule.symbols.crbegin(),
           rule.symbols.crend(),
           stk.crbegin(),
-          [](int symbol, const StackObj& stkObj) {
-            return stkObj.getSymbol() == symbol;
-          })) {
+          [](int symbol, const StackObj& stkObj) { return stkObj.getSymbol() == symbol; })) {
     return NONE;
   }
 
@@ -564,8 +537,7 @@ Regex* shiftReduce(vector<StackObj>& inputTokens) {
   // is the only thing on the stack
   while (!(i == inputSize && stk.size() == 1 && stk[0].getSymbol() == S)) {
     // Advance the DFA.
-    CondensedNode* currentNode =
-        PARSER_DFA.step(dfaPath.back(), stk.back().getSymbol());
+    CondensedNode* currentNode = PARSER_DFA.step(dfaPath.back(), stk.back().getSymbol());
     if (currentNode == nullptr) {
       // cleanPtrsFrom(stk, 0);
       // cleanPtrsFrom(inputTokens, i);
@@ -579,8 +551,7 @@ Regex* shiftReduce(vector<StackObj>& inputTokens) {
     if (concrete != NONE) {
       // Construct the new object, pop the arguments off the stack,
       // and push the new object onto it.
-      size_t reduceStart =
-          stk.size() - currentNode->getValue().reducibleRule->symbols.size();
+      size_t reduceStart = stk.size() - currentNode->getValue().reducibleRule->symbols.size();
       StackObj newObj = construct(concrete, &stk.data()[reduceStart]);
       size_t stkSize = stk.size();
       for (size_t j = 0; j < stkSize - reduceStart; ++j) {

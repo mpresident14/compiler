@@ -593,47 +593,45 @@ void tryReduceFn(ostream& out) {
   // If there is more than one reducible rule, then their lookahead sets are disjoint (see
   // findReduceReduceConflicts in build_parser.cpp), so we only have to consider at most one rule
   // out << R"(
-      const DFARule& rule = *ruleData.reducibleRule;
-      if (nextToken != NONE && !rule.lookahead[tokenToFromIndex(nextToken)]) {
-        return NONE;
-      }
+  const DFARule& rule = *ruleData.reducibleRule;
+  if (nextToken != NONE && !rule.lookahead[tokenToFromIndex(nextToken)]) {
+    return NONE;
+  }
 
-      auto iter = find_if()
+  auto iter = find_if()
 
       if (!equal(
               rule.symbols.crbegin(),
               rule.symbols.crend(),
               stk.crbegin(),
-              [](int symbol, const StackObj& stkObj) {
-        return stkObj.getSymbol() == symbol;
-      })) {
-        return NONE;
-      }
-      if (!node->ts_.contains(nextToken)) {
-        return rule.concrete;
-      }
+              [](int symbol, const StackObj& stkObj) { return stkObj.getSymbol() == symbol; })) {
+    return NONE;
+  }
+  if (!node->ts_.contains(nextToken)) {
+    return rule.concrete;
+  }
 
-      const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
-      int shiftPrecedence = nextTokenObj.precedence;
+  const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
+  int shiftPrecedence = nextTokenObj.precedence;
 
-      if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
-        return NONE;
-      }
+  if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
+    return NONE;
+  }
 
-      if (ruleData.precedence > shiftPrecedence) {
-        return rule.concrete;
-      }
-      if (ruleData.precedence == shiftPrecedence) {
-        if (nextTokenObj.assoc == Assoc::LEFT) {
-          return rule.concrete;
-        }
-        if (nextTokenObj.assoc == Assoc::NOT) {
-          parseError(stk, inputTokens, tokenPos);
-        }
-      }
-      return NONE;
-    })";
-}
+  if (ruleData.precedence > shiftPrecedence) {
+    return rule.concrete;
+  }
+  if (ruleData.precedence == shiftPrecedence) {
+    if (nextTokenObj.assoc == Assoc::LEFT) {
+      return rule.concrete;
+    }
+    if (nextTokenObj.assoc == Assoc::NOT) {
+      parseError(stk, inputTokens, tokenPos);
+    }
+  }
+  return NONE;
+})";
+}  // namespace
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
   out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {

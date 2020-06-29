@@ -105,8 +105,7 @@ For::For(
       varDecl_(move(varDecl)),
       boolE_(move(boolE)),
       body_(move(body)),
-      update_(move(update))
-{}
+      update_(move(update)) {}
 
 const StmtPtr* For::lastStmt() const {
   const StmtPtr* last = body_->lastStmt();

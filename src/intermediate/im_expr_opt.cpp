@@ -30,8 +30,8 @@ namespace {
   /* HalfConst will have already optimized to a shift, so we'll convert that to
    * a leaq if possible */
   bool isValidLeaq(HalfConst* halfConst) {
-    return halfConst && !halfConst->reversed_ &&
-           halfConst->bOp_ == BOp::LSHIFT && halfConst->n_ <= 4;
+    return halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
+           halfConst->n_ <= 4;
   }
 }  // namespace
 
@@ -46,14 +46,12 @@ ExprPtr BinOp::optimize() {
   if (bOp_ == BOp::PLUS) {
     HalfConst* halfConst = dynamic_cast<HalfConst*>(eOpt1.get());
     if (isValidLeaq(halfConst)) {
-      return make_unique<Leaq>(
-          0, move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
+      return make_unique<Leaq>(0, move(eOpt2), move(halfConst->expr_), 1 << halfConst->n_);
     }
 
     halfConst = dynamic_cast<HalfConst*>(eOpt2.get());
     if (isValidLeaq(halfConst)) {
-      return make_unique<Leaq>(
-          0, move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
+      return make_unique<Leaq>(0, move(eOpt1), move(halfConst->expr_), 1 << halfConst->n_);
     }
   }
 
@@ -142,8 +140,7 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
  ************/
 
 ExprPtr MemDeref::optimize() {
-  return make_unique<MemDeref>(
-      offset_, baseAddr_->optimize(), optHelper(), numBytes_);
+  return make_unique<MemDeref>(offset_, baseAddr_->optimize(), optHelper(), numBytes_);
 }
 
 ExprPtr MemDeref::optHelper() {
@@ -163,9 +160,7 @@ ExprPtr MemDeref::optHelper() {
  * DoThenEval *
  **************/
 
-ExprPtr DoThenEval::optimize() {
-  return make_unique<DoThenEval>(move(stmts_), expr_->optimize());
-}
+ExprPtr DoThenEval::optimize() { return make_unique<DoThenEval>(move(stmts_), expr_->optimize()); }
 
 /*************
  * LabelAddr *
@@ -183,17 +178,14 @@ ExprPtr CallExpr::optimize() {
   for (const ExprPtr& param : params_) {
     optParams.push_back(param->optimize());
   }
-  return make_unique<CallExpr>(
-      addr_->optimize(), move(optParams), hasReturnValue_);
+  return make_unique<CallExpr>(addr_->optimize(), move(optParams), hasReturnValue_);
 }
 
 /********
  * Cast *
  ********/
 
-ExprPtr Cast::optimize() {
-  return make_unique<Cast>(expr_->optimize(), toNumBytes_);
-}
+ExprPtr Cast::optimize() { return make_unique<Cast>(expr_->optimize(), toNumBytes_); }
 
 /*************
  * HalfConst *
@@ -234,9 +226,7 @@ ExprPtr HalfConst::optimize() {
       case BOp::OR:
         return eOpt;
       case BOp::MINUS:
-        return reversed_
-                   ? make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_)
-                   : move(eOpt);
+        return reversed_ ? make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_) : move(eOpt);
       case BOp::MUL:
       case BOp::AND:
         return make_unique<Const>(0);
@@ -252,9 +242,9 @@ ExprPtr HalfConst::optimize() {
       case BOp::PLUS:
         return make_unique<IncDec>(move(eOpt), true);
       case BOp::MINUS:
-        return reversed_ ? static_cast<ExprPtr>(make_unique<HalfConst>(
-                               move(eOpt), n_, bOp_, reversed_))
-                         : make_unique<IncDec>(move(eOpt), false);
+        return reversed_
+                   ? static_cast<ExprPtr>(make_unique<HalfConst>(move(eOpt), n_, bOp_, reversed_))
+                   : make_unique<IncDec>(move(eOpt), false);
       case BOp::MUL:
         return eOpt;
       case BOp::AND:
@@ -275,8 +265,7 @@ ExprPtr HalfConst::optimize() {
   if (bOp_ == BOp::MUL) {
     vector<size_t> setBits = getSetBits(n_);
     if (setBits.size() == 1) {
-      return make_unique<HalfConst>(
-          move(eOpt), setBits[0], BOp::LSHIFT, false);
+      return make_unique<HalfConst>(move(eOpt), setBits[0], BOp::LSHIFT, false);
     } else if (setBits.size() == 2) {
       vector<StmtPtr> stmts;
       int t = newTemp();
@@ -284,10 +273,8 @@ ExprPtr HalfConst::optimize() {
       return make_unique<DoThenEval>(
           move(stmts),
           make_unique<BinOp>(
-              make_unique<HalfConst>(
-                  make_unique<Temp>(t), setBits[0], BOp::LSHIFT, false),
-              make_unique<HalfConst>(
-                  make_unique<Temp>(t), setBits[1], BOp::LSHIFT, false),
+              make_unique<HalfConst>(make_unique<Temp>(t), setBits[0], BOp::LSHIFT, false),
+              make_unique<HalfConst>(make_unique<Temp>(t), setBits[1], BOp::LSHIFT, false),
               BOp::PLUS)
               ->optimize());
     }
@@ -302,9 +289,9 @@ ExprPtr HalfConst::optimize() {
     } else if (DoThenEval* dte = dynamic_cast<DoThenEval*>(eOpt.get())) {
       if (Leaq* leaq = dynamic_cast<Leaq*>(dte->expr_.get())) {
         return make_unique<DoThenEval>(
-          move(dte->stmts_),
-          make_unique<Leaq>(
-              leaq->offset_ + n_, move(leaq->baseAddr_), move(leaq->mult_), leaq->numBytes_));
+            move(dte->stmts_),
+            make_unique<Leaq>(
+                leaq->offset_ + n_, move(leaq->baseAddr_), move(leaq->mult_), leaq->numBytes_));
       }
     }
   }
@@ -318,16 +305,13 @@ ExprPtr HalfConst::optimize() {
  ********/
 
 ExprPtr Leaq::optimize() {
-  return make_unique<Leaq>(
-      offset_, baseAddr_->optimize(), optHelper(), numBytes_);
+  return make_unique<Leaq>(offset_, baseAddr_->optimize(), optHelper(), numBytes_);
 }
 
 /**********
  * IncDec *
  **********/
 
-ExprPtr IncDec::optimize() {
-  return make_unique<IncDec>(expr_->optimize(), inc_);
-}
+ExprPtr IncDec::optimize() { return make_unique<IncDec>(expr_->optimize(), inc_); }
 
 }  // namespace im

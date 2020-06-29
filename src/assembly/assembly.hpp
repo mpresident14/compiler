@@ -40,9 +40,8 @@ public:
       const Instruction* nextInstr,
       const std::unordered_map<const Instruction*, Liveness>& fgraph) const;
   /* Returns true if liveIn changed */
-  virtual bool updateLiveIn(
-      std::unordered_set<int>& liveIn,
-      const std::unordered_set<int>& liveOut) const;
+  virtual bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
+      const;
   virtual void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -54,9 +53,8 @@ public:
   virtual void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) = 0;
-  virtual void toCode(
-      std::ostream& out,
-      const std::unordered_map<int, size_t>& varToStackOffset) const = 0;
+  virtual void toCode(std::ostream& out, const std::unordered_map<int, size_t>& varToStackOffset)
+      const = 0;
   virtual void toStream(std::ostream& out) const = 0;
   friend std::ostream& operator<<(std::ostream& out, const Instruction& instr);
 };
@@ -123,9 +121,7 @@ private:
 class Label : public Instruction {
 public:
   Label(std::string_view name);
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::LABEL;
-  }
+  constexpr InstrType getType() const noexcept override { return InstrType::LABEL; }
   void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -134,9 +130,8 @@ public:
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
-  void toCode(
-      std::ostream& out,
-      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCode(std::ostream& out, const std::unordered_map<int, size_t>& varToStackOffset)
+      const override;
   void toStream(std::ostream& out) const override;
 
 
@@ -146,12 +141,9 @@ public:
 class Move : public Instruction {
 public:
   Move(int src, int dst);
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::MOVE;
-  }
-  bool updateLiveIn(
-      std::unordered_set<int>& liveIn,
-      const std::unordered_set<int>& liveOut) const override;
+  constexpr InstrType getType() const noexcept override { return InstrType::MOVE; }
+  bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
+      const override;
   void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -160,9 +152,8 @@ public:
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
-  void toCode(
-      std::ostream& out,
-      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCode(std::ostream& out, const std::unordered_map<int, size_t>& varToStackOffset)
+      const override;
   void toStream(std::ostream& out) const override;
 
 
@@ -179,12 +170,9 @@ public:
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
       bool hasMemRefs = false);
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::OPER;
-  }
-  bool updateLiveIn(
-      std::unordered_set<int>& liveIn,
-      const std::unordered_set<int>& liveOut) const override;
+  constexpr InstrType getType() const noexcept override { return InstrType::OPER; }
+  bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
+      const override;
   void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -193,9 +181,8 @@ public:
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
-  void toCode(
-      std::ostream& out,
-      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCode(std::ostream& out, const std::unordered_map<int, size_t>& varToStackOffset)
+      const override;
   void toStream(std::ostream& out) const override;
 
 
@@ -208,19 +195,12 @@ public:
 /* A jmp instruction. Guaranteed to jump, will not fall thru */
 class JumpOp : public Operation {
 public:
-  JumpOp(
-      std::string_view asmCode,
-      std::vector<int>&& srcs,
-      std::vector<int>&& dsts,
-      Label* jump);
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::JUMP_OP;
-  }
+  JumpOp(std::string_view asmCode, std::vector<int>&& srcs, std::vector<int>&& dsts, Label* jump);
+  constexpr InstrType getType() const noexcept override { return InstrType::JUMP_OP; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction*,
-      const std::unordered_map<const Instruction*, Liveness>& nodes)
-      const override;
+      const std::unordered_map<const Instruction*, Liveness>& nodes) const override;
   virtual void toStream(std::ostream& out) const override;
 
 
@@ -232,31 +212,24 @@ public:
 class CondJumpOp : public JumpOp {
 public:
   using JumpOp::JumpOp;
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::COND_JUMP_OP;
-  }
+  constexpr InstrType getType() const noexcept override { return InstrType::COND_JUMP_OP; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
-      const std::unordered_map<const Instruction*, Liveness>& nodes)
-      const override;
+      const std::unordered_map<const Instruction*, Liveness>& nodes) const override;
 };
 
 
 class Return : public Instruction {
 public:
   explicit constexpr Return(bool hasValue) : hasValue_(hasValue) {}
-  constexpr InstrType getType() const noexcept override {
-    return InstrType::RETURN;
-  }
+  constexpr InstrType getType() const noexcept override { return InstrType::RETURN; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
-      const std::unordered_map<const Instruction*, Liveness>& nodes)
+      const std::unordered_map<const Instruction*, Liveness>& nodes) const override;
+  bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
       const override;
-  bool updateLiveIn(
-      std::unordered_set<int>& liveIn,
-      const std::unordered_set<int>& liveOut) const override;
   void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -265,9 +238,8 @@ public:
   void assignRegs(
       const std::unordered_map<int, MachineReg>& coloring,
       std::bitset<NUM_AVAIL_REGS>& writtenRegs) override;
-  void toCode(
-      std::ostream& out,
-      const std::unordered_map<int, size_t>& varToStackOffset) const override;
+  void toCode(std::ostream& out, const std::unordered_map<int, size_t>& varToStackOffset)
+      const override;
   void toStream(std::ostream& out) const override;
 
 

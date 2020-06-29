@@ -39,25 +39,15 @@ assem::Label* MakeLabel::genInstr() {
 Jump::Jump(assem::Label* label) : label_(label) {}
 
 void Jump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
-  instrs.emplace_back(
-      new assem::JumpOp("jmp " + label_->name_, {}, {}, label_));
+  instrs.emplace_back(new assem::JumpOp("jmp " + label_->name_, {}, {}, label_));
 }
 
 
 /************
  * CondJump *
  ************/
-CondJump::CondJump(
-    ExprPtr&& e1,
-    ExprPtr&& e2,
-    ROp rop,
-    assem::Label* ifTrue,
-    assem::Label* ifFalse)
-    : e1_(move(e1)),
-      e2_(move(e2)),
-      rop_(rop),
-      ifTrue_(ifTrue),
-      ifFalse_(ifFalse) {}
+CondJump::CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, assem::Label* ifTrue, assem::Label* ifFalse)
+    : e1_(move(e1)), e2_(move(e2)), rop_(rop), ifTrue_(ifTrue), ifFalse_(ifFalse) {}
 
 namespace {
   bool (*getRopFn(ROp rOp))(long, long) {
@@ -114,14 +104,11 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
       bool (*opFn)(long, long) = getRopFn(rop_);
       // TODO: Log warning about always true/false
       bool res = opFn(
-          static_cast<const Const*>(eOpt1.get())->n_,
-          static_cast<const Const*>(eOpt2.get())->n_);
+          static_cast<const Const*>(eOpt1.get())->n_, static_cast<const Const*>(eOpt2.get())->n_);
       if (res) {
-        instrs.emplace_back(
-            new assem::JumpOp("jmp " + ifTrue_->name_, {}, {}, ifTrue_));
+        instrs.emplace_back(new assem::JumpOp("jmp " + ifTrue_->name_, {}, {}, ifTrue_));
       } else {
-        instrs.emplace_back(
-            new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
+        instrs.emplace_back(new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
       }
       return;
     } else {
@@ -146,10 +133,9 @@ void CondJump::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     cmpAsm << "cmpq " << asmChunk2 << ", " << asmChunk1;
   }
   instrs.emplace_back(new assem::Operation(cmpAsm.str(), move(srcTemps), {}));
-  instrs.emplace_back(new assem::CondJumpOp(
-      getRopAsm(rop_, needsFlip).append(ifTrue_->name_), {}, {}, ifTrue_));
   instrs.emplace_back(
-      new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
+      new assem::CondJumpOp(getRopAsm(rop_, needsFlip).append(ifTrue_->name_), {}, {}, ifTrue_));
+  instrs.emplace_back(new assem::JumpOp("jmp " + ifFalse_->name_, {}, {}, ifFalse_));
 }
 
 
@@ -205,8 +191,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     ostringstream asmOp;
     asmOp << "mov" << movSuffix(numBytes) << ' ' << asmChunk2 << ", "
           << memDeref->genAsmCode(tempIndex);
-    instrs.emplace_back(
-        new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
+    instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {
     ostringstream err;
     err << "Invalid ExprType for Assign LHS: " << lhsType;
