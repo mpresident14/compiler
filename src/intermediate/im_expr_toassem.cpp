@@ -15,8 +15,8 @@ namespace im {
  *********/
 
 void Const::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  instrs.emplace_back(new assem::Operation(
-      string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
+  instrs.emplace_back(
+      new assem::Operation(string("movq $").append(to_string(n_)).append(", `8D0"), {}, { temp }));
 }
 
 
@@ -86,10 +86,7 @@ void BinOp::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   }
 }
 
-void BinOp::handleShifts(
-    string asmCode,
-    int temp,
-    vector<assem::InstrPtr>& instrs) const {
+void BinOp::handleShifts(string asmCode, int temp, vector<assem::InstrPtr>& instrs) const {
   expr1_->toAssemInstrs(temp, instrs);
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
@@ -103,15 +100,13 @@ void BinOp::handleShifts(
   }
 }
 
-void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs) const {
   expr1_->toAssemInstrs(RAX, instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   // Sign-extend %rax into %rdx
   instrs.emplace_back(new assem::Operation("cqto", { RAX }, { RDX }));
   // Divide %rax%rdx by t2, quotient in %rax, remainder in %rdx
-  instrs.emplace_back(
-      new assem::Operation("idivq `8S0", { t2, RAX, RDX }, { RAX, RDX }));
+  instrs.emplace_back(new assem::Operation("idivq `8S0", { t2, RAX, RDX }, { RAX, RDX }));
   if (isDiv) {
     // If division, move %rax into temp
     Temp(RAX).toAssemInstrs(temp, instrs);
@@ -122,32 +117,26 @@ void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs)
 }
 
 
-void BinOp::handleOthers(
-    std::string asmCode,
-    int temp,
-    std::vector<assem::InstrPtr>& instrs) const {
+void BinOp::handleOthers(std::string asmCode, int temp, std::vector<assem::InstrPtr>& instrs)
+    const {
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   asmCode.append(" `8S1, `8D0");
 
 
   if (t1 == temp) {
-    instrs.emplace_back(
-        new assem::Operation(move(asmCode), { t1, t2 }, { t1 }));
+    instrs.emplace_back(new assem::Operation(move(asmCode), { t1, t2 }, { t1 }));
   } else if (t2 == temp) {
     if (asmCode == "subq") {
       // Only subtraction is non-commutative
       instrs.emplace_back(new assem::Operation("negq `8D0", { t2 }, { t2 }));
-      instrs.emplace_back(
-          new assem::Operation("addq `8S1, `8D0", { t2, t1 }, { t2 }));
+      instrs.emplace_back(new assem::Operation("addq `8S1, `8D0", { t2, t1 }, { t2 }));
     } else {
-      instrs.emplace_back(
-          new assem::Operation(move(asmCode), { t2, t1 }, { t2 }));
+      instrs.emplace_back(new assem::Operation(move(asmCode), { t2, t1 }, { t2 }));
     }
   } else {
     instrs.emplace_back(new assem::Move(t1, temp));
-    instrs.emplace_back(
-        new assem::Operation(move(asmCode), { temp, t2 }, { temp }));
+    instrs.emplace_back(new assem::Operation(move(asmCode), { temp, t2 }, { temp }));
   }
 }
 
@@ -172,10 +161,7 @@ const char* movExtendSuffix(u_char numBytes) {
 }
 
 MemDeref::MemDeref(long offset, ExprPtr&& addr, ExprPtr&& mult, u_char numBytes)
-    : offset_(offset),
-      baseAddr_(move(addr)),
-      mult_(move(mult)),
-      numBytes_(numBytes) {}
+    : offset_(offset), baseAddr_(move(addr)), mult_(move(mult)), numBytes_(numBytes) {}
 
 void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   vector<int> srcTemps;
@@ -186,10 +172,8 @@ void MemDeref::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   }
 
   ostringstream asmOp;
-  asmOp << "mov" << movExtendSuffix(numBytes_) << ' ' << genAsmCode(0)
-        << ", `8D0";
-  instrs.emplace_back(
-      new assem::Operation(asmOp.str(), move(srcTemps), { temp }, true));
+  asmOp << "mov" << movExtendSuffix(numBytes_) << ' ' << genAsmCode(0) << ", `8D0";
+  instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), { temp }, true));
 }
 
 string MemDeref::genAsmCode(size_t srcIndex) const {
@@ -200,7 +184,7 @@ string MemDeref::genAsmCode(size_t srcIndex) const {
   code << "(`8S" << srcIndex;
 
   if (mult_) {
-    code << ", `8S" << srcIndex + 1 << ", " << (size_t) numBytes_;
+    code << ", `8S" << srcIndex + 1 << ", " << (size_t)numBytes_;
   }
   code << ')';
   return code.str();
@@ -213,8 +197,7 @@ string MemDeref::genAsmCode(size_t srcIndex) const {
 DoThenEval::DoThenEval(vector<StmtPtr>&& stmts, ExprPtr expr)
     : stmts_(move(stmts)), expr_(move(expr)) {}
 
-void DoThenEval::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs)
-    const {
+void DoThenEval::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   for (const StmtPtr& stmt : stmts_) {
     stmt->toAssemInstrs(instrs);
   }
@@ -232,21 +215,16 @@ void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   // "leaq symbol(%rip), dst" looks like symbol + %rip, but actually means
   // symbol with respect to %rip. Essentially, it calculates the address of
   // symbol
-  instrs.emplace_back(new assem::Operation(
-      string("leaq ").append(name_).append("(%rip), `8D0"), {}, { temp }));
+  instrs.emplace_back(
+      new assem::Operation(string("leaq ").append(name_).append("(%rip), `8D0"), {}, { temp }));
 }
 
 
 /************
  * CallExpr *
  ************/
-CallExpr::CallExpr(
-    ExprPtr&& addr,
-    vector<ExprPtr>&& params,
-    bool hasReturnValue)
-    : addr_(move(addr)),
-      params_(move(params)),
-      hasReturnValue_(hasReturnValue) {}
+CallExpr::CallExpr(ExprPtr&& addr, vector<ExprPtr>&& params, bool hasReturnValue)
+    : addr_(move(addr)), params_(move(params)), hasReturnValue_(hasReturnValue) {}
 
 
 void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
@@ -277,17 +255,15 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     // If we are calling an address, we need to put it in a register
     int t = addr_->toAssemInstrs(instrs);
     srcTemps.push_back(t);
-    instrs.emplace_back(new assem::Operation(
-        "callq *`8S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
+    instrs.emplace_back(
+        new assem::Operation("callq *`8S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
   }
 
   // Decrement stack for overflow parameters
   size_t numStackParams = numParams - numRegParams;
   if (numStackParams != 0) {
     instrs.emplace_back(new assem::Operation(
-        string("addq $").append(to_string(numStackParams * 8)).append(", `8S0"),
-        { RSP },
-        {}));
+        string("addq $").append(to_string(numStackParams * 8)).append(", `8S0"), { RSP }, {}));
   }
 
   // Move result from %rax to temp if needed
@@ -300,15 +276,13 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 /********
  * Cast *
  ********/
-Cast::Cast(ExprPtr&& expr, u_char toNumBytes)
-    : expr_(move(expr)), toNumBytes_(toNumBytes) {}
+Cast::Cast(ExprPtr&& expr, u_char toNumBytes) : expr_(move(expr)), toNumBytes_(toNumBytes) {}
 
 void Cast::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
   int t = expr_->toAssemInstrs(instrs);
   ostringstream asmOp;
-  asmOp << "mov" << movExtendSuffix(toNumBytes_) << " `" << (size_t)toNumBytes_
-        << "S0, `8D0";
-  instrs.emplace_back(new assem::Operation(asmOp.str(), {t}, { temp }));
+  asmOp << "mov" << movExtendSuffix(toNumBytes_) << " `" << (size_t)toNumBytes_ << "S0, `8D0";
+  instrs.emplace_back(new assem::Operation(asmOp.str(), { t }, { temp }));
 }
 
 
@@ -334,12 +308,9 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       if (reversed_) {
         // const - x: Subtraction is non-commutative
         expr_->toAssemInstrs(temp, instrs);
-        instrs.emplace_back(
-            new assem::Operation("negq `8D0", { temp }, { temp }));
+        instrs.emplace_back(new assem::Operation("negq `8D0", { temp }, { temp }));
         instrs.emplace_back(new assem::Operation(
-            string("addq $").append(to_string(n_)).append(", `8D0"),
-            { temp },
-            { temp }));
+            string("addq $").append(to_string(n_)).append(", `8D0"), { temp }, { temp }));
         return;
       }
       asmCode = "subq";
@@ -348,8 +319,7 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
       if (n_ == -1) {
         // x * - 1 = -n
         expr_->toAssemInstrs(temp, instrs);
-        instrs.emplace_back(
-            new assem::Operation("negq `8D0", { temp }, { temp }));
+        instrs.emplace_back(new assem::Operation("negq `8D0", { temp }, { temp }));
         return;
       }
       asmCode = "imulq";
@@ -369,9 +339,7 @@ void HalfConst::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 
   expr_->toAssemInstrs(temp, instrs);
   instrs.emplace_back(new assem::Operation(
-      asmCode.append(" $").append(to_string(n_)).append(", `8D0"),
-      { temp },
-      { temp }));
+      asmCode.append(" $").append(to_string(n_)).append(", `8D0"), { temp }, { temp }));
 }
 
 
@@ -388,8 +356,7 @@ void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 
   ostringstream asmCode;
   asmCode << "leaq " << genAsmCode(0) << ", `8D0";
-  instrs.emplace_back(
-      new assem::Operation(asmCode.str(), move(srcTemps), { temp }, true));
+  instrs.emplace_back(new assem::Operation(asmCode.str(), move(srcTemps), { temp }, true));
 }
 
 
@@ -399,8 +366,7 @@ void Leaq::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 
 IncDec::IncDec(ExprPtr&& expr, bool inc) : expr_(move(expr)), inc_(inc) {}
 
-void IncDec::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-    const {
+void IncDec::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
   expr_->toAssemInstrs(temp, instrs);
   if (inc_) {
     instrs.emplace_back(new assem::Operation("incq `8D0", { temp }, { temp }));

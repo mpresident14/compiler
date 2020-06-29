@@ -5,10 +5,9 @@ using namespace std;
 
 vector<int> regsAsInts(const vector<MachineReg>& regs) {
   vector<int> ints;
-  transform(
-      regs.cbegin(), regs.cend(), back_inserter(ints), [](MachineReg reg) {
-        return static_cast<int>(reg);
-      });
+  transform(regs.cbegin(), regs.cend(), back_inserter(ints), [](MachineReg reg) {
+    return static_cast<int>(reg);
+  });
   return ints;
 }
 
@@ -116,8 +115,7 @@ string regToString(MachineReg machineReg, u_char bytesChar) {
       break;
     default:
       throw invalid_argument(
-          "regToString: " + to_string(bytesChar) +
-          " is not a valid register offset.");
+          "regToString: " + to_string(bytesChar) + " is not a valid register offset.");
   }
 
   return ret;

@@ -41,20 +41,15 @@ public:
     Node(const V& value) : value_(value) {}
     Node(V&& value) : value_(std::move(value)) {}
 
-    bool operator==(const Node& other) const noexcept {
-      return value_ == other.value_;
-    }
+    bool operator==(const Node& other) const noexcept { return value_ == other.value_; }
 
-    friend std::ostream& operator<<(
-        std::ostream& out,
-        const Node& node) noexcept {
+    friend std::ostream& operator<<(std::ostream& out, const Node& node) noexcept {
       return out << node.value_;
     }
 
     const V& getValue() const noexcept { return value_; }
 
-    const std::unordered_map<T, Node*, HashT, EqT>& getTransitions()
-        const noexcept {
+    const std::unordered_map<T, Node*, HashT, EqT>& getTransitions() const noexcept {
       return transitions_;
     }
 
@@ -68,10 +63,7 @@ public:
 
   friend struct Node;
 
-  DFA(V value)
-      : root_(new Node(value)),
-        valueToNode_{ { &root_->value_, root_ } },
-        size_(1) {}
+  DFA(V value) : root_(new Node(value)), valueToNode_{ { &root_->value_, root_ } }, size_(1) {}
 
   ~DFA() {
     // If invalidated via move construction/assignment
@@ -99,9 +91,7 @@ public:
 
   DFA(const DFA& other) = delete;
   DFA(DFA&& other)
-      : root_(other.root_),
-        valueToNode_(move(other.valueToNode_)),
-        size_(other.size_) {
+      : root_(other.root_), valueToNode_(move(other.valueToNode_)), size_(other.size_) {
     other.root_ = nullptr;
   }
   DFA& operator=(const DFA& other) = delete;
@@ -138,8 +128,7 @@ public:
   template <typename T2 = T, typename V2 = V>
   Node* addTransition(Node* node, T2&& transition, V2&& newNodeValue) {
     // No duplicate or updated transitions
-    auto transIterBool =
-        node->transitions_.try_emplace(std::forward<T2>(transition), nullptr);
+    auto transIterBool = node->transitions_.try_emplace(std::forward<T2>(transition), nullptr);
     if (!transIterBool.second) {
       // No duplicate or updated transitions
       return nullptr;
@@ -169,8 +158,7 @@ public:
     using NewNode = typename DFA<NewValue, T>::Node;
 
     DFA<NewValue, T> newDfa(valueConversion(root_->value_));
-    unordered_map<const OldNode*, NewNode*> visited = { { root_,
-                                                          newDfa.root_ } };
+    unordered_map<const OldNode*, NewNode*> visited = { { root_, newDfa.root_ } };
     queue<pair<const OldNode*, NewNode*>> q;
     q.push(pair(root_, newDfa.root_));
 
@@ -250,8 +238,7 @@ public:
       tranStmts << 'n' << currentNode << "->ts_={\n";
       for (const auto& tranAndNode : currentNode->transitions_) {
         const Node* successor = tranAndNode.second;
-        tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n'
-                  << successor << ".get()},\n";
+        tranStmts << '{' << tranToStr(tranAndNode.first) << ',' << 'n' << successor << ".get()},\n";
         if (!visited.contains(successor)) {
           visited.insert(successor);
           q.push(successor);
@@ -297,9 +284,7 @@ public:
   };
 
   struct VPtrEquals {
-    bool operator()(const V* vptr1, const V* vptr2) const noexcept {
-      return EqV()(*vptr1, *vptr2);
-    }
+    bool operator()(const V* vptr1, const V* vptr2) const noexcept { return EqV()(*vptr1, *vptr2); }
   };
 
 private:

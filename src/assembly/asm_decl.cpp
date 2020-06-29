@@ -62,8 +62,7 @@ void Function::toCode(ostream& out) {
   return;
 #endif
 
-  bitset<NUM_AVAIL_REGS> writtenRegs =
-      regAlloc(colorPair.first, colorPair.second);
+  bitset<NUM_AVAIL_REGS> writtenRegs = regAlloc(colorPair.first, colorPair.second);
   auto savesAndRestores = preserveRegs(writtenRegs);
 
   // Push all registers that need to be saved at the beginning of the function
@@ -102,8 +101,7 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
 
   bool needStackSpace;
   if ((needStackSpace = stackSpace != 0)) {
-    newInstrs.emplace_back(
-        new Operation("subq $" + to_string(stackSpace) + ", %rsp", {}, {}));
+    newInstrs.emplace_back(new Operation("subq $" + to_string(stackSpace) + ", %rsp", {}, {}));
   }
 
   // Update the instructions and add them
@@ -142,8 +140,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
 
   // Have to pop in reverse order
   vector<InstrPtr> popInstrs;
-  for (auto iter = regsToPreserve.crbegin(); iter != regsToPreserve.crend();
-       ++iter) {
+  for (auto iter = regsToPreserve.crbegin(); iter != regsToPreserve.crend(); ++iter) {
     popInstrs.emplace_back(new Operation("popq `8D0", {}, { *iter }));
   }
 
@@ -155,8 +152,7 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
  * Ints *
  ********/
 
-Ints::Ints(string_view name, vector<int>&& nums)
-    : label_(name), nums_(move(nums)) {}
+Ints::Ints(string_view name, vector<int>&& nums) : label_(name), nums_(move(nums)) {}
 
 
 void Ints::toCode(std::ostream& out) {

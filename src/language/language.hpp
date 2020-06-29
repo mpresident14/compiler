@@ -164,8 +164,7 @@ public:
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
-      std::unordered_map<std::string, std::unique_ptr<Program>>&
-          initializedProgs,
+      std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
       std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
       std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
 
@@ -202,10 +201,7 @@ public:
 
 class If : public Stmt {
 public:
-  If(ExprPtr&& boolE,
-     std::unique_ptr<Block>&& ifE,
-     StmtPtr&& elseE,
-     size_t line);
+  If(ExprPtr&& boolE, std::unique_ptr<Block>&& ifE, StmtPtr&& elseE, size_t line);
   const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
@@ -227,7 +223,11 @@ public:
 
 class For : public Stmt {
 public:
-  For(std::unique_ptr<VarDecl>&& varDecl, ExprPtr&& boolE, StmtPtr&& update, std::unique_ptr<Block>&& body, size_t line);
+  For(std::unique_ptr<VarDecl>&& varDecl,
+      ExprPtr&& boolE,
+      StmtPtr&& update,
+      std::unique_ptr<Block>&& body,
+      size_t line);
   const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 

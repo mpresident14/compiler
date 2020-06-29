@@ -60,12 +60,9 @@ std::set<Logger::MsgInfo> Logger::sortLogs() const {
   return logSet;
 }
 
-bool operator<(
-    const Logger::MsgInfo& mi1,
-    const Logger::MsgInfo& mi2) noexcept {
+bool operator<(const Logger::MsgInfo& mi1, const Logger::MsgInfo& mi2) noexcept {
   auto lineCmp = mi1.line <=> mi2.line;
-  auto typeCmp =
-      static_cast<int>(mi1.msgType) <=> static_cast<int>(mi2.msgType);
+  auto typeCmp = static_cast<int>(mi1.msgType) <=> static_cast<int>(mi2.msgType);
   if (lineCmp == 0) {
     if (typeCmp == 0) {
       return mi1.msg < mi2.msg;
@@ -78,10 +75,7 @@ bool operator<(
 }
 
 
-void Logger::streamMsg(
-    std::ostream& out,
-    const MsgInfo& mi,
-    MsgCounts& counts) {
+void Logger::streamMsg(std::ostream& out, const MsgInfo& mi, MsgCounts& counts) {
   switch (mi.msgType) {
     case MsgType::ERROR:
       ++counts.errors;
@@ -113,10 +107,9 @@ const char* maybePlural(size_t n, const char* singular, const char* plural) {
 }  // namespace
 
 void Logger::streamCounts(std::ostream& out, const MsgCounts& counts) {
-  out << counts.errors << maybePlural(counts.errors, " error, ", " errors, ")
-      << counts.warnings
-      << maybePlural(counts.warnings, " warning, ", " warnings, ")
-      << counts.notes << maybePlural(counts.notes, " note\n\n", " notes\n\n");
+  out << counts.errors << maybePlural(counts.errors, " error, ", " errors, ") << counts.warnings
+      << maybePlural(counts.warnings, " warning, ", " warnings, ") << counts.notes
+      << maybePlural(counts.notes, " note\n\n", " notes\n\n");
 }
 
 

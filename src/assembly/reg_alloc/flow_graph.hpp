@@ -25,8 +25,7 @@ public:
   void computeLiveness();
 
   const std::vector<assem::InstrPtr>& getInstrs() const noexcept;
-  const std::unordered_map<const assem::Instruction*, Liveness>& getNodes()
-      const noexcept;
+  const std::unordered_map<const assem::Instruction*, Liveness>& getNodes() const noexcept;
 
 private:
   // Yes, this is a reference. To avoid unnecessary copies, the FlowGraph

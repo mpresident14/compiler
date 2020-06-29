@@ -9,9 +9,7 @@ namespace {
 
 /* Allows us to proceed through compile errors so that we don't have to report
  * one at a time */
-language::ExprInfo dummyInfo() {
-  return { make_unique<im::Temp>(newTemp()), anyType };
-}
+language::ExprInfo dummyInfo() { return { make_unique<im::Temp>(newTemp()), anyType }; }
 
 }  // namespace
 
@@ -31,16 +29,12 @@ ExprInfo ConstInt::toImExpr(Ctx&) {
 /*************
  * ConstChar *
  *************/
-ExprInfo ConstChar::toImExpr(Ctx&) {
-  return { make_unique<im::Const>(c_), charType };
-}
+ExprInfo ConstChar::toImExpr(Ctx&) { return { make_unique<im::Const>(c_), charType }; }
 
 /*************
  * ConstBool *
  *************/
-ExprInfo ConstBool::toImExpr(Ctx&) {
-  return { make_unique<im::Const>(b_), boolType };
-}
+ExprInfo ConstBool::toImExpr(Ctx&) { return { make_unique<im::Const>(b_), boolType }; }
 
 /*******
  * Var *
@@ -63,18 +57,12 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
     case UOp::NOT:
       // !b = b ^ 1
       return { make_unique<im::BinOp>(
-                   e_->toImExprAssert(*boolType, ctx),
-                   make_unique<im::Const>(1),
-                   im::BOp::XOR),
+                   e_->toImExprAssert(*boolType, ctx), make_unique<im::Const>(1), im::BOp::XOR),
                boolType };
     case UOp::NEG: {
-      ExprInfo eInfo = e_->toImExprAssert(
-          isIntegral, "Unary minus requires an integer.", ctx);
-      return {
-        make_unique<im::BinOp>(
-            make_unique<im::Const>(-1), move(eInfo.imExpr), im::BOp::MUL),
-        move(eInfo.type)
-      };
+      ExprInfo eInfo = e_->toImExprAssert(isIntegral, "Unary minus requires an integer.", ctx);
+      return { make_unique<im::BinOp>(make_unique<im::Const>(-1), move(eInfo.imExpr), im::BOp::MUL),
+               move(eInfo.type) };
     }
     default:
       throw invalid_argument("Unrecognized Uop");
@@ -167,29 +155,21 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
       e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
 
   int t = newTemp();
-  ExprPtr tempWrapper1 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
-  ExprPtr tempWrapper2 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
-  ExprPtr e1Wrapper =
-      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
-  ExprPtr e2Wrapper =
-      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
+  ExprPtr tempWrapper1 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
+  ExprPtr tempWrapper2 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
+  ExprPtr e1Wrapper = make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
+  ExprPtr e2Wrapper = make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
 
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
-  ifBlock->stmts_.push_back(
-      make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
+  ifBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
 
   unique_ptr<Block> elseBlock = make_unique<Block>(vector<StmtPtr>{}, e2Line);
-  elseBlock->stmts_.push_back(
-      make_unique<Assign>(move(tempWrapper2), move(e2Wrapper)));
+  elseBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper2), move(e2Wrapper)));
 
   vector<im::StmtPtr> imStmts;
-  If(move(boolE_), move(ifBlock), move(elseBlock), line_)
-      .toImStmts(imStmts, ctx);
+  If(move(boolE_), move(ifBlock), move(elseBlock), line_).toImStmts(imStmts, ctx);
 
-  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(t)),
-           move(widerType) };
+  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(t)), move(widerType) };
 }
 
 
@@ -208,8 +188,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
     paramTypes.push_back(move(exprInfo.type));
   }
 
-  const Ctx::FnInfo* fnInfo =
-      ctx.lookupFnRec(qualifiers_, name_, paramTypes, line_);
+  const Ctx::FnInfo* fnInfo = ctx.lookupFnRec(qualifiers_, name_, paramTypes, line_);
   if (!fnInfo) {
     // Undefined function
     return dummyInfo();
@@ -234,8 +213,7 @@ ExprInfo Cast::toImExpr(Ctx& ctx) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
-  return { make_unique<im::Cast>(move(eInfo.imExpr), toType_->numBytes),
-           move(toType_) };
+  return { make_unique<im::Cast>(move(eInfo.imExpr), toType_->numBytes), move(toType_) };
 }
 
 
@@ -254,8 +232,7 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
 ExprInfo NewArray::toImExprLen(Ctx& ctx) {
   auto p = makeArrayStmts(*type_, move(numElems_), ctx);
 
-  return { make_unique<im::DoThenEval>(
-               move(p.first), make_unique<im::Temp>(p.second)),
+  return { make_unique<im::DoThenEval>(move(p.first), make_unique<im::Temp>(p.second)),
            make_unique<Array>(type_) };
 }
 
@@ -278,15 +255,11 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
     // Assign the element
     stmts.push_back(make_unique<im::Assign>(
         make_unique<im::MemDeref>(
-            8,
-            make_unique<im::Temp>(tArrAddr),
-            make_unique<im::Const>(i),
-            elemSize),
+            8, make_unique<im::Temp>(tArrAddr), make_unique<im::Const>(i), elemSize),
         elem->toImExprAssert(*type_, ctx)));
   }
 
-  return { make_unique<im::DoThenEval>(
-               move(stmts), make_unique<im::Temp>(tArrAddr)),
+  return { make_unique<im::DoThenEval>(move(stmts), make_unique<im::Temp>(tArrAddr)),
            make_unique<Array>(type_) };
 }
 
@@ -297,18 +270,13 @@ NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
   // Store the length of the array in a temporary
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
-      numElems
-          ->toImExprAssert(
-              isIntegral, "Array size requires an integral type", ctx)
-          .imExpr);
+      numElems->toImExprAssert(isIntegral, "Array size requires an integral type", ctx).imExpr);
 
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
-      make_unique<im::Temp>(tLen),
-      make_unique<im::Const>(type.numBytes),
-      im::BOp::MUL);
-  im::ExprPtr arrBytes = make_unique<im::BinOp>(
-      move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
+      make_unique<im::Temp>(tLen), make_unique<im::Const>(type.numBytes), im::BOp::MUL);
+  im::ExprPtr arrBytes =
+      make_unique<im::BinOp>(move(mul), make_unique<im::Const>(8), im::BOp::PLUS);
 
   // Allocate the correct number of bytes
   int tArrAddr = newTemp();
@@ -316,8 +284,7 @@ NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
   mallocBytes.emplace_back(move(arrBytes));
   im::StmtPtr callMalloc = make_unique<im::Assign>(
       make_unique<im::Temp>(tArrAddr),
-      make_unique<im::CallExpr>(
-          make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+      make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
 
   // Arrays will start with the number of elements they contain
   im::StmtPtr setSize = make_unique<im::Assign>(
@@ -352,14 +319,10 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   const Type& arrType = *static_cast<const Array&>(type).arrType;
 
   im::ExprPtr imIndex =
-      index_
-          ->toImExprAssert(
-              isIntegral, "Operator[] requires an integral type", ctx)
-          .imExpr;
+      index_->toImExprAssert(isIntegral, "Operator[] requires an integral type", ctx).imExpr;
 
   // Add 8 bytes to skip the size field
-  return { make_unique<im::MemDeref>(
-               8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
+  return { make_unique<im::MemDeref>(8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
            static_cast<const Array*>(&type)->arrType };
 }
 
@@ -372,8 +335,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   // The only member of an array is length
   if (eInfo.type->typeName == TypeName::ARRAY) {
     if (member_ == "length") {
-      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8),
-               longType };
+      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), longType };
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();
@@ -399,13 +361,12 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
     if (!pre_) {
       // movq var, tPostRes (post)
       tPostRes = newTemp();
-      imStmts.push_back(make_unique<im::Assign>(
-          make_unique<im::Temp>(tPostRes), make_unique<im::Temp>(tVar)));
+      imStmts.push_back(
+          make_unique<im::Assign>(make_unique<im::Temp>(tPostRes), make_unique<im::Temp>(tVar)));
     }
 
     // var +/-= 1
-    Update(move(lValue_), bOp, make_unique<ConstInt>(1, line_))
-        .toImStmts(imStmts, ctx);
+    Update(move(lValue_), bOp, make_unique<ConstInt>(1, line_)).toImStmts(imStmts, ctx);
 
     // return var (pre) or tPostRes (post)
     return { make_unique<im::DoThenEval>(
@@ -428,14 +389,12 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
       // movq tAddr, tPosRes (post)
       tPostRes = newTemp();
       imStmts.push_back(make_unique<im::Assign>(
-          make_unique<im::Temp>(tPostRes),
-          Update::derefTemp(tAddr, memDeref->numBytes_)));
+          make_unique<im::Temp>(tPostRes), Update::derefTemp(tAddr, memDeref->numBytes_)));
     }
 
     // *tAddr +/-= 1
     Update(
-        make_unique<ImWrapper>(
-            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
+        make_unique<ImWrapper>(Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);

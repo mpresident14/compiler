@@ -26,8 +26,7 @@ string qualifiedFn(vector<string> qualifiers, string_view fnName) {
 void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
   err << '(';
   if (!paramTypes.empty()) {
-    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend());
-         ++iter) {
+    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend()); ++iter) {
       err << **iter << ", ";
     }
     err << *paramTypes.back();
@@ -40,10 +39,7 @@ Ctx::Ctx(
     string_view filename,
     shared_ptr<unordered_map<string, string>> fileIds,
     shared_ptr<unordered_map<string, string>> typeIds)
-    : filename_(filename),
-      logger(filename),
-      fileIds_(move(fileIds)),
-      typeIds_(move(typeIds)) {}
+    : filename_(filename), logger(filename), fileIds_(move(fileIds)), typeIds_(move(typeIds)) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -53,18 +49,14 @@ const string& Ctx::getFilename() const noexcept { return filename_; }
 
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
-void Ctx::setCurrentRetType(TypePtr type) noexcept {
-  currentRetType_ = move(type);
-}
+void Ctx::setCurrentRetType(TypePtr type) noexcept { currentRetType_ = move(type); }
 
 int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
   int temp = newTemp();
-  auto insertResult =
-      varMap_.emplace(name, VarInfo{ move(type), temp, line, false });
+  auto insertResult = varMap_.emplace(name, VarInfo{ move(type), temp, line, false });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
-    errStream << "Redefinition of variable '" << name
-              << "'. Originally declared on line "
+    errStream << "Redefinition of variable '" << name << "'. Originally declared on line "
               << insertResult.first->second.line;
   }
   return temp;
@@ -74,8 +66,7 @@ int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
 const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
   const VarInfo* varInfo = lookupTempVar(name);
   if (!varInfo) {
-    logger.logError(
-        line, string("Undefined variable '").append(name).append("'"));
+    logger.logError(line, string("Undefined variable '").append(name).append("'"));
   }
   return varInfo;
 }
@@ -108,8 +99,7 @@ void Ctx::removeTemp(const string& var, size_t line) {
   // variable
   auto iter = varMap_.find(var);
   if (iter != varMap_.end() && !iter->second.used) {
-    logger.logWarning(
-        line, string("Unused variable '").append(var).append("'"));
+    logger.logWarning(line, string("Unused variable '").append(var).append("'"));
   }
   varMap_.erase(var);
 }
@@ -124,16 +114,11 @@ void Ctx::insertFn(
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const FnInfo& fnInfo = iter->second;
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
-    if (equal(
-            paramTypes.cbegin(),
-            paramTypes.cend(),
-            fnParamTypes.cbegin(),
-            fnParamTypes.cend())) {
+    if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       ostream& errStream = logger.logError(line);
       errStream << "Redefinition of function '" << name;
       Ctx::streamParamTypes(paramTypes, errStream);
-      errStream << "'. Originally declared at " << fnInfo.declFile << ", line "
-                << fnInfo.line;
+      errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;
     }
   }
@@ -141,9 +126,7 @@ void Ctx::insertFn(
 }
 
 
-Ctx::FnLookupInfo Ctx::lookupFn(
-    const string& name,
-    const vector<TypePtr>& paramTypes) {
+Ctx::FnLookupInfo Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
   vector<const FnInfo*> wideMatches;
   vector<const FnInfo*> narrowMatches;
   auto iterPair = fnMap_.equal_range(name);
@@ -151,15 +134,9 @@ Ctx::FnLookupInfo Ctx::lookupFn(
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
     bool isNarrowing = false;
-    if (equal(
-            paramTypes.cbegin(),
-            paramTypes.cend(),
-            fnParamTypes.cbegin(),
-            fnParamTypes.cend())) {
+    if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       // Exact match
-      return { FnLookupRes::FOUND,
-               { std::vector<const FnInfo*>{ &iter->second } },
-               filename_ };
+      return { FnLookupRes::FOUND, { std::vector<const FnInfo*>{ &iter->second } }, filename_ };
     } else if (equal(
                    paramTypes.cbegin(),
                    paramTypes.cend(),
@@ -183,23 +160,19 @@ Ctx::FnLookupInfo Ctx::lookupFn(
   }
 
   // Only try narrowing matches if there are no widening matches
-  const vector<const FnInfo*>* matchVec =
-      wideMatches.empty() ? &narrowMatches : &wideMatches;
+  const vector<const FnInfo*>* matchVec = wideMatches.empty() ? &narrowMatches : &wideMatches;
   if (matchVec->size() > 1) {
     return { FnLookupRes::AMBIG_OVERLOAD, { move(*matchVec) }, filename_ };
   } else if (matchVec->size() == 1) {
-    return { matchVec == &narrowMatches ? FnLookupRes::NARROWING
-                                        : FnLookupRes::FOUND,
+    return { matchVec == &narrowMatches ? FnLookupRes::NARROWING : FnLookupRes::FOUND,
              { move(*matchVec) },
              filename_ };
   } else {
     // No matches
     vector<const FnInfo*> candidates;
-    transform(
-        iterPair.first,
-        iterPair.second,
-        back_inserter(candidates),
-        [](const auto& p) { return &p.second; });
+    transform(iterPair.first, iterPair.second, back_inserter(candidates), [](const auto& p) {
+      return &p.second;
+    });
     return { FnLookupRes::UNDEFINED, move(candidates), filename_ };
   }
 }
@@ -210,9 +183,8 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     const string& name,
     const vector<TypePtr>& paramTypes,
     size_t line) {
-  FnLookupInfo lookupInfo =
-      qualifiers.empty() ? lookupFn(name, paramTypes)
-                         : ctxTree_.lookupFn(qualifiers, name, paramTypes);
+  FnLookupInfo lookupInfo = qualifiers.empty() ? lookupFn(name, paramTypes)
+                                               : ctxTree_.lookupFn(qualifiers, name, paramTypes);
 
   switch (lookupInfo.res) {
     case FnLookupRes::NARROWING: {
@@ -227,33 +199,18 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
       return get<0>(lookupInfo.candidates).front();
     case FnLookupRes::AMBIG_OVERLOAD:
       ambigOverload(
-          qualifiers,
-          name,
-          paramTypes,
-          line,
-          get<0>(lookupInfo.candidates),
-          lookupInfo.filename);
+          qualifiers, name, paramTypes, line, get<0>(lookupInfo.candidates), lookupInfo.filename);
       return nullptr;
     case FnLookupRes::UNDEFINED:
       undefinedFn(
-          qualifiers,
-          name,
-          paramTypes,
-          line,
-          get<0>(lookupInfo.candidates),
-          lookupInfo.filename);
+          qualifiers, name, paramTypes, line, get<0>(lookupInfo.candidates), lookupInfo.filename);
       return nullptr;
     case FnLookupRes::BAD_QUALS:
       undefFnBadQuals(qualifiers, name, paramTypes, line);
       return nullptr;
     case FnLookupRes::AMBIG_QUALS:
       undefFnAmbigQuals(
-          qualifiers,
-          name,
-          paramTypes,
-          line,
-          get<1>(lookupInfo.candidates),
-          lookupInfo.filename);
+          qualifiers, name, paramTypes, line, get<1>(lookupInfo.candidates), lookupInfo.filename);
       return nullptr;
     default:
       throw invalid_argument("Ctx::lookupFnRec");
@@ -277,8 +234,7 @@ void Ctx::undefinedFn(
   } else {
     err << "'\nCandidate functions in " << searchedFile << ":";
     for (const FnInfo* fnInfo : candidates) {
-      err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' '
-          << fnName;
+      err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' ' << fnName;
       streamParamTypes(fnInfo->paramTypes, err);
     }
   }
@@ -303,8 +259,7 @@ void Ctx::undefFnAmbigQuals(
     const vector<const std::string*> candidates,
     string_view searchedPath) {
   ostream& err = logger.logError(line);
-  err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::")
-      << "::" << fnName;
+  err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::") << "::" << fnName;
   Ctx::streamParamTypes(paramTypes, err);
   err << "'. Found";
   for (const std::string* cand : candidates) {
@@ -324,8 +279,7 @@ void Ctx::ambigOverload(
   streamParamTypes(paramTypes, err);
   err << "' is ambiguous. Candidate functions in " << searchedFile << ":";
   for (const FnInfo* fnInfo : candidates) {
-    err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' '
-        << fnName;
+    err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' ' << fnName;
     streamParamTypes(fnInfo->paramTypes, err);
   }
 }
@@ -346,10 +300,8 @@ void Ctx::warnNarrow(
 }
 
 
-string Ctx::mangleFn(
-    string_view fnName,
-    const string& filename,
-    const vector<TypePtr>& paramTypes) {
+string
+Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>& paramTypes) {
   if (fnName.front() != '_') {
     string newName = "_";
     newName.append(fnName);
@@ -364,9 +316,7 @@ string Ctx::mangleFn(
   return string(fnName);
 }
 
-void Ctx::addFileId(size_t id, string_view filename) {
-  fileIds_->emplace(filename, to_string(id));
-}
+void Ctx::addFileId(size_t id, string_view filename) { fileIds_->emplace(filename, to_string(id)); }
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

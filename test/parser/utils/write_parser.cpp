@@ -18,8 +18,7 @@ ostringstream errBuffer;
 
 void test_parserWithConflicts() {
   generateParserCode(
-      ParseInfo{
-          BAD_GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
+      ParseInfo{ BAD_GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
       ParseFlags{ "test/parser/generated/bad_expr_parser", "" },
       cerr);
 
@@ -31,8 +30,7 @@ int main() {
   cerr.rdbuf(errBuffer.rdbuf());
 
   generateParserCode(
-      ParseInfo{
-          GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
+      ParseInfo{ GRAMMAR_DATA, "#include \"test/parser/utils/expr.hpp\"\n", "" },
       ParseFlags{ "test/parser/generated/expr_parser", "" },
       cerr);
   test_parserWithConflicts();

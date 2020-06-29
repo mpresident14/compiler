@@ -81,9 +81,7 @@ public:
     return *strPtr;
   }
 
-  size_t currentLine() const noexcept {
-    return pos_ == 0 ? 0 : tokens_[pos_ - 1].getLine();
-  }
+  size_t currentLine() const noexcept { return pos_ == 0 ? 0 : tokens_[pos_ - 1].getLine(); }
 
   void setTokens(vector<StackObj>&& tokens) { tokens_ = move(tokens); }
 
@@ -251,8 +249,7 @@ void parseGrammarDef(size_t concNum) {
     if (iter == tokenNameToIndex.end()) {
       auto precIter = precNameToPrec.find(tokenName);
       if (precIter == precNameToPrec.end()) {
-        logger.logError(
-            tokenStream.currentLine(), "Unknown token " + tokenName);
+        logger.logError(tokenStream.currentLine(), "Unknown token " + tokenName);
       } else {
         prec = precIter->second;
       }
@@ -309,8 +306,7 @@ void parseGrammar() {
         // Otherwise, check if it is a variable
         auto varIter = varNameToIndex.find(symbolName);
         if (varIter == varNameToIndex.end()) {
-          logger.logError(
-              symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
+          logger.logError(symbolToLineMap.at(&symbolName), "Unknown symbol " + symbolName);
         } else {
           concrete.argSymbols[j] = varIter->second;
         }

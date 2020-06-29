@@ -20,12 +20,9 @@ public:
   InterferenceGraph(InterferenceGraph&& other) = delete;
   InterferenceGraph& operator=(const InterferenceGraph& other) = delete;
   InterferenceGraph& operator=(InterferenceGraph&& other) = delete;
-  friend std::ostream& operator<<(
-      std::ostream& out,
-      const InterferenceGraph& fgraph);
+  friend std::ostream& operator<<(std::ostream& out, const InterferenceGraph& fgraph);
 
-  std::pair<std::unordered_map<int, MachineReg>, std::vector<int>> color()
-      const;
+  std::pair<std::unordered_map<int, MachineReg>, std::vector<int>> color() const;
 
 private:
   std::unordered_map<int, std::unordered_set<int>> graph_;

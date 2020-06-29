@@ -22,8 +22,7 @@ constexpr static int NUMBER = -7;
 constexpr static int IDENT = -8;
 
 void testGeneralTokenization() {
-  vector<StackObj> tokens =
-      tokenize(R"( "Hello" "Hi \"Bob\"" 123 abc123 de h]llo )");
+  vector<StackObj> tokens = tokenize(R"( "Hello" "Hi \"Bob\"" 123 abc123 de h]llo )");
 
   StackObj t0 = move(tokens[0]);
   TESTER.assertEquals(STRLIT, t0.getSymbol());

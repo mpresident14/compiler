@@ -31,9 +31,7 @@ inline void toCode(ostream& out, const Concrete& concrete);
 inline void toCode(ostream& out, const Variable& var);
 inline void toCode(ostream& out, const GrammarData& gd);
 
-inline void toCode(ostream& out, const string& str) {
-  out << '"' << str << '"';
-}
+inline void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
 
 inline void toCode(ostream& out, int n) { out << to_string(n); }
 
@@ -91,11 +89,7 @@ inline void toCode(ostream& out, const GrammarData& gd) {
 /*********************
  * STRING OPERATIONS *
  *********************/
-void replaceAll(
-    ostream& out,
-    string_view str,
-    const string& from,
-    const string& to) {
+void replaceAll(ostream& out, string_view str, const string& from, const string& to) {
   size_t startPos = 0;
   size_t endPos = 0;
   while ((endPos = str.find(from, startPos)) != string::npos) {
@@ -120,16 +114,11 @@ string replaceAll(string_view str, char from, char to) {
 }
 
 
-void streamSymbolNames(
-    ostream& out,
-    const vector<intptr_t>& symbols,
-    const GrammarData& gd) {
+void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const GrammarData& gd) {
   vector<string> symbolNames;
-  transform(
-      symbols.begin(),
-      symbols.end(),
-      back_inserter(symbolNames),
-      [&gd](int symbol) { return symbolToString(symbol, gd); });
+  transform(symbols.begin(), symbols.end(), back_inserter(symbolNames), [&gd](int symbol) {
+    return symbolToString(symbol, gd);
+  });
   out << symbolNames;
 }
 
@@ -150,17 +139,15 @@ string convertArgNum(
   }
   if ((size_t)argIndex >= argSymbols.size()) {
     ostringstream& error = logger.logError(concrete.declLine);
-    error << "Index " << argIndex
-          << " is greater than the number of elements in rule ";
+    error << "Index " << argIndex << " is greater than the number of elements in rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
   }
 
   int argSymbol = argSymbols[argIndex];
-  string symbolName = isToken(argSymbol)
-                          ? gd.tokens[tokenToFromIndex(argSymbol)].type
-                          : gd.variables[argSymbol].type;
+  string symbolName = isToken(argSymbol) ? gd.tokens[tokenToFromIndex(argSymbol)].type
+                                         : gd.variables[argSymbol].type;
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolName.empty()) {
@@ -177,10 +164,7 @@ string convertArgNum(
       .append("].releaseObj()))");
 }
 
-void replacePounds(
-    ostream& out,
-    const Concrete& concrete,
-    const GrammarData& gd) {
+void replacePounds(ostream& out, const Concrete& concrete, const GrammarData& gd) {
   size_t i = 0;
   string_view ctor = concrete.ctorExpr;
   size_t len = ctor.size();
@@ -192,8 +176,7 @@ void replacePounds(
       string_view afterPound = ctor.substr(i);
       if (afterPound.starts_with(line)) {
         if (concrete.argSymbols.size() == 0) {
-          logger.logError(
-              concrete.declLine, "#line cannot be used with empty rule");
+          logger.logError(concrete.declLine, "#line cannot be used with empty rule");
         }
         out << "args[0].getLine()";
         i += sizeof(line) - 1;
@@ -201,8 +184,7 @@ void replacePounds(
         size_t numDigits;
         int argIndex = stoi(string(afterPound), &numDigits);
         i += numDigits;
-        out << convertArgNum(
-            afterPound.substr(0, numDigits), argIndex, concrete, gd);
+        out << convertArgNum(afterPound.substr(0, numDigits), argIndex, concrete, gd);
       }
     } else {
       out << ctor[i++];
@@ -214,8 +196,7 @@ pair<string, string> getNamespaceAndGuard(string_view filePath) {
   string_view namespaceName = filePath.substr(filePath.find_last_of('/') + 1);
 
   string headerGuard = replaceAll(namespaceName, '/', '_');
-  transform(
-      headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
+  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
   return { string(namespaceName), move(headerGuard.append("_HPP")) };
 }
 
@@ -297,11 +278,7 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
       out << "case " << tokenToFromIndex(i) << ':';
       if (!token.dtorStmt.empty()) {
         out << "if (!released_) {";
-        replaceAll(
-            out,
-            token.dtorStmt,
-            "#obj",
-            "(*static_cast<" + token.type + "*>(obj_))");
+        replaceAll(out, token.dtorStmt, "#obj", "(*static_cast<" + token.type + "*>(obj_))");
         out << '}';
       }
       out << "delete static_cast<" << token.type << "*>(obj_); break;";
@@ -315,8 +292,7 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
     out << "case " << i << ':';
     if (!var.dtorStmt.empty()) {
       out << "if (!released_) {";
-      replaceAll(
-          out, var.dtorStmt, "#obj", "(*static_cast<" + var.type + "*>(obj_))");
+      replaceAll(out, var.dtorStmt, "#obj", "(*static_cast<" + var.type + "*>(obj_))");
       out << '}';
     }
     out << "delete static_cast<" << var.type << "*>(obj_); break;";
@@ -421,10 +397,7 @@ void lexerDFA(ostream& out, const GrammarData& gd) {
   out << '}';
 }
 
-void parserDFA(
-    ostream& out,
-    const GrammarData& gd,
-    const ParseFlags& parseFlags) {
+void parserDFA(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
   out << "namespace parser {";
   condensedDFAToCode(out, gd, parseFlags);
   out << '}';
@@ -532,9 +505,7 @@ void tokenizeDecl(ostream& out) {
  * PARSING *
  ***********/
 
-void assocDecl(ostream& out) {
-  out << "enum class Assoc { LEFT, RIGHT, NOT, NONE };";
-}
+void assocDecl(ostream& out) { out << "enum class Assoc { LEFT, RIGHT, NOT, NONE };"; }
 
 void dfaRuleDecl(ostream& out) {
   out << R"(struct DFARule {
@@ -557,8 +528,7 @@ void ruleDataDecl(ostream& out) {
 void parseDecl(ostream& out, const GrammarData& gd) {
   const string& rootType = gd.variables[1].type;
   out << rootType << " parseString(const std::string& input);" << rootType
-      << " parse(std::istream& input);" << rootType
-      << " parse(const std::string& filename);";
+      << " parse(std::istream& input);" << rootType << " parse(const std::string& filename);";
 }
 
 void parseExceptionDecl(ostream& out) {
@@ -804,8 +774,7 @@ void tokenToFromIndexFn(ostream& out) {
  * DRIVER FUNCTIONS *
  ********************/
 
-constexpr char generatedWarning[] =
-    "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
+constexpr char generatedWarning[] = "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
 
 string parserHppCode(
     const string& namespaceName,
@@ -814,8 +783,7 @@ string parserHppCode(
     const GrammarData& gd) {
   ostringstream out;
 
-  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
-      << endl;
+  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n' << endl;
   out << generatedWarning;
   out << addlHdrIncludes;
   parserHppIncludes(out);
@@ -827,14 +795,10 @@ string parserHppCode(
   return out.str();
 }
 
-string lexerHppCode(
-    const string& namespaceName,
-    const string& headerGuard,
-    const GrammarData& gd) {
+string lexerHppCode(const string& namespaceName, const string& headerGuard, const GrammarData& gd) {
   ostringstream out;
 
-  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
-      << endl;
+  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n' << endl;
   out << generatedWarning;
   lexerHppIncludes(out);
   out << "namespace " << namespaceName << '{';
@@ -936,8 +900,7 @@ void generateParserCode(
   ofstream cppFile(cppName);
   logger.checkFile(cppName, cppFile);
 
-  string hppCode = parserHppCode(
-      namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
+  string hppCode = parserHppCode(namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
 
   if (logger.hasErrors()) {
@@ -950,10 +913,7 @@ void generateParserCode(
 }
 
 
-void generateLexerCode(
-    const string& lexerFilePath,
-    const string& addlCode,
-    const GrammarData& gd) {
+void generateLexerCode(const string& lexerFilePath, const string& addlCode, const GrammarData& gd) {
   auto thePair = getNamespaceAndGuard(lexerFilePath);
   const string& namespaceName = thePair.first;
   const string& headerGuard = thePair.second;

@@ -32,7 +32,7 @@ public:
 
   int getPrecedence(const GrammarData& gd) const {
     // If no override precedence and the rule has a token, check precedence of
-   // last token
+    // last token
     int overridePrec = gd.concretes[concrete].precedence;
     if (overridePrec == NONE) {
       // Find the last token, if any

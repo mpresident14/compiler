@@ -54,8 +54,7 @@ public:
    * Because of the way we wrote the spill code (i.e., poorly), any
    * temp that is a destination must be marked with a D, even if it is also
    * a source. */
-  virtual void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const = 0;
+  virtual void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const = 0;
   /* Same as above but allow the Expr to determine the temp it is put into
    * (mainly to avoid unnecessary moves for Expr::Temp) */
   virtual int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const;
@@ -144,12 +143,7 @@ public:
  */
 class CondJump : public Stmt {
 public:
-  CondJump(
-      ExprPtr&& e1,
-      ExprPtr&& e2,
-      ROp rop,
-      assem::Label* ifTrue,
-      assem::Label* ifFalse);
+  CondJump(ExprPtr&& e1, ExprPtr&& e2, ROp rop, assem::Label* ifTrue, assem::Label* ifFalse);
   void toAssemInstrs(std::vector<assem::InstrPtr>& instrs) override;
 
   ExprPtr e1_;
@@ -198,13 +192,9 @@ public:
 class Const : public Expr {
 public:
   explicit constexpr Const(long n) : n_(n) {}
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::CONST;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
-  std::string asmChunk(size_t numBytes, bool asSrc, size_t index)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::CONST; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
+  std::string asmChunk(size_t numBytes, bool asSrc, size_t index) const override;
   ExprPtr optimize() override;
 
   long n_;
@@ -214,11 +204,8 @@ public:
 class Temp : public Expr {
 public:
   explicit constexpr Temp(int t) : t_(t) {}
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::TEMP;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::TEMP; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   int toAssemInstrs(std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
@@ -230,24 +217,14 @@ public:
 class BinOp : public Expr {
 public:
   BinOp(ExprPtr&& expr1, ExprPtr&& expr2, BOp bOp);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::BINOP;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::BINOP; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
-  void handleShifts(
-      std::string asmCode,
-      int temp,
-      std::vector<assem::InstrPtr>& instrs) const;
-  void handleDiv(bool isDiv, int temp, std::vector<assem::InstrPtr>& instrs)
-      const;
+  void handleShifts(std::string asmCode, int temp, std::vector<assem::InstrPtr>& instrs) const;
+  void handleDiv(bool isDiv, int temp, std::vector<assem::InstrPtr>& instrs) const;
 
-  void handleOthers(
-      std::string asmCode,
-      int temp,
-      std::vector<assem::InstrPtr>& instrs) const;
+  void handleOthers(std::string asmCode, int temp, std::vector<assem::InstrPtr>& instrs) const;
 
   ExprPtr optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2);
 
@@ -262,11 +239,8 @@ class MemDeref : public Expr {
 public:
   /* mult may be nullptr */
   MemDeref(long offset, ExprPtr&& baseAddr, ExprPtr&& mult, u_char numBytes);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::MEM_DEREF;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::MEM_DEREF; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
   std::string genAsmCode(size_t srcIndex) const;
@@ -285,11 +259,8 @@ protected:
 class DoThenEval : public Expr {
 public:
   DoThenEval(std::vector<StmtPtr>&& stmts, ExprPtr expr);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::DO_THEN_EVAL;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::DO_THEN_EVAL; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
   std::vector<StmtPtr> stmts_;
@@ -301,11 +272,8 @@ public:
 class LabelAddr : public Expr {
 public:
   LabelAddr(const std::string& name);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::LABEL_ADDR;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::LABEL_ADDR; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
 
@@ -317,11 +285,8 @@ public:
 class CallExpr : public Expr {
 public:
   CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::CALL;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::CALL; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
 
@@ -332,13 +297,10 @@ public:
 
 
 class Cast : public Expr {
-  public:
+public:
   Cast(ExprPtr&& expr, u_char toNumBytes);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::CAST;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::CAST; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
 
@@ -355,11 +317,8 @@ class Cast : public Expr {
 class HalfConst : public Expr {
 public:
   HalfConst(ExprPtr&& expr, long n, BOp bOp, bool reversed);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::HALF_CONST;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::HALF_CONST; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
 
@@ -373,11 +332,8 @@ public:
 class Leaq : public MemDeref {
 public:
   using MemDeref::MemDeref;
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::LEAQ;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::LEAQ; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 };
 
@@ -385,11 +341,8 @@ public:
 class IncDec : public Expr {
 public:
   IncDec(ExprPtr&& expr, bool inc);
-  constexpr ExprType getType() const noexcept override {
-    return ExprType::INC_DEC;
-  }
-  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs)
-      const override;
+  constexpr ExprType getType() const noexcept override { return ExprType::INC_DEC; }
+  void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
 
 
@@ -398,9 +351,7 @@ public:
 };
 
 
-constexpr bool isConstChunk(std::string_view asmChunk) noexcept {
-  return asmChunk.front() == '$';
-}
+constexpr bool isConstChunk(std::string_view asmChunk) noexcept { return asmChunk.front() == '$'; }
 const char* movExtendSuffix(u_char numBytes);
 char movSuffix(size_t numBytes);
 

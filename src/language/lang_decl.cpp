@@ -69,8 +69,7 @@ void Program::initContext(
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
       } catch (const parser::ParseException& e) {
-        cerr << e.what() << "\n(Imported at " << filename << ", line "
-             << imported.line << ")\n"
+        cerr << e.what() << "\n(Imported at " << filename << ", line " << imported.line << ")\n"
              << endl;
       }
     } else {
@@ -79,8 +78,7 @@ void Program::initContext(
 
     // If the program parsed, put the import's context in our context tree
     if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_.get())) {
-      ctx_->getLogger().logNote(
-          imported.line, "Duplicate import '" + importName + "'");
+      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + importName + "'");
     }
   }
 
@@ -112,10 +110,7 @@ Func::Func(
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Decl(line),
-      returnType_(move(returnType)),
-      name_(name),
-      body_(move(body)) {
+    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
   for (const auto& [type, name] : params) {
@@ -125,9 +120,7 @@ Func::Func(
 }
 
 
-void Func::addToContext(Ctx& ctx) {
-  ctx.insertFn(name_, paramTypes_, returnType_, line_);
-}
+void Func::addToContext(Ctx& ctx) { ctx.insertFn(name_, paramTypes_, returnType_, line_); }
 
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -142,8 +135,8 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   size_t numRegParams = min(numParams, (size_t)6);
   for (size_t i = 0; i < numRegParams; ++i) {
     int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
-    imStmts.emplace_back(new im::Assign(
-        make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
+    imStmts.emplace_back(
+        new im::Assign(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
   }
 
   // Move extra parameters from stack into temporaries
@@ -152,8 +145,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     size_t offset = 16 + 8 * (i - numRegParams);
     imStmts.emplace_back(new im::Assign(
         make_unique<im::Temp>(temp),
-        make_unique<im::MemDeref>(
-            offset, make_unique<im::Temp>(RBP), nullptr, 8)));
+        make_unique<im::MemDeref>(offset, make_unique<im::Temp>(RBP), nullptr, 8)));
   }
 
   // Typecheck and compile the function
@@ -161,8 +153,8 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Remove all parameters
   ctx.removeParams(paramNames_, line_);
 
-  imDecls.emplace_back(new im::Func(
-      ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
+  imDecls.emplace_back(
+      new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
 void Func::checkForReturn(Ctx& ctx) {
@@ -173,8 +165,7 @@ void Func::checkForReturn(Ctx& ctx) {
       body_->stmts_.emplace_back(new Return({}, 0));
     } else {
       ostringstream& error = ctx.getLogger().logError(line_);
-      error << "Some paths through non-void function '"
-            << *returnType_ << ' ' << name_;
+      error << "Some paths through non-void function '" << *returnType_ << ' ' << name_;
       Ctx::streamParamTypes(paramTypes_, error);
       error << "' do not return a value";
     }

@@ -26,8 +26,7 @@ assem::Program Program::toAssemProg() const {
  * Func *
  ********/
 
-Func::Func(const string& name, vector<StmtPtr>&& stmts)
-    : name_(name), stmts_(move(stmts)) {}
+Func::Func(const string& name, vector<StmtPtr>&& stmts) : name_(name), stmts_(move(stmts)) {}
 
 
 assem::DeclPtr Func::toAssemDecl() {
@@ -43,12 +42,9 @@ assem::DeclPtr Func::toAssemDecl() {
  * Ints *
  ********/
 
-Ints::Ints(string_view name, vector<int>&& nums)
-    : label_(name), nums_(move(nums)) {}
+Ints::Ints(string_view name, vector<int>&& nums) : label_(name), nums_(move(nums)) {}
 
-assem::DeclPtr Ints::toAssemDecl() {
-  return make_unique<assem::Ints>(label_, move(nums_));
-}
+assem::DeclPtr Ints::toAssemDecl() { return make_unique<assem::Ints>(label_, move(nums_)); }
 
 
 }  // namespace im

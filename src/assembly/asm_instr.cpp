@@ -16,21 +16,10 @@ Label::Label(string_view name) : name_(name) {}
 
 Move::Move(int src, int dst) : src_(src), dst_(dst) {}
 
-Operation::Operation(
-    string_view asmCode,
-    vector<int>&& srcs,
-    vector<int>&& dsts,
-    bool hasMemRefs)
-    : asmCode_(asmCode),
-      srcs_(move(srcs)),
-      dsts_(move(dsts)),
-      hasMemRefs_(hasMemRefs) {}
+Operation::Operation(string_view asmCode, vector<int>&& srcs, vector<int>&& dsts, bool hasMemRefs)
+    : asmCode_(asmCode), srcs_(move(srcs)), dsts_(move(dsts)), hasMemRefs_(hasMemRefs) {}
 
-JumpOp::JumpOp(
-    string_view asmCode,
-    vector<int>&& srcs,
-    vector<int>&& dsts,
-    Label* jump)
+JumpOp::JumpOp(string_view asmCode, vector<int>&& srcs, vector<int>&& dsts, Label* jump)
     : Operation(asmCode, move(srcs), move(dsts)), jump_(jump) {}
 
 
@@ -62,9 +51,7 @@ namespace {
     }
   }
 
-  bool updateIfNotEqual(
-      unordered_set<int>& oldSet,
-      const unordered_set<int>& newSet) {
+  bool updateIfNotEqual(unordered_set<int>& oldSet, const unordered_set<int>& newSet) {
     if (oldSet != newSet) {
       oldSet = move(newSet);
       return true;
@@ -115,9 +102,8 @@ bool Instruction::updateLiveIn(
   return setUnion(liveIn, liveOut);
 }
 
-bool Move::updateLiveIn(
-    std::unordered_set<int>& liveIn,
-    const std::unordered_set<int>& liveOut) const {
+bool Move::updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
+    const {
   unordered_set<int> newLiveIn = liveOut;
   newLiveIn.erase(dst_);
   newLiveIn.insert(src_);
@@ -133,9 +119,7 @@ bool Operation::updateLiveIn(
   return updateIfNotEqual(liveIn, newLiveIn);
 }
 
-bool Return::updateLiveIn(
-    std::unordered_set<int>& liveIn,
-    const std::unordered_set<int>&) const {
+bool Return::updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>&) const {
   // %rax is live before only if we return a value
   return hasValue_ && liveIn.insert(RAX).second;
 }
@@ -147,9 +131,7 @@ bool Return::updateLiveIn(
 
 namespace {
 
-  unordered_set<int>& getNeighbors(
-      unordered_map<int, unordered_set<int>>& theMap,
-      int temp) {
+  unordered_set<int>& getNeighbors(unordered_map<int, unordered_set<int>>& theMap, int temp) {
     auto iter = theMap.find(temp);
     if (iter == theMap.end()) {
       return theMap.emplace(temp, unordered_set<int>{}).first->second;
@@ -225,13 +207,11 @@ bool Move::spillTemps(vector<InstrPtr>& newInstrs) {
 
   // Src variable from stack into register
   if (!isRegister(src_)) {
-    newInstrs.push_back(
-        make_unique<Move>(src_, isRegister(dst_) ? dst_ : SPILL_REGS[0]));
+    newInstrs.push_back(make_unique<Move>(src_, isRegister(dst_) ? dst_ : SPILL_REGS[0]));
   }
 
   if (!isRegister(dst_)) {
-    newInstrs.push_back(
-        make_unique<Move>(isRegister(src_) ? src_ : SPILL_REGS[0], dst_));
+    newInstrs.push_back(make_unique<Move>(isRegister(src_) ? src_ : SPILL_REGS[0], dst_));
   }
 
   return false;
@@ -309,11 +289,7 @@ bool assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
   return false;
 }
 
-void Label::assignRegs(
-    const unordered_map<int, MachineReg>&,
-    bitset<NUM_AVAIL_REGS>&) {
-  return;
-}
+void Label::assignRegs(const unordered_map<int, MachineReg>&, bitset<NUM_AVAIL_REGS>&) { return; }
 
 void Move::assignRegs(
     const unordered_map<int, MachineReg>& coloring,
@@ -337,11 +313,7 @@ void Operation::assignRegs(
   }
 }
 
-void Return::assignRegs(
-    const unordered_map<int, MachineReg>&,
-    bitset<NUM_AVAIL_REGS>&) {
-  return;
-}
+void Return::assignRegs(const unordered_map<int, MachineReg>&, bitset<NUM_AVAIL_REGS>&) { return; }
 
 
 /**********
@@ -359,21 +331,16 @@ void tempToCode(
 #ifdef DEBUG
     out << "%t" << -temp;
 #else
-    out << varToStackOffset.at(temp) << '(' << regToString(RSP, numBytes)
-        << ')';
+    out << varToStackOffset.at(temp) << '(' << regToString(RSP, numBytes) << ')';
 #endif
   }
 }
 
 void streamTemp(ostream& out, int temp) { tempToCode(out, temp, 8, {}); }
 
-void Label::toCode(ostream& out, const unordered_map<int, size_t>&) const {
-  out << name_ << ":\n";
-}
+void Label::toCode(ostream& out, const unordered_map<int, size_t>&) const { out << name_ << ":\n"; }
 
-void Move::toCode(
-    ostream& out,
-    const unordered_map<int, size_t>& varToStackOffset) const {
+void Move::toCode(ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
   if (src_ == dst_) {
     return;
   }
@@ -385,9 +352,7 @@ void Move::toCode(
   out << '\n';
 }
 
-void Operation::toCode(
-    ostream& out,
-    const unordered_map<int, size_t>& varToStackOffset) const {
+void Operation::toCode(ostream& out, const unordered_map<int, size_t>& varToStackOffset) const {
   out << '\t';
   size_t len = asmCode_.size();
   size_t i = 0;
@@ -397,17 +362,9 @@ void Operation::toCode(
       int bytesChar = digitToInt(asmCode_.at(i + 1));
       c = asmCode_.at(i + 2);
       if (c == 'S') {
-        tempToCode(
-            out,
-            srcs_.at(digitToInt(asmCode_.at(i + 3))),
-            bytesChar,
-            varToStackOffset);
+        tempToCode(out, srcs_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
       } else if (c == 'D') {
-        tempToCode(
-            out,
-            dsts_.at(digitToInt(asmCode_.at(i + 3))),
-            bytesChar,
-            varToStackOffset);
+        tempToCode(out, dsts_.at(digitToInt(asmCode_.at(i + 3))), bytesChar, varToStackOffset);
       } else {
         throw runtime_error("Operation::toCode");
       }

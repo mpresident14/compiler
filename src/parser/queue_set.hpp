@@ -1,11 +1,11 @@
 #ifndef QUEUE_SET_HPP
 #define QUEUE_SET_HPP
 
-#include <unordered_set>
 #include <queue>
+#include <unordered_set>
 
 /* Quick and dirty implementation of a linked hashset */
-template<typename T>
+template <typename T>
 class QueueSet {
 public:
   QueueSet() = default;
@@ -65,5 +65,4 @@ size_t QueueSet<T>::size() const noexcept {
   return tQueue_.size();
 }
 
-#endif // QUEUE_SET_HPP
-
+#endif  // QUEUE_SET_HPP

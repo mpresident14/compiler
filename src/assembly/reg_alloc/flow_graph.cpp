@@ -8,8 +8,7 @@ using namespace assem;
 
 FlowGraph::FlowGraph(const vector<InstrPtr>& instrs) : instrs_(instrs) {
   for (const InstrPtr& instr : instrs) {
-    nodes_.emplace(
-        instr.get(), Liveness{ unordered_set<int>{}, unordered_set<int>{} });
+    nodes_.emplace(instr.get(), Liveness{ unordered_set<int>{}, unordered_set<int>{} });
   }
 }
 
@@ -63,11 +62,8 @@ std::ostream& operator<<(std::ostream& out, const FlowGraph& fgraph) {
   return out;
 }
 
-const std::vector<InstrPtr>& FlowGraph::getInstrs() const noexcept {
-  return instrs_;
-}
+const std::vector<InstrPtr>& FlowGraph::getInstrs() const noexcept { return instrs_; }
 
-const std::unordered_map<const Instruction*, Liveness>&
-FlowGraph::getNodes() const noexcept {
+const std::unordered_map<const Instruction*, Liveness>& FlowGraph::getNodes() const noexcept {
   return nodes_;
 }
