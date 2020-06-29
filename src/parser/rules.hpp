@@ -38,7 +38,7 @@ public:
       // Find the last token, if any
       auto ruleIter = find_if(symbols.crbegin(), symbols.crend(), isToken);
       if (ruleIter != symbols.crend()) {
-        return gd.tokens[tokenToFromIndex(*ruleIter)].precedence;
+        return gd.tokens[tokToArrInd(*ruleIter)].precedence;
       } else {
         return NONE;
       }

@@ -47,9 +47,9 @@ public:
     logger.logError(
         tokens_[pos_].getLine(),
         string("Expected ")
-            .append(symbolToString(tokenId, CONFIG_GRAMMAR))
+            .append(symName(tokenId, CONFIG_GRAMMAR))
             .append(". Got ")
-            .append(symbolToString(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR)));
+            .append(symName(tokens_[pos_].getSymbol(), CONFIG_GRAMMAR)));
   }
 
   bool maybeConsume(int tokenId) {
@@ -311,7 +311,7 @@ void parseGrammar() {
           concrete.argSymbols[j] = varIter->second;
         }
       } else {
-        concrete.argSymbols[j] = tokenToFromIndex(tokIter->second);
+        concrete.argSymbols[j] = arrIndToTok(tokIter->second);
       }
     }
   }
