@@ -397,7 +397,8 @@ void reduceReduceConflict(
 }
 
 template <typename Cmp>
-void findReduceReduceConflicts(const DFARule* nextRule, std::set<const DFARule*, Cmp>& reducibleRules, const GrammarData& gd) {
+void findReduceReduceConflicts(const DFARule* nextRule, std::multiset<const DFARule*, Cmp>& reducibleRules, const GrammarData& gd) {
+  // We use a multiset so that we can compare with the highest precedences first
   for (const DFARule* redRule : reducibleRules) {
     // Not a reduce-reduce conflict if the lookahead sets are disjoint
     if (!nextRule->lookahead.intersects(redRule->lookahead)) {
@@ -459,10 +460,6 @@ void findShiftReduceConflicts(
 struct RuleData {
   DFARule reducibleRule;
   int precedence;
-
-  // TODO: Do I need this?
-  // bool operator==(const RuleData& rhs) const noexcept { return reducibleRule ==
-  // rhs.reducibleRule; }
 };
 
 /*
@@ -473,13 +470,13 @@ vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& g
   auto ruleCmp = [&gd](const DFARule* r1, const DFARule* r2) {
     return r1->getPrecedence(gd) > r2->getPrecedence(gd);
   };
-  std::set<const DFARule*, decltype(ruleCmp)> reducibleRules(ruleCmp);
+  std::multiset<const DFARule*, decltype(ruleCmp)> reducibleRules(ruleCmp);
 
   for (const DFARule& rule : ruleSet) {
     if (!rule.atEnd()) {
       continue;
     }
-    findReduceReduceConflicts<decltype(ruleCmp)>(&rule, reducibleRules, gd);
+    findReduceReduceConflicts(&rule, reducibleRules, gd);
   }
 
   vector<RuleData> ruleData;
