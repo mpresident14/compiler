@@ -63,10 +63,7 @@ void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gd) {
 }
 
 
-void printNullabilities(
-    std::ostream& out,
-    const BitSetVars& nullabilities,
-    const GrammarData& gd) {
+void printNullabilities(std::ostream& out, const BitSetVars& nullabilities, const GrammarData& gd) {
   vector<string> nullVarNames;
   for (size_t j = 0; j < nullabilities.size(); ++j) {
     if (nullabilities[j]) {
@@ -79,10 +76,7 @@ void printNullabilities(
       << nullVarNames << "\n\n\n";
 }
 
-void printFirsts(
-    std::ostream& out,
-    const vector<BitSetToks>& firsts,
-    const GrammarData& gd) {
+void printFirsts(std::ostream& out, const vector<BitSetToks>& firsts, const GrammarData& gd) {
   out << "**********\n"
       << "* FIRSTS *\n"
       << "**********\n";
@@ -129,8 +123,7 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
         nodeNumMap.emplace(successor, stateNum++);
         q.push(successor);
       }
-      out << "[" << symbolToString(trans, gd) << "] -> State "
-          << nodeNumMap.at(successor) << '\n';
+      out << "[" << symbolToString(trans, gd) << "] -> State " << nodeNumMap.at(successor) << '\n';
     }
     out << "\n\n\n";
   }
@@ -148,10 +141,7 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
  * Since the queue is initially empty, using this function guarantees
  * that any rule in the queue is also in the set.
  */
-void addIfNewRule(
-    DFARule&& rule,
-    QueueSet<const DFARule*>& ruleQueue,
-    DFARuleSet& ruleSet) {
+void addIfNewRule(DFARule&& rule, QueueSet<const DFARule*>& ruleQueue, DFARuleSet& ruleSet) {
   auto p = ruleSet.insert(rule);
   const DFARule& ruleRef = *p.first;
   if (p.second) {
@@ -220,10 +210,7 @@ void addRhses(
 
   for (int concreteType : gd.variables[nextSymbol].concreteTypes) {
     addIfNewRule(
-        { concreteType,
-          gd.concretes[concreteType].argSymbols,
-          0,
-          newLookahead },
+        { concreteType, gd.concretes[concreteType].argSymbols, 0, newLookahead },
         ruleQueue,
         ruleSet);
   }
@@ -272,8 +259,7 @@ vector<DFA_t::Node*> createTransitions(
     if (rule.atEnd()) {
       continue;
     }
-    newTransitions[symbolIndex(rule.nextSymbol(), numVars)].insert(
-        rule.nextStep());
+    newTransitions[symbolIndex(rule.nextSymbol(), numVars)].insert(rule.nextStep());
   }
 
   // Apply epsilon transitions and create the transition
@@ -285,8 +271,7 @@ vector<DFA_t::Node*> createTransitions(
     epsilonTransition(*transitionRules, gd, nulls, firsts);
 
     mtx.lock();
-    DFA_t::Node* newNode =
-        dfa.addTransition(node, symbolIndex, move(*transitionRules));
+    DFA_t::Node* newNode = dfa.addTransition(node, symbolIndex, move(*transitionRules));
     if (newNode) {
       addedNodes.push_back(newNode);
     }
@@ -299,8 +284,7 @@ vector<DFA_t::Node*> createTransitions(
     DFARuleSet& transitionRules = newTransitions[i];
     // Has a valid transition
     if (!transitionRules.empty()) {
-      eTransJobs.push_back(
-          async(job, &transitionRules, indexToSymbol(i, numVars)));
+      eTransJobs.push_back(async(job, &transitionRules, indexToSymbol(i, numVars)));
     }
   }
 
@@ -312,15 +296,10 @@ vector<DFA_t::Node*> createTransitions(
 }
 
 /* Constructs the starting node of the DFA */
-DFA_t initDFA(
-    const GrammarData& gd,
-    const BitSetVars& nulls,
-    const vector<BitSetToks>& firsts) {
+DFA_t initDFA(const GrammarData& gd, const BitSetVars& nulls, const vector<BitSetToks>& firsts) {
   int rootType = gd.variables[S].concreteTypes[0];
-  DFARuleSet firstSet = { DFARule{ SCONC,
-                                   gd.concretes[rootType].argSymbols,
-                                   0,
-                                   BitSetToks(gd.tokens.size()) } };
+  DFARuleSet firstSet = { DFARule{
+      SCONC, gd.concretes[rootType].argSymbols, 0, BitSetToks(gd.tokens.size()) } };
   epsilonTransition(firstSet, gd, nulls, firsts);
   DFA_t dfa(move(firstSet));
   return dfa;
@@ -343,8 +322,7 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
   while (!q.empty()) {
     DFA_t::Node* node = q.front();
     q.pop();
-    vector<DFA_t::Node*> addedNodes =
-        createTransitions(dfa, node, gd, nulls, firsts);
+    vector<DFA_t::Node*> addedNodes = createTransitions(dfa, node, gd, nulls, firsts);
     for (DFA_t::Node* newNode : addedNodes) {
       q.push(newNode);
     }
@@ -357,8 +335,8 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
       printFirsts(logStream, firsts, gd);
       printDfa(logStream, dfa, gd);
     } else {
-      cerr << Logger::warningColored << ": could not open "
-           << parseFlags.logFile << " for logging: " << strerror(errno) << endl;
+      cerr << Logger::warningColored << ": could not open " << parseFlags.logFile
+           << " for logging: " << strerror(errno) << endl;
     }
   }
 
@@ -369,8 +347,33 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
 /*************************
  * Write the DFA as code *
  *************************/
+
+/* CONFLICT RESOLUTION STRATEGY */
+
+// Reduce-reduce conflicts are resolved by the rule with higher precedence*
+// - If the precedences are equal, the first rule declared will be chosen and a warning will be
+//   emitted.
+
+// Shift-reduce conflicts are resolved in the following manner
+// (from https://www.haskell.org/happy/doc/html/sec-Precedences.html):
+// - If the precedence of the rule is higher, then the conflict is resolved
+//   as a reduce.
+// - If the precedence of the lookahead token is higher, then the conflict
+//   is resolved as a shift.
+// - If the precedences are equal, then
+//    ~ If the token is left-associative, then reduce
+//    ~ If the token is right-associative, then shift
+//    ~ If the token is non-associative, then fail
+// - If neither the rule nor the token have precedence, then the default is
+//   to shift and a conflict will have been reported by findConflicts() in build_parser.cpp
+//   (note that this criterion differs slightly from Happy)
+//
+// * A rule's precedence is it's override precedence if it exists, otherwise the precedence of its
+//   last token
+
 namespace {
 
+// TODO: Store conflicts in hashmap so that we don't emit the same one multiple times
 void shiftReduceConflict(
     const DFARule& reduceRule,
     const DFARule& shiftRule,
@@ -429,9 +432,7 @@ struct RuleData {
   std::optional<DFARule> reducibleRule;
   int precedence;
 
-  bool operator==(const RuleData rhs) const noexcept {
-    return reducibleRule == rhs.reducibleRule;
-  }
+  bool operator==(const RuleData rhs) const noexcept { return reducibleRule == rhs.reducibleRule; }
 };
 
 /*
@@ -445,14 +446,16 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
       // If there is already a reducible rule, we try to resolve it by
       // the rule's override precedence. Otherwise, it picks the first declared
       if (reducibleRule) {
-        int rulePrec = gd.concretes[rule.concrete].precedence;
-        int redRulePrec = gd.concretes[reducibleRule->concrete].precedence;
+        int rulePrec = rule.getPrecedence(gd);
+        int redRulePrec = reducibleRule->getPrecedence(gd);
         if (rulePrec == redRulePrec) {
+          // TODO: Not a reduce-reduce conflict if the lookahead sets are disjoint (but then we need
+          // to allow multiple rules in condensed rule set)
           reduceReduceConflict(*reducibleRule, rule, gd);
           if (rule.concrete < reducibleRule->concrete) {
             reducibleRule = &rule;
           }
-        } else if (rule.concrete < reducibleRule->concrete) {
+        } else if (rulePrec > redRulePrec) {
           reducibleRule = &rule;
         }
       } else {
@@ -466,26 +469,9 @@ RuleData condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
     return RuleData{ {}, NONE };
   }
 
-  int rulePrecedence = gd.concretes[reducibleRule->concrete].precedence;
-
-  // If no override precedence and the rule has a token, check precedence of
-  // last token
-  int lastToken = NONE;
-  if (rulePrecedence == NONE) {
-    // Find the last token, if any
-    auto ruleIter = find_if(
-        reducibleRule->symbols.crbegin(),
-        reducibleRule->symbols.crend(),
-        isToken);
-    if (ruleIter != reducibleRule->symbols.crend()) {
-      lastToken = *ruleIter;
-      rulePrecedence = gd.tokens[tokenToFromIndex(lastToken)].precedence;
-    }
-  }
-
   // Check for shift-reduce conflicts
+  int rulePrecedence = reducibleRule->getPrecedence(gd);
   findShiftReduceConflicts(*reducibleRule, rulePrecedence, ruleSet, gd);
-
   return RuleData{ optional(*reducibleRule), rulePrecedence };
 }
 
@@ -531,17 +517,12 @@ string ruleDataToCode(const RuleData& ruleData) {
 }  // namespace
 
 
-void condensedDFAToCode(
-    ostream& out,
-    const GrammarData& gd,
-    const ParseFlags& parseFlags) {
+void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,
           "RuleData",
           "int",
-          [&gd](const DFARuleSet& ruleSet) {
-            return ruleDataToCode(condenseRuleSet(ruleSet, gd));
-          },
+          [&gd](const DFARuleSet& ruleSet) { return ruleDataToCode(condenseRuleSet(ruleSet, gd)); },
           [](int n) { return to_string(n); });
 }

@@ -20,9 +20,7 @@ public:
   constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
 
   /* Given a rule "S -> A.B", returns B */
-  constexpr int nextSymbol() const noexcept {
-    return atEnd() ? NONE : symbols[pos];
-  }
+  constexpr int nextSymbol() const noexcept { return atEnd() ? NONE : symbols[pos]; }
 
   /* Given a rule "S -> A.BC", returns C */
   constexpr int nextNextSymbol() const noexcept {
@@ -30,15 +28,29 @@ public:
   }
 
   /* Given a rule "S -> A.B", returns "S -> AB." */
-  DFARule nextStep() const noexcept {
-    return { concrete, symbols, pos + 1, lookahead };
+  DFARule nextStep() const noexcept { return { concrete, symbols, pos + 1, lookahead }; }
+
+  int getPrecedence(const GrammarData& gd) const {
+    // If no override precedence and the rule has a token, check precedence of
+   // last token
+    int overridePrec = gd.concretes[concrete].precedence;
+    if (overridePrec == NONE) {
+      // Find the last token, if any
+      auto ruleIter = find_if(symbols.crbegin(), symbols.crend(), isToken);
+      if (ruleIter != symbols.crend()) {
+        return gd.tokens[tokenToFromIndex(*ruleIter)].precedence;
+      } else {
+        return NONE;
+      }
+    } else {
+      return overridePrec;
+    }
   }
 
   bool operator==(const DFARule& other) const noexcept {
     // DFARules are uniquely identified by their concrete, position, and
     // lookahead set.
-    return concrete == other.concrete && pos == other.pos &&
-           lookahead == other.lookahead;
+    return concrete == other.concrete && pos == other.pos && lookahead == other.lookahead;
   }
 
   friend std::ostream& operator<<(std::ostream& out, const DFARule& rule) {
