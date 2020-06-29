@@ -180,6 +180,16 @@ public:
  * Stmt *
  ********/
 
+class VarDecl : public Stmt {
+public:
+  VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
+
+  TypePtr type_;
+  std::string name_;
+  ExprPtr e_;
+};
+
 class Block : public Stmt {
 public:
   Block(std::vector<StmtPtr>&& stmts, size_t line);
@@ -207,12 +217,24 @@ public:
 
 class While : public Stmt {
 public:
-  While(ExprPtr&& boolE, std::unique_ptr<Block> body, size_t line);
+  While(ExprPtr&& boolE, std::unique_ptr<Block>&& body, size_t line);
   const StmtPtr* lastStmt() const override;
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   ExprPtr boolE_;
   std::unique_ptr<Block> body_;
+};
+
+class For : public Stmt {
+public:
+  For(std::unique_ptr<VarDecl>&& varDecl, ExprPtr&& boolE, StmtPtr&& update, std::unique_ptr<Block>&& body, size_t line);
+  const StmtPtr* lastStmt() const override;
+  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
+
+  std::unique_ptr<VarDecl> varDecl_;
+  ExprPtr boolE_;
+  std::unique_ptr<Block> body_;
+  StmtPtr update_;
 };
 
 
@@ -255,16 +277,6 @@ public:
   ExprPtr lValue_;
   ExprPtr rhs_;
   BOp bOp_;
-};
-
-class VarDecl : public Stmt {
-public:
-  VarDecl(TypePtr&& type, std::string_view name, ExprPtr&& e, size_t line);
-  void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
-
-  TypePtr type_;
-  std::string name_;
-  ExprPtr e_;
 };
 
 

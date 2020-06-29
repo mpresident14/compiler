@@ -13,8 +13,7 @@ namespace language {
 /*********
  * Block *
  *********/
-Block::Block(vector<StmtPtr>&& stmts, size_t line)
-    : Stmt(line), stmts_(move(stmts)) {}
+Block::Block(vector<StmtPtr>&& stmts, size_t line) : Stmt(line), stmts_(move(stmts)) {}
 
 const StmtPtr* Block::lastStmt() const {
   if (stmts_.empty()) {
@@ -54,13 +53,10 @@ const StmtPtr* If::lastStmt() const {
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkElseLabel =
-      make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkDoneLabel =
-      make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
 
-  boolE_->asBool(
-      imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
+  boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
   imStmts.emplace_back(move(mkIfLabel));
   ifE_->toImStmts(imStmts, ctx);
   imStmts.emplace_back(new im::Jump(mkDoneLabel->genInstr()));
@@ -74,7 +70,7 @@ void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * While *
  *********/
 
-While::While(ExprPtr&& boolE, unique_ptr<Block> body, size_t line)
+While::While(ExprPtr&& boolE, unique_ptr<Block>&& body, size_t line)
     : Stmt(line), boolE_(move(boolE)), body_(move(body)) {}
 
 const StmtPtr* While::lastStmt() const {
@@ -83,10 +79,8 @@ const StmtPtr* While::lastStmt() const {
 }
 
 void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  unique_ptr<im::MakeLabel> mkBodyLabel =
-      make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkDoneLabel =
-      make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkBodyLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
   assem::Label* bodyLabel = mkBodyLabel->genInstr();
   assem::Label* doneLabel = mkDoneLabel->genInstr();
 
@@ -97,6 +91,35 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   imStmts.emplace_back(move(mkDoneLabel));
 }
 
+/*******
+ * For *
+ *******/
+
+For::For(
+    std::unique_ptr<VarDecl>&& varDecl,
+    ExprPtr&& boolE,
+    StmtPtr&& update,
+    std::unique_ptr<Block>&& body,
+    size_t line)
+    : Stmt(line),
+      varDecl_(move(varDecl)),
+      boolE_(move(boolE)),
+      body_(move(body)),
+      update_(move(update))
+{}
+
+const StmtPtr* For::lastStmt() const {
+  const StmtPtr* last = body_->lastStmt();
+  return last ? last : (StmtPtr*)&body_;
+}
+
+void For::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  varDecl_->toImStmts(imStmts, ctx);
+  While whileStmt(move(boolE_), move(body_), line_);
+  whileStmt.body_->stmts_.push_back(move(update_));
+  whileStmt.toImStmts(imStmts, ctx);
+  ctx.removeVars({ { varDecl_->name_, line_ } });
+}
 
 /************
  * ExprStmt *
@@ -118,8 +141,7 @@ void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * Return *
  **********/
 
-Return::Return(optional<ExprPtr>&& retValue, size_t line)
-    : Stmt(line), retValue_(move(retValue)) {}
+Return::Return(optional<ExprPtr>&& retValue, size_t line) : Stmt(line), retValue_(move(retValue)) {}
 
 void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   const Type& retType = ctx.getCurrentRetType();
@@ -133,8 +155,7 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   } else {
     // Make sure the function return type matches and translate the returned
     // expression
-    imStmts.push_back(make_unique<im::ReturnStmt>(
-        (*retValue_)->toImExprAssert(retType, ctx)));
+    imStmts.push_back(make_unique<im::ReturnStmt>((*retValue_)->toImExprAssert(retType, ctx)));
   }
 }
 
@@ -148,17 +169,15 @@ Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (lValue_->getType() == ExprType::MEMBER_ACCESS &&
-      static_cast<MemberAccess*>(lValue_.get())
-              ->objExpr_->toImExpr(ctx)
-              .type->typeName == TypeName::ARRAY) {
-    ctx.getLogger().logError(
-        line_, "Cannot assign to length field of an array.");
+      static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
+          TypeName::ARRAY) {
+    ctx.getLogger().logError(line_, "Cannot assign to length field of an array.");
     return;
   }
 
   ExprInfo lValueInfo = lValue_->toImExpr(ctx);
-  imStmts.emplace_back(new im::Assign(
-      move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
+  imStmts.emplace_back(
+      new im::Assign(move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
 }
 
 /**********
@@ -166,8 +185,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  **********/
 
 std::unique_ptr<im::MemDeref> Update::derefTemp(int temp, u_char numBytes) {
-  return make_unique<im::MemDeref>(
-      0, make_unique<im::Temp>(temp), nullptr, numBytes);
+  return make_unique<im::MemDeref>(0, make_unique<im::Temp>(temp), nullptr, numBytes);
 }
 
 std::unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref) {
@@ -200,14 +218,12 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     int t = newTemp();
     imStmts.push_back(assignAddr(t, memDeref));
 
-    ExprPtr memWrapper1 = make_unique<ImWrapper>(
-        derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
-    ExprPtr memWrapper2 = make_unique<ImWrapper>(
-        derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
+    ExprPtr memWrapper1 =
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
+    ExprPtr memWrapper2 =
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
 
-    Assign(
-        move(memWrapper1),
-        make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
+    Assign(move(memWrapper1), make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
   }
 }
@@ -240,27 +256,22 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<string> toStringPath = Program::importPathParts;
   toStringPath.push_back("to_string");
   im::ExprPtr callToString =
-      CallExpr(move(toStringPath), "toString", move(toPrint), line_)
-          .toImExpr(ctx)
-          .imExpr;
+      CallExpr(move(toStringPath), "toString", move(toPrint), line_).toImExpr(ctx).imExpr;
 
   // Put the char[] in a temporary
   int tCharsAddr = newTemp();
-  im::StmtPtr getArr = make_unique<im::Assign>(
-      make_unique<im::Temp>(tCharsAddr), move(callToString));
+  im::StmtPtr getArr =
+      make_unique<im::Assign>(make_unique<im::Temp>(tCharsAddr), move(callToString));
 
   vector<im::ExprPtr> printArgs;
   // Address of the char[]
   printArgs.push_back(make_unique<im::BinOp>(
-      make_unique<im::Temp>(tCharsAddr),
-      make_unique<im::Const>(8),
-      im::BOp::PLUS));
+      make_unique<im::Temp>(tCharsAddr), make_unique<im::Const>(8), im::BOp::PLUS));
   // Number of bytes
-  printArgs.push_back(make_unique<im::MemDeref>(
-      0, make_unique<im::Temp>(tCharsAddr), nullptr, 8));
+  printArgs.push_back(make_unique<im::MemDeref>(0, make_unique<im::Temp>(tCharsAddr), nullptr, 8));
 
-  im::StmtPtr callPrint = make_unique<im::ExprStmt>(make_unique<im::CallExpr>(
-      make_unique<im::LabelAddr>("__println"), move(printArgs), false));
+  im::StmtPtr callPrint = make_unique<im::ExprStmt>(
+      make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));
 
   imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));

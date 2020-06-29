@@ -57,6 +57,7 @@
 IF          "if"
 ELSE        "else"
 WHILE       "while"
+FOR         "for"
 RETURN      "return"
 
 PLUS        "\+"
@@ -204,6 +205,24 @@ Stmt -> { StmtPtr }
 ElseStmt -> { StmtPtr }
   := Block                                      % move(#0) %
    | IF LPAREN Expr RPAREN Block ELSE ElseStmt  % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+
+ForUpdate -> { StmtPtr }
+  := INC LValue     #prec PRE_INCDEC             % make_unique<ExprStmt>(make_unique<IncDec>(move(#1), true, true, #line), #line) %
+   | DEC LValue     #prec PRE_INCDEC             % make_unique<ExprStmt>(make_unique<IncDec>(move(#1), false, true, #line), #line) %
+   | LValue INC                                  % make_unique<ExprStmt>(make_unique<IncDec>(move(#0), true, false, #line), #line) %
+   | LValue DEC                                  % make_unique<ExprStmt>(make_unique<IncDec>(move(#0), false, false, #line), #line) %
+   | LValue PLUSEQ Expr                          % make_unique<Update>(move(#0), BOp::PLUS, move(#2)) %
+   | LValue MINUSEQ Expr                         % make_unique<Update>(move(#0), BOp::MINUS, move(#2)) %
+   | LValue STAREQ Expr                          % make_unique<Update>(move(#0), BOp::MUL, move(#2)) %
+   | LValue FSLASHEQ Expr                        % make_unique<Update>(move(#0), BOp::DIV, move(#2)) %
+   | LValue MODEQ Expr                           % make_unique<Update>(move(#0), BOp::MOD, move(#2)) %
+   | LValue BITANDEQ Expr                        % make_unique<Update>(move(#0), BOp::BIT_AND, move(#2)) %
+   | LValue BITOREQ Expr                         % make_unique<Update>(move(#0), BOp::BIT_OR, move(#2)) %
+   | LValue XOREQ Expr                           % make_unique<Update>(move(#0), BOp::XOR, move(#2)) %
+   | LValue LSHIFTEQ Expr                        % make_unique<Update>(move(#0), BOp::LSHIFT, move(#2)) %
+   | LValue ARSHIFTEQ Expr                       % make_unique<Update>(move(#0), BOp::ARSHIFT, move(#2)) %
+   | IDENT LPAREN Exprs RPAREN                   % make_unique<ExprStmt>(make_unique<CallExpr>(vector<string>(), #0, move(#2), #line), #line) %
+   | Qualifiers IDENT LPAREN Exprs RPAREN        % make_unique<ExprStmt>(make_unique<CallExpr>(move(#0), #1, move(#3), #line), #line) %
 
 
 Expr -> { ExprPtr }
