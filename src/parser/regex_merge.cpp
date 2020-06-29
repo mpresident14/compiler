@@ -101,7 +101,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
     try {
       RgxPtr rgx = RgxPtr(regex_parser::parseString(token.regex));
       RgxDFA rgxDfa = buildRegexDFA(move(rgx));
-      initialStates.push_back({ rgxDfa.getRoot(), tokenToFromIndex(i) });
+      initialStates.push_back({ rgxDfa.getRoot(), arrIndToTok(i) });
       if (rgxDfa.getRoot()->getValue()->isNullable()) {
         // Accepting the empty string will likely result in an infinite loop
         logger.logWarning(
@@ -110,7 +110,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
         // Multiple regex DFAs accept the empty string. We pick the regex that
         // was listed first.
         if (stateToken == NONE) {
-          stateToken = tokenToFromIndex(i);
+          stateToken = arrIndToTok(i);
         }
       }
       rgxDfas.push_back(move(rgxDfa));

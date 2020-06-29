@@ -34,7 +34,6 @@ namespace {
  ***********/
 
 void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gd) {
-  const vector<Variable>& variables = gd.variables;
   const vector<Token>& tokens = gd.tokens;
 
   out << gd.concretes[rule.concrete].name << " -> ";
@@ -44,19 +43,18 @@ void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gd) {
       out << '.';
     }
     int symbol = rule.symbols[i];
-    if (isToken(symbol)) {
-      out << tokens[tokenToFromIndex(symbol)].name << ' ';
-    } else {
-      out << variables[symbol].name << ' ';
-    }
+    out << symName(symbol, gd) << ' ';
   }
   if (rule.pos == len) {
     out << '.';
   }
   vector<string> lookaheadNames;
-  for (size_t i = 0; i < rule.lookahead.size(); ++i) {
+  if (rule.lookahead[0]) {
+    lookaheadNames.push_back("EPSILON");
+  }
+  for (size_t i = 1; i < rule.lookahead.size(); ++i) {
     if (rule.lookahead[i]) {
-      lookaheadNames.push_back(tokens[i].name);
+      lookaheadNames.push_back(tokens[i-1].name);
     }
   }
   out << " :: " << lookaheadNames;
@@ -123,7 +121,7 @@ void printDfa(std::ostream& out, const DFA_t& dfa, const GrammarData& gd) {
         nodeNumMap.emplace(successor, stateNum++);
         q.push(successor);
       }
-      out << "[" << symbolToString(trans, gd) << "] -> State " << nodeNumMap.at(successor) << '\n';
+      out << "[" << symName(trans, gd) << "] -> State " << nodeNumMap.at(successor) << '\n';
     }
     out << "\n\n\n";
   }
@@ -176,8 +174,8 @@ void addRhses(
     addRhses(fromRule.nextStep(), ruleQueue, ruleSet, gd, nulls, firsts);
   }
 
-  // Construct the lookahead set for the new rules
-  BitSetToks newLookahead(gd.tokens.size());
+  // Construct the lookahead set for the new rules, include EPSILON
+  BitSetToks newLookahead(gd.tokens.size() + 1);
   // Start at the nextNextSymbol
   size_t i = fromRule.pos + 1;
   size_t ruleSize = fromRule.symbols.size();
@@ -193,7 +191,7 @@ void addRhses(
 
     // Tokens are never nullable, so add it to the lookahead set and stop
     if (isToken(symbol)) {
-      newLookahead[tokenToFromIndex(symbol)] = true;
+      newLookahead[lookaheadInd(symbol)] = true;
       break;
     }
 
@@ -259,7 +257,7 @@ vector<DFA_t::Node*> createTransitions(
     if (rule.atEnd()) {
       continue;
     }
-    newTransitions[symbolIndex(rule.nextSymbol(), numVars)].insert(rule.nextStep());
+    newTransitions[symToArrInd(rule.nextSymbol(), numVars)].insert(rule.nextStep());
   }
 
   // Apply epsilon transitions and create the transition
@@ -284,7 +282,7 @@ vector<DFA_t::Node*> createTransitions(
     DFARuleSet& transitionRules = newTransitions[i];
     // Has a valid transition
     if (!transitionRules.empty()) {
-      eTransJobs.push_back(async(job, &transitionRules, indexToSymbol(i, numVars)));
+      eTransJobs.push_back(async(job, &transitionRules, arrIndToSym(i, numVars)));
     }
   }
 
@@ -298,8 +296,10 @@ vector<DFA_t::Node*> createTransitions(
 /* Constructs the starting node of the DFA */
 DFA_t initDFA(const GrammarData& gd, const BitSetVars& nulls, const vector<BitSetToks>& firsts) {
   int rootType = gd.variables[S].concreteTypes[0];
+  BitSetToks initLookahead(gd.tokens.size() + 1);
+  initLookahead[EPSILON] = true;
   DFARuleSet firstSet = { DFARule{
-      SCONC, gd.concretes[rootType].argSymbols, 0, BitSetToks(gd.tokens.size()) } };
+      SCONC, gd.concretes[rootType].argSymbols, 0, std::move(initLookahead) } };
   epsilonTransition(firstSet, gd, nulls, firsts);
   DFA_t dfa(move(firstSet));
   return dfa;
@@ -397,31 +397,31 @@ void reduceReduceConflict(
 }
 
 template <typename Cmp>
-void findReduceReduceConflicts(const DFARule* rule, std::set<DFARule*, Cmp>& reducibleRules) {
+void findReduceReduceConflicts(const DFARule* nextRule, std::set<const DFARule*, Cmp>& reducibleRules, const GrammarData& gd) {
   for (const DFARule* redRule : reducibleRules) {
     // Not a reduce-reduce conflict if the lookahead sets are disjoint
-    if (!rule->lookahead.intersects(redRule->lookahead)) {
+    if (!nextRule->lookahead.intersects(redRule->lookahead)) {
       continue;
     }
 
     // If these rules conflict, pick one based on the criteria above
-    int rulePrec = rule.getPrecedence(gd);
-    int redRulePrec = reducibleRule->getPrecedence(gd);
+    int rulePrec = nextRule->getPrecedence(gd);
+    int redRulePrec = redRule->getPrecedence(gd);
     if (rulePrec == redRulePrec) {
-      reduceReduceConflict(*reducibleRule, rule, gd);
-      if (rule.concrete < reducibleRule->concrete) {
+      reduceReduceConflict(*redRule, *nextRule, gd);
+      if (nextRule->concrete < redRule->concrete) {
         reducibleRules.erase(redRule);
-        reducibleRules.insert(rule);
+        reducibleRules.insert(nextRule);
       }
     } else if (rulePrec > redRulePrec) {
       reducibleRules.erase(redRule);
-      reducibleRules.insert(rule);
+      reducibleRules.insert(nextRule);
     }
     return;
   }
 
   // No conflicts with any rules in the set
-  reducibleRules.insert(rule);
+  reducibleRules.insert(nextRule);
 }
 
 void findShiftReduceConflicts(
@@ -440,10 +440,10 @@ void findShiftReduceConflicts(
     if (!isToken(nextSymbol)) {
       continue;
     }
-    int nextTokenIndex = tokenToFromIndex(nextSymbol);
+    int nextTokenIndex = tokToArrInd(nextSymbol);
     // No conflict if the next input token is not in the lookahead set (b/c
     // can't reduce)
-    if (!reducibleRule.lookahead[nextTokenIndex]) {
+    if (!reducibleRule.lookahead[nextTokenIndex + 1]) {
       continue;
     }
 
@@ -473,13 +473,13 @@ vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& g
   auto ruleCmp = [&gd](const DFARule* r1, const DFARule* r2) {
     return r1->getPrecedence(gd) > r2->getPrecedence(gd);
   };
-  std::set<DFARule*, decltype(ruleCmp)> reducibleRules;
+  std::set<const DFARule*, decltype(ruleCmp)> reducibleRules(ruleCmp);
 
   for (const DFARule& rule : ruleSet) {
     if (!rule.atEnd()) {
       continue;
     }
-    findReduceReduceConflicts(&rule, reducibleRules);
+    findReduceReduceConflicts<decltype(ruleCmp)>(&rule, reducibleRules, gd);
   }
 
   vector<RuleData> ruleData;
@@ -497,9 +497,8 @@ vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& g
   return ruleData;
 }
 
-void toCode(ostream& code, const RuleData& ruleData) {
-  ostringstream code;
-  code << "RuleData>{";
+void rdToCode(ostream& code, const RuleData& ruleData) {
+  code << "RuleData{";
 
   const DFARule& rule = ruleData.reducibleRule;
   // RuleData::reducibleRule::concrete
@@ -526,12 +525,11 @@ void toCode(ostream& code, const RuleData& ruleData) {
   code << to_string(ruleData.precedence) << '}';
 }
 
-template <typename T>
-string toCode(const vector<T>& v) {
+string rdVecToCode(const vector<RuleData>& v) {
   ostringstream code;
-  code << '{';
-  for_each(v.cbegin(), v.cend(), [&code](const T& item) {
-    toCode(code, item);
+  code << "vector<RuleData>{";
+  for_each(v.cbegin(), v.cend(), [&code](const RuleData& rd) {
+    rdToCode(code, rd);
     code << ',';
   });
   code << '}';
@@ -547,6 +545,6 @@ void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& p
           out,
           "vector<RuleData>",
           "int",
-          [&gd](const DFARuleSet& ruleSet) { return toCode(condenseRuleSet(ruleSet, gd)); },
+          [&gd](const DFARuleSet& ruleSet) { return rdVecToCode(condenseRuleSet(ruleSet, gd)); },
           [](int n) { return to_string(n); });
 }

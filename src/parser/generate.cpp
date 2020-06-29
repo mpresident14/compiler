@@ -117,7 +117,7 @@ string replaceAll(string_view str, char from, char to) {
 void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const GrammarData& gd) {
   vector<string> symbolNames;
   transform(symbols.begin(), symbols.end(), back_inserter(symbolNames), [&gd](int symbol) {
-    return symbolToString(symbol, gd);
+    return symName(symbol, gd);
   });
   out << symbolNames;
 }
@@ -146,19 +146,19 @@ string convertArgNum(
   }
 
   int argSymbol = argSymbols[argIndex];
-  string symbolName = isToken(argSymbol) ? gd.tokens[tokenToFromIndex(argSymbol)].type
-                                         : gd.variables[argSymbol].type;
+  string symbolType =
+      isToken(argSymbol) ? gd.tokens[tokToArrInd(argSymbol)].type : gd.variables[argSymbol].type;
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
-  if (symbolName.empty()) {
+  if (symbolType.empty()) {
     ostringstream& error = logger.logError(concrete.declLine);
-    error << "Token " << symbolToString(argSymbol, gd)
+    error << "Token " << symName(argSymbol, gd)
           << " is passed as an argument, but has no data associated with it.\n";
     return "";
   }
 
   return string("(*static_cast<")
-      .append(symbolName)
+      .append(symbolType)
       .append("*>(args[")
       .append(argIndexStr)
       .append("].releaseObj()))");
@@ -275,7 +275,7 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
   for (size_t i = 0; i < numTokens; ++i) {
     const Token& token = gd.tokens[i];
     if (!token.type.empty()) {
-      out << "case " << tokenToFromIndex(i) << ':';
+      out << "case " << arrIndToTok(i) << ':';
       if (!token.dtorStmt.empty()) {
         out << "if (!released_) {";
         replaceAll(out, token.dtorStmt, "#obj", "(*static_cast<" + token.type + "*>(obj_))");
@@ -369,9 +369,9 @@ void constructTokenObjFn(ostream& out, const GrammarData& gd) {
   for (size_t i = 0; i < numTokens; ++i) {
     const Token& token = gd.tokens[i];
     if (token.precedence == SKIP_TOKEN) {
-      out << "case " << tokenToFromIndex(i) << ": return {};";
+      out << "case " << arrIndToTok(i) << ": return {};";
     } else if (!token.type.empty()) {
-      out << "case " << tokenToFromIndex(i) << ':'
+      out << "case " << arrIndToTok(i) << ':'
           << "return { StackObj(token, "
              "new "
           << token.type << '(';
@@ -471,7 +471,7 @@ void tokenizeFn(ostream& out) {
                 move(startIter),
                 tokens.cend(),
                 back_inserter(prevTokenNames),
-                [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokenToFromIndex(stackObj.getSymbol())].name; });
+                [](const StackObj& stackObj) { return GRAMMAR_DATA.tokens[tokToArrInd(stackObj.getSymbol())].name; });
             error << "Lexer \033[1;31merror\033[0m on line " << currentLine << " at: " << inputView.substr(0, 25) << '\n'
                 << "Previous tokens were: " << prevTokenNames;
             throw ParseException(error.str());
@@ -559,7 +559,7 @@ void parseHelperFns(ostream& out) {
         vector<string> remainingTokenNames;
         auto stkObjToName = [](const StackObj& stkObj) {
           if (isToken(stkObj.getSymbol())) {
-            return GRAMMAR_DATA.tokens[tokenToFromIndex(stkObj.getSymbol())].name;
+            return GRAMMAR_DATA.tokens[tokToArrInd(stkObj.getSymbol())].name;
           }
           return GRAMMAR_DATA.variables[stkObj.getSymbol()].name;
         };
@@ -580,57 +580,60 @@ void parseHelperFns(ostream& out) {
 }
 
 void tryReduceFn(ostream& out) {
-  out << R"(int tryReduce(
+  // If there is more than one reducible rule, then their lookahead sets are disjoint (see
+  // findReduceReduceConflicts in build_parser.cpp), so we only have to consider at most one rule
+  out << R"(const DFARule* tryReduce(
         const parser::Node* node,
         int nextToken,
         vector<StackObj>& stk,
         const vector<StackObj>& inputTokens,
         size_t tokenPos) {
-      const vector<RuleData>& ruleData = node->v_;
-      if (ruleData.empty()) {
-        return NONE;
-      })";
-  // If there is more than one reducible rule, then their lookahead sets are disjoint (see
-  // findReduceReduceConflicts in build_parser.cpp), so we only have to consider at most one rule
-  // out << R"(
-  const DFARule& rule = *ruleData.reducibleRule;
-  if (nextToken != NONE && !rule.lookahead[tokenToFromIndex(nextToken)]) {
-    return NONE;
-  }
-
-  auto iter = find_if()
-
-      if (!equal(
-              rule.symbols.crbegin(),
-              rule.symbols.crend(),
-              stk.crbegin(),
-              [](int symbol, const StackObj& stkObj) { return stkObj.getSymbol() == symbol; })) {
-    return NONE;
-  }
-  if (!node->ts_.contains(nextToken)) {
-    return rule.concrete;
-  }
-
-  const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokenToFromIndex(nextToken)];
-  int shiftPrecedence = nextTokenObj.precedence;
-
-  if (ruleData.precedence == NONE && shiftPrecedence == NONE) {
-    return NONE;
-  }
-
-  if (ruleData.precedence > shiftPrecedence) {
-    return rule.concrete;
-  }
-  if (ruleData.precedence == shiftPrecedence) {
-    if (nextTokenObj.assoc == Assoc::LEFT) {
-      return rule.concrete;
+    const vector<RuleData>& ruleData = node->v_;
+    if (ruleData.empty()) {
+      return nullptr;
     }
-    if (nextTokenObj.assoc == Assoc::NOT) {
-      parseError(stk, inputTokens, tokenPos);
+
+    auto iter = find_if(ruleData.cbegin(), ruleData.cend(), [nextToken](const RuleData& rd) {
+      return rd.reducibleRule.lookahead[lookaheadInd(nextToken)];
+    });
+
+    if (iter == ruleData.cend()) {
+      return nullptr;
     }
-  }
-  return NONE;
-})";
+    const DFARule& rule = iter->reducibleRule;
+
+    if (!equal(
+            rule.symbols.crbegin(),
+            rule.symbols.crend(),
+            stk.crbegin(),
+            [](int symbol, const StackObj& stkObj) { return stkObj.getSymbol() == symbol; })) {
+      return nullptr;
+    }
+    if (!node->ts_.contains(nextToken)) {
+      return &rule;
+    }
+
+    const Token& nextTokenObj = GRAMMAR_DATA.tokens[tokToArrInd(nextToken)];
+    int shiftPrecedence = nextTokenObj.precedence;
+
+    int reducePrec = iter->precedence;
+    if (reducePrec == NONE && shiftPrecedence == NONE) {
+      return nullptr;
+    }
+
+    if (reducePrec > shiftPrecedence) {
+      return &rule;
+    }
+    if (reducePrec == shiftPrecedence) {
+      if (nextTokenObj.assoc == Assoc::LEFT) {
+        return &rule;
+      }
+      if (nextTokenObj.assoc == Assoc::NOT) {
+        parseError(stk, inputTokens, tokenPos);
+      }
+    }
+    return nullptr;
+  })";
 }  // namespace
 
 void shiftReduceFn(ostream& out, const GrammarData& gd) {
@@ -650,13 +653,12 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
           }
           dfaPath.push_back(currentNode);
 
-          int nextInputToken = i == inputSize ? NONE : inputTokens[i].getSymbol();
-          int concrete =
+          int nextInputToken = i == inputSize ? EPSILON : inputTokens[i].getSymbol();
+          const DFARule* reducibleRule =
               tryReduce(currentNode, nextInputToken, stk, inputTokens, i);
-          if (concrete != NONE) {
-            size_t reduceStart =
-                stk.size() - currentNode->v_.reducibleRule->symbols.size();
-            StackObj newObj = construct(concrete, stk, reduceStart);
+          if (reducibleRule) {
+            size_t reduceStart = stk.size() - reducibleRule->symbols.size();
+            StackObj newObj = construct(reducibleRule->concrete, stk, reduceStart);
             size_t stkSize = stk.size();
             for (size_t j = 0; j < stkSize - reduceStart; ++j) {
               stk.pop_back();
@@ -664,7 +666,7 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
             }
             stk.push_back(move(newObj));
           } else {
-            if (nextInputToken == NONE) {
+            if (nextInputToken == EPSILON) {
               parseError(stk, inputTokens, i);
             }
             stk.push_back(move(inputTokens[i]));
@@ -749,9 +751,15 @@ void cppIncludes(ostream& out) {
     )";
 }
 
-void noneInt(ostream& out) {
+void noneDecl(ostream& out) {
   out << R"(
       constexpr int NONE = INT_MIN;
+    )";
+}
+
+void epsilonDecl(ostream& out) {
+  out << R"(
+      constexpr int EPSILON = 0;
     )";
 }
 
@@ -761,15 +769,16 @@ void sInt(ostream& out) {
     )";
 }
 
-void isTokenFn(ostream& out) {
+void tokenUtils(ostream& out) {
   out << R"(
       bool isToken(int symbol) { return symbol < 0; }
+      constexpr int lookaheadInd(int tokenId) noexcept { return -tokenId; }
     )";
 }
 
-void tokenToFromIndexFn(ostream& out) {
+void tokToArrIndFn(ostream& out) {
   out << R"(
-      int tokenToFromIndex(int token) { return -token - 1; }
+      constexpr int tokToArrInd(int tokenId) noexcept { return -tokenId - 1; }
     )";
 }
 
@@ -827,10 +836,11 @@ string parserCppCode(
   out << parseInfo.addlCppCode << "using namespace std;"
       << "using namespace " << namespaceName << ";"
       << "namespace {";
-  noneInt(out);
+  noneDecl(out);
+  epsilonDecl(out);
   sInt(out);
-  isTokenFn(out);
-  tokenToFromIndexFn(out);
+  tokenUtils(out);
+  tokToArrIndFn(out);
   assocDecl(out);
   tokenDecl(out);
   concreteDecl(out);
@@ -869,8 +879,8 @@ string lexerCppCode(
   out << addlCode << "using namespace std;"
       << "using namespace " << namespaceName << ";"
       << "using namespace " << namespaceName << ';' << "namespace {";
-  noneInt(out);
-  tokenToFromIndexFn(out);
+  noneDecl(out);
+  tokToArrIndFn(out);
   assocDecl(out);
   tokenDecl(out);
   concreteDecl(out);

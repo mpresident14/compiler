@@ -10,6 +10,6 @@ target_compile_definitions(main PUBLIC IMPORT_DIR="${SRC}/imports")
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/parser.hpp ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/parsegen -g lang.pgen -f parser #-l ${LOG_DIRECTORY}/parser.log
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/parsegen -g lang.pgen -f parser -l ${LOG_DIRECTORY}/parser.log
     COMMAND clang-format -i parser.hpp parser.cpp
     DEPENDS parsegen ${CMAKE_CURRENT_SOURCE_DIR}/lang.pgen)

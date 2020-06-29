@@ -33,6 +33,7 @@ inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
 
 static constexpr int NONE = INT_MIN;
 static constexpr int SKIP_TOKEN = INT_MIN + 1;
+static constexpr int EPSILON = 0;
 static constexpr int S = 0;
 static constexpr int SCONC = 0;
 
@@ -71,20 +72,23 @@ struct GrammarData {
   std::vector<Variable> variables;
 };
 
-constexpr bool isToken(int symbol) noexcept { return symbol < 0; }
-constexpr int tokenToFromIndex(int token) noexcept { return -token - 1; }
-constexpr int symbolIndex(int symbol, size_t numVars) noexcept {
-  return isToken(symbol) ? tokenToFromIndex(symbol) + numVars : symbol;
-}
+constexpr bool isToken(int symbolId) noexcept { return symbolId < 0; }
+/* Lookahead set has EPSILON as its 0th element */
+constexpr int lookaheadInd(int tokenId) noexcept { return -tokenId; }
+constexpr int tokToArrInd(int tokenId) noexcept { return -tokenId - 1; }
+constexpr int arrIndToTok(size_t i) noexcept { return tokToArrInd((int) i); }
 
 /* For use in array of both variables and tokens */
-constexpr int indexToSymbol(size_t i, size_t numVars) noexcept {
+constexpr int symToArrInd(int symbolId, size_t numVars) noexcept {
+  return isToken(symbolId) ? tokToArrInd(symbolId) + numVars : symbolId;
+}
+constexpr int arrIndToSym(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-inline std::string symbolToString(int symbolId, const GrammarData& gd) {
+inline std::string symName(int symbolId, const GrammarData& gd) {
   if (isToken(symbolId)) {
-    return gd.tokens[tokenToFromIndex(symbolId)].name;
+    return gd.tokens[tokToArrInd(symbolId)].name;
   }
   return gd.variables[symbolId].name;
 }

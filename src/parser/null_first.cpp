@@ -110,7 +110,8 @@ BitSetVars getNullabilities(const GrammarData& gd) {
 
 std::pair<BitSetVars, std::vector<BitSetToks>> getNullsAndFirsts(const GrammarData& gd) {
   size_t numVars = gd.variables.size();
-  size_t numTokens = gd.tokens.size();
+  // Include EPSILON
+  size_t numTokens = gd.tokens.size() + 1;
 
   // Initialize firsts with empty bitset vectors
   vector<BitSetToks> firsts;
@@ -134,7 +135,7 @@ std::pair<BitSetVars, std::vector<BitSetToks>> getNullsAndFirsts(const GrammarDa
       for (int rhsSymbol : gd.concretes[concreteType].argSymbols) {
         // Tokens are never nullable, so nothing beyond it can be first
         if (isToken(rhsSymbol)) {
-          unionEq.tokenSet[tokenToFromIndex(rhsSymbol)] = true;
+          unionEq.tokenSet[lookaheadInd(rhsSymbol)] = true;
           break;
         }
 
