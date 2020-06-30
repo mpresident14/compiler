@@ -3,18 +3,16 @@
 
 #include "src/parser/utils.hpp"
 
+#include <algorithm>
 #include <cstddef>
-#include <numeric>
 #include <ostream>
-#include <stdexcept>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
 
-// TODO: Make this a class
+
 struct DFARule {
 public:
   constexpr bool atEnd() const noexcept { return pos == symbols.size(); }
@@ -94,8 +92,7 @@ public:
     }
   };
 
-  // NOTE: These are staying public because this was initially a simple struct
-  // and I'm too lazy to fix everything that would break if I made them private
+
   int concrete;
   std::vector<intptr_t> symbols;
   size_t pos;

@@ -76,7 +76,7 @@ constexpr bool isToken(int symbolId) noexcept { return symbolId < 0; }
 /* Lookahead set has EPSILON as its 0th element */
 constexpr int lookaheadInd(int tokenId) noexcept { return -tokenId; }
 constexpr int tokToArrInd(int tokenId) noexcept { return -tokenId - 1; }
-constexpr int arrIndToTok(size_t i) noexcept { return tokToArrInd((int) i); }
+constexpr int arrIndToTok(size_t i) noexcept { return tokToArrInd((int)i); }
 
 /* For use in array of both variables and tokens */
 constexpr int symToArrInd(int symbolId, size_t numVars) noexcept {

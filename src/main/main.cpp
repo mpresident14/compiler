@@ -7,12 +7,13 @@
 #include "src/language/typecheck/type.hpp"
 #include "src/main/parser.hpp"
 
+#include <string.h>
+
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string.h>
 #include <string>
 #include <unordered_map>
 #include <vector>

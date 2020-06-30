@@ -1,12 +1,13 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
+#include <string.h>
+
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
-#include <string.h>
 #include <string>
 #include <string_view>
 #include <vector>

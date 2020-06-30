@@ -1,6 +1,8 @@
 /* GENERATED FILE. DO NOT OVERWRITE BY HAND. */
 #include "../src/parser/regex_parser.hpp"
 
+#include <string.h>
+
 #include <algorithm>
 #include <climits>
 #include <cstddef>
@@ -12,7 +14,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <streambuf>
-#include <string.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>

@@ -2,10 +2,11 @@
 #include "src/parser/config_parse.hpp"
 #include "src/parser/generate.hpp"
 
+#include <unistd.h>
+
 #include <iostream>
 #include <string>
 #include <string_view>
-#include <unistd.h>
 
 using namespace std;
 
