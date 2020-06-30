@@ -74,7 +74,6 @@ add_custom_command(
 
 
 # Testing
-include(CTest)
 set(MYTESTS
     dfa_test
     queue_set_test

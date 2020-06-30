@@ -80,5 +80,9 @@ add_subdirectory(${SRC}/language)
 add_subdirectory(${SRC}/main)
 add_subdirectory(${SRC}/misc)
 
+include(CTest)
 add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/translator)
+add_custom_target(all_tests
+  COMMAND echo
+  DEPENDS parse_check translator_check)
