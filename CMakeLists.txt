@@ -34,6 +34,7 @@ set(CMAKE_CXX_FLAGS "-std=c++20 -Wall -Wextra -pedantic -g")
 ##  Helper functions ##
 
 # Create tests
+include(CTest)
 # https://cmake.org/cmake/help/v3.17/manual/ctest.1.html#description
 # https://gitlab.kitware.com/cmake/community/-/wikis/doc/ctest/Testing-With-CTest
 # https://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
@@ -71,7 +72,6 @@ function(remove_gen_files GEN_DIR)
 endfunction()
 
 
-
 # Add subdirectories
 add_subdirectory(${SRC}/parser)
 add_subdirectory(${SRC}/assembly)
@@ -80,7 +80,6 @@ add_subdirectory(${SRC}/language)
 add_subdirectory(${SRC}/main)
 add_subdirectory(${SRC}/misc)
 
-include(CTest)
 add_subdirectory(${TEST}/parser)
 add_subdirectory(${TEST}/translator)
 add_custom_target(all_tests

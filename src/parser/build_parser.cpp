@@ -18,6 +18,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/container_hash/hash.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <prez/print_stuff.hpp>
 #include <prez/timeit.hpp>
@@ -54,7 +55,7 @@ void streamRule(std::ostream& out, const DFARule& rule, const GrammarData& gd) {
   }
   for (size_t i = 1; i < rule.lookahead.size(); ++i) {
     if (rule.lookahead[i]) {
-      lookaheadNames.push_back(tokens[i-1].name);
+      lookaheadNames.push_back(tokens[i - 1].name);
     }
   }
   out << " :: " << lookaheadNames;
@@ -373,31 +374,55 @@ DFA_t buildParserDFA(const GrammarData& gd, const ParseFlags& parseFlags) {
 
 namespace {
 
-// TODO: Store conflicts in hashmap so that we don't emit the same one multiple times
+using ConflictMap = unordered_map<pair<int, int>, string, boost::hash<pair<int, int>>>;
+
 void shiftReduceConflict(
-    const DFARule& reduceRule,
     const DFARule& shiftRule,
-    const GrammarData& gd) {
-  cerr << "WARNING: Shift-reduce conflict for rules\n\t";
-  streamRule(cerr, reduceRule, gd);
-  cerr << "\n\t";
-  streamRule(cerr, shiftRule, gd);
-  cerr << endl;
+    const DFARule& reduceRule,
+    const GrammarData& gd,
+    ConflictMap& conflicts) {
+  auto p = make_pair(shiftRule.concrete, reduceRule.concrete);
+  if (conflicts.contains(p)) {
+    return;
+  }
+
+  ostringstream warning;
+  warning << Logger::warningColored << ": Shift-reduce conflict for rules\n\t";
+  streamRule(warning, shiftRule, gd);
+  warning << "\n\t";
+  streamRule(warning, reduceRule, gd);
+  warning << '\n';
+  conflicts.emplace(move(p), warning.str());
 }
 
 void reduceReduceConflict(
     const DFARule& reduceRule1,
     const DFARule& reduceRule2,
-    const GrammarData& gd) {
-  cerr << "WARNING: Reduce-reduce conflict for rules\n\t";
-  streamRule(cerr, reduceRule1, gd);
-  cerr << "\n\t";
-  streamRule(cerr, reduceRule2, gd);
-  cerr << endl;
+    const GrammarData& gd,
+    ConflictMap& conflicts) {
+  // No need to repeat the warning if they are switched
+  auto p = reduceRule1.concrete < reduceRule2.concrete
+               ? make_pair(reduceRule1.concrete, reduceRule2.concrete)
+               : make_pair(reduceRule2.concrete, reduceRule1.concrete);
+  if (conflicts.contains(p)) {
+    return;
+  }
+
+  ostringstream warning;
+  warning << Logger::warningColored << ": Reduce-reduce conflict for rules\n\t";
+  streamRule(warning, reduceRule1, gd);
+  warning << "\n\t";
+  streamRule(warning, reduceRule2, gd);
+  warning << '\n';
+  conflicts.emplace(move(p), warning.str());
 }
 
 template <typename Cmp>
-void findReduceReduceConflicts(const DFARule* nextRule, std::multiset<const DFARule*, Cmp>& reducibleRules, const GrammarData& gd) {
+void findReduceReduceConflicts(
+    const DFARule* nextRule,
+    std::multiset<const DFARule*, Cmp>& reducibleRules,
+    const GrammarData& gd,
+    ConflictMap& conflicts) {
   // We use a multiset so that we can compare with the highest precedences first
   for (const DFARule* redRule : reducibleRules) {
     // Not a reduce-reduce conflict if the lookahead sets are disjoint
@@ -409,7 +434,7 @@ void findReduceReduceConflicts(const DFARule* nextRule, std::multiset<const DFAR
     int rulePrec = nextRule->getPrecedence(gd);
     int redRulePrec = redRule->getPrecedence(gd);
     if (rulePrec == redRulePrec) {
-      reduceReduceConflict(*redRule, *nextRule, gd);
+      reduceReduceConflict(*redRule, *nextRule, gd, conflicts);
       if (nextRule->concrete < redRule->concrete) {
         reducibleRules.erase(redRule);
         reducibleRules.insert(nextRule);
@@ -429,7 +454,8 @@ void findShiftReduceConflicts(
     const DFARule& reducibleRule,
     int rulePrecedence,
     const DFARuleSet& ruleSet,
-    const GrammarData& gd) {
+    const GrammarData& gd,
+    ConflictMap& conflicts) {
   const vector<Token>& tokens = gd.tokens;
   for (const DFARule& rule : ruleSet) {
     // Already found reducible rules
@@ -451,7 +477,7 @@ void findShiftReduceConflicts(
     // Unspecified precedence -> shift-reduce conflict! (Will be resolved by
     // shifting)
     if (rulePrecedence == NONE && tokens[nextTokenIndex].precedence == NONE) {
-      shiftReduceConflict(reducibleRule, rule, gd);
+      shiftReduceConflict(rule, reducibleRule, gd, conflicts);
     }
   }
 }
@@ -466,7 +492,8 @@ struct RuleData {
  * Remove the pieces of the ruleSet we do not need to actually run the DFA.
  * Also find any shift- or reduce-reduce conflicts
  */
-vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd) {
+vector<RuleData>
+condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd, ConflictMap& conflicts) {
   auto ruleCmp = [&gd](const DFARule* r1, const DFARule* r2) {
     return r1->getPrecedence(gd) > r2->getPrecedence(gd);
   };
@@ -476,7 +503,7 @@ vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& g
     if (!rule.atEnd()) {
       continue;
     }
-    findReduceReduceConflicts(&rule, reducibleRules, gd);
+    findReduceReduceConflicts(&rule, reducibleRules, gd, conflicts);
   }
 
   vector<RuleData> ruleData;
@@ -487,7 +514,7 @@ vector<RuleData> condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& g
   // Check for shift-reduce conflicts
   for (const DFARule* redRule : reducibleRules) {
     int rulePrecedence = redRule->getPrecedence(gd);
-    findShiftReduceConflicts(*redRule, rulePrecedence, ruleSet, gd);
+    findShiftReduceConflicts(*redRule, rulePrecedence, ruleSet, gd, conflicts);
     ruleData.push_back({ *redRule, rulePrecedence });
   }
 
@@ -537,11 +564,18 @@ string rdVecToCode(const vector<RuleData>& v) {
 
 
 void condensedDFAToCode(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
+  ConflictMap conflicts;
   buildParserDFA(gd, parseFlags)
       .streamAsCode(
           out,
           "vector<RuleData>",
           "int",
-          [&gd](const DFARuleSet& ruleSet) { return rdVecToCode(condenseRuleSet(ruleSet, gd)); },
+          [&gd, &conflicts](const DFARuleSet& ruleSet) {
+            return rdVecToCode(condenseRuleSet(ruleSet, gd, conflicts));
+          },
           [](int n) { return to_string(n); });
+
+  for (const auto& [_, warning] : conflicts) {
+    cerr << warning << endl;
+  }
 }

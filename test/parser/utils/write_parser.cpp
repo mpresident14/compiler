@@ -2,6 +2,7 @@
 #include "src/parser/generate.hpp"
 #include "src/parser/utils.hpp"
 #include "test/parser/utils/expr_grammar.hpp"
+#include "src/misc/logger.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -22,7 +23,7 @@ void test_parserWithConflicts() {
       ParseFlags{ "test/parser/generated/bad_expr_parser", "" },
       cerr);
 
-  TESTER.assertTrue(errBuffer.str().starts_with("WARNING"));
+  TESTER.assertTrue(errBuffer.str().starts_with(Logger::warningColored));
 }
 
 int main() {
