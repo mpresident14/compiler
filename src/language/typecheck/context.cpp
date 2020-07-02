@@ -37,9 +37,9 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 
 Ctx::Ctx(
     string_view filename,
-    shared_ptr<unordered_map<string, string>> fileIds,
-    shared_ptr<unordered_map<string, string>> typeIds)
-    : filename_(filename), logger(filename), fileIds_(move(fileIds)), typeIds_(move(typeIds)) {}
+    const shared_ptr<unordered_map<string, string>>& fileIds,
+    const shared_ptr<unordered_map<string, string>>& typeIds)
+    : filename_(filename), logger(filename), fileIds_(fileIds), typeIds_(typeIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -105,12 +105,29 @@ void Ctx::removeTemp(const string& var, size_t line) {
 }
 
 
+void Ctx::insertClass(
+    const string& name,
+    unordered_multimap<string, Ctx::FnInfo>&& methods,
+    unordered_map<string, size_t>&& fieldOffsets) {
+  // We already check for redefinitions in Class::addToContext
+  classMap_.emplace(name, ClassInfo{ move(methods), move(fieldOffsets) });
+}
+
+const Ctx::ClassInfo* Ctx::lookupClass(const string& name) {
+  auto iter = classMap_.find(name);
+  if (iter == classMap_.end()) {
+    return nullptr;
+  }
+  return &iter->second;
+}
+
 void Ctx::insertFn(
+    unordered_multimap<string, Ctx::FnInfo>& funcMap,
     const string& name,
     const vector<TypePtr>& paramTypes,
-    TypePtr returnType,
+    const TypePtr& returnType,
     size_t line) {
-  auto iterPair = fnMap_.equal_range(name);
+  auto iterPair = funcMap.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const FnInfo& fnInfo = iter->second;
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
@@ -122,7 +139,15 @@ void Ctx::insertFn(
       return;
     }
   }
-  fnMap_.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
+  funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
+}
+
+void Ctx::insertFn(
+    const string& name,
+    const vector<TypePtr>& paramTypes,
+    const TypePtr& returnType,
+    size_t line) {
+  insertFn(fnMap_, name, paramTypes, returnType, line);
 }
 
 
@@ -136,7 +161,7 @@ Ctx::FnLookupInfo Ctx::lookupFn(const string& name, const vector<TypePtr>& param
     bool isNarrowing = false;
     if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       // Exact match
-      return { FnLookupRes::FOUND, { std::vector<const FnInfo*>{ &iter->second } }, filename_ };
+      return { FnLookupRes::FOUND, { vector<const FnInfo*>{ &iter->second } }, filename_ };
     } else if (equal(
                    paramTypes.cbegin(),
                    paramTypes.cend(),
@@ -256,13 +281,13 @@ void Ctx::undefFnAmbigQuals(
     string_view fnName,
     const vector<TypePtr>& paramTypes,
     size_t line,
-    const vector<const std::string*> candidates,
+    const vector<const string*> candidates,
     string_view searchedPath) {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::") << "::" << fnName;
   Ctx::streamParamTypes(paramTypes, err);
   err << "'. Found";
-  for (const std::string* cand : candidates) {
+  for (const string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;
   }
 }
@@ -302,7 +327,7 @@ void Ctx::warnNarrow(
 
 string
 Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>& paramTypes) {
-  if (fnName.front() != '_') {
+  if (!fnName.starts_with("__")) {
     string newName = "_";
     newName.append(fnName);
     newName.append(fileIds_->at(filename));
@@ -316,7 +341,22 @@ Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>&
   return string(fnName);
 }
 
-void Ctx::addFileId(size_t id, string_view filename) { fileIds_->emplace(filename, to_string(id)); }
+namespace {
+
+string newFileId() {
+  static size_t i = 0;
+  return to_string(i++);
+}
+
+string newTypeId() {
+  static size_t i = 0;
+  return to_string(i++);
+}
+
+}  // namespace
+
+void Ctx::addFileId(string_view filename) { fileIds_->emplace(filename, newFileId()); }
+void Ctx::addTypeId(string_view typeName) { typeIds_->emplace(typeName, newTypeId()); }
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

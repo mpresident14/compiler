@@ -8,15 +8,6 @@
 using namespace std;
 
 
-namespace {
-
-size_t newFileId() {
-  static size_t i = 0;
-  return i++;
-}
-
-}  // namespace
-
 namespace language {
 
 
@@ -46,7 +37,7 @@ void Program::initContext(
     shared_ptr<unordered_map<string, string>> typeIds) {
   // Create a new context
   ctx_ = make_unique<Ctx>(filename, fileIds, typeIds);
-  ctx_->addFileId(newFileId(), filename);
+  ctx_->addFileId(filename);
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -172,5 +163,75 @@ void Func::checkForReturn(Ctx& ctx) {
   }
 }
 
+
+/*********
+ * Class *
+ *********/
+
+const std::string ClassDecl::THIS = "this";
+
+string ClassDecl::mangleMethod(std::string_view className, std::string_view fnName) {
+  return string("_").append(className).append("_").append(fnName);
+}
+
+ClassDecl::ClassDecl(
+    string_view name,
+    vector<unique_ptr<Func>>&& methods,
+    vector<Field>&& fields,
+    size_t line)
+    : Decl(line), name_(name), methods_(move(methods)), fields_(move(fields)) {}
+
+
+void ClassDecl::addToContext(Ctx& ctx) {
+  // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
+  // of circular dependency, and splitting them into their fields would make the code too messy imo
+  if (ctx.lookupClass(name_)) {
+    ostringstream& err = ctx.getLogger().logError(line_);
+    err << "Redefinition of class " << name_;
+    return;
+  }
+
+  //! TODO(BUG): This will screw up when we try to import a class with the same name from multiple files
+  //! E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);"
+  //! We should put it in ClassInfo instead and retrieve it
+  ctx.addTypeId(name_);
+
+  for (unique_ptr<Func>& method : methods_) {
+    method->name_ = mangleMethod(name_, method->name_);
+    // Add "this" parameter as the last argument
+    method->paramNames_.push_back(THIS);
+    method->paramTypes_.push_back(make_shared<Class>(name_));
+  }
+
+  // Add methods to context
+  unordered_multimap<string, Ctx::FnInfo> methodMap;
+  for (unique_ptr<Func>& method : methods_) {
+    // TODO: Specifying class name in error would be nice
+    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
+  }
+
+  // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
+  sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
+    return f1.type->numBytes < f2.type->numBytes;
+  });
+  unordered_map<string, size_t> fieldOffsets;
+  // Class starts with vtable pointer
+  size_t currentOffset = 8;
+  for (const auto& [type, name, line] : fields_) {
+    if (fieldOffsets.try_emplace(name, currentOffset).second) {
+      ostringstream& err = ctx.getLogger().logError(line);
+      err << "Redefinition of field " << name << " in class " << name_;
+    }
+  }
+
+  ctx.insertClass(name_, move(methodMap), move(fieldOffsets));
+}
+
+
+void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  for (const unique_ptr<Func>& method : methods_) {
+    method->toImDecls(imDecls, ctx);
+  }
+}
 
 }  // namespace language

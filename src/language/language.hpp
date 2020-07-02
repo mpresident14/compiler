@@ -144,6 +144,33 @@ public:
   std::unique_ptr<Block> body_;
 };
 
+
+class ClassDecl : public Decl {
+public:
+  struct Field {
+    TypePtr type;
+    std::string name;
+    size_t line;
+  };
+
+  static std::string mangleMethod(std::string_view className, std::string_view fnName);
+
+  ClassDecl(
+      std::string_view name,
+      std::vector<std::unique_ptr<Func>>&& methods,
+      std::vector<Field>&& fields,
+      size_t line);
+  void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
+  void addToContext(Ctx& ctx) override;
+
+  std::string name_;
+  std::vector<std::unique_ptr<Func>> methods_;
+  std::vector<Field> fields_;
+
+private:
+  static const std::string THIS;
+};
+
 /***********
  * Program *
  ***********/

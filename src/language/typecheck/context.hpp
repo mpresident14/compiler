@@ -40,6 +40,12 @@ public:
     std::string filename;
   };
 
+
+  struct ClassInfo {
+    std::unordered_multimap<std::string, FnInfo> methods;
+    std::unordered_map<std::string, size_t> fieldOffsets;
+  };
+
   /*
    * Name resolution happens as follows:
    * - If there is no qualifier, then only the current source file is searched
@@ -88,8 +94,8 @@ public:
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
 
   Ctx(std::string_view filename,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
+      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
+      const std::shared_ptr<std::unordered_map<std::string, std::string>>& typeIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -107,10 +113,22 @@ public:
   const VarInfo* lookupTempVar(const std::string& name);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
+  void insertClass(
+      const std::string& name,
+      std::unordered_multimap<std::string, Ctx::FnInfo>&& methods,
+      std::unordered_map<std::string, size_t>&& fieldOffsets);
+  /* Only searches this context, nullptr if it doesn't exist */
+  const ClassInfo* lookupClass(const std::string& name);
+  void insertFn(
+      std::unordered_multimap<std::string, FnInfo>& funcMap,
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes,
+      const TypePtr& returnType,
+      size_t line);
   void insertFn(
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
-      TypePtr returnType,
+      const TypePtr& returnType,
       size_t line);
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
@@ -150,13 +168,14 @@ public:
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
       size_t line);
-  /* Mangle all user functions based on the filename (non-user functions begin
-   * with '_') Return the function name if it doesn't need to be mangled */
+  /* Mangle all user functions based on the filename (My special functions begin
+   * with "__") Return the function name if it doesn't need to be mangled */
   std::string mangleFn(
       std::string_view fnName,
       const std::string& filename,
       const std::vector<TypePtr>& paramTypes);
-  void addFileId(size_t id, std::string_view filename);
+  void addFileId(std::string_view filename);
+  void addTypeId(std::string_view typeName);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
@@ -167,6 +186,7 @@ private:
 
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_multimap<std::string, FnInfo> fnMap_;
+  std::unordered_multimap<std::string, ClassInfo> classMap_;
   TypePtr currentRetType_;
   std::string filename_;
   Logger logger;
