@@ -339,9 +339,25 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();
+  } else if (eInfo.type->typeName == TypeName::CLASS) {
+    const Class* classTy = static_cast<const Class*>(eInfo.type.get());
+    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->fullQuals, classTy->className);
+    if (!classInfo) {
+      throw runtime_error("MemberAccess::toImExpr");
+    }
+    auto iter = classInfo->fields.find(member_);
+    if (iter == classInfo->fields.end()) {
+      ostringstream& err = ctx.getLogger().logError(line_);
+      err << "Field " << member_ << " is not defined in class " << classTy->className;
+      return dummyInfo();
+    }
+    const Ctx::FieldInfo& fieldInfo = iter->second;
+    return { make_unique<im::MemDeref>(
+                 fieldInfo.offset, move(eInfo.imExpr), nullptr, fieldInfo.type->numBytes),
+             fieldInfo.type };
+  } else {
+    return dummyInfo();
   }
-
-  return dummyInfo();
 }
 
 

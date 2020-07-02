@@ -191,16 +191,16 @@ void ClassDecl::addToContext(Ctx& ctx) {
     return;
   }
 
-  //! TODO(BUG): This will screw up when we try to import a class with the same name from multiple files
-  //! E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);"
-  //! We should put it in ClassInfo instead and retrieve it
+  // TODO(BUG): This will screw up when we try to import a class with the same name from multiple files
+  // E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);"
+  // We should put it in ClassInfo instead and retrieve it as needed
   ctx.addTypeId(name_);
 
   for (unique_ptr<Func>& method : methods_) {
     method->name_ = mangleMethod(name_, method->name_);
     // Add "this" parameter as the last argument
     method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(make_shared<Class>(name_));
+    method->paramTypes_.push_back(make_shared<Class>(name_, ctx.getFilename()));
   }
 
   // Add methods to context
@@ -214,17 +214,17 @@ void ClassDecl::addToContext(Ctx& ctx) {
   sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
     return f1.type->numBytes < f2.type->numBytes;
   });
-  unordered_map<string, size_t> fieldOffsets;
+  unordered_map<string, Ctx::FieldInfo> fieldMap;
   // Class starts with vtable pointer
   size_t currentOffset = 8;
   for (const auto& [type, name, line] : fields_) {
-    if (fieldOffsets.try_emplace(name, currentOffset).second) {
+    if (fieldMap.try_emplace(name, Ctx::FieldInfo{type, currentOffset}).second) {
       ostringstream& err = ctx.getLogger().logError(line);
       err << "Redefinition of field " << name << " in class " << name_;
     }
   }
 
-  ctx.insertClass(name_, move(methodMap), move(fieldOffsets));
+  ctx.insertClass(name_, move(methodMap), move(fieldMap));
 }
 
 

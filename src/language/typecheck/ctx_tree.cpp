@@ -8,6 +8,7 @@
 
 using namespace std;
 
+// TODO: Handle absolute paths: How do we distinguish "import /home/file1" and "import home/file1"?
 namespace {
 
 vector<string> splitPath(string_view importPath) {

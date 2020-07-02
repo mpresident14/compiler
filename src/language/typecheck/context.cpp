@@ -108,9 +108,9 @@ void Ctx::removeTemp(const string& var, size_t line) {
 void Ctx::insertClass(
     const string& name,
     unordered_multimap<string, Ctx::FnInfo>&& methods,
-    unordered_map<string, size_t>&& fieldOffsets) {
+    std::unordered_map<std::string, Ctx::FieldInfo>&& fields) {
   // We already check for redefinitions in Class::addToContext
-  classMap_.emplace(name, ClassInfo{ move(methods), move(fieldOffsets) });
+  classMap_.emplace(name, ClassInfo{ move(methods), move(fields) });
 }
 
 const Ctx::ClassInfo* Ctx::lookupClass(const string& name) {
@@ -119,6 +119,11 @@ const Ctx::ClassInfo* Ctx::lookupClass(const string& name) {
     return nullptr;
   }
   return &iter->second;
+}
+
+const Ctx::ClassInfo* Ctx::lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name) {
+  // TODO: Implement this
+  return lookupClass(name);
 }
 
 void Ctx::insertFn(

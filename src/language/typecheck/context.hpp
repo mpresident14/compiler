@@ -40,10 +40,14 @@ public:
     std::string filename;
   };
 
+  struct FieldInfo {
+    TypePtr type;
+    size_t offset;
+  };
 
   struct ClassInfo {
     std::unordered_multimap<std::string, FnInfo> methods;
-    std::unordered_map<std::string, size_t> fieldOffsets;
+    std::unordered_map<std::string, FieldInfo> fields;
   };
 
   /*
@@ -106,6 +110,7 @@ public:
   CtxTree& getCtxTree() noexcept;
   const std::string& getFilename() const noexcept;
   const Type& getCurrentRetType() const noexcept;
+  // TODO: Here and everywhere applicable: Should take in const TypePtr& and no move
   void setCurrentRetType(TypePtr type) noexcept;
 
   int insertVar(std::string_view name, TypePtr type, size_t line);
@@ -116,9 +121,11 @@ public:
   void insertClass(
       const std::string& name,
       std::unordered_multimap<std::string, Ctx::FnInfo>&& methods,
-      std::unordered_map<std::string, size_t>&& fieldOffsets);
+      std::unordered_map<std::string, Ctx::FieldInfo>&& fields);
   /* Only searches this context, nullptr if it doesn't exist */
   const ClassInfo* lookupClass(const std::string& name);
+  /* Also searches context tree, nullptr if it doesn't exist */
+  const ClassInfo* lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name);
   void insertFn(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
@@ -130,14 +137,14 @@ public:
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
       size_t line);
+  /* Only searches this context, empty candidate vector if it doesn't exist */
+  FnLookupInfo lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       size_t line);
-  /* Only searches this context, empty candidate vector if it doesn't exist */
-  FnLookupInfo lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,

@@ -5,7 +5,27 @@
 #include <limits>
 #include <sstream>
 
+#include <boost/algorithm/string/split.hpp>
+
 using namespace std;
+
+Array::Array(TypePtr type) : Type(TypeName::ARRAY, 8), arrType(type) {}
+
+// TODO: Reuse from ctx_tree.cpp
+namespace {
+
+vector<string> splitPath(string_view importPath) {
+  importPath = importPath.substr(0, importPath.size() - sizeof(".prez") + 1);
+  vector<string> pathParts;
+  boost::split(pathParts, importPath, [](char c) { return c == '/'; });
+  return pathParts;
+}
+
+}  // namespace
+
+Class::Class(std::string_view name, std::string_view declFile)
+    : Type(TypeName::CLASS, 8), fullQuals(splitPath(declFile)), className(name) {}
+
 
 string Type::getId(const unordered_map<string, string>&) const {
   switch (typeName) {

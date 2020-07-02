@@ -8,6 +8,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 /********
  * Type *
@@ -30,7 +31,7 @@ struct Type {
 using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
-  Array(TypePtr type) : Type(TypeName::ARRAY, 8), arrType(type) {}
+  Array(TypePtr type);
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const override;
 
@@ -38,10 +39,11 @@ struct Array : public Type {
 };
 
 struct Class : public Type {
-  Class(std::string_view name) : Type(TypeName::CLASS, 8), className(name) {}
+  Class(std::string_view name, std::string_view declFile);
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const override;
 
+  std::vector<std::string> fullQuals;
   std::string className;
 };
 
@@ -53,7 +55,6 @@ TypePtr smallestIntegral(long n);
 bool operator==(const Type& t1, const Type& t2) noexcept;
 // Because I will inevitably call this one by mistake instead of the one above
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
-
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
 
