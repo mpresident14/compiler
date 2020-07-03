@@ -74,6 +74,20 @@ ExprPtr MemberAccess::clone() const {
   return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
 }
 
+MethodInvocation::MethodInvocation(
+    ExprPtr&& objExpr,
+    std::string_view methodName,
+    std::vector<ExprPtr>&& params,
+    size_t line)
+    : Expr(line), objExpr_(move(objExpr)), methodName_(methodName), params_(move(params)) {}
+ExprPtr MethodInvocation::clone() const {
+  vector<ExprPtr> paramsClone;
+  for (const ExprPtr& expr : params_) {
+    paramsClone.push_back(expr->clone());
+  }
+  return make_unique<MethodInvocation>(objExpr_->clone(), methodName_, move(paramsClone), line_);
+}
+
 IncDec::IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line)
     : Expr(line), lValue_(move(expr)), inc_(inc), pre_(pre) {}
 ExprPtr IncDec::clone() const { return make_unique<IncDec>(lValue_->clone(), inc_, pre_, line_); }

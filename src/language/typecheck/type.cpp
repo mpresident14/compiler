@@ -23,7 +23,7 @@ vector<string> splitPath(string_view importPath) {
 
 }  // namespace
 
-Class::Class(std::string_view name, std::string_view declFile)
+Class::Class(string_view name, string_view declFile)
     : Type(TypeName::CLASS, 8), fullQuals(splitPath(declFile)), className(name) {}
 
 

@@ -120,6 +120,7 @@ BOOL        "bool"
 IMPORT      "import"
 COLON2      "::"
 
+CLASS       "class"
 DOT         "\."
 
 PRINT       "print"
@@ -171,6 +172,15 @@ Decls -> { vector<DeclPtr> }
    | Decls Decl                   % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
+  := Function                          % move(#0) %
+   | CLASS IDENT LBRACE Fields
+     Constructors Functions RBRACE     % make_unique<ClassDecl>(move(#1), move(#3), move(#4), move(#5), #line) %
+
+Functions -> { vector<std::unique_ptr<Func>> }
+  := Function        #prec EPSILON1  % vector<std::unique_ptr<Func>>() %
+   | Functions Function              % (#0.push_back(move(#1)), move(#0)) %
+
+Function -> { std::unique_ptr<Func> }
   := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(move(#0), #1, move(#3), move(#5), #line) %
 
 Block -> { std::unique_ptr<Block> }
@@ -237,6 +247,7 @@ Expr -> { ExprPtr }
    | LPAREN Expr RPAREN                          % move(#1) %
 
 
+// TODO(BUG): Enforce LValues from code instead of grammar because "int[] f(); ... f()++;" should parse but does not
 LValue -> { ExprPtr }
   := IDENT                         % make_unique<Var>(#0, #line) %
    | Expr LBRACKET Expr RBRACKET   % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
@@ -270,6 +281,7 @@ ForUpdateExpr -> { ExprPtr }
    | LValue DEC                                  % make_unique<IncDec>(move(#0), false, false, #line) %
    | IDENT LPAREN Exprs RPAREN                   % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN        % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
+   | Expr DOT IDENT LPAREN Exprs RPAREN          % make_unique<MethodInvocation>(move(#0), #2, move(#4), #line) %
 
 Exprs -> { vector<ExprPtr> }
   :=          % vector<ExprPtr>() %
@@ -302,9 +314,24 @@ Type -> { TypePtr }
   := NonVoidType              % move(#0) %
    | VOID                     % voidType %
 
+// TODO: Allow this to be epsilon and remove extraneous rule for CallExpr
 Qualifiers -> { vector<string> }
   := Qualifier               % singletonVec<string>(move(#0)) %
    | Qualifiers Qualifier    % (#0.push_back(move(#1)), move(#0)) %
 
 Qualifier -> { string }
   := IDENT COLON2        % #0 %
+
+Fields -> { vector<ClassDecl::Field> }
+  := Field        #prec EPSILON1  % vector<ClassDecl::Field>() %
+   | Fields Field                 % (#0.push_back(move(#1)), move(#0)) %
+
+Field -> { ClassDecl::Field }
+  := NonVoidType IDENT SEMI   % ClassDecl::Field{move(#0), move(#1), #line} %
+
+Constructors -> { vector<std::unique_ptr<Func>> }
+  := Constructor        #prec EPSILON1  % vector<std::unique_ptr<Func>>() %
+   | Constructors Constructor           % (#0.push_back(move(#1)), move(#0)) %
+
+Constructor -> { std::unique_ptr<Func> }
+  := IDENT LPAREN Params RPAREN Block    % make_unique<Func>(nullptr, #0, move(#2), move(#4), #line) %

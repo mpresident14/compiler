@@ -108,7 +108,7 @@ void Ctx::removeTemp(const string& var, size_t line) {
 void Ctx::insertClass(
     const string& name,
     unordered_multimap<string, Ctx::FnInfo>&& methods,
-    std::unordered_map<std::string, Ctx::FieldInfo>&& fields) {
+    unordered_map<string, Ctx::FieldInfo>&& fields) {
   // We already check for redefinitions in Class::addToContext
   classMap_.emplace(name, ClassInfo{ move(methods), move(fields) });
 }
@@ -121,9 +121,31 @@ const Ctx::ClassInfo* Ctx::lookupClass(const string& name) {
   return &iter->second;
 }
 
-const Ctx::ClassInfo* Ctx::lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name) {
+const Ctx::ClassInfo* Ctx::lookupClassRec(const vector<string>&, const string& name) {
   // TODO: Implement this
   return lookupClass(name);
+}
+
+const Ctx::FnInfo* Ctx::lookupMethod(
+    const std::vector<std::string>& qualifiers,
+    const std::string& className,
+    const std::string& methodName,
+    const std::vector<TypePtr>& paramTypes,
+    size_t line) {
+  const ClassInfo* classInfo = lookupClassRec(qualifiers, className);
+  if (!classInfo) {
+    throw runtime_error("Ctx::lookupMethod");
+  }
+
+  return lookupFnRec(classInfo->methods, {}, methodName, paramTypes, line);
+}
+
+void Ctx::insertFn(
+    const string& name,
+    const vector<TypePtr>& paramTypes,
+    const TypePtr& returnType,
+    size_t line) {
+  insertFn(fnMap_, name, paramTypes, returnType, line);
 }
 
 void Ctx::insertFn(
@@ -147,19 +169,17 @@ void Ctx::insertFn(
   funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
 }
 
-void Ctx::insertFn(
-    const string& name,
-    const vector<TypePtr>& paramTypes,
-    const TypePtr& returnType,
-    size_t line) {
-  insertFn(fnMap_, name, paramTypes, returnType, line);
+Ctx::FnLookupInfo Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
+  return lookupFn(fnMap_, name, paramTypes);
 }
 
-
-Ctx::FnLookupInfo Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
+Ctx::FnLookupInfo Ctx::lookupFn(
+    const std::unordered_multimap<std::string, FnInfo>& funcMap,
+    const string& name,
+    const vector<TypePtr>& paramTypes) {
   vector<const FnInfo*> wideMatches;
   vector<const FnInfo*> narrowMatches;
-  auto iterPair = fnMap_.equal_range(name);
+  auto iterPair = funcMap.equal_range(name);
 
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const vector<TypePtr>& fnParamTypes = iter->second.paramTypes;
@@ -207,13 +227,22 @@ Ctx::FnLookupInfo Ctx::lookupFn(const string& name, const vector<TypePtr>& param
   }
 }
 
-// TODO: Allow "from <file> import <function/class>" ???
 const Ctx::FnInfo* Ctx::lookupFnRec(
     const vector<string>& qualifiers,
     const string& name,
     const vector<TypePtr>& paramTypes,
     size_t line) {
-  FnLookupInfo lookupInfo = qualifiers.empty() ? lookupFn(name, paramTypes)
+  return lookupFnRec(fnMap_, qualifiers, name, paramTypes, line);
+}
+
+// TODO: Allow "from <file> import <function/class>" ???
+const Ctx::FnInfo* Ctx::lookupFnRec(
+    const std::unordered_multimap<std::string, FnInfo>& funcMap,
+    const vector<string>& qualifiers,
+    const string& name,
+    const vector<TypePtr>& paramTypes,
+    size_t line) {
+  FnLookupInfo lookupInfo = qualifiers.empty() ? lookupFn(funcMap, name, paramTypes)
                                                : ctxTree_.lookupFn(qualifiers, name, paramTypes);
 
   switch (lookupInfo.res) {
@@ -290,7 +319,7 @@ void Ctx::undefFnAmbigQuals(
     string_view searchedPath) {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << boost::join(qualifiers, "::") << "::" << fnName;
-  Ctx::streamParamTypes(paramTypes, err);
+  streamParamTypes(paramTypes, err);
   err << "'. Found";
   for (const string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;

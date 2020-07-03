@@ -115,7 +115,6 @@ public:
 
   int insertVar(std::string_view name, TypePtr type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
-  const VarInfo* lookupTempVar(const std::string& name);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
   void insertClass(
@@ -125,14 +124,22 @@ public:
   /* Only searches this context, nullptr if it doesn't exist */
   const ClassInfo* lookupClass(const std::string& name);
   /* Also searches context tree, nullptr if it doesn't exist */
-  const ClassInfo* lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name);
+  const ClassInfo* lookupClassRec(
+      const std::vector<std::string>& qualifiers,
+      const std::string& name);
+  const FnInfo* lookupMethod(
+      const std::vector<std::string>& qualifiers,
+      const std::string& className,
+      const std::string& methodName,
+      const std::vector<TypePtr>& paramTypes,
+      size_t line);
   void insertFn(
-      std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
       size_t line);
   void insertFn(
+      std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
@@ -141,6 +148,32 @@ public:
   FnLookupInfo lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
+      const std::vector<std::string>& qualifiers,
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes,
+      size_t line);
+  /* Mangle all user functions based on the filename (My special functions begin
+   * with "__") Return the function name if it doesn't need to be mangled */
+  std::string mangleFn(
+      std::string_view fnName,
+      const std::string& filename,
+      const std::vector<TypePtr>& paramTypes);
+  void addFileId(std::string_view filename);
+  void addTypeId(std::string_view typeName);
+  void typeError(const Type& expected, const Type& got, size_t line);
+  void displayLogs() const;
+  bool hasErrors() const noexcept;
+
+
+private:
+  const VarInfo* lookupTempVar(const std::string& name);
+  void removeTemp(const std::string& var, size_t line);
+  FnLookupInfo lookupFn(
+      const std::unordered_multimap<std::string, FnInfo>& funcMap,
+      const std::string& name,
+      const std::vector<TypePtr>& paramTypes);
+  const FnInfo* lookupFnRec(
+      const std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
@@ -175,21 +208,6 @@ public:
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
       size_t line);
-  /* Mangle all user functions based on the filename (My special functions begin
-   * with "__") Return the function name if it doesn't need to be mangled */
-  std::string mangleFn(
-      std::string_view fnName,
-      const std::string& filename,
-      const std::vector<TypePtr>& paramTypes);
-  void addFileId(std::string_view filename);
-  void addTypeId(std::string_view typeName);
-  void typeError(const Type& expected, const Type& got, size_t line);
-  void displayLogs() const;
-  bool hasErrors() const noexcept;
-
-
-private:
-  void removeTemp(const std::string& var, size_t line);
 
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_multimap<std::string, FnInfo> fnMap_;

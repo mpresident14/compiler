@@ -168,18 +168,23 @@ void Func::checkForReturn(Ctx& ctx) {
  * Class *
  *********/
 
-const std::string ClassDecl::THIS = "this";
+const string ClassDecl::THIS = "this";
 
-string ClassDecl::mangleMethod(std::string_view className, std::string_view fnName) {
+string ClassDecl::mangleMethod(string_view className, string_view fnName) {
   return string("_").append(className).append("_").append(fnName);
 }
 
 ClassDecl::ClassDecl(
     string_view name,
-    vector<unique_ptr<Func>>&& methods,
     vector<Field>&& fields,
+    std::vector<std::unique_ptr<Func>>&& ctors,
+    vector<unique_ptr<Func>>&& methods,
     size_t line)
-    : Decl(line), name_(name), methods_(move(methods)), fields_(move(fields)) {}
+    : Decl(line),
+      name_(name),
+      fields_(move(fields)),
+      ctors_(move(ctors)),
+      methods_(move(methods)) {}
 
 
 void ClassDecl::addToContext(Ctx& ctx) {
@@ -191,9 +196,9 @@ void ClassDecl::addToContext(Ctx& ctx) {
     return;
   }
 
-  // TODO(BUG): This will screw up when we try to import a class with the same name from multiple files
-  // E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);"
-  // We should put it in ClassInfo instead and retrieve it as needed
+  // TODO(BUG): This will screw up when we try to import a class with the same name from multiple
+  // files E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);" We should put it in
+  // ClassInfo instead and retrieve it as needed
   ctx.addTypeId(name_);
 
   for (unique_ptr<Func>& method : methods_) {
@@ -218,7 +223,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   // Class starts with vtable pointer
   size_t currentOffset = 8;
   for (const auto& [type, name, line] : fields_) {
-    if (fieldMap.try_emplace(name, Ctx::FieldInfo{type, currentOffset}).second) {
+    if (!fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       ostringstream& err = ctx.getLogger().logError(line);
       err << "Redefinition of field " << name << " in class " << name_;
     }

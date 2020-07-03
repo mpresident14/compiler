@@ -361,6 +361,50 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
 }
 
 
+/********************
+ * MethodInvocation *
+ ********************/
+
+ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
+  ExprInfo eInfo = objExpr_->toImExpr(ctx);
+  if (eInfo.type->typeName != TypeName::CLASS) {
+    ostringstream& err = ctx.getLogger().logError(line_);
+    err << "Cannot invoke method on expression of type " << *eInfo.type;
+    return dummyInfo();
+  }
+
+  const Class* classTy = static_cast<const Class*>(eInfo.type.get());
+  // TODO: This code is duplicated from CallExpr::toImExpr
+  vector<im::ExprPtr> paramImExprs;
+  vector<TypePtr> paramTypes;
+  size_t numParams = params_.size();
+  // Get types and convert params
+  for (size_t i = 0; i < numParams; ++i) {
+    ExprInfo exprInfo = params_[i]->toImExpr(ctx);
+    paramImExprs.push_back(move(exprInfo.imExpr));
+    paramTypes.push_back(move(exprInfo.type));
+  }
+  // Push back "this" as last argument
+  paramImExprs.push_back(move(eInfo.imExpr));
+  paramTypes.push_back(eInfo.type);
+
+  const Ctx::FnInfo* fnInfo =
+      ctx.lookupMethod(classTy->fullQuals, methodName_, classTy->className, paramTypes, line_);
+  if (!fnInfo) {
+    // Undefined function
+    return dummyInfo();
+  }
+
+  return { make_unique<im::CallExpr>(
+               make_unique<im::LabelAddr>(ctx.mangleFn(
+                   ClassDecl::mangleMethod(classTy->className, methodName_),
+                   fnInfo->declFile,
+                   fnInfo->paramTypes)),
+               move(paramImExprs),
+               fnInfo->returnType != voidType),
+           move(fnInfo->returnType) };
+}
+
 /**********
  * IncDec *
  **********/

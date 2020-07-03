@@ -52,8 +52,10 @@ enum class ExprType {
   CALL_EXPR,
   CAST,
   NEW_ARRAY,
+  NEW_OBJECT,
   ARRAY_ACCESS,
   MEMBER_ACCESS,
+  METHOD_INVOCATION,
   INC_DEC,
   IM_WRAPPER,
 };
@@ -157,15 +159,17 @@ public:
 
   ClassDecl(
       std::string_view name,
-      std::vector<std::unique_ptr<Func>>&& methods,
       std::vector<Field>&& fields,
+      std::vector<std::unique_ptr<Func>>&& ctors,
+      std::vector<std::unique_ptr<Func>>&& methods,
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
 
   std::string name_;
-  std::vector<std::unique_ptr<Func>> methods_;
   std::vector<Field> fields_;
+  std::vector<std::unique_ptr<Func>> ctors_;
+  std::vector<std::unique_ptr<Func>> methods_;
 
 private:
   static const std::string THIS;
@@ -519,6 +523,23 @@ public:
 
   ExprPtr objExpr_;
   std::string member_;
+};
+
+
+class MethodInvocation : public Expr {
+public:
+  MethodInvocation(
+      ExprPtr&& objExpr,
+      std::string_view methodName,
+      std::vector<ExprPtr>&& params,
+      size_t line);
+  ExprType getType() const noexcept override { return ExprType::METHOD_INVOCATION; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+
+  ExprPtr objExpr_;
+  std::string methodName_;
+  std::vector<ExprPtr> params_;
 };
 
 
