@@ -95,6 +95,7 @@ public:
   constexpr Expr(size_t line) : line_(line) {}
   virtual ~Expr() {}
   virtual ExprType getType() const noexcept = 0;
+  virtual bool isLValue() const noexcept;
 
   /* This and all related functions invalidate the Expr that calls it */
   virtual ExprInfo toImExpr(Ctx& ctx) = 0;
@@ -389,6 +390,7 @@ class Var : public Expr {
 public:
   Var(std::string_view name, size_t line);
   ExprType getType() const noexcept override { return ExprType::VAR; }
+  bool isLValue() const noexcept override;
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -498,6 +500,7 @@ public:
 class Cast : public Expr {
 public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
+  bool isLValue() const noexcept override;
   ExprType getType() const noexcept override { return ExprType::CAST; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -533,6 +536,7 @@ private:
 class ArrayAccess : public Expr {
 public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
+  bool isLValue() const noexcept override;
   ExprType getType() const noexcept override { return ExprType::ARRAY_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -545,6 +549,7 @@ public:
 class MemberAccess : public Expr {
 public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
+  bool isLValue() const noexcept override;
   ExprType getType() const noexcept override { return ExprType::MEMBER_ACCESS; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -587,13 +592,15 @@ public:
 
 class ImWrapper : public Expr {
 public:
-  ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line);
+  ImWrapper(im::ExprPtr&& imExpr, TypePtr type, bool isLValue, size_t line);
+  bool isLValue() const noexcept override;
   ExprType getType() const noexcept override { return ExprType::IM_WRAPPER; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
   im::ExprPtr imExpr_;
   TypePtr type_;
+  bool isLValue_;
 };
 
 

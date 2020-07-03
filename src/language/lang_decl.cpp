@@ -193,6 +193,7 @@ void Constructor::setup(const TypePtr& classTy, size_t objSize) {
           make_unique<im::CallExpr>(
               make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
           classTy,
+          false,
           0),
       0));
 }

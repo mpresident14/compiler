@@ -93,8 +93,8 @@ IncDec::IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line)
 ExprPtr IncDec::clone() const { return make_unique<IncDec>(lValue_->clone(), inc_, pre_, line_); }
 
 
-ImWrapper::ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line)
-    : Expr(line), imExpr_(move(imExpr)), type_(move(type)) {}
+ImWrapper::ImWrapper(im::ExprPtr&& imExpr, TypePtr type, bool isLValue, size_t line)
+    : Expr(line), imExpr_(move(imExpr)), type_(move(type)), isLValue_(isLValue) {}
 ExprPtr ImWrapper::clone() const { throw invalid_argument("No clone for ImWrapper"); }
 
 }  // namespace language

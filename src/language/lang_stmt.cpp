@@ -166,7 +166,14 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
+// TODO(BUG): Will probably fail with ((int) var)++;"
+// TODO: Add tests for non-lvalue types (also for Update and IncDec)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  if (!lValue_->isLValue()) {
+    ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
+    return;
+  }
+
   if (lValue_->getType() == ExprType::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
           TypeName::ARRAY) {
@@ -200,6 +207,8 @@ std::unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref)
 Update::Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)), bOp_(bOp) {}
 
+
+// TODO(BUG): Will probably fail with ((int) var)++;"
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (lValue_->getType() == ExprType::VAR) {
     ExprPtr lValueClone = lValue_->clone();
@@ -218,9 +227,9 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     imStmts.push_back(assignAddr(t, memDeref));
 
     ExprPtr memWrapper1 =
-        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
     ExprPtr memWrapper2 =
-        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
 
     Assign(move(memWrapper1), make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);

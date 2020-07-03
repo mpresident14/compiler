@@ -39,6 +39,8 @@ ExprInfo ConstBool::toImExpr(Ctx&) { return { make_unique<im::Const>(b_), boolTy
 /*******
  * Var *
  *******/
+bool Var::isLValue() const noexcept { return true; }
+
 ExprInfo Var::toImExpr(Ctx& ctx) {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
   if (!varInfo) {
@@ -155,10 +157,10 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
       e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
 
   int t = newTemp();
-  ExprPtr tempWrapper1 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
-  ExprPtr tempWrapper2 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
-  ExprPtr e1Wrapper = make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
-  ExprPtr e2Wrapper = make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
+  ExprPtr tempWrapper1 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, true, e1Line);
+  ExprPtr tempWrapper2 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, true, e2Line);
+  ExprPtr e1Wrapper = make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1_->isLValue(), e1Line);
+  ExprPtr e2Wrapper = make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2_->isLValue(), e2Line);
 
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
   ifBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
@@ -206,6 +208,8 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 /********
  * Cast *
  ********/
+
+bool Cast::isLValue() const noexcept { return expr_->isLValue(); }
 
 ExprInfo Cast::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = expr_->toImExpr(ctx);
@@ -305,6 +309,8 @@ NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
  * ArrayAccess *
  ***************/
 
+bool ArrayAccess::isLValue() const noexcept { return true; }
+
 // TODO: Throw if out of range
 
 ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
@@ -329,6 +335,9 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
 /****************
  * MemberAccess *
  ****************/
+
+bool MemberAccess::isLValue() const noexcept { return true; }
+
 ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = objExpr_->toImExpr(ctx);
 
@@ -409,6 +418,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
  * IncDec *
  **********/
 
+// TODO(BUG): Will probably fail with ((int) var)++;"
 ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
@@ -454,7 +464,7 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
 
     // *tAddr +/-= 1
     Update(
-        make_unique<ImWrapper>(Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
+        make_unique<ImWrapper>(Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, true, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
@@ -473,12 +483,17 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
  * ImWrapper *
  *************/
 
+bool ImWrapper::isLValue() const noexcept { return isLValue_; }
+
 ExprInfo ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
 
 
 /********
  * Expr *
  ********/
+
+bool Expr::isLValue() const noexcept { return false; }
+
 template <typename F>
 ExprInfo Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
