@@ -84,6 +84,11 @@ public:
   size_t currentLine() const noexcept { return pos_ == 0 ? 0 : tokens_[pos_ - 1].getLine(); }
 
   void setTokens(vector<StackObj>&& tokens) { tokens_ = move(tokens); }
+  void checkIfDone() const {
+    if (pos_ != tokens_.size()) {
+      ostringstream& err = logger.logError(tokens_[pos_].getLine(), "Tokens still remaining.");
+    }
+  }
 
 private:
   vector<StackObj> tokens_;
@@ -334,6 +339,7 @@ ParseInfo parseConfig(const string& filename, ostream& warnings) {
   parseTokens();
   parsePrecs();
   parseGrammar();
+  tokenStream.checkIfDone();
 
   if (gdTokens.empty()) {
     logger.logError(0, "No tokens were provided.");
