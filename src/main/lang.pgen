@@ -329,9 +329,9 @@ Fields -> { vector<ClassDecl::Field> }
 Field -> { ClassDecl::Field }
   := NonVoidType IDENT SEMI   % ClassDecl::Field{move(#0), move(#1), #line} %
 
-Constructors -> { vector<std::unique_ptr<Func>> }
-  := Constructor        #prec EPSILON1  % vector<std::unique_ptr<Func>>() %
+Constructors -> { vector<std::unique_ptr<Constructor>> }
+  := Constructor        #prec EPSILON1  % vector<std::unique_ptr<Constructor>>() %
    | Constructors Constructor           % (#0.push_back(move(#1)), move(#0)) %
 
-Constructor -> { std::unique_ptr<Func> }
-  := IDENT LPAREN Params RPAREN Block    % make_unique<Func>(nullptr, #0, move(#2), move(#4), #line) %
+Constructor -> { std::unique_ptr<Constructor> }
+  := IDENT LPAREN Params RPAREN Block    % make_unique<Constructor>(#0, move(#2), move(#4), #line) %

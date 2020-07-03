@@ -136,14 +136,37 @@ public:
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
-  /* Check if for no return at end of function and handle accordingly */
-  void checkForReturn(Ctx& ctx);
 
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
+
+protected:
+  /* Check if for no return at end of function and handle accordingly */
+  virtual void checkForReturn(Ctx& ctx);
+};
+
+class Constructor : public Func {
+public:
+  Constructor(
+      std::string_view name,
+      std::vector<std::pair<TypePtr, std::string>>&& params,
+      std::unique_ptr<Block>&& body,
+      size_t line);
+
+  /* Handles initialization of return type and initialization of "this" variable */
+  void setup(const TypePtr& classTy, size_t objSize);
+
+  TypePtr returnType_;
+  std::string name_;
+  std::vector<TypePtr> paramTypes_;
+  std::vector<std::string> paramNames_;
+  std::unique_ptr<Block> body_;
+
+protected:
+  void checkForReturn(Ctx& ctx) override;
 };
 
 
@@ -157,10 +180,12 @@ public:
 
   static std::string mangleMethod(std::string_view className, std::string_view fnName);
 
+  static const std::string THIS;
+
   ClassDecl(
       std::string_view name,
       std::vector<Field>&& fields,
-      std::vector<std::unique_ptr<Func>>&& ctors,
+      std::vector<std::unique_ptr<Constructor>>&& ctors,
       std::vector<std::unique_ptr<Func>>&& methods,
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
@@ -168,11 +193,8 @@ public:
 
   std::string name_;
   std::vector<Field> fields_;
-  std::vector<std::unique_ptr<Func>> ctors_;
+  std::vector<std::unique_ptr<Constructor>> ctors_;
   std::vector<std::unique_ptr<Func>> methods_;
-
-private:
-  static const std::string THIS;
 };
 
 /***********

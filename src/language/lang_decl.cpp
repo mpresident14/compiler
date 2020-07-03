@@ -148,6 +148,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
       new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
+
 void Func::checkForReturn(Ctx& ctx) {
   const StmtPtr* last = body_->lastStmt();
   if (!last || !(dynamic_cast<Return*>(last->get()))) {
@@ -164,6 +165,37 @@ void Func::checkForReturn(Ctx& ctx) {
 }
 
 
+/***************
+ * Constructor *
+ ***************/
+
+Constructor::Constructor(
+    string_view name,
+    vector<pair<TypePtr, string>>&& params,
+    unique_ptr<Block>&& body,
+    size_t line)
+    : Func(nullptr, name, move(params), move(body), line) {
+  name_.insert(0, "_init_");
+}
+
+void Constructor::checkForReturn(Ctx&) { return; }
+
+void Constructor::setup(const TypePtr& classTy, size_t objSize) {
+  returnType_ = classTy;
+
+  vector<im::ExprPtr> mallocBytes;
+  mallocBytes.push_back(make_unique<im::Const>(objSize));
+  body_->stmts_.push_back(make_unique<VarDecl>(
+      TypePtr(classTy),
+      ClassDecl::THIS,
+      make_unique<ImWrapper>(
+          make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
+          classTy,
+          0),
+      0));
+}
+
+
 /*********
  * Class *
  *********/
@@ -177,7 +209,7 @@ string ClassDecl::mangleMethod(string_view className, string_view fnName) {
 ClassDecl::ClassDecl(
     string_view name,
     vector<Field>&& fields,
-    std::vector<std::unique_ptr<Func>>&& ctors,
+    vector<unique_ptr<Constructor>>&& ctors,
     vector<unique_ptr<Func>>&& methods,
     size_t line)
     : Decl(line),
@@ -201,20 +233,6 @@ void ClassDecl::addToContext(Ctx& ctx) {
   // ClassInfo instead and retrieve it as needed
   ctx.addTypeId(name_);
 
-  for (unique_ptr<Func>& method : methods_) {
-    method->name_ = mangleMethod(name_, method->name_);
-    // Add "this" parameter as the last argument
-    method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(make_shared<Class>(name_, ctx.getFilename()));
-  }
-
-  // Add methods to context
-  unordered_multimap<string, Ctx::FnInfo> methodMap;
-  for (unique_ptr<Func>& method : methods_) {
-    // TODO: Specifying class name in error would be nice
-    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
-  }
-
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
   sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
     return f1.type->numBytes < f2.type->numBytes;
@@ -222,11 +240,37 @@ void ClassDecl::addToContext(Ctx& ctx) {
   unordered_map<string, Ctx::FieldInfo> fieldMap;
   // Class starts with vtable pointer
   size_t currentOffset = 8;
+  size_t objSize = 0;
   for (const auto& [type, name, line] : fields_) {
-    if (!fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
+    if (fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
+      objSize += type->numBytes;
+    } else {
       ostringstream& err = ctx.getLogger().logError(line);
       err << "Redefinition of field " << name << " in class " << name_;
     }
+  }
+
+  TypePtr classTy = make_shared<Class>(name_, ctx.getFilename());
+
+  // Add constructors to this context
+  for (unique_ptr<Constructor>& ctor : ctors_) {
+    ctor->setup(classTy, objSize);
+    ctor->addToContext(ctx);
+  }
+
+  // Add methods
+  unordered_multimap<string, Ctx::FnInfo> methodMap;
+  for (unique_ptr<Func>& method : methods_) {
+    // TODO: Specifying class name in error would be nice
+    ctx.insertFn(
+        methodMap,
+        mangleMethod(name_, method->name_),
+        method->paramTypes_,
+        method->returnType_,
+        method->line_);
+    // Add "this" parameter as the last argument AFTER inserting it into the context
+    method->paramNames_.push_back(THIS);
+    method->paramTypes_.push_back(move(classTy));
   }
 
   ctx.insertClass(name_, move(methodMap), move(fieldMap));
