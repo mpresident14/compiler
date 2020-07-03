@@ -180,6 +180,7 @@ Constructor::Constructor(
 
 void Constructor::checkForReturn(Ctx&) { return; }
 
+// TODO(BUG): Make sure constructor's name matches the class
 void Constructor::setup(const TypePtr& classTy, size_t objSize) {
   returnType_ = classTy;
 
@@ -189,7 +190,8 @@ void Constructor::setup(const TypePtr& classTy, size_t objSize) {
       TypePtr(classTy),
       ClassDecl::THIS,
       make_unique<ImWrapper>(
-          make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
+          make_unique<im::CallExpr>(
+              make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
           classTy,
           0),
       0));
@@ -206,17 +208,24 @@ string ClassDecl::mangleMethod(string_view className, string_view fnName) {
   return string("_").append(className).append("_").append(fnName);
 }
 
-ClassDecl::ClassDecl(
-    string_view name,
-    vector<Field>&& fields,
-    vector<unique_ptr<Constructor>>&& ctors,
-    vector<unique_ptr<Func>>&& methods,
-    size_t line)
-    : Decl(line),
-      name_(name),
-      fields_(move(fields)),
-      ctors_(move(ctors)),
-      methods_(move(methods)) {}
+ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
+    : Decl(line), name_(name) {
+  for (ClassElem& elem : classElems) {
+    switch (elem.type) {
+      case ClassElem::Type::FIELD:
+        fields_.push_back(move(get<Field>(elem.elem)));
+        break;
+      case ClassElem::Type::CTOR:
+        ctors_.push_back(move(get<Constructor>(elem.elem)));
+        break;
+      case ClassElem::Type::METHOD:
+        methods_.push_back(move(get<std::unique_ptr<Func>>(elem.elem)));
+        break;
+      default:
+        throw runtime_error("ClassDecl::ClassDecl");
+    }
+  }
+}
 
 
 void ClassDecl::addToContext(Ctx& ctx) {
@@ -253,9 +262,9 @@ void ClassDecl::addToContext(Ctx& ctx) {
   TypePtr classTy = make_shared<Class>(name_, ctx.getFilename());
 
   // Add constructors to this context
-  for (unique_ptr<Constructor>& ctor : ctors_) {
-    ctor->setup(classTy, objSize);
-    ctor->addToContext(ctx);
+  for (Constructor& ctor : ctors_) {
+    ctor.setup(classTy, objSize);
+    ctor.addToContext(ctx);
   }
 
   // Add methods

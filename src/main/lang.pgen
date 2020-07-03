@@ -172,13 +172,20 @@ Decls -> { vector<DeclPtr> }
    | Decls Decl                   % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
-  := Function                          % move(#0) %
-   | CLASS IDENT LBRACE Fields
-     Constructors Functions RBRACE     % make_unique<ClassDecl>(move(#1), move(#3), move(#4), move(#5), #line) %
+  := Function                      % move(#0) %
+   | CLASS IDENT
+     LBRACE ClassElements RBRACE   % make_unique<ClassDecl>(#1, move(#3), #line) %
 
-Functions -> { vector<std::unique_ptr<Func>> }
-  := Function        #prec EPSILON1  % vector<std::unique_ptr<Func>>() %
-   | Functions Function              % (#0.push_back(move(#1)), move(#0)) %
+ClassElements -> { vector<ClassDecl::ClassElem> }
+  :=              #prec EPSILON1  % vector<ClassDecl::ClassElem>() %
+   | ClassElements ClassElement   % (#0.push_back(move(#1)), move(#0)) %
+
+ClassElement -> { ClassDecl::ClassElem }
+  := NonVoidType IDENT SEMI
+               % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, { ClassDecl::Field{move(#0), move(#1), #line } } } %
+   | IDENT LPAREN Params RPAREN Block
+               % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, { Constructor(#0, move(#2), move(#4), #line) } } %
+   | Function  % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, { move(#0) } } %
 
 Function -> { std::unique_ptr<Func> }
   := Type IDENT LPAREN Params RPAREN Block    % make_unique<Func>(move(#0), #1, move(#3), move(#5), #line) %
@@ -321,17 +328,3 @@ Qualifiers -> { vector<string> }
 
 Qualifier -> { string }
   := IDENT COLON2        % #0 %
-
-Fields -> { vector<ClassDecl::Field> }
-  := Field        #prec EPSILON1  % vector<ClassDecl::Field>() %
-   | Fields Field                 % (#0.push_back(move(#1)), move(#0)) %
-
-Field -> { ClassDecl::Field }
-  := NonVoidType IDENT SEMI   % ClassDecl::Field{move(#0), move(#1), #line} %
-
-Constructors -> { vector<std::unique_ptr<Constructor>> }
-  := Constructor        #prec EPSILON1  % vector<std::unique_ptr<Constructor>>() %
-   | Constructors Constructor           % (#0.push_back(move(#1)), move(#0)) %
-
-Constructor -> { std::unique_ptr<Constructor> }
-  := IDENT LPAREN Params RPAREN Block    % make_unique<Constructor>(#0, move(#2), move(#4), #line) %

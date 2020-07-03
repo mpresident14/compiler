@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <variant>
 
 namespace language {
 
@@ -40,7 +41,7 @@ public:
   size_t line_;
 };
 
-
+// TODO: Nest this within Expr
 enum class ExprType {
   CONST_INT,
   CONST_CHAR,
@@ -178,22 +179,27 @@ public:
     size_t line;
   };
 
+  struct ClassElem {
+    enum class Type { FIELD, CTOR, METHOD };
+
+    Type type;
+    std::variant<Field, Constructor, std::unique_ptr<Func>> elem;
+  };
+
   static std::string mangleMethod(std::string_view className, std::string_view fnName);
 
   static const std::string THIS;
 
   ClassDecl(
       std::string_view name,
-      std::vector<Field>&& fields,
-      std::vector<std::unique_ptr<Constructor>>&& ctors,
-      std::vector<std::unique_ptr<Func>>&& methods,
+      std::vector<ClassElem>&& classElems,
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
 
   std::string name_;
   std::vector<Field> fields_;
-  std::vector<std::unique_ptr<Constructor>> ctors_;
+  std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> methods_;
 };
 
