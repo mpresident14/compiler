@@ -1,5 +1,5 @@
 void main() {
-  long[] arr = long[3];
+  long[] arr = long[](3);
   for (int i = 0; i < arr.length; i += 1) {
     arr[i] = i;
   }

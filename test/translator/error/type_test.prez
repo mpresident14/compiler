@@ -22,7 +22,7 @@ void badWhile() {
 }
 
 void badUpdate() {
-  int[] arr = int[5];
+  int[] arr = int[](5);
   arr &= 1;
   arr--;
 }

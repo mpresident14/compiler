@@ -1,5 +1,5 @@
 int[] createArr() {
-  int[] arr = int[5];
+  int[] arr = int[](5);
   arr[0] = 0;
   arr[1] = 1;
   arr[2] = arr[arr[0]] + arr[arr[1]];
@@ -25,7 +25,7 @@ void main() {
     print(charArr.length);
   }
 
-  long[] lArr = long[8];
+  long[] lArr = long[](8);
   print(lArr.length);
 
   int[] brackInit = int[] {13,21,34};

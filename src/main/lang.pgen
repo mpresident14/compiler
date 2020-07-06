@@ -106,6 +106,7 @@ LPAREN      "\("
 RPAREN      "\)"
 LBRACKET    "\["
 RBRACKET    "\]"
+LRBRACKET   "\[\]"
 
 TRUE        "true"
 FALSE       "false"
@@ -208,16 +209,16 @@ Stmt -> { StmtPtr }
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
    | VarDecl                                     % move(#0) %
    | Block                                       % move(#0) %
-   | Expr SEMI                                   % make_unique<ExprStmt>(move(#0), #line) %
+   | StmtExpr SEMI                               % make_unique<ExprStmt>(move(#0), #line) %
    | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
-   | ForUpdateStmt SEMI                          % move(#0) %
+   | UpdateStmt SEMI                             % move(#0) %
 
 VarDecl -> { std::unique_ptr<VarDecl> }
   := NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
 
 ElseStmt -> { StmtPtr }
-  := Block                                      % move(#0) %
-   | IF LPAREN Expr RPAREN Block ELSE ElseStmt  % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+  := Block                                       % move(#0) %
+   | IF LPAREN Expr RPAREN Block ELSE ElseStmt   % make_unique<If>(move(#2), move(#4), move(#6), #line) %
 
 Expr -> { ExprPtr }
   := NUM                                        % make_unique<ConstInt>(#0, #line) %
@@ -246,11 +247,11 @@ Expr -> { ExprPtr }
    | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
    | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
    | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | LPAREN NonVoidType RPAREN Expr             % make_unique<Cast>(move(#1), move(#3), #line) %
-   | NonVoidType LBRACKET Expr RBRACKET         % make_unique<NewArray>(move(#0), move(#2), #line) %
-   | NonVoidType LBRACKET RBRACKET
-     LBRACE Exprs RBRACE                        % make_unique<NewArray>(move(#0), move(#4), #line) %
-   | ForUpdateExpr                              % move(#0) %
+   | NonVoidType LPAREN Expr RPAREN             % make_unique<Cast>(move(#0), move(#2), #line) %
+   | NonVoidType LRBRACKET
+     LPAREN Expr RPAREN                         % make_unique<NewArray>(move(#0), move(#3), #line) %
+   | NonVoidType LRBRACKET LBRACE Exprs RBRACE  % make_unique<NewArray>(move(#0), move(#3), #line) %
+   | StmtExpr                                   % move(#0) %
    | LPAREN Expr RPAREN                         % move(#1) %
    // lvalues
    | IDENT                                      % make_unique<Var>(#0, #line) %
@@ -258,10 +259,10 @@ Expr -> { ExprPtr }
    | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2, #line) %
 
 ForUpdate -> { StmtPtr }
-  := ForUpdateStmt                              % move(#0) %
-   | ForUpdateExpr                              % make_unique<ExprStmt>(move(#0), #line) %
+  := UpdateStmt                                 % move(#0) %
+   | StmtExpr                                   % make_unique<ExprStmt>(move(#0), #line) %
 
-ForUpdateStmt -> { StmtPtr }
+UpdateStmt -> { StmtPtr }
    := Expr EQ Expr                              % make_unique<Assign>(move(#0), move(#2)) %
    | Expr PLUSEQ Expr                           % make_unique<Update>(move(#0), BOp::PLUS, move(#2)) %
    | Expr MINUSEQ Expr                          % make_unique<Update>(move(#0), BOp::MINUS, move(#2)) %
@@ -274,7 +275,7 @@ ForUpdateStmt -> { StmtPtr }
    | Expr LSHIFTEQ Expr                         % make_unique<Update>(move(#0), BOp::LSHIFT, move(#2)) %
    | Expr ARSHIFTEQ Expr                        % make_unique<Update>(move(#0), BOp::ARSHIFT, move(#2)) %
 
-ForUpdateExpr -> { ExprPtr }
+StmtExpr -> { ExprPtr }
   := INC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), true, true, #line) %
    | DEC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), false, true, #line) %
    | Expr INC                                   % make_unique<IncDec>(move(#0), true, false, #line) %
@@ -303,14 +304,14 @@ Param -> { pair<TypePtr, string> }
   := NonVoidType IDENT         % { move(#0), #1 } %
 
 NonVoidType -> { TypePtr }
-  := LONG                            % longType %
-   | INT                             % intType %
-   | SHORT                           % shortType %
-   | CHAR                            % charType %
-   | BOOL                            % boolType %
-   | NonVoidType LBRACKET RBRACKET   % make_shared<Array>(move(#0)) %
-   // | IDENT                           % make_shared<Class>(vector<string>(), move(#0)) %
-   // | Qualifiers IDENT                % make_shared<Class>(move(#0), move(#1)) %
+  := LONG                   % longType %
+   | INT                    % intType %
+   | SHORT                  % shortType %
+   | CHAR                   % charType %
+   | BOOL                   % boolType %
+   | NonVoidType LRBRACKET  % make_shared<Array>(move(#0)) %
+   | IDENT                  % make_shared<Class>(vector<string>(), move(#0)) %
+   | Qualifiers IDENT       % make_shared<Class>(move(#0), move(#1)) %
 
 Qualifiers -> { vector<string> }
   := Qualifier               % singletonVec<string>(move(#0)) %
