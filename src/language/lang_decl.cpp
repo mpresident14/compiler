@@ -174,9 +174,7 @@ Constructor::Constructor(
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Func(nullptr, name, move(params), move(body), line) {
-  name_.insert(0, "_init_");
-}
+    : Func(nullptr, name, move(params), move(body), line) {}
 
 void Constructor::checkForReturn(Ctx&) { return; }
 
@@ -186,16 +184,20 @@ void Constructor::setup(const TypePtr& classTy, size_t objSize) {
 
   vector<im::ExprPtr> mallocBytes;
   mallocBytes.push_back(make_unique<im::Const>(objSize));
-  body_->stmts_.push_back(make_unique<VarDecl>(
-      TypePtr(classTy),
-      ClassDecl::THIS,
-      make_unique<ImWrapper>(
-          make_unique<im::CallExpr>(
-              make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
-          classTy,
-          false,
-          0),
-      0));
+  body_->stmts_.insert(
+      body_->stmts_.begin(),
+      make_unique<VarDecl>(
+          TypePtr(classTy),
+          ClassDecl::THIS,
+          make_unique<ImWrapper>(
+              make_unique<im::CallExpr>(
+                  make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
+              classTy,
+              false,
+              0),
+          0));
+
+  body_->stmts_.emplace_back(new Return({make_unique<Var>(ClassDecl::THIS, 0)}, 0));
 }
 
 
@@ -288,6 +290,9 @@ void ClassDecl::addToContext(Ctx& ctx) {
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  for (Constructor& ctor : ctors_) {
+    ctor.toImDecls(imDecls, ctx);
+  }
   for (const unique_ptr<Func>& method : methods_) {
     method->toImDecls(imDecls, ctx);
   }

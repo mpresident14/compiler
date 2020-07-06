@@ -161,12 +161,6 @@ public:
   /* Handles initialization of return type and initialization of "this" variable */
   void setup(const TypePtr& classTy, size_t objSize);
 
-  TypePtr returnType_;
-  std::string name_;
-  std::vector<TypePtr> paramTypes_;
-  std::vector<std::string> paramNames_;
-  std::unique_ptr<Block> body_;
-
 protected:
   void checkForReturn(Ctx& ctx) override;
 };
