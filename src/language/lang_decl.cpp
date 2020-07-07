@@ -208,7 +208,7 @@ void Constructor::setup(const TypePtr& classTy, size_t objSize) {
 const string ClassDecl::THIS = "this";
 
 string ClassDecl::mangleMethod(string_view className, string_view fnName) {
-  return string("_").append(className).append("_").append(fnName);
+  return string(className).append("_").append(fnName);
 }
 
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
@@ -256,6 +256,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   for (const auto& [type, name, line] : fields_) {
     if (fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       objSize += type->numBytes;
+      currentOffset += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
       err << "Redefinition of field " << name << " in class " << name_;
@@ -276,7 +277,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
     // TODO: Specifying class name in error would be nice
     ctx.insertFn(
         methodMap,
-        mangleMethod(name_, method->name_),
+        method->name_,
         method->paramTypes_,
         method->returnType_,
         method->line_);
@@ -294,6 +295,7 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     ctor.toImDecls(imDecls, ctx);
   }
   for (const unique_ptr<Func>& method : methods_) {
+    method->name_ = mangleMethod(name_, method->name_),
     method->toImDecls(imDecls, ctx);
   }
 }

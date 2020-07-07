@@ -393,22 +393,23 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
     paramImExprs.push_back(move(exprInfo.imExpr));
     paramTypes.push_back(move(exprInfo.type));
   }
-  // Push back "this" as last argument
-  paramImExprs.push_back(move(eInfo.imExpr));
-  paramTypes.push_back(eInfo.type);
 
   const Ctx::FnInfo* fnInfo =
-      ctx.lookupMethod(classTy->fullQuals, methodName_, classTy->className, paramTypes, line_);
+      ctx.lookupMethod(classTy->fullQuals, classTy->className, methodName_, paramTypes, line_);
   if (!fnInfo) {
     // Undefined function
     return dummyInfo();
   }
 
+  // Push back "this" as last argument (AFTER the context lookup)
+  paramImExprs.push_back(move(eInfo.imExpr));
+  paramTypes.push_back(eInfo.type);
+
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(ctx.mangleFn(
                    ClassDecl::mangleMethod(classTy->className, methodName_),
                    fnInfo->declFile,
-                   fnInfo->paramTypes)),
+                   paramTypes)),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
