@@ -383,7 +383,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   }
 
   const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-  // TODO: This code is duplicated from CallExpr::toImExpr
+
   vector<im::ExprPtr> paramImExprs;
   vector<TypePtr> paramTypes;
   size_t numParams = params_.size();
@@ -419,7 +419,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
  * IncDec *
  **********/
 
-// TODO(BUG): Will probably fail with ((int) var)++;"
+// TODO(BUG): Fails with ((int) var)++;"
 ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;

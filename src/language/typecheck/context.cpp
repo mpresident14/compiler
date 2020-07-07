@@ -49,11 +49,11 @@ const string& Ctx::getFilename() const noexcept { return filename_; }
 
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
-void Ctx::setCurrentRetType(TypePtr type) noexcept { currentRetType_ = move(type); }
+void Ctx::setCurrentRetType(const TypePtr& type) noexcept { currentRetType_ = type; }
 
-int Ctx::insertVar(string_view name, TypePtr type, size_t line) {
+int Ctx::insertVar(string_view name, const TypePtr& type, size_t line) {
   int temp = newTemp();
-  auto insertResult = varMap_.emplace(name, VarInfo{ move(type), temp, line, false });
+  auto insertResult = varMap_.emplace(name, VarInfo{ type, temp, line, false });
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
     errStream << "Redefinition of variable '" << name << "'. Originally declared on line "

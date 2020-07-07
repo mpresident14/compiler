@@ -9,7 +9,7 @@
 
 using namespace std;
 
-Array::Array(TypePtr type) : Type(TypeName::ARRAY, 8), arrType(type) {}
+Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 
 // TODO: Reuse from ctx_tree.cpp
 namespace {
@@ -97,12 +97,12 @@ pair<long, long> minMaxValue(const Type& integralType) {
   }
 }
 
-TypePtr smallestIntegral(long n) {
-  static TypePtr constIntTypes[]{ shortType, intType, longType };
-  for (const TypePtr& type : constIntTypes) {
-    auto p = minMaxValue(*type);
+const TypePtr& smallestIntegral(long n) {
+  static const TypePtr* constIntTypes[]{ &shortType, &intType, &longType };
+  for (const TypePtr* type : constIntTypes) {
+    auto p = minMaxValue(**type);
     if (p.first <= n && n <= p.second) {
-      return type;
+      return *type;
     }
   }
   throw invalid_argument("smallestIntegral");

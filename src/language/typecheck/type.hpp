@@ -31,7 +31,7 @@ struct Type {
 using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
-  Array(TypePtr type);
+  Array(const TypePtr& type);
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const override;
 
@@ -51,7 +51,7 @@ struct Class : public Type {
 constexpr bool isIntegral(const Type& t) { return t.isIntegral; }
 bool isConvertible(const Type& from, const Type& to, bool* isNarrowing);
 std::pair<long, long> minMaxValue(const Type& integralType);
-TypePtr smallestIntegral(long n);
+const TypePtr& smallestIntegral(long n);
 
 bool operator==(const Type& t1, const Type& t2) noexcept;
 // Because I will inevitably call this one by mistake instead of the one above

@@ -141,6 +141,7 @@ void Func::checkForReturn(Ctx& ctx) {
 }
 
 
+// TODO: Here, in VarDecl, and in Class fields: make sure Class types are actual types
 std::vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
   // Insert all the parameters as variables
@@ -179,7 +180,6 @@ Constructor::Constructor(
     : Func(nullptr, name, move(params), move(body), line) {}
 
 
-// TODO(BUG): Make sure constructor's name matches the class
 void Constructor::toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
@@ -277,6 +277,11 @@ void ClassDecl::addToContext(Ctx& ctx) {
 
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
+    if (ctor.name_ != name_) {
+      ostringstream& err = ctx.getLogger().logError(ctor.line_);
+      err << "Cannot declare a constructor for class " << ctor.name_
+          << " inside declaration of class " << name_;
+    }
     ctor.objSize_ = objSize;
     ctor.returnType_ = classTy;
     ctor.addToContext(ctx);
@@ -285,11 +290,10 @@ void ClassDecl::addToContext(Ctx& ctx) {
   // Add methods
   unordered_multimap<string, Ctx::FnInfo> methodMap;
   for (unique_ptr<Func>& method : methods_) {
-    // TODO: Specifying class name in error would be nice
     ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(move(classTy));
+    method->paramTypes_.push_back(classTy);
   }
 
   ctx.insertClass(name_, move(methodMap), move(fieldMap));

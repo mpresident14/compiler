@@ -110,10 +110,9 @@ public:
   CtxTree& getCtxTree() noexcept;
   const std::string& getFilename() const noexcept;
   const Type& getCurrentRetType() const noexcept;
-  // TODO: Here and everywhere applicable: Should take in const TypePtr& and no move
-  void setCurrentRetType(TypePtr type) noexcept;
+  void setCurrentRetType(const TypePtr& type) noexcept;
 
-  int insertVar(std::string_view name, TypePtr type, size_t line);
+  int insertVar(std::string_view name, const TypePtr& type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
