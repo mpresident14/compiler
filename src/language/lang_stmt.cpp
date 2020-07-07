@@ -126,8 +126,8 @@ void For::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  ExprType exprType = expr_->getType();
-  if (!(exprType == ExprType::CALL_EXPR || exprType == ExprType::INC_DEC)) {
+  Expr::Category exprType = expr_->getCategory();
+  if (!(exprType == Expr::Category::CALL_EXPR || exprType == Expr::Category::INC_DEC)) {
     ctx.getLogger().logWarning(line_, "Unused expression.");
     return;
   }
@@ -174,7 +174,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
-  if (lValue_->getType() == ExprType::MEMBER_ACCESS &&
+  if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
           TypeName::ARRAY) {
     ctx.getLogger().logError(line_, "Cannot assign to length field of an array.");
@@ -210,7 +210,7 @@ Update::Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs)
 
 // TODO(BUG): Will probably fail with ((int) var)++;"
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  if (lValue_->getType() == ExprType::VAR) {
+  if (lValue_->getCategory() == Expr::Category::VAR) {
     ExprPtr lValueClone = lValue_->clone();
     Assign(move(lValueClone), make_unique<BinaryOp>(move(lValue_), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);

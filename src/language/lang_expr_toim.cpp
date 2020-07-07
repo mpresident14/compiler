@@ -424,7 +424,7 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
 
-  if (lValue_->getType() == ExprType::VAR) {
+  if (lValue_->getCategory() == Category::VAR) {
     ExprInfo eInfo = lValue_->clone()->toImExpr(ctx);
     int tVar = static_cast<im::Temp*>(eInfo.imExpr.get())->t_;
     int tPostRes;

@@ -90,7 +90,7 @@ void BinOp::handleShifts(string asmCode, int temp, vector<assem::InstrPtr>& inst
   expr1_->toAssemInstrs(temp, instrs);
 
   // If shift number (expr2_) is not an immediate, its value must be in %cl
-  if (expr2_->getType() == ExprType::CONST) {
+  if (expr2_->getCategory() == Expr::Category::CONST) {
     asmCode.append(expr2_->asmChunk(8, 0, 0)).append(", `8D0");
     instrs.emplace_back(new assem::Operation(asmCode, { temp }, { temp }));
   } else {
@@ -245,7 +245,7 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     instrs.emplace_back(new assem::Operation("pushq `8S0", { t }, {}));
   }
 
-  if (addr_->getType() == ExprType::LABEL_ADDR) {
+  if (addr_->getCategory() == Expr::Category::LABEL_ADDR) {
     // If we are calling a function name, just call it directly
     instrs.emplace_back(new assem::Operation(
         "callq " + static_cast<LabelAddr*>(addr_.get())->name_,
@@ -390,30 +390,30 @@ std::string Expr::asmChunk(size_t numBytes, bool asSrc, size_t index) const {
   return ret.str();
 }
 
-std::ostream& operator<<(std::ostream& out, ExprType exprType) {
+std::ostream& operator<<(std::ostream& out, Expr::Category exprType) {
   switch (exprType) {
-    case ExprType::BINOP:
+    case Expr::Category::BINOP:
       return out << "BINOP";
-    case ExprType::CONST:
+    case Expr::Category::CONST:
       return out << "CONST";
-    case ExprType::TEMP:
+    case Expr::Category::TEMP:
       return out << "TEMP";
-    case ExprType::MEM_DEREF:
+    case Expr::Category::MEM_DEREF:
       return out << "MEM_DEREF";
-    case ExprType::DO_THEN_EVAL:
+    case Expr::Category::DO_THEN_EVAL:
       return out << "DO_THEN_EVAL";
-    case ExprType::LABEL_ADDR:
+    case Expr::Category::LABEL_ADDR:
       return out << "LABEL_ADDR";
-    case ExprType::CALL:
+    case Expr::Category::CALL:
       return out << "CALL";
-    case ExprType::HALF_CONST:
+    case Expr::Category::HALF_CONST:
       return out << "HALF_CONST";
-    case ExprType::LEAQ:
+    case Expr::Category::LEAQ:
       return out << "LEAQ";
-    case ExprType::INC_DEC:
+    case Expr::Category::INC_DEC:
       return out << "INC_DEC";
     default:
-      throw invalid_argument("im::ExprType: operator<<");
+      throw invalid_argument("im::Expr::Category: operator<<");
   }
 }
 

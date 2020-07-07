@@ -115,9 +115,9 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
   }
 
   // Const optimization
-  if (eOpt2->getType() == ExprType::CONST) {
+  if (eOpt2->getCategory() == Category::CONST) {
     long n2 = static_cast<const Const*>(eOpt2.get())->n_;
-    if (eOpt1->getType() == ExprType::CONST) {
+    if (eOpt1->getCategory() == Category::CONST) {
       // const OP const
       long n1 = static_cast<const Const*>(eOpt1.get())->n_;
       return make_unique<Const>(op(n1, n2));
@@ -125,7 +125,7 @@ ExprPtr BinOp::optimizeConst(ExprPtr& eOpt1, ExprPtr& eOpt2) {
       // x OP const
       return HalfConst(move(eOpt1), n2, bOp_, false).optimize();
     }
-  } else if (tryHalfConst && eOpt1->getType() == ExprType::CONST) {
+  } else if (tryHalfConst && eOpt1->getCategory() == Category::CONST) {
     // const OP x
     long n1 = static_cast<const Const*>(eOpt1.get())->n_;
     return HalfConst(move(eOpt2), n1, bOp_, true).optimize();

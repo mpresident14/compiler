@@ -164,11 +164,11 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
   ExprPtr eOpt1 = e1_->optimize();
   ExprPtr eOpt2 = e2_->optimize();
 
-  ExprType lhsType = eOpt1->getType();
-  if (lhsType == ExprType::TEMP) {
+  Expr::Category lhsType = eOpt1->getCategory();
+  if (lhsType == Expr::Category::TEMP) {
     // Move e2 into the Temp of e1
     eOpt2->toAssemInstrs(static_cast<Temp*>(eOpt1.get())->t_, instrs);
-  } else if (lhsType == ExprType::MEM_DEREF) {
+  } else if (lhsType == Expr::Category::MEM_DEREF) {
     // Move e2 into the address of e1
 
     // Of the form {tRhs?, tAddr, tMult?}
@@ -194,7 +194,7 @@ void Assign::toAssemInstrs(std::vector<assem::InstrPtr>& instrs) {
     instrs.emplace_back(new assem::Operation(asmOp.str(), move(srcTemps), {}, true));
   } else {
     ostringstream err;
-    err << "Invalid ExprType for Assign LHS: " << lhsType;
+    err << "Invalid Expr::Category for Assign LHS: " << lhsType;
     throw invalid_argument(err.str());
   }
 }

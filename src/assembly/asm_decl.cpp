@@ -72,7 +72,7 @@ void Function::toCode(ostream& out) {
 
   for (const InstrPtr& instr : instrs_) {
     // Need to pop before every return
-    if (instr->getType() == InstrType::RETURN) {
+    if (dynamic_cast<const Return*>(instr.get())) {
       for (const InstrPtr& restore : savesAndRestores.second) {
         restore->toCode(out, varToStackOffset_);
       }
@@ -109,8 +109,8 @@ bitset<NUM_AVAIL_REGS> Function::regAlloc(
   for (auto iter = instrs_.begin(); iter != instrs_.end(); ++iter) {
     InstrPtr& instr = *iter;
     // Skip jumps immediately followed by the label to which they are jumping
-    if (instr->getType() == InstrType::JUMP_OP &&
-        static_cast<JumpOp*>(instr.get())->jump_ == next(iter)->get()) {
+    const JumpOp* jumpOp = dynamic_cast<const JumpOp*>(instr.get());
+    if (jumpOp && jumpOp->jump_ == next(iter)->get()) {
       continue;
     }
 

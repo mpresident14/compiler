@@ -24,16 +24,14 @@ struct Liveness {
 
 namespace assem {
 
-enum class InstrType { LABEL, MOVE, OPER, JUMP_OP, COND_JUMP_OP, RETURN };
-
 class Instruction;
 using InstrPtr = std::unique_ptr<Instruction>;
 
 
 class Instruction {
 public:
+
   virtual ~Instruction() {}
-  virtual InstrType getType() const noexcept = 0;
   /* Returns true if liveOut changed */
   virtual bool updateLiveOut(
       std::unordered_set<int>& liveOut,
@@ -121,7 +119,6 @@ private:
 class Label : public Instruction {
 public:
   Label(std::string_view name);
-  constexpr InstrType getType() const noexcept override { return InstrType::LABEL; }
   void calcInterference(
       const std::unordered_set<int>& liveOut,
       std::unordered_map<int, std::unordered_set<int>>& igraph,
@@ -141,7 +138,6 @@ public:
 class Move : public Instruction {
 public:
   Move(int src, int dst);
-  constexpr InstrType getType() const noexcept override { return InstrType::MOVE; }
   bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
       const override;
   void calcInterference(
@@ -170,7 +166,6 @@ public:
       std::vector<int>&& srcs,
       std::vector<int>&& dsts,
       bool hasMemRefs = false);
-  constexpr InstrType getType() const noexcept override { return InstrType::OPER; }
   bool updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
       const override;
   void calcInterference(
@@ -196,7 +191,6 @@ public:
 class JumpOp : public Operation {
 public:
   JumpOp(std::string_view asmCode, std::vector<int>&& srcs, std::vector<int>&& dsts, Label* jump);
-  constexpr InstrType getType() const noexcept override { return InstrType::JUMP_OP; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction*,
@@ -212,7 +206,6 @@ public:
 class CondJumpOp : public JumpOp {
 public:
   using JumpOp::JumpOp;
-  constexpr InstrType getType() const noexcept override { return InstrType::COND_JUMP_OP; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
@@ -223,7 +216,6 @@ public:
 class Return : public Instruction {
 public:
   explicit constexpr Return(bool hasValue) : hasValue_(hasValue) {}
-  constexpr InstrType getType() const noexcept override { return InstrType::RETURN; }
   bool updateLiveOut(
       std::unordered_set<int>& liveOut,
       const Instruction* nextInstr,
