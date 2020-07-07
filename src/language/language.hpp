@@ -11,8 +11,8 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 #include <variant>
+#include <vector>
 
 namespace language {
 
@@ -146,8 +146,11 @@ public:
   std::unique_ptr<Block> body_;
 
 protected:
+  virtual std::vector<im::StmtPtr> paramsToImStmts(Ctx& ctx);
+
+private:
   /* Check if for no return at end of function and handle accordingly */
-  virtual void checkForReturn(Ctx& ctx);
+  void checkForReturn(Ctx& ctx);
 };
 
 class Constructor : public Func {
@@ -157,12 +160,9 @@ public:
       std::vector<std::pair<TypePtr, std::string>>&& params,
       std::unique_ptr<Block>&& body,
       size_t line);
+  void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
 
-  /* Handles initialization of return type and initialization of "this" variable */
-  void setup(const TypePtr& classTy, size_t objSize);
-
-protected:
-  void checkForReturn(Ctx& ctx) override;
+  size_t objSize_ = 0;
 };
 
 
@@ -185,10 +185,7 @@ public:
 
   static const std::string THIS;
 
-  ClassDecl(
-      std::string_view name,
-      std::vector<ClassElem>&& classElems,
-      size_t line);
+  ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
 

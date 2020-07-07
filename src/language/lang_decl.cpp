@@ -117,33 +117,9 @@ void Func::addToContext(Ctx& ctx) { ctx.insertFn(name_, paramTypes_, returnType_
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   checkForReturn(ctx);
   ctx.setCurrentRetType(returnType_);
-  vector<im::StmtPtr> imStmts;
-
-  // Insert all the parameters as variables
-  // Move parameters from argument registers into temporaries
-  //   (b/c if we call a function w/i this function, they will be overwritten)
-  size_t numParams = paramTypes_.size();
-  size_t numRegParams = min(numParams, (size_t)6);
-  for (size_t i = 0; i < numRegParams; ++i) {
-    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
-  }
-
-  // Move extra parameters from stack into temporaries
-  for (size_t i = numRegParams; i < numParams; i++) {
-    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
-    size_t offset = 16 + 8 * (i - numRegParams);
-    imStmts.emplace_back(new im::Assign(
-        make_unique<im::Temp>(temp),
-        make_unique<im::MemDeref>(offset, make_unique<im::Temp>(RBP), nullptr, 8)));
-  }
-
-  // Typecheck and compile the function
+  vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
-  // Remove all parameters
   ctx.removeParams(paramNames_, line_);
-
   imDecls.emplace_back(
       new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
@@ -165,6 +141,32 @@ void Func::checkForReturn(Ctx& ctx) {
 }
 
 
+std::vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
+  vector<im::StmtPtr> imStmts;
+  // Insert all the parameters as variables
+  // Move parameters from argument registers into temporaries
+  //   (b/c if we call a function w/i this function, they will be overwritten)
+  size_t numParams = paramTypes_.size();
+  size_t numRegParams = min(numParams, (size_t)6);
+  for (size_t i = 0; i < numRegParams; ++i) {
+    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
+    imStmts.emplace_back(
+        new im::Assign(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
+  }
+
+  // Move extra parameters from stack into temporaries
+  for (size_t i = numRegParams; i < numParams; i++) {
+    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
+    size_t offset = 16 + 8 * (i - numRegParams);
+    imStmts.emplace_back(new im::Assign(
+        make_unique<im::Temp>(temp),
+        make_unique<im::MemDeref>(offset, make_unique<im::Temp>(RBP), nullptr, 8)));
+  }
+
+  return imStmts;
+}
+
+
 /***************
  * Constructor *
  ***************/
@@ -176,28 +178,36 @@ Constructor::Constructor(
     size_t line)
     : Func(nullptr, name, move(params), move(body), line) {}
 
-void Constructor::checkForReturn(Ctx&) { return; }
 
 // TODO(BUG): Make sure constructor's name matches the class
-void Constructor::setup(const TypePtr& classTy, size_t objSize) {
-  returnType_ = classTy;
+void Constructor::toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  ctx.setCurrentRetType(returnType_);
+  vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
 
+  // Initialize "this"
   vector<im::ExprPtr> mallocBytes;
-  mallocBytes.push_back(make_unique<im::Const>(objSize));
-  body_->stmts_.insert(
-      body_->stmts_.begin(),
-      make_unique<VarDecl>(
-          TypePtr(classTy),
-          ClassDecl::THIS,
-          make_unique<ImWrapper>(
-              make_unique<im::CallExpr>(
-                  make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
-              classTy,
-              false,
-              0),
-          0));
+  mallocBytes.push_back(make_unique<im::Const>(objSize_));
+  VarDecl(
+      TypePtr(returnType_),
+      ClassDecl::THIS,
+      make_unique<ImWrapper>(
+          make_unique<im::CallExpr>(
+              make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
+          returnType_,
+          false,
+          0),
+      0)
+      .toImStmts(imStmts, ctx);
+  body_->toImStmts(imStmts, ctx);
 
-  body_->stmts_.emplace_back(new Return({make_unique<Var>(ClassDecl::THIS, 0)}, 0));
+  // Implicit return of the object we created
+  Return({ make_unique<Var>(ClassDecl::THIS, 0) }, 0).toImStmts(imStmts, ctx);
+
+  ctx.removeParams(paramNames_, line_);
+  ctx.removeVars({ { ClassDecl::THIS, 0 } });
+
+  imDecls.emplace_back(
+      new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
 }
 
 
@@ -252,7 +262,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   unordered_map<string, Ctx::FieldInfo> fieldMap;
   // Class starts with vtable pointer
   size_t currentOffset = 8;
-  size_t objSize = 0;
+  size_t objSize = 8;
   for (const auto& [type, name, line] : fields_) {
     if (fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       objSize += type->numBytes;
@@ -263,11 +273,12 @@ void ClassDecl::addToContext(Ctx& ctx) {
     }
   }
 
-  TypePtr classTy = make_shared<Class>(name_, ctx.getFilename());
+  std::shared_ptr<Class> classTy = make_shared<Class>(name_, ctx.getFilename());
 
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
-    ctor.setup(classTy, objSize);
+    ctor.objSize_ = objSize;
+    ctor.returnType_ = classTy;
     ctor.addToContext(ctx);
   }
 
@@ -275,12 +286,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   unordered_multimap<string, Ctx::FnInfo> methodMap;
   for (unique_ptr<Func>& method : methods_) {
     // TODO: Specifying class name in error would be nice
-    ctx.insertFn(
-        methodMap,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        method->line_);
+    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(move(classTy));
@@ -295,8 +301,7 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     ctor.toImDecls(imDecls, ctx);
   }
   for (const unique_ptr<Func>& method : methods_) {
-    method->name_ = mangleMethod(name_, method->name_),
-    method->toImDecls(imDecls, ctx);
+    method->name_ = mangleMethod(name_, method->name_), method->toImDecls(imDecls, ctx);
   }
 }
 
