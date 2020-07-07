@@ -461,11 +461,13 @@ void findShiftReduceConflicts(
     if (rule.atEnd()) {
       continue;
     }
+
     int nextSymbol = rule.nextSymbol();
     // Shift-reduce conflicts not possible for variables
     if (!isToken(nextSymbol)) {
       continue;
     }
+
     int nextTokenIndex = tokToArrInd(nextSymbol);
     // No conflict if the next input token is not in the lookahead set (b/c
     // can't reduce)
@@ -499,10 +501,9 @@ condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd, ConflictMap& c
   std::multiset<const DFARule*, decltype(ruleCmp)> reducibleRules(ruleCmp);
 
   for (const DFARule& rule : ruleSet) {
-    if (!rule.atEnd()) {
-      continue;
+    if (rule.atEnd()) {
+      findReduceReduceConflicts(&rule, reducibleRules, gd, conflicts);
     }
-    findReduceReduceConflicts(&rule, reducibleRules, gd, conflicts);
   }
 
   vector<RuleData> ruleData;

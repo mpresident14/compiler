@@ -86,7 +86,7 @@ public:
   void setTokens(vector<StackObj>&& tokens) { tokens_ = move(tokens); }
   void checkIfDone() const {
     if (pos_ != tokens_.size()) {
-      ostringstream& err = logger.logError(tokens_[pos_].getLine(), "Tokens still remaining.");
+      logger.logError(tokens_[pos_].getLine(), "Tokens still remaining.");
     }
   }
 
