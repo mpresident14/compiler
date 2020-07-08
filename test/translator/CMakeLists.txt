@@ -141,6 +141,14 @@ error_test(narrowing_test
     ('Warning','11','Narrowing')")
 error_test(bad_member_test
     "('Error','3','Cannot')")
+error_test(bad_class_test
+    "('Error','5','Expected')
+    ('Error','9','Expected')
+    ('Warning','13','Narrowing')
+    ('Error','19','Undefined')
+    ('Error','20','Expected')
+    ('Error','22','Undefined')
+    ('Error','23','Field')")
 
 
 add_custom_target(

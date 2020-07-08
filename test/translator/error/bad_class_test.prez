@@ -1,0 +1,24 @@
+class Vehicle {
+  int seats;
+
+  Vehicle() {
+    this.seats = true;
+  }
+
+  bool hasSeats() {
+    return this.seats;
+  }
+
+  void setSeats(long seats) {
+    this.seats = seats;
+  }
+}
+
+
+void main() {
+  Vehicle car = Vehicle(5);
+  int b = car.hasSeats();
+  print(b);
+  car.setSeats(true);
+  car.wrongField = 5;
+}
