@@ -407,13 +407,17 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
 
   // Push back "this" as last argument (AFTER the context lookup)
   paramImExprs.push_back(move(eInfo.imExpr));
-  paramTypes.push_back(eInfo.type);
+
+  // TODO: When we fix the typeId situation, eliminate this copy and just append the typeId to the
+  // end of the mangled function
+  vector<TypePtr> allTypes(fnInfo->paramTypes);
+  allTypes.push_back(eInfo.type);
 
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(ctx.mangleFn(
                    ClassDecl::mangleMethod(classTy->className, methodName_),
                    fnInfo->declFile,
-                   paramTypes)),
+                   allTypes)),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };

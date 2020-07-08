@@ -127,12 +127,7 @@ void For::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  Expr::Category exprType = expr_->getCategory();
-  if (!(exprType == Expr::Category::CALL_EXPR || exprType == Expr::Category::INC_DEC)) {
-    ctx.getLogger().logWarning(line_, "Unused expression.");
-    return;
-  }
-
+  // The grammar determines what Exprs can also be Stmts (see StmtExpr in lang.pgen)
   imStmts.emplace_back(new im::ExprStmt(expr_->toImExpr(ctx).imExpr));
 }
 

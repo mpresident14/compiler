@@ -281,6 +281,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
       ostringstream& err = ctx.getLogger().logError(ctor.line_);
       err << "Cannot declare a constructor for class " << ctor.name_
           << " inside declaration of class " << name_;
+      continue;
     }
     ctor.objSize_ = objSize;
     ctor.returnType_ = classTy;

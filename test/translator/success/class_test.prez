@@ -1,0 +1,52 @@
+class Vehicle {
+  int seats;
+
+  Vehicle(int seats) {
+    this.seats = seats;
+    this.wheels = 4;
+  }
+
+  int getSeats() {
+    return this.seats;
+  }
+
+  void setSeats(int seats) {
+    this.seats = seats;
+  }
+
+  int wheels;
+
+  Vehicle(int seats, int wheels) {
+    this.seats = seats;
+    this.wheels = wheels;
+  }
+
+  int getWheels() {
+    return this.wheels;
+  }
+
+  void setWheels(int wheels) {
+    this.wheels = wheels;
+  }
+}
+
+
+
+void main() {
+  Vehicle car = Vehicle(5);
+  print(car.seats);
+  print(car.getSeats());
+  print(car.wheels);
+  print(car.getWheels());
+
+  Vehicle bike = Vehicle(1,2);
+  print(bike.seats);
+  print(bike.getSeats());
+  print(bike.wheels);
+  print(bike.getWheels());
+
+  car.setSeats(3);
+  car.setWheels(18);
+  print(car.getSeats());
+  print(car.wheels);
+}
