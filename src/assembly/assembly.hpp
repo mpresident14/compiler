@@ -30,7 +30,6 @@ using InstrPtr = std::unique_ptr<Instruction>;
 
 class Instruction {
 public:
-
   virtual ~Instruction() {}
   /* Returns true if liveOut changed */
   virtual bool updateLiveOut(

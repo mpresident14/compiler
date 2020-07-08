@@ -1,11 +1,11 @@
 #include "src/language/typecheck/context.hpp"
+#include "src/language/utils.hpp"
 
 #include <list>
 #include <stdexcept>
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include "src/language/utils.hpp"
 
 using namespace std;
 

@@ -157,10 +157,14 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
       e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
 
   int t = newTemp();
-  ExprPtr tempWrapper1 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, true, e1Line);
-  ExprPtr tempWrapper2 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, true, e2Line);
-  ExprPtr e1Wrapper = make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1_->isLValue(), e1Line);
-  ExprPtr e2Wrapper = make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2_->isLValue(), e2Line);
+  ExprPtr tempWrapper1 =
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, true, e1Line);
+  ExprPtr tempWrapper2 =
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, true, e2Line);
+  ExprPtr e1Wrapper =
+      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1_->isLValue(), e1Line);
+  ExprPtr e2Wrapper =
+      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2_->isLValue(), e2Line);
 
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
   ifBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
@@ -465,7 +469,8 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
 
     // *tAddr +/-= 1
     Update(
-        make_unique<ImWrapper>(Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, true, eLine),
+        make_unique<ImWrapper>(
+            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, true, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
