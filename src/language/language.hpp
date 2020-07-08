@@ -595,11 +595,6 @@ public:
 };
 
 
-inline std::string newLabel() {
-  static int i = 0;
-  return "L" + std::to_string(i++);
-}
-
 }  // namespace language
 
 

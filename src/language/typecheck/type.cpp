@@ -1,27 +1,13 @@
 #include "src/language/typecheck/type.hpp"
 
 #include "src/language/typecheck/context.hpp"
-
+#include "src/language/utils.hpp"
 #include <limits>
 #include <sstream>
-
-#include <boost/algorithm/string/split.hpp>
 
 using namespace std;
 
 Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
-
-// TODO: Reuse from ctx_tree.cpp
-namespace {
-
-vector<string> splitPath(string_view importPath) {
-  importPath = importPath.substr(0, importPath.size() - sizeof(".prez") + 1);
-  vector<string> pathParts;
-  boost::split(pathParts, importPath, [](char c) { return c == '/'; });
-  return pathParts;
-}
-
-}  // namespace
 
 Class::Class(std::vector<std::string>&& quals, std::string_view name)
     : Type(TypeName::CLASS, 8), fullQuals(move(quals)), className(name) {}
