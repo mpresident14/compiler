@@ -106,7 +106,9 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
       case TypeName::ARRAY:
         return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case TypeName::CLASS:
-        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id;
+        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id ||
+               static_cast<const Class&>(t1).id == Class::ID_UNKNOWN ||
+               static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;
       default:
         return true;
     }
