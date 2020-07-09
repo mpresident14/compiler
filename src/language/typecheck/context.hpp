@@ -31,14 +31,6 @@ public:
     size_t line;
   };
 
-  enum class FnLookupRes { FOUND, UNDEFINED, AMBIG_OVERLOAD, NARROWING, BAD_QUALS, AMBIG_QUALS };
-
-  struct FnLookupInfo {
-    FnLookupRes res;
-    std::variant<std::vector<const FnInfo*>, std::vector<const std::string*>> candidates;
-    std::string filename;
-  };
-
   struct FieldInfo {
     TypePtr type;
     size_t offset;
@@ -47,6 +39,20 @@ public:
   struct ClassInfo {
     std::unordered_multimap<std::string, FnInfo> methods;
     std::unordered_map<std::string, FieldInfo> fields;
+    std::string declFile;
+  };
+
+  enum class LookupStatus { FOUND, UNDEFINED, AMBIG_OVERLOAD, NARROWING, BAD_QUALS, AMBIG_QUALS };
+
+  struct LookupRes {
+    LookupStatus res;
+    /* The context to be searched (CtxTree only), candidate overloads, ClassInfo, or candidates for
+     * ambiguous qualifiers */
+    std::
+        variant<Ctx*, std::vector<const FnInfo*>, const ClassInfo*, std::vector<const std::string*>>
+            candidates;
+    /* Searched file or prefix for ambiguous qualifiers */
+    std::string searchedPath;
   };
 
   /*
@@ -82,12 +88,14 @@ public:
 
     /* Return true if successfully added, false if already exists */
     bool addCtx(std::string_view importPath, Ctx* ctx);
-    FnLookupInfo lookupFn(
+    LookupRes lookupFn(
         const std::vector<std::string> qualifiers,
         const std::string& name,
         const std::vector<TypePtr>& paramTypes) const;
+    LookupRes lookupClass(const std::vector<std::string> qualifiers, const std::string& name) const;
 
   private:
+    LookupRes lookupCtx(const std::vector<std::string> qualifiers) const;
     /* The roots specify .prez files that were imported
      * Each level down in the context tree represents a level up in the
      * directory tree */
@@ -119,12 +127,11 @@ public:
       const std::string& name,
       std::unordered_multimap<std::string, Ctx::FnInfo>&& methods,
       std::unordered_map<std::string, Ctx::FieldInfo>&& fields);
-  /* Only searches this context, nullptr if it doesn't exist */
-  const ClassInfo* lookupClass(const std::string& name);
+  /* Only searches this context */
+  LookupRes lookupClass(const std::string& name);
   /* Also searches context tree, nullptr if it doesn't exist */
-  const ClassInfo* lookupClassRec(
-      const std::vector<std::string>& qualifiers,
-      const std::string& name);
+  const ClassInfo*
+  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
   const FnInfo* lookupMethod(
       const std::vector<std::string>& qualifiers,
       const std::string& className,
@@ -142,8 +149,8 @@ public:
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
       size_t line);
-  /* Only searches this context, empty candidate vector if it doesn't exist */
-  FnLookupInfo lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
+  /* Only searches this context */
+  LookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
@@ -166,12 +173,12 @@ public:
 private:
   const VarInfo* lookupTempVar(const std::string& name);
   void removeTemp(const std::string& var, size_t line);
-  FnLookupInfo lookupFn(
+  LookupRes lookupFn(
       const std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes);
-  const FnInfo* lookupFnRec(
-      const std::unordered_multimap<std::string, FnInfo>& funcMap,
+  const FnInfo* handleFnLookupRes(
+      const LookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
@@ -206,6 +213,21 @@ private:
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
       size_t line);
+  void undefinedClass(
+      const std::vector<std::string>& qualifiers,
+      std::string_view className,
+      size_t line,
+      std::string_view searchedFile);
+  void undefClassBadQuals(
+      const std::vector<std::string>& qualifiers,
+      std::string_view className,
+      size_t line);
+  void undefClassAmbigQuals(
+      const std::vector<std::string>& qualifiers,
+      std::string_view className,
+      size_t line,
+      const std::vector<const std::string*> candidates,
+      std::string_view searchedPath);
 
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_multimap<std::string, FnInfo> fnMap_;

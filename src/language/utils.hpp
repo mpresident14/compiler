@@ -8,3 +8,4 @@ inline std::string newLabel() {
 }
 
 std::vector<std::string> splitPath(std::string_view importPath);
+std::string qualifiedName(std::vector<std::string> qualifiers, std::string_view name);

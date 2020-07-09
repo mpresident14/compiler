@@ -23,6 +23,8 @@ void Program::setImportPath(string_view importPath) {
   boost::split(importPathParts, importPath, [](char c) { return c == '/'; });
 }
 
+// TODO: Imports should be relative to the file in which they were declared, not to the working
+// directory where the compiler exe was called
 
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {
@@ -244,7 +246,8 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 void ClassDecl::addToContext(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
-  if (ctx.lookupClass(name_)) {
+
+  if (ctx.lookupClass(name_).res == Ctx::LookupStatus::FOUND) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << "Redefinition of class " << name_;
     return;
@@ -273,7 +276,8 @@ void ClassDecl::addToContext(Ctx& ctx) {
     }
   }
 
-  std::shared_ptr<Class> classTy = make_shared<Class>(name_, ctx.getFilename());
+  // We are inside the same file as the class declaration, so no qualifiers
+  std::shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
 
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {

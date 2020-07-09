@@ -1,3 +1,18 @@
 int otherFunc() {
   return 3;
 }
+
+
+class Rectangle {
+  long length;
+  long width;
+
+  Rectangle(long len, long wid) {
+    this.length = len;
+    this.width = wid;
+  }
+
+  long perimeter() {
+    return this.length * 2 + this.width * 2;
+  }
+}

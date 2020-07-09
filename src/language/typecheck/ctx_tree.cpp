@@ -50,13 +50,46 @@ bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
 }
 
 
-Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
+Ctx::LookupRes Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
     const vector<TypePtr>& paramTypes) const {
+  LookupRes ctxLookup = lookupCtx(qualifiers);
+  if (ctxLookup.res == LookupStatus::FOUND) {
+    LookupRes fnLookup = get<Ctx*>(ctxLookup.candidates)->lookupFn(name, paramTypes);
+    if (fnLookup.res != LookupStatus::FOUND) {
+      fnLookup.searchedPath = ctxLookup.searchedPath;
+    }
+    return fnLookup;
+  } else {
+    if (ctxLookup.res != LookupStatus::AMBIG_QUALS) {
+      ctxLookup.candidates = std::vector<const FnInfo*>();
+    }
+    return ctxLookup;
+  }
+}
+
+
+Ctx::LookupRes Ctx::CtxTree::lookupClass(
+    const std::vector<std::string> qualifiers,
+    const std::string& name) const {
+  LookupRes ctxLookup = lookupCtx(qualifiers);
+  if (ctxLookup.res == LookupStatus::FOUND) {
+    LookupRes classLookup = get<Ctx*>(ctxLookup.candidates)->lookupClass(name);
+    if (classLookup.res != LookupStatus::FOUND) {
+      classLookup.searchedPath = ctxLookup.searchedPath;
+    }
+    return classLookup;
+  } else {
+    return ctxLookup;
+  }
+}
+
+
+Ctx::LookupRes Ctx::CtxTree::lookupCtx(const std::vector<std::string> qualifiers) const {
   list<string> filepath;
   if (qualifiers.empty()) {
-    throw runtime_error("Ctx::CtxTree::lookupFn");
+    throw runtime_error("Ctx::CtxTree::lookupCtx");
   }
 
   const unordered_map<string, NodePtr>* currentMap = &roots_;
@@ -67,7 +100,7 @@ Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
       // Qualifiers point to file that was not imported
-      return { FnLookupRes::BAD_QUALS, {}, "" };
+      return { LookupStatus::BAD_QUALS, (Ctx*)nullptr, "" };
     }
 
     child = iter->second.get();
@@ -81,18 +114,13 @@ Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
     // tree until we find either:
     // - a Node with a non-null context (unique suffix)
     // - a Node with more than 1 child (ambiguous qualifier)
-    Ctx* maybeCtx = child->ctx;
-    if (maybeCtx) {
-      FnLookupInfo lookupInfo = maybeCtx->lookupFn(name, paramTypes);
-      if (lookupInfo.res != FnLookupRes::FOUND) {
-        lookupInfo.filename = boost::join(filepath, "/").append(".prez");
-      }
-      return lookupInfo;
+    if (child->ctx) {
+      return { LookupStatus::FOUND, child->ctx, boost::join(filepath, "/").append(".prez") };
     }
 
     currentMap = &child->children;
     if (currentMap->empty()) {
-      throw runtime_error("Ctx::CtxTree::lookupFn (empty)");
+      throw runtime_error("Ctx::CtxTree::lookupClass (empty)");
     }
 
     if (currentMap->size() > 1) {
@@ -101,7 +129,7 @@ Ctx::FnLookupInfo Ctx::CtxTree::lookupFn(
       for (const auto& [part, _] : *currentMap) {
         candidates.push_back(&part);
       }
-      return { FnLookupRes::AMBIG_QUALS, move(candidates), boost::join(filepath, "::") };
+      return { LookupStatus::AMBIG_QUALS, move(candidates), boost::join(filepath, "::") };
     }
 
     const auto iter = currentMap->cbegin();

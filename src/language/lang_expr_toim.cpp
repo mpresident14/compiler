@@ -354,7 +354,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   } else if (eInfo.type->typeName == TypeName::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->qualifiers, classTy->className);
+    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->qualifiers, classTy->className, line_);
     if (!classInfo) {
       throw runtime_error("MemberAccess::toImExpr");
     }

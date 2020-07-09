@@ -40,7 +40,6 @@ struct Array : public Type {
 
 struct Class : public Type {
   Class(std::vector<std::string>&& quals, std::string_view name);
-  Class(std::string_view name, std::string_view declFile);
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const override;
 

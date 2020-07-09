@@ -20,4 +20,10 @@ void main() {
   print(import_test::file::func(4));
   print(func());
   print(folder::subfolder::file::func());
+
+  other_file::Rectangle r1 = import_test::other_file::Rectangle(1, 3);
+  print(r1.perimeter());
+
+  // file::Rectangle r2 = import_test::file::Rectangle(3, 3);
+  // print(r2.area());
 }

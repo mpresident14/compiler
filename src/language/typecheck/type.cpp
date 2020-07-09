@@ -6,16 +6,14 @@
 #include <limits>
 #include <sstream>
 
+#include <prez/print_stuff.hpp>
+
 using namespace std;
 
 Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 
 Class::Class(std::vector<std::string>&& quals, std::string_view name)
     : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
-
-Class::Class(string_view name, string_view declFile)
-    : Type(TypeName::CLASS, 8), qualifiers(splitPath(declFile)), className(name) {}
-
 
 string Type::getId(const unordered_map<string, string>&) const {
   switch (typeName) {
@@ -95,6 +93,7 @@ const TypePtr& smallestIntegral(long n) {
   throw invalid_argument("smallestIntegral");
 }
 
+// TODO: Need to compare qualifiers as well
 bool operator==(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == TypeName::ANY || t2.typeName == TypeName::ANY) {
     return true;
@@ -139,7 +138,8 @@ ostream& operator<<(ostream& out, const Type& type) {
       out << *static_cast<const Array&>(type).arrType << "[]";
       break;
     case TypeName::CLASS:
-      out << static_cast<const Class&>(type).className;
+      out << qualifiedName(
+          static_cast<const Class&>(type).qualifiers, static_cast<const Class&>(type).className);
       break;
     case TypeName::ANY:
       out << "???";
