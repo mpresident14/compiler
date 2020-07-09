@@ -40,6 +40,7 @@ public:
     std::unordered_multimap<std::string, FnInfo> methods;
     std::unordered_map<std::string, FieldInfo> fields;
     std::string declFile;
+    int id;
   };
 
   enum class LookupStatus { FOUND, UNDEFINED, AMBIG_OVERLOAD, NARROWING, BAD_QUALS, AMBIG_QUALS };
@@ -105,8 +106,7 @@ public:
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
 
   Ctx(std::string_view filename,
-      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
-      const std::shared_ptr<std::unordered_map<std::string, std::string>>& typeIds);
+      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -157,6 +157,9 @@ public:
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       size_t line);
+  /* Checks if this is a valid type. If the type is a Class, then it sets its id if it is not yet
+   * set */
+  void checkType(Type& type, size_t line);
   /* Mangle all user functions based on the filename (My special functions begin
    * with "__") Return the function name if it doesn't need to be mangled */
   std::string mangleFn(
@@ -164,7 +167,6 @@ public:
       const std::string& filename,
       const std::vector<TypePtr>& paramTypes);
   void addFileId(std::string_view filename);
-  void addTypeId(std::string_view typeName);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
@@ -237,7 +239,6 @@ private:
   Logger logger;
   CtxTree ctxTree_;
   std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds_;
 };
 
 #endif  // CONTEXT_HPP

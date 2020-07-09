@@ -15,13 +15,14 @@
  ********/
 
 /* ANY used to proceed through errors */
+// TODO: Nest within Type
 enum class TypeName { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
 struct Type {
   virtual ~Type() {}
   constexpr Type(TypeName name, u_char nBytes, bool integral = false)
       : typeName(name), numBytes(nBytes), isIntegral(integral) {}
-  virtual std::string getId(const std::unordered_map<std::string, std::string>& typeIds) const;
+  virtual std::string getId() const;
 
   TypeName typeName;
   u_char numBytes;
@@ -32,19 +33,20 @@ using TypePtr = std::shared_ptr<Type>;
 
 struct Array : public Type {
   Array(const TypePtr& type);
-  virtual std::string getId(
-      const std::unordered_map<std::string, std::string>& typeIds) const override;
+  virtual std::string getId() const override;
 
   TypePtr arrType;
 };
 
 struct Class : public Type {
+  static const int ID_EMPTY = -1;
+  static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
-  virtual std::string getId(
-      const std::unordered_map<std::string, std::string>& typeIds) const override;
+  virtual std::string getId() const override;
 
   std::vector<std::string> qualifiers;
   std::string className;
+  int id = Class::ID_EMPTY;
 };
 
 constexpr bool isIntegral(const Type& t) { return t.isIntegral; }

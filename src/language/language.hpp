@@ -216,8 +216,7 @@ public:
   void initContext(
       std::string_view filename,
       std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> typeIds);
+      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds);
 
   im::Program toImProg() const;
 
@@ -517,8 +516,7 @@ public:
 private:
   /* Returns the statements to create the array as well as the temp containing
    * the address of the new array */
-  static std::pair<std::vector<im::StmtPtr>, int>
-  makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx);
+  std::pair<std::vector<im::StmtPtr>, int> makeArrayStmts(Type& type, ExprPtr&& numElems, Ctx& ctx);
   ExprInfo toImExprLen(Ctx& ctx);
   ExprInfo toImExprElems(Ctx& ctx);
 };

@@ -11,6 +11,21 @@
 using namespace std;
 
 
+namespace {
+
+string newFileId() {
+  static size_t i = 0;
+  return to_string(i++);
+}
+
+int newTypeId() {
+  static int i = 0;
+  return i++;
+}
+
+}  // namespace
+
+
 void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
   err << '(';
   if (!paramTypes.empty()) {
@@ -25,9 +40,8 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 
 Ctx::Ctx(
     string_view filename,
-    const shared_ptr<unordered_map<string, string>>& fileIds,
-    const shared_ptr<unordered_map<string, string>>& typeIds)
-    : filename_(filename), logger(filename), fileIds_(fileIds), typeIds_(typeIds) {}
+    const shared_ptr<unordered_map<string, string>>& fileIds)
+    : filename_(filename), logger(filename), fileIds_(fileIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -98,7 +112,7 @@ void Ctx::insertClass(
     unordered_multimap<string, Ctx::FnInfo>&& methods,
     unordered_map<string, Ctx::FieldInfo>&& fields) {
   // We already check for redefinitions in Class::addToContext
-  classMap_.emplace(name, ClassInfo{ move(methods), move(fields), filename_ });
+  classMap_.emplace(name, ClassInfo{ move(methods), move(fields), filename_, newTypeId()});
 }
 
 Ctx::LookupRes Ctx::lookupClass(const string& name) {
@@ -144,7 +158,7 @@ const Ctx::FnInfo* Ctx::lookupMethod(
     size_t line) {
   const ClassInfo* classInfo = lookupClassRec(qualifiers, className, line);
   if (!classInfo) {
-    throw runtime_error("Ctx::lookupMethod");
+    return nullptr;
   }
 
   LookupRes lookupRes = lookupFn(classInfo->methods, methodName, paramTypes);
@@ -418,6 +432,27 @@ void Ctx::undefClassAmbigQuals(
   }
 }
 
+void Ctx::checkType(Type& type, size_t line) {
+  // Built-in types are always valid
+  if (type.typeName != TypeName::CLASS) {
+    return;
+  }
+
+  // Already checked this one
+  Class& classTy = static_cast<Class&>(type);
+  if (classTy.id != Class::ID_EMPTY) {
+    return;
+  }
+
+  const ClassInfo* classInfo = lookupClassRec(classTy.qualifiers, classTy.className, line);
+  if (!classInfo) {
+    // Prevent doing the check again
+    classTy.id = Class::ID_UNKNOWN;
+  } else {
+    classTy.id = classInfo->id;
+  }
+}
+
 
 string
 Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>& paramTypes) {
@@ -428,29 +463,15 @@ Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>&
 
     for (const TypePtr& type : paramTypes) {
       newName.push_back('_');
-      newName.append(type->getId(*typeIds_));
+      newName.append(type->getId());
     }
     return newName;
+  } else {
+    return string(fnName);
   }
-  return string(fnName);
 }
-
-namespace {
-
-string newFileId() {
-  static size_t i = 0;
-  return to_string(i++);
-}
-
-string newTypeId() {
-  static size_t i = 0;
-  return to_string(i++);
-}
-
-}  // namespace
 
 void Ctx::addFileId(string_view filename) { fileIds_->emplace(filename, newFileId()); }
-void Ctx::addTypeId(string_view typeName) { typeIds_->emplace(typeName, newTypeId()); }
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

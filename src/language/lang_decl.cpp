@@ -35,10 +35,9 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
-    shared_ptr<unordered_map<string, string>> fileIds,
-    shared_ptr<unordered_map<string, string>> typeIds) {
+    shared_ptr<unordered_map<string, string>> fileIds) {
   // Create a new context
-  ctx_ = make_unique<Ctx>(filename, fileIds, typeIds);
+  ctx_ = make_unique<Ctx>(filename, fileIds);
   ctx_->addFileId(filename);
 
   // Go through the imports and build the context tree so we have access
@@ -57,7 +56,7 @@ void Program::initContext(
         auto iter = initializedProgs.emplace(importName, nullptr).first;
         iter->second = make_unique<Program>(parser::parse(importName));
         prog = iter->second.get();
-        prog->initContext(importName, initializedProgs, fileIds, typeIds);
+        prog->initContext(importName, initializedProgs, fileIds);
       } catch (const runtime_error& e) {
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
@@ -117,6 +116,7 @@ void Func::addToContext(Ctx& ctx) { ctx.insertFn(name_, paramTypes_, returnType_
 
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  ctx.checkType(*returnType_, line_);
   checkForReturn(ctx);
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
@@ -152,14 +152,18 @@ std::vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   size_t numParams = paramTypes_.size();
   size_t numRegParams = min(numParams, (size_t)6);
   for (size_t i = 0; i < numRegParams; ++i) {
-    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
+    TypePtr& pType = paramTypes_[i];
+    ctx.checkType(*pType, line_);
+    int temp = ctx.insertVar(paramNames_[i], pType, line_);
     imStmts.emplace_back(
         new im::Assign(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
   }
 
   // Move extra parameters from stack into temporaries
   for (size_t i = numRegParams; i < numParams; i++) {
-    int temp = ctx.insertVar(paramNames_[i], paramTypes_[i], line_);
+    TypePtr& pType = paramTypes_[i];
+    ctx.checkType(*pType, line_);
+    int temp = ctx.insertVar(paramNames_[i], pType, line_);
     size_t offset = 16 + 8 * (i - numRegParams);
     imStmts.emplace_back(new im::Assign(
         make_unique<im::Temp>(temp),
@@ -252,11 +256,6 @@ void ClassDecl::addToContext(Ctx& ctx) {
     err << "Redefinition of class " << name_;
     return;
   }
-
-  // TODO(BUG): This will screw up when we try to import a class with the same name from multiple
-  // files E.g. "void f(file1::Myclass obj);"" and "void f(file2::Myclass obj);" We should put it in
-  // ClassInfo instead and retrieve it as needed
-  ctx.addTypeId(name_);
 
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
   sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {

@@ -240,6 +240,7 @@ VarDecl::VarDecl(TypePtr&& type, string_view name, ExprPtr&& e, size_t line)
     : Stmt(line), type_(move(type)), name_(name), e_(move(e)) {}
 
 void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  ctx.checkType(*type_, line_);
   // Make sure the right side has the correct type and translate it
   im::ExprPtr rhs = e_->toImExprAssert(*type_, ctx);
   // Insert the variable into the context

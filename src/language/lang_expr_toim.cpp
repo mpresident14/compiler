@@ -216,6 +216,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 bool Cast::isLValue() const noexcept { return expr_->isLValue(); }
 
 ExprInfo Cast::toImExpr(Ctx& ctx) {
+  ctx.checkType(*toType_, line_);
   ExprInfo eInfo = expr_->toImExpr(ctx);
   if (!isConvertible(*eInfo.type, *toType_, nullptr)) {
     ostream& err = ctx.getLogger().logError(line_);
@@ -272,7 +273,8 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
 }
 
 pair<vector<im::StmtPtr>, int>
-NewArray::makeArrayStmts(const Type& type, ExprPtr&& numElems, Ctx& ctx) {
+NewArray::makeArrayStmts(Type& type, ExprPtr&& numElems, Ctx& ctx) {
+  ctx.checkType(type, line_);
   int tLen = newTemp();
 
   // Store the length of the array in a temporary

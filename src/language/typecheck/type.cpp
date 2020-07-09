@@ -15,7 +15,7 @@ Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 Class::Class(std::vector<std::string>&& quals, std::string_view name)
     : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
 
-string Type::getId(const unordered_map<string, string>&) const {
+string Type::getId() const {
   switch (typeName) {
     case TypeName::LONG:
       return "l";
@@ -36,12 +36,14 @@ string Type::getId(const unordered_map<string, string>&) const {
   }
 }
 
-string Array::getId(const unordered_map<string, string>& typeIds) const {
-  return string("a_").append(arrType->getId(typeIds));
-}
+string Array::getId() const { return string("a_").append(arrType->getId()); }
 
-string Class::getId(const unordered_map<string, string>& typeIds) const {
-  return typeIds.at(className);
+string Class::getId() const {
+  if (id == ID_EMPTY) {
+    throw runtime_error("Class::getId");
+  }
+
+  return to_string(id);
 }
 
 
@@ -93,7 +95,7 @@ const TypePtr& smallestIntegral(long n) {
   throw invalid_argument("smallestIntegral");
 }
 
-// TODO: Need to compare qualifiers as well
+
 bool operator==(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == TypeName::ANY || t2.typeName == TypeName::ANY) {
     return true;
@@ -104,7 +106,7 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
       case TypeName::ARRAY:
         return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case TypeName::CLASS:
-        return static_cast<const Class&>(t1).className == static_cast<const Class&>(t2).className;
+        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id;
       default:
         return true;
     }
@@ -138,8 +140,12 @@ ostream& operator<<(ostream& out, const Type& type) {
       out << *static_cast<const Array&>(type).arrType << "[]";
       break;
     case TypeName::CLASS:
-      out << qualifiedName(
-          static_cast<const Class&>(type).qualifiers, static_cast<const Class&>(type).className);
+      if (static_cast<const Class&>(type).id == Class::ID_UNKNOWN) {
+        out << "???";
+      } else {
+        out << qualifiedName(
+            static_cast<const Class&>(type).qualifiers, static_cast<const Class&>(type).className);
+      }
       break;
     case TypeName::ANY:
       out << "???";

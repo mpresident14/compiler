@@ -45,7 +45,6 @@ bool compile(const string& srcFilename, const string& asmFilename) {
     iter->second->initContext(
         srcFilename,
         initializedProgs,
-        make_shared<unordered_map<string, string>>(),
         make_shared<unordered_map<string, string>>());
 
     // Convert to assembly
