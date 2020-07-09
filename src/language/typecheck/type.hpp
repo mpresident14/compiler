@@ -44,7 +44,7 @@ struct Class : public Type {
   virtual std::string getId(
       const std::unordered_map<std::string, std::string>& typeIds) const override;
 
-  std::vector<std::string> fullQuals;
+  std::vector<std::string> qualifiers;
   std::string className;
 };
 

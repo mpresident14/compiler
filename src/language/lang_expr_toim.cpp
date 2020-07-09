@@ -354,7 +354,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   } else if (eInfo.type->typeName == TypeName::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->fullQuals, classTy->className);
+    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->qualifiers, classTy->className);
     if (!classInfo) {
       throw runtime_error("MemberAccess::toImExpr");
     }
@@ -399,7 +399,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   }
 
   const Ctx::FnInfo* fnInfo =
-      ctx.lookupMethod(classTy->fullQuals, classTy->className, methodName_, paramTypes, line_);
+      ctx.lookupMethod(classTy->qualifiers, classTy->className, methodName_, paramTypes, line_);
   if (!fnInfo) {
     // Undefined function
     return dummyInfo();

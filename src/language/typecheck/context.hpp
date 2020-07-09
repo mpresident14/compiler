@@ -11,7 +11,6 @@
 #include <variant>
 #include <vector>
 
-class CtxTree;
 
 class Ctx {
 public:

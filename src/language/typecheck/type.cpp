@@ -11,10 +11,10 @@ using namespace std;
 Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 
 Class::Class(std::vector<std::string>&& quals, std::string_view name)
-    : Type(TypeName::CLASS, 8), fullQuals(move(quals)), className(name) {}
+    : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
 
 Class::Class(string_view name, string_view declFile)
-    : Type(TypeName::CLASS, 8), fullQuals(splitPath(declFile)), className(name) {}
+    : Type(TypeName::CLASS, 8), qualifiers(splitPath(declFile)), className(name) {}
 
 
 string Type::getId(const unordered_map<string, string>&) const {
