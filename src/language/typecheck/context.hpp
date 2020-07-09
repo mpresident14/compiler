@@ -45,16 +45,19 @@ public:
 
   enum class LookupStatus { FOUND, UNDEFINED, AMBIG_OVERLOAD, NARROWING, BAD_QUALS, AMBIG_QUALS };
 
+
+  template <typename T>
   struct LookupRes {
-    LookupStatus res;
-    /* The context to be searched (CtxTree only), candidate overloads, ClassInfo, or candidates for
-     * ambiguous qualifiers */
-    std::
-        variant<Ctx*, std::vector<const FnInfo*>, const ClassInfo*, std::vector<const std::string*>>
-            candidates;
+    LookupStatus status;
+    /* Either the result or candidates for ambiguous qualifiers */
+    std::variant<T, std::vector<const std::string*>> result;
     /* Searched file or prefix for ambiguous qualifiers */
     std::string searchedPath;
   };
+
+  using FnLookupRes = LookupRes<std::vector<const FnInfo*>>;
+  using ClsLookupRes = LookupRes<const ClassInfo*>;
+  using CtxLookupRes = LookupRes<Ctx*>;
 
   /*
    * Name resolution happens as follows:
@@ -89,14 +92,14 @@ public:
 
     /* Return true if successfully added, false if already exists */
     bool addCtx(std::string_view importPath, Ctx* ctx);
-    LookupRes lookupFn(
+    FnLookupRes lookupFn(
         const std::vector<std::string> qualifiers,
         const std::string& name,
         const std::vector<TypePtr>& paramTypes) const;
-    LookupRes lookupClass(const std::vector<std::string> qualifiers, const std::string& name) const;
+    ClsLookupRes lookupClass(const std::vector<std::string> qualifiers, const std::string& name) const;
 
   private:
-    LookupRes lookupCtx(const std::vector<std::string> qualifiers) const;
+    CtxLookupRes lookupCtx(const std::vector<std::string> qualifiers) const;
     /* The roots specify .prez files that were imported
      * Each level down in the context tree represents a level up in the
      * directory tree */
@@ -128,7 +131,7 @@ public:
       std::unordered_multimap<std::string, Ctx::FnInfo>&& methods,
       std::unordered_map<std::string, Ctx::FieldInfo>&& fields);
   /* Only searches this context */
-  LookupRes lookupClass(const std::string& name);
+  ClsLookupRes lookupClass(const std::string& name);
   /* Also searches context tree, nullptr if it doesn't exist */
   const ClassInfo*
   lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
@@ -150,7 +153,7 @@ public:
       const TypePtr& returnType,
       size_t line);
   /* Only searches this context */
-  LookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
+  FnLookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
@@ -175,12 +178,12 @@ public:
 private:
   const VarInfo* lookupTempVar(const std::string& name);
   void removeTemp(const std::string& var, size_t line);
-  LookupRes lookupFn(
+  FnLookupRes lookupFn(
       const std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes);
   const FnInfo* handleFnLookupRes(
-      const LookupRes& lookupRes,
+      const FnLookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
@@ -214,6 +217,11 @@ private:
   void warnNarrow(
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
+      size_t line);
+  const ClassInfo* handleClassLookupRes(
+      const ClsLookupRes& lookupRes,
+      const std::vector<std::string>& qualifiers,
+      const std::string& name,
       size_t line);
   void undefinedClass(
       const std::vector<std::string>& qualifiers,

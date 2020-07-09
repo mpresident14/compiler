@@ -38,9 +38,7 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 }
 
 
-Ctx::Ctx(
-    string_view filename,
-    const shared_ptr<unordered_map<string, string>>& fileIds)
+Ctx::Ctx(string_view filename, const shared_ptr<unordered_map<string, string>>& fileIds)
     : filename_(filename), logger(filename), fileIds_(fileIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
@@ -112,15 +110,15 @@ void Ctx::insertClass(
     unordered_multimap<string, Ctx::FnInfo>&& methods,
     unordered_map<string, Ctx::FieldInfo>&& fields) {
   // We already check for redefinitions in Class::addToContext
-  classMap_.emplace(name, ClassInfo{ move(methods), move(fields), filename_, newTypeId()});
+  classMap_.emplace(name, ClassInfo{ move(methods), move(fields), filename_, newTypeId() });
 }
 
-Ctx::LookupRes Ctx::lookupClass(const string& name) {
+Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
   auto iter = classMap_.find(name);
   if (iter == classMap_.end()) {
-    return { LookupStatus::UNDEFINED, (const ClassInfo*) nullptr, "" };
+    return { LookupStatus::UNDEFINED, nullptr, filename_ };
   }
-  return { LookupStatus::FOUND, &iter->second, "" };
+  return { LookupStatus::FOUND, &iter->second, filename_ };
 }
 
 const Ctx::ClassInfo*
@@ -128,9 +126,49 @@ Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t
   LookupRes lookupRes =
       qualifiers.empty() ? lookupClass(name) : ctxTree_.lookupClass(qualifiers, name);
 
-  switch (lookupRes.res) {
+  return handleClassLookupRes(lookupRes, qualifiers, name, line);
+}
+
+
+const Ctx::FnInfo* Ctx::lookupMethod(
+    const vector<string>& qualifiers,
+    const string& className,
+    const string& methodName,
+    const vector<TypePtr>& paramTypes,
+    size_t line) {
+  // The only way this will not be FOUND is if the object that was created was not a valid type.
+  // If this is the case, the error was already logged, so we don't want to log an error for every
+  // method invocation on this object. Thus, we don't use lookupClassRec.
+  LookupRes classLookup =
+      qualifiers.empty() ? lookupClass(className) : ctxTree_.lookupClass(qualifiers, className);
+  if (classLookup.status != LookupStatus::FOUND) {
+    return nullptr;
+  }
+
+  const ClassInfo* classInfo = get<const ClassInfo*>(classLookup.result);
+  if (!classInfo) {
+    return nullptr;
+  }
+
+  LookupRes methodLookup = lookupFn(classInfo->methods, methodName, paramTypes);
+  methodLookup.searchedPath = classInfo->declFile;
+  return handleFnLookupRes(
+      methodLookup,
+      qualifiers,
+      string(className).append("::").append(methodName),
+      paramTypes,
+      line);
+}
+
+
+const Ctx::ClassInfo* Ctx::handleClassLookupRes(
+    const ClsLookupRes& lookupRes,
+    const vector<string>& qualifiers,
+    const string& name,
+    size_t line) {
+  switch (lookupRes.status) {
     case LookupStatus::FOUND:
-      return get<const ClassInfo*>(lookupRes.candidates);
+      return get<const ClassInfo*>(lookupRes.result);
     case LookupStatus::UNDEFINED:
       undefinedClass(qualifiers, name, line, lookupRes.searchedPath);
       return nullptr;
@@ -142,28 +180,12 @@ Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t
           qualifiers,
           name,
           line,
-          get<std::vector<const std::string*>>(lookupRes.candidates),
+          get<vector<const string*>>(lookupRes.result),
           lookupRes.searchedPath);
       return nullptr;
     default:
       throw invalid_argument("Ctx::lookupClassRec");
   }
-}
-
-const Ctx::FnInfo* Ctx::lookupMethod(
-    const std::vector<std::string>& qualifiers,
-    const std::string& className,
-    const std::string& methodName,
-    const std::vector<TypePtr>& paramTypes,
-    size_t line) {
-  const ClassInfo* classInfo = lookupClassRec(qualifiers, className, line);
-  if (!classInfo) {
-    return nullptr;
-  }
-
-  LookupRes lookupRes = lookupFn(classInfo->methods, methodName, paramTypes);
-  lookupRes.searchedPath = classInfo->declFile;
-  return handleFnLookupRes(lookupRes, qualifiers, string(className).append("::").append(methodName), paramTypes, line);
 }
 
 void Ctx::insertFn(
@@ -195,12 +217,12 @@ void Ctx::insertFn(
   funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
 }
 
-Ctx::LookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
+Ctx::FnLookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
   return lookupFn(fnMap_, name, paramTypes);
 }
 
-Ctx::LookupRes Ctx::lookupFn(
-    const std::unordered_multimap<std::string, FnInfo>& funcMap,
+Ctx::FnLookupRes Ctx::lookupFn(
+    const unordered_multimap<string, FnInfo>& funcMap,
     const string& name,
     const vector<TypePtr>& paramTypes) {
   vector<const FnInfo*> wideMatches;
@@ -212,7 +234,7 @@ Ctx::LookupRes Ctx::lookupFn(
     bool isNarrowing = false;
     if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       // Exact match
-      return { LookupStatus::FOUND, { vector<const FnInfo*>{ &iter->second } }, filename_ };
+      return { LookupStatus::FOUND, vector<const FnInfo*>{ &iter->second }, filename_ };
     } else if (equal(
                    paramTypes.cbegin(),
                    paramTypes.cend(),
@@ -238,7 +260,7 @@ Ctx::LookupRes Ctx::lookupFn(
   // Only try narrowing matches if there are no widening matches
   const vector<const FnInfo*>* matchVec = wideMatches.empty() ? &narrowMatches : &wideMatches;
   if (matchVec->size() > 1) {
-    return { LookupStatus::AMBIG_OVERLOAD, { move(*matchVec) }, filename_ };
+    return { LookupStatus::AMBIG_OVERLOAD, move(*matchVec), filename_ };
   } else if (matchVec->size() == 1) {
     return { matchVec == &narrowMatches ? LookupStatus::NARROWING : LookupStatus::FOUND,
              { move(*matchVec) },
@@ -266,14 +288,14 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
 }
 
 const Ctx::FnInfo* Ctx::handleFnLookupRes(
-    const LookupRes& lookupRes,
-    const std::vector<std::string>& qualifiers,
-    const std::string& name,
-    const std::vector<TypePtr>& paramTypes,
+    const FnLookupRes& lookupRes,
+    const vector<string>& qualifiers,
+    const string& name,
+    const vector<TypePtr>& paramTypes,
     size_t line) {
-  switch (lookupRes.res) {
+  switch (lookupRes.status) {
     case LookupStatus::NARROWING: {
-      const FnInfo* fnInfo = get<std::vector<const FnInfo*>>(lookupRes.candidates).front();
+      const FnInfo* fnInfo = get<vector<const FnInfo*>>(lookupRes.result).front();
       // This function duplicates some work we already did, but it would take
       // more effort to keep track of the narrowing conversions as we search for
       // a feasible overload
@@ -281,14 +303,14 @@ const Ctx::FnInfo* Ctx::handleFnLookupRes(
       return fnInfo;
     }
     case LookupStatus::FOUND:
-      return get<std::vector<const FnInfo*>>(lookupRes.candidates).front();
+      return get<vector<const FnInfo*>>(lookupRes.result).front();
     case LookupStatus::AMBIG_OVERLOAD:
       ambigOverload(
           qualifiers,
           name,
           paramTypes,
           line,
-          get<std::vector<const FnInfo*>>(lookupRes.candidates),
+          get<vector<const FnInfo*>>(lookupRes.result),
           lookupRes.searchedPath);
       return nullptr;
     case LookupStatus::UNDEFINED:
@@ -297,7 +319,7 @@ const Ctx::FnInfo* Ctx::handleFnLookupRes(
           name,
           paramTypes,
           line,
-          get<std::vector<const FnInfo*>>(lookupRes.candidates),
+          get<vector<const FnInfo*>>(lookupRes.result),
           lookupRes.searchedPath);
       return nullptr;
     case LookupStatus::BAD_QUALS:
@@ -309,7 +331,7 @@ const Ctx::FnInfo* Ctx::handleFnLookupRes(
           name,
           paramTypes,
           line,
-          get<std::vector<const std::string*>>(lookupRes.candidates),
+          get<vector<const string*>>(lookupRes.result),
           lookupRes.searchedPath);
       return nullptr;
     default:
@@ -401,30 +423,27 @@ void Ctx::warnNarrow(
 
 
 void Ctx::undefinedClass(
-    const std::vector<std::string>& qualifiers,
-    std::string_view className,
+    const vector<string>& qualifiers,
+    string_view className,
     size_t line,
-    std::string_view searchedFile) {
+    string_view searchedFile) {
   ostream& err = logger.logError(line);
   err << "Class '" << qualifiedName(qualifiers, className) << "' is not defined in "
       << searchedFile;
 }
 
-void Ctx::undefClassBadQuals(
-    const std::vector<std::string>& qualifiers,
-    std::string_view className,
-    size_t line) {
+void Ctx::undefClassBadQuals(const vector<string>& qualifiers, string_view className, size_t line) {
   ostream& err = logger.logError(line);
   err << "Undefined class '" << qualifiedName(qualifiers, className)
       << "'. No imported file matches qualifiers.";
 }
 
 void Ctx::undefClassAmbigQuals(
-    const std::vector<std::string>& qualifiers,
-    std::string_view className,
+    const vector<string>& qualifiers,
+    string_view className,
     size_t line,
-    const std::vector<const std::string*> candidates,
-    std::string_view searchedPath) {
+    const vector<const string*> candidates,
+    string_view searchedPath) {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << qualifiedName(qualifiers, className) << "'. Found";
   for (const string* cand : candidates) {

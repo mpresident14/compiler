@@ -24,6 +24,6 @@ void main() {
   other_file::Rectangle r1 = import_test::other_file::Rectangle(1, 3);
   print(r1.perimeter());
 
-  file::Rectangle r2 = import_test::file::Rectangle(3, 3);
+  import_test::file::Rectangle r2 = import_test::file::Rectangle(3, 3);
   print(r2.area());
 }

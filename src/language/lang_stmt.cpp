@@ -97,10 +97,10 @@ void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  *******/
 
 For::For(
-    std::unique_ptr<VarDecl>&& varDecl,
+    unique_ptr<VarDecl>&& varDecl,
     ExprPtr&& boolE,
     StmtPtr&& update,
-    std::unique_ptr<Block>&& body,
+    unique_ptr<Block>&& body,
     size_t line)
     : Stmt(line),
       varDecl_(move(varDecl)),
@@ -186,11 +186,11 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
  * Update *
  **********/
 
-std::unique_ptr<im::MemDeref> Update::derefTemp(int temp, u_char numBytes) {
+unique_ptr<im::MemDeref> Update::derefTemp(int temp, u_char numBytes) {
   return make_unique<im::MemDeref>(0, make_unique<im::Temp>(temp), nullptr, numBytes);
 }
 
-std::unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref) {
+unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref) {
   return make_unique<im::Assign>(
       make_unique<im::Temp>(temp),
       make_unique<im::Leaq>(

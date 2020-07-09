@@ -50,43 +50,49 @@ bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
 }
 
 
-Ctx::LookupRes Ctx::CtxTree::lookupFn(
+Ctx::FnLookupRes Ctx::CtxTree::lookupFn(
     const vector<string> qualifiers,
     const string& name,
     const vector<TypePtr>& paramTypes) const {
-  LookupRes ctxLookup = lookupCtx(qualifiers);
-  if (ctxLookup.res == LookupStatus::FOUND) {
-    LookupRes fnLookup = get<Ctx*>(ctxLookup.candidates)->lookupFn(name, paramTypes);
-    if (fnLookup.res != LookupStatus::FOUND) {
+  CtxLookupRes ctxLookup = lookupCtx(qualifiers);
+  if (ctxLookup.status == LookupStatus::FOUND) {
+    FnLookupRes fnLookup = get<Ctx*>(ctxLookup.result)->lookupFn(name, paramTypes);
+    if (fnLookup.status != LookupStatus::FOUND) {
       fnLookup.searchedPath = ctxLookup.searchedPath;
     }
     return fnLookup;
   } else {
-    if (ctxLookup.res != LookupStatus::AMBIG_QUALS) {
-      ctxLookup.candidates = std::vector<const FnInfo*>();
+    if (holds_alternative<vector<const string*>>(ctxLookup.result)) {
+      return { ctxLookup.status,
+               move(get<vector<const string*>>(ctxLookup.result)),
+               move(ctxLookup.searchedPath) };
     }
-    return ctxLookup;
+    return { ctxLookup.status, vector<const FnInfo*>(), move(ctxLookup.searchedPath) };
   }
 }
 
 
-Ctx::LookupRes Ctx::CtxTree::lookupClass(
-    const std::vector<std::string> qualifiers,
-    const std::string& name) const {
-  LookupRes ctxLookup = lookupCtx(qualifiers);
-  if (ctxLookup.res == LookupStatus::FOUND) {
-    LookupRes classLookup = get<Ctx*>(ctxLookup.candidates)->lookupClass(name);
-    if (classLookup.res != LookupStatus::FOUND) {
+Ctx::ClsLookupRes Ctx::CtxTree::lookupClass(const vector<string> qualifiers, const string& name)
+    const {
+  CtxLookupRes ctxLookup = lookupCtx(qualifiers);
+  if (ctxLookup.status == LookupStatus::FOUND) {
+    ClsLookupRes classLookup = get<Ctx*>(ctxLookup.result)->lookupClass(name);
+    if (classLookup.status != LookupStatus::FOUND) {
       classLookup.searchedPath = ctxLookup.searchedPath;
     }
     return classLookup;
   } else {
-    return ctxLookup;
+    if (holds_alternative<vector<const string*>>(ctxLookup.result)) {
+      return { ctxLookup.status,
+               move(get<vector<const string*>>(ctxLookup.result)),
+               move(ctxLookup.searchedPath) };
+    }
+    return { ctxLookup.status, nullptr, move(ctxLookup.searchedPath) };
   }
 }
 
 
-Ctx::LookupRes Ctx::CtxTree::lookupCtx(const std::vector<std::string> qualifiers) const {
+Ctx::CtxLookupRes Ctx::CtxTree::lookupCtx(const vector<string> qualifiers) const {
   list<string> filepath;
   if (qualifiers.empty()) {
     throw runtime_error("Ctx::CtxTree::lookupCtx");
@@ -100,7 +106,7 @@ Ctx::LookupRes Ctx::CtxTree::lookupCtx(const std::vector<std::string> qualifiers
     auto iter = currentMap->find(part);
     if (iter == currentMap->end()) {
       // Qualifiers point to file that was not imported
-      return { LookupStatus::BAD_QUALS, (Ctx*)nullptr, "" };
+      return { LookupStatus::BAD_QUALS, nullptr, "" };
     }
 
     child = iter->second.get();
@@ -125,11 +131,11 @@ Ctx::LookupRes Ctx::CtxTree::lookupCtx(const std::vector<std::string> qualifiers
 
     if (currentMap->size() > 1) {
       // Qualifiers are ambiguous based on imports
-      vector<const string*> candidates;
+      vector<const string*> result;
       for (const auto& [part, _] : *currentMap) {
-        candidates.push_back(&part);
+        result.push_back(&part);
       }
-      return { LookupStatus::AMBIG_QUALS, move(candidates), boost::join(filepath, "::") };
+      return { LookupStatus::AMBIG_QUALS, move(result), boost::join(filepath, "::") };
     }
 
     const auto iter = currentMap->cbegin();

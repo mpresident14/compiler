@@ -144,7 +144,7 @@ void Func::checkForReturn(Ctx& ctx) {
 
 
 // TODO: Here, in VarDecl, and in Class fields: make sure Class types are actual types
-std::vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
+vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
   // Insert all the parameters as variables
   // Move parameters from argument registers into temporaries
@@ -186,7 +186,7 @@ Constructor::Constructor(
     : Func(nullptr, name, move(params), move(body), line) {}
 
 
-void Constructor::toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
 
@@ -238,7 +238,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         ctors_.push_back(move(get<Constructor>(elem.elem)));
         break;
       case ClassElem::Type::METHOD:
-        methods_.push_back(move(get<std::unique_ptr<Func>>(elem.elem)));
+        methods_.push_back(move(get<unique_ptr<Func>>(elem.elem)));
         break;
       default:
         throw runtime_error("ClassDecl::ClassDecl");
@@ -251,7 +251,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
-  if (ctx.lookupClass(name_).res == Ctx::LookupStatus::FOUND) {
+  if (ctx.lookupClass(name_).status == Ctx::LookupStatus::FOUND) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << "Redefinition of class " << name_;
     return;
@@ -276,7 +276,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   }
 
   // We are inside the same file as the class declaration, so no qualifiers
-  std::shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
+  shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
 
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {

@@ -12,7 +12,7 @@ using namespace std;
 
 Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 
-Class::Class(std::vector<std::string>&& quals, std::string_view name)
+Class::Class(vector<string>&& quals, string_view name)
     : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
 
 string Type::getId() const {
