@@ -16,4 +16,10 @@ void main() {
   file::func();
   subfolder::file::func(4);
   func(true || false);
+
+  other_file::Rectangle r1 = Rectangle(1, 3);
+  print(r1.perimeter());
+
+  file::Rectangle r2 = folder::subfolder::file::Rectangle(3, 3);
+  print(r2.area());
 }

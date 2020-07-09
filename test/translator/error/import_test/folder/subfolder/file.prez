@@ -6,3 +6,16 @@ int func() {
   return 7;
 }
 
+class Rectangle {
+  long length;
+  long width;
+
+  Rectangle(long len, long wid) {
+    this.length = len;
+    this.width = wid;
+  }
+
+  long area() {
+    return this.length * this.width;
+  }
+}

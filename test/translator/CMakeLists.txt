@@ -130,7 +130,9 @@ error_test(bad_import_test
     ('Error','15','Undefined')
     ('Error','16','Ambiguous')
     ('Error','17','Ambiguous')
-    ('Error','18','Undefined')")
+    ('Error','18','Undefined')
+    ('Error','20','Undefined')
+    ('Error','23','Ambiguous')")
 error_test(narrowing_test
     "('Warning','2','Narrowing')
     ('Warning','6','Narrowing')
