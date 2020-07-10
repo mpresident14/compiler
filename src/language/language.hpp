@@ -19,10 +19,12 @@ namespace language {
 
 class Decl {
 public:
+  enum class Category { CLASS, FUNC };
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&, Ctx&) = 0;
   virtual void addToContext(Ctx& ctx) = 0;
+  virtual Category getCategory() const noexcept = 0;
 
   size_t line_;
 };
@@ -138,6 +140,8 @@ public:
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
+  Category getCategory() const noexcept override { return Category::FUNC; }
+  void checkTypes(Ctx& ctx) const;
 
   TypePtr returnType_;
   std::string name_;
@@ -188,11 +192,13 @@ public:
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToContext(Ctx& ctx) override;
+  Category getCategory() const noexcept override { return Category::CLASS; }
 
   std::string name_;
   std::vector<Field> fields_;
   std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> methods_;
+  size_t id_;
 };
 
 /***********
@@ -221,7 +227,8 @@ public:
   im::Program toImProg() const;
 
   std::vector<Import> imports_;
-  std::vector<DeclPtr> decls_;
+  std::vector<std::unique_ptr<ClassDecl>> classes_;
+  std::vector<std::unique_ptr<Func>> funcs_;
   std::shared_ptr<Ctx> ctx_;
 };
 

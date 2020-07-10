@@ -25,10 +25,21 @@ void Program::setImportPath(string_view importPath) {
 
 // TODO: Imports should be relative to the file in which they were declared, not to the working
 // directory where the compiler exe was called
-
+// TODO: When we use an absolute path as the main file, it will compile the main file twice if a
+// relative import is used in another file.
+// Ex: mpresident@mpresident-XPS-15-9550:~/cs/compiler/test/translator/success$
+// ~/cs/compiler/bin/main
+// ~/cs/compiler/test/translator/success/import_test.prez ~/cs/compiler/log/import_test.s
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
-    : imports_(move(imports)), decls_(move(decls)), ctx_(nullptr) {
+    : imports_(move(imports)), ctx_(nullptr) {
   imports_.push_back({ importDir + "/to_string.prez", 0 });
+  for (DeclPtr& decl : decls) {
+    if (decl->getCategory() == Decl::Category::CLASS) {
+      classes_.emplace_back(static_cast<ClassDecl*>(decl.release()));
+    } else {
+      funcs_.emplace_back(static_cast<Func*>(decl.release()));
+    }
+  }
 }
 
 
@@ -74,9 +85,14 @@ void Program::initContext(
     }
   }
 
-  // Add this program's declarations to its own context
-  for (const DeclPtr& decl : decls_) {
-    decl->addToContext(*ctx_);
+  // Add this program's declarations to its own context. We add class names before functions/methods
+  // so that parameters and return types that are classes will already be in the context.
+  for (const std::unique_ptr<ClassDecl>& cls : classes_) {
+    ctx_->addClassId(cls->name_, cls->id_, cls->line_);
+    cls->addToContext(*ctx_);
+  }
+  for (const std::unique_ptr<Func>& fn : funcs_) {
+    fn->addToContext(*ctx_);
   }
 }
 
@@ -85,8 +101,11 @@ assem::Program Program::toAssemProg() const { return toImProg().toAssemProg(); }
 
 im::Program Program::toImProg() const {
   vector<im::DeclPtr> imDecls;
-  for (const DeclPtr& decl : decls_) {
-    decl->toImDecls(imDecls, *ctx_);
+  for (const unique_ptr<ClassDecl>& cls : classes_) {
+    cls->toImDecls(imDecls, *ctx_);
+  }
+  for (const unique_ptr<Func>& fn : funcs_) {
+    fn->toImDecls(imDecls, *ctx_);
   }
   return im::Program(move(imDecls));
 }
@@ -112,8 +131,17 @@ Func::Func(
 }
 
 
-void Func::addToContext(Ctx& ctx) { ctx.insertFn(name_, paramTypes_, returnType_, line_); }
+void Func::addToContext(Ctx& ctx) {
+  checkTypes(ctx);
+  ctx.insertFn(name_, paramTypes_, returnType_, line_);
+}
 
+void Func::checkTypes(Ctx& ctx) const {
+  ctx.checkType(*returnType_, line_);
+  for (const TypePtr& type : paramTypes_) {
+    ctx.checkType(*type, line_);
+  }
+}
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.checkType(*returnType_, line_);
@@ -221,6 +249,15 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
  * Class *
  *********/
 
+namespace {
+
+  int newTypeId() {
+    static int i = 0;
+    return i++;
+  }
+
+}  // namespace
+
 const string ClassDecl::THIS = "this";
 
 string ClassDecl::mangleMethod(string_view className, string_view fnName) {
@@ -228,7 +265,7 @@ string ClassDecl::mangleMethod(string_view className, string_view fnName) {
 }
 
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
-    : Decl(line), name_(name) {
+    : Decl(line), name_(name), id_(newTypeId()) {
   for (ClassElem& elem : classElems) {
     switch (elem.type) {
       case ClassElem::Type::FIELD:
@@ -250,12 +287,6 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 void ClassDecl::addToContext(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
-
-  if (ctx.lookupClass(name_).status == Ctx::LookupStatus::FOUND) {
-    ostringstream& err = ctx.getLogger().logError(line_);
-    err << "Redefinition of class " << name_;
-    return;
-  }
 
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
   sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
@@ -294,6 +325,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
   // Add methods
   unordered_multimap<string, Ctx::FnInfo> methodMap;
   for (unique_ptr<Func>& method : methods_) {
+    method->checkTypes(ctx);
     ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);

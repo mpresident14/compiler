@@ -18,11 +18,6 @@ string newFileId() {
   return to_string(i++);
 }
 
-int newTypeId() {
-  static int i = 0;
-  return i++;
-}
-
 }  // namespace
 
 
@@ -109,8 +104,13 @@ void Ctx::insertClass(
     const string& name,
     unordered_multimap<string, Ctx::FnInfo>&& methods,
     unordered_map<string, Ctx::FieldInfo>&& fields) {
-  // We already check for redefinitions in Class::addToContext
-  classMap_.emplace(name, ClassInfo{ move(methods), move(fields), filename_, newTypeId() });
+  auto iter = classMap_.find(name);
+  if (iter == classMap_.end()) {
+    throw runtime_error("Ctx::addClassId should be called before Ctx::insertClass");
+  }
+
+  iter->second.methods = move(methods);
+  iter->second.fields = move(fields);
 }
 
 Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
@@ -487,6 +487,13 @@ Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>&
     return newName;
   } else {
     return string(fnName);
+  }
+}
+
+void Ctx::addClassId(std::string_view className, int id, size_t line) {
+  if (!classMap_.emplace(className, ClassInfo{ {},  {}, filename_, id }).second) {
+    ostringstream& err = logger.logError(line);
+    err << "Redefinition of class " << className;
   }
 }
 

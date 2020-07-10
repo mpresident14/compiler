@@ -169,6 +169,7 @@ public:
       std::string_view fnName,
       const std::string& filename,
       const std::vector<TypePtr>& paramTypes);
+  void addClassId(std::string_view className, int id, size_t line);
   void addFileId(std::string_view filename);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
@@ -241,7 +242,7 @@ private:
 
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_multimap<std::string, FnInfo> fnMap_;
-  std::unordered_multimap<std::string, ClassInfo> classMap_;
+  std::unordered_map<std::string, ClassInfo> classMap_;
   TypePtr currentRetType_;
   std::string filename_;
   Logger logger;

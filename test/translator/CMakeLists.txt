@@ -85,7 +85,7 @@ success_test(incdec_test "2,3,3,2,1,4,4,5,4,20,5,26,6")
 success_test(class_test "5,5,4,4,1,1,2,2,3,18")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
-success_test(import_test "1,2,3,4,5,6,7,8,9" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
+success_test(import_test "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
 
 error_test(redef_test
     "('Error','2','Redefinition')
