@@ -4,7 +4,7 @@
 
 inline std::string newLabel() {
   static int i = 0;
-  return "L" + std::to_string(i++);
+  return "_L" + std::to_string(i++);
 }
 
 std::vector<std::string> splitPath(std::string_view importPath);
