@@ -23,7 +23,7 @@ public:
   constexpr Decl(size_t line) : line_(line) {}
   virtual ~Decl() {}
   virtual void toImDecls(std::vector<im::DeclPtr>&, Ctx&) = 0;
-  virtual void addToContext(Ctx& ctx) = 0;
+  virtual void addToCtx(Ctx& ctx) = 0;
   virtual Category getCategory() const noexcept = 0;
 
   size_t line_;
@@ -139,7 +139,7 @@ public:
       std::unique_ptr<Block>&& body,
       size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
-  void addToContext(Ctx& ctx) override;
+  void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
 
@@ -191,7 +191,7 @@ public:
 
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
-  void addToContext(Ctx& ctx) override;
+  void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::CLASS; }
 
   std::string name_;

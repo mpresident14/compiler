@@ -89,10 +89,10 @@ void Program::initContext(
   // so that parameters and return types that are classes will already be in the context.
   for (const std::unique_ptr<ClassDecl>& cls : classes_) {
     ctx_->addClassId(cls->name_, cls->id_, cls->line_);
-    cls->addToContext(*ctx_);
+    cls->addToCtx(*ctx_);
   }
   for (const std::unique_ptr<Func>& fn : funcs_) {
-    fn->addToContext(*ctx_);
+    fn->addToCtx(*ctx_);
   }
 }
 
@@ -131,7 +131,7 @@ Func::Func(
 }
 
 
-void Func::addToContext(Ctx& ctx) {
+void Func::addToCtx(Ctx& ctx) {
   checkTypes(ctx);
   ctx.insertFn(name_, paramTypes_, returnType_, line_);
 }
@@ -171,7 +171,6 @@ void Func::checkForReturn(Ctx& ctx) {
 }
 
 
-// TODO: Here, in VarDecl, and in Class fields: make sure Class types are actual types
 vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
   // Insert all the parameters as variables
@@ -284,7 +283,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 }
 
 
-void ClassDecl::addToContext(Ctx& ctx) {
+void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
@@ -319,7 +318,7 @@ void ClassDecl::addToContext(Ctx& ctx) {
     }
     ctor.objSize_ = objSize;
     ctor.returnType_ = classTy;
-    ctor.addToContext(ctx);
+    ctor.addToCtx(ctx);
   }
 
   // Add methods
