@@ -27,7 +27,7 @@ void main() {
   import_test::file::Rectangle r2 = import_test::file::Rectangle(3, 3);
   print(r2.area());
 
-  print(scale(r1, long(2)).perimeter());
+  print(scale(r1, 2).perimeter());
 }
 
 

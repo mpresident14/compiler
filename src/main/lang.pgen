@@ -221,6 +221,11 @@ ElseStmt -> { StmtPtr }
    | IF LPAREN Expr RPAREN Block ELSE ElseStmt   % make_unique<If>(move(#2), move(#4), move(#6), #line) %
 
 Expr -> { ExprPtr }
+  := ExprNoVar                                  % move(#0) %
+   | IDENT                                      % make_unique<Var>(#0, #line) %
+
+// To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
+ExprNoVar -> { ExprPtr }
   := NUM                                        % make_unique<ConstInt>(#0, #line) %
    | HEXNUM                                     % make_unique<ConstInt>(#0, #line) %
    | TRUE                                       % make_unique<ConstBool>(true, #line) %
@@ -247,16 +252,19 @@ Expr -> { ExprPtr }
    | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
    | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
    | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | NonVoidType LPAREN Expr RPAREN             % make_unique<Cast>(move(#0), move(#2), #line) %
+   | LPAREN NonVoidTypeNoIdent RPAREN Expr      % make_unique<Cast>(move(#1), move(#3), #line) %
+   | LPAREN IDENT RPAREN Expr                   % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
+   // This syntax is used to avoid conflict between indexing "arr[index]" and a new array "MyClass[len]"
    | NonVoidType LRBRACKET
      LPAREN Expr RPAREN                         % make_unique<NewArray>(move(#0), move(#3), #line) %
    | NonVoidType LRBRACKET LBRACE Exprs RBRACE  % make_unique<NewArray>(move(#0), move(#3), #line) %
    | StmtExpr                                   % move(#0) %
-   | LPAREN Expr RPAREN                         % move(#1) %
+   | LPAREN ExprNoVar RPAREN                    % move(#1) %
+   | LPAREN IDENT RPAREN                        % make_unique<Var>(#1, #line) %
    // lvalues
-   | IDENT                                      % make_unique<Var>(#0, #line) %
    | Expr LBRACKET Expr RBRACKET                % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
    | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2, #line) %
+
 
 ForUpdate -> { StmtPtr }
   := UpdateStmt                                 % move(#0) %
@@ -304,13 +312,17 @@ Param -> { pair<TypePtr, string> }
   := NonVoidType IDENT         % { move(#0), #1 } %
 
 NonVoidType -> { TypePtr }
+  := NonVoidTypeNoIdent     % move(#0) %
+   | IDENT                  % make_shared<Class>(vector<string>(), move(#0)) %
+
+// To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
+NonVoidTypeNoIdent -> { TypePtr }
   := LONG                   % longType %
    | INT                    % intType %
    | SHORT                  % shortType %
    | CHAR                   % charType %
    | BOOL                   % boolType %
    | NonVoidType LRBRACKET  % make_shared<Array>(move(#0)) %
-   | IDENT                  % make_shared<Class>(vector<string>(), move(#0)) %
    | Qualifiers IDENT       % make_shared<Class>(move(#0), move(#1)) %
 
 Qualifiers -> { vector<string> }

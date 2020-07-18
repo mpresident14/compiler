@@ -1,23 +1,23 @@
 char f(short s) {
-  return char(s);
+  return (char)s;
 }
 
 void main() {
   int n = 33;
-  char c = char(n);
+  char c = (char)n;
   print(c);
 
   long l = n;
-  c = f(short(l));
+  c = f((short)l);
   print(c);
 
   char[] cArr = char[](1);
-  cArr[0] = char(0xF0F); // Narrows to 0x0F = 15
-  print(int(cArr[0]));
-  print(long(6));
-  print(short(6));
+  cArr[0] = (char)0xF0F; // Narrows to 0x0F = 15
+  print((int)cArr[0]);
+  print((long)6);
+  print((short)6);
 
   l = 0xFFFF1000;
-  short s = short(l);
+  short s = (short)l;
   print(s);
 }
