@@ -270,8 +270,7 @@ ExprInfo NewArray::toImExprElems(Ctx& ctx) {
            make_unique<Array>(type_) };
 }
 
-pair<vector<im::StmtPtr>, int>
-NewArray::makeArrayStmts(Type& type, ExprPtr&& numElems, Ctx& ctx) {
+pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(Type& type, ExprPtr&& numElems, Ctx& ctx) {
   ctx.checkType(type, line_);
   int tLen = newTemp();
 
@@ -354,7 +353,8 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   } else if (eInfo.type->typeName == TypeName::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-    const Ctx::ClassInfo* classInfo = ctx.lookupClassRec(classTy->qualifiers, classTy->className, line_);
+    const Ctx::ClassInfo* classInfo =
+        ctx.lookupClassRec(classTy->qualifiers, classTy->className, line_);
     if (!classInfo) {
       throw runtime_error("MemberAccess::toImExpr");
     }
@@ -408,16 +408,16 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   // Push back "this" as last argument (AFTER the context lookup)
   paramImExprs.push_back(move(eInfo.imExpr));
 
-  // TODO: When we fix the typeId situation, eliminate this copy and just append the typeId to the
-  // end of the mangled function
-  vector<TypePtr> allTypes(fnInfo->paramTypes);
-  allTypes.push_back(eInfo.type);
-
+  // When we mangle the function name, we need to append the type id of the "this" argument at the
+  // end
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(ctx.mangleFn(
-                   ClassDecl::mangleMethod(classTy->className, methodName_),
-                   fnInfo->declFile,
-                   allTypes)),
+               make_unique<im::LabelAddr>(
+                   ctx.mangleFn(
+                          ClassDecl::mangleMethod(classTy->className, methodName_),
+                          fnInfo->declFile,
+                          fnInfo->paramTypes)
+                       .append("_")
+                       .append(classTy->getId())),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
