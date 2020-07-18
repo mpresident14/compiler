@@ -213,8 +213,6 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
  * Cast *
  ********/
 
-bool Cast::isLValue() const noexcept { return expr_->isLValue(); }
-
 ExprInfo Cast::toImExpr(Ctx& ctx) {
   ctx.checkType(*toType_, line_);
   ExprInfo eInfo = expr_->toImExpr(ctx);
@@ -429,8 +427,13 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
  * IncDec *
  **********/
 
-// TODO(BUG): Fails with ((int) var)++;"
 ExprInfo IncDec::toImExpr(Ctx& ctx) {
+  if (!lValue_->isLValue()) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Operator " << (inc_ ? "++" : "--") << " requires an lvalue.";
+    return dummyInfo();
+  }
+
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
 

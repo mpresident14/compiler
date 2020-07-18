@@ -497,7 +497,6 @@ public:
 class Cast : public Expr {
 public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
-  bool isLValue() const noexcept override;
   Category getCategory() const noexcept override { return Category::CAST; }
   ExprInfo toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;

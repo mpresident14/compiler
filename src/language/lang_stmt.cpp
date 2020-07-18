@@ -162,7 +162,6 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
-// TODO(BUG): Will probably fail with ((int) var)++;"
 // TODO: Add tests for non-lvalue types (also for Update and IncDec)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (!lValue_->isLValue()) {
@@ -204,8 +203,12 @@ Update::Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)), bOp_(bOp) {}
 
 
-// TODO(BUG): Will probably fail with ((int) var)++;"
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
+  if (!lValue_->isLValue()) {
+    ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
+    return;
+  }
+
   if (lValue_->getCategory() == Expr::Category::VAR) {
     ExprPtr lValueClone = lValue_->clone();
     Assign(move(lValueClone), make_unique<BinaryOp>(move(lValue_), move(rhs_), bOp_))

@@ -151,6 +151,7 @@ PLUS MINUS                        #left
 STAR FSLASH MOD                   #left
 UNARY_MINUS BANG                  #nonassoc
 INC DEC PRE_INCDEC                #nonassoc
+CAST                              #nonassoc
 LPAREN LBRACKET DOT               #left
 COLON2                            #left
 
@@ -252,8 +253,9 @@ ExprNoVar -> { ExprPtr }
    | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
    | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
    | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | LPAREN NonVoidTypeNoIdent RPAREN Expr      % make_unique<Cast>(move(#1), move(#3), #line) %
-   | LPAREN IDENT RPAREN Expr                   % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
+   | LPAREN NonVoidTypeNoIdent RPAREN Expr
+     #prec CAST                                 % make_unique<Cast>(move(#1), move(#3), #line) %
+   | LPAREN IDENT RPAREN Expr     #prec CAST    % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
    // This syntax is used to avoid conflict between indexing "arr[index]" and a new array "MyClass[len]"
    | NonVoidType LRBRACKET
      LPAREN Expr RPAREN                         % make_unique<NewArray>(move(#0), move(#3), #line) %
