@@ -151,7 +151,10 @@ error_test(bad_class_test
     ('Error','20','Expected')
     ('Error','22','Undefined')
     ('Error','23','Field')")
-
+error_test(rvalue_assign_test
+    "('Error','7','Operator')
+    ('Error','8','Left')
+    ('Error','9','Left')")
 
 add_custom_target(
     translator_check
