@@ -1,3 +1,39 @@
+class String {
+  char[] arr;
+  long len;
+
+  String(char[] arr, bool literal) {
+    if (literal) {
+      this.arr = arr;
+      this.len = arr.length;
+    } else {
+      long len = arr.length;
+      this.arr = char[](len);
+      for (long i = 0; i < len; ++i) {
+        this.arr[i] = arr[i];
+      }
+      this.len = len;
+    }
+  }
+
+  String append(char c) {
+    if (this.arr.length == this.len) {
+      this.resize();
+    }
+
+    this.arr[this.len++] = c;
+    return this;
+  }
+
+  void resize() {
+    char[] newArr = char[](this.arr.length * 2);
+    for (long i = 0; i < this.len; ++i) {
+      newArr[i] = this.arr[i];
+    }
+    this.arr = newArr;
+  }
+}
+
 char[] toString(long n) {
   if (n == 0) {
     char[] str = char[](1);
