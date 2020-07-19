@@ -228,21 +228,28 @@ CallExpr::CallExpr(ExprPtr&& addr, vector<ExprPtr>&& params, bool hasReturnValue
 
 
 void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
-  vector<int> srcTemps;
+  vector<int> argTemps;
   size_t numParams = params_.size();
-  size_t numRegParams = min(numParams, (size_t)6);
+
+  // Move all parameters to temps. We don't move the parameters straight into registers because
+  // evaluating a later parameter may overwrite a parameter that we previously moved (e.g., we may
+  // do a function call as the arg #1 and overwrite arg #0)
+  for (size_t i = 0; i < numParams; ++i) {
+    argTemps.push_back(params_[i]->toAssemInstrs(instrs));
+  }
 
   // Put up to 6 parameters in argument registers
+  vector<int> srcTemps;
+  size_t numRegParams = min(numParams, (size_t)6);
   for (size_t i = 0; i < numRegParams; ++i) {
     int argReg = ARG_REGS[i];
-    params_[i]->toAssemInstrs(argReg, instrs);
+    Temp(argTemps[i]).toAssemInstrs(argReg, instrs);
     srcTemps.push_back(argReg);
   }
 
   // Put rest on the stack
   for (long i = (long)numParams - 1; i >= 6; --i) {
-    int t = params_[i]->toAssemInstrs(instrs);
-    instrs.emplace_back(new assem::Operation("pushq `8S0", { t }, {}));
+    instrs.emplace_back(new assem::Operation("pushq `8S0", { argTemps[i] }, {}));
   }
 
   if (addr_->getCategory() == Expr::Category::LABEL_ADDR) {

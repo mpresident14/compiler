@@ -30,4 +30,19 @@ void main() {
 
   long d = 3;
   print(manyParams(1,true,2,d,4,5,6,'a'));
+  g(4,5,fac(3));
+}
+
+int fac(int n) {
+  if (n <= 1) {
+    return 1;
+  }
+
+  return n * fac(n-1);
+}
+
+void g(int a, int b, int c) {
+  print(a);
+  print(b);
+  print(c);
 }
