@@ -230,7 +230,7 @@ public:
   std::vector<Import> imports_;
   std::vector<std::unique_ptr<ClassDecl>> classes_;
   std::vector<std::unique_ptr<Func>> funcs_;
-  std::shared_ptr<Ctx> ctx_;
+  std::unique_ptr<Ctx> ctx_;
 };
 
 /********
