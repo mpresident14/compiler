@@ -2,6 +2,11 @@ class String {
   char[] arr;
   long len;
 
+  String() {
+    this.arr = char[](0);
+    this.len = 0;
+  }
+
   String(char[] arr, bool literal) {
     if (literal) {
       this.arr = arr;
@@ -26,7 +31,8 @@ class String {
   }
 
   void resize() {
-    char[] newArr = char[](this.arr.length * 2);
+    // Add 1 in case this.arr.length == 0
+    char[] newArr = char[](this.arr.length * 2 + 1);
     for (long i = 0; i < this.len; ++i) {
       newArr[i] = this.arr[i];
     }
@@ -34,11 +40,11 @@ class String {
   }
 }
 
-char[] toString(long n) {
+String toString(long n) {
+  String str = String();
+
   if (n == 0) {
-    char[] str = char[](1);
-    str[0] = '0';
-    return str;
+    return str.append('0');
   }
 
   bool isNeg = false;
@@ -47,38 +53,31 @@ char[] toString(long n) {
     isNeg = true;
   }
 
-  long num = n;
-  int numDigits = 0;
-  while (num != 0) {
-    num = num / 10;
-    numDigits = numDigits + 1;
-  }
-
-  long len = isNeg ? numDigits + 1 : numDigits;
-  char[] str = char[](len);
-  long i = len - 1;
   if (isNeg) {
-    str[0] = '-';
+    str.append('-');
   }
 
-  num = n;
-  while (num != 0) {
-    str[i] = (char)(num % 10 + '0');
-    num = num / 10;
-    i = i - 1;
+  while (n != 0) {
+    str.append((char)(n % 10 + '0'));
+    n = n / 10;
   }
 
   return str;
 }
 
-char[] toString(bool b) {
+String toString(bool b) {
   if (b) {
-    return char[] {'t', 'r', 'u', 'e'};
+    return String(char[] {'t', 'r', 'u', 'e'}, true);
   } else {
-    return char[] {'f', 'a', 'l', 's', 'e'};
+    return String(char[] {'f', 'a', 'l', 's', 'e'}, false);
   }
 }
 
-char[] toString(char c) {
-  return char[] {c};
+String toString(char c) {
+  return String().append(c);
+
+  // THIS WORKS
+  // String str = String();
+  // str.append(c);
+  // return str;
 }

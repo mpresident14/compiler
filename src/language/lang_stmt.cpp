@@ -261,28 +261,36 @@ Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
+  // TODO: Don't make this copy every time
   vector<string> toStringPath = Program::importPathParts;
   toStringPath.push_back("string");
-  im::ExprPtr callToString =
-      CallExpr(move(toStringPath), "toString", move(toPrint), line_).toImExpr(ctx).imExpr;
+  ExprPtr callToString =
+      make_unique<CallExpr>(vector<string>(toStringPath), "toString", move(toPrint), line_);
 
-  // Put the char[] in a temporary
-  int tCharsAddr = newTemp();
-  im::StmtPtr getArr =
-      make_unique<im::Assign>(make_unique<im::Temp>(tCharsAddr), move(callToString));
+  // Put the String in a temporary
+  static const string strVar = "_str";
+  static TypePtr strType = make_shared<Class>(move(toStringPath), "String");
+  StmtPtr assignStr = make_unique<VarDecl>(TypePtr(strType), strVar, move(callToString), line_);
 
   vector<im::ExprPtr> printArgs;
-  // Address of the char[]
+  assignStr->toImStmts(imStmts, ctx);
+
+  // Address of the char[] + 8 to skip length field
   printArgs.push_back(make_unique<im::BinOp>(
-      make_unique<im::Temp>(tCharsAddr), make_unique<im::Const>(8), im::BOp::PLUS));
+      MemberAccess(make_unique<Var>(strVar, line_), "arr", line_).toImExpr(ctx).imExpr,
+      make_unique<im::Const>(8),
+      im::BOp::PLUS));
+
   // Number of bytes
-  printArgs.push_back(make_unique<im::MemDeref>(0, make_unique<im::Temp>(tCharsAddr), nullptr, 8));
+  printArgs.push_back(
+      MemberAccess(make_unique<Var>(strVar, line_), "len", line_).toImExpr(ctx).imExpr);
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(
       make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));
 
-  imStmts.push_back(move(getArr));
   imStmts.push_back(move(callPrint));
+
+  ctx.removeVars({ { strVar, line_ } });
 }
 
 
