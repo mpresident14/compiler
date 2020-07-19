@@ -32,7 +32,7 @@ void Program::setImportPath(string_view importPath) {
 // ~/cs/compiler/test/translator/success/import_test.prez ~/cs/compiler/log/import_test.s
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), ctx_(nullptr) {
-  imports_.push_back({ importDir + "/to_string.prez", 0 });
+  imports_.push_back({ importDir + "/string.prez", 0 });
   for (DeclPtr& decl : decls) {
     if (decl->getCategory() == Decl::Category::CLASS) {
       classes_.emplace_back(static_cast<ClassDecl*>(decl.release()));
@@ -46,9 +46,10 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
-    shared_ptr<unordered_map<string, string>> fileIds) {
+    const shared_ptr<unordered_map<string, string>>& fileIds,
+    const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
   // Create a new context
-  ctx_ = make_unique<Ctx>(filename, fileIds);
+  ctx_ = make_unique<Ctx>(filename, fileIds, classIds);
   ctx_->addFileId(filename);
 
   // Go through the imports and build the context tree so we have access
@@ -67,7 +68,7 @@ void Program::initContext(
         auto iter = initializedProgs.emplace(importName, nullptr).first;
         iter->second = make_unique<Program>(parser::parse(importName));
         prog = iter->second.get();
-        prog->initContext(importName, initializedProgs, fileIds);
+        prog->initContext(importName, initializedProgs, fileIds, classIds);
       } catch (const runtime_error& e) {
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
@@ -87,11 +88,11 @@ void Program::initContext(
 
   // Add this program's declarations to its own context. We add class names before functions/methods
   // so that parameters and return types that are classes will already be in the context.
-  for (const std::unique_ptr<ClassDecl>& cls : classes_) {
+  for (const unique_ptr<ClassDecl>& cls : classes_) {
     ctx_->addClassId(cls->name_, cls->id_, cls->line_);
     cls->addToCtx(*ctx_);
   }
-  for (const std::unique_ptr<Func>& fn : funcs_) {
+  for (const unique_ptr<Func>& fn : funcs_) {
     fn->addToCtx(*ctx_);
   }
 }

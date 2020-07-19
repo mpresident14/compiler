@@ -96,7 +96,8 @@ public:
         const std::vector<std::string> qualifiers,
         const std::string& name,
         const std::vector<TypePtr>& paramTypes) const;
-    ClsLookupRes lookupClass(const std::vector<std::string> qualifiers, const std::string& name) const;
+    ClsLookupRes lookupClass(const std::vector<std::string> qualifiers, const std::string& name)
+        const;
 
   private:
     CtxLookupRes lookupCtx(const std::vector<std::string> qualifiers) const;
@@ -109,7 +110,8 @@ public:
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
 
   Ctx(std::string_view filename,
-      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds);
+      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
+      const std::shared_ptr<std::unordered_map<int, ClassInfo*>>& classIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
   Ctx(Ctx&&) = default;
@@ -132,11 +134,10 @@ public:
       std::unordered_map<std::string, Ctx::FieldInfo>&& fields);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name);
-  /* Also searches context tree, nullptr if it doesn't exist */
-  const ClassInfo*
-  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
+  /* Searches global classIds_ */
+  const ClassInfo* lookupClass(int id);
   const FnInfo* lookupMethod(
-      const std::vector<std::string>& qualifiers,
+      int id,
       const std::string& className,
       const std::string& methodName,
       const std::vector<TypePtr>& paramTypes,
@@ -219,6 +220,9 @@ private:
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
       size_t line);
+  /* Also searches context tree, nullptr if it doesn't exist */
+  const ClassInfo*
+  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
   const ClassInfo* handleClassLookupRes(
       const ClsLookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,
@@ -248,6 +252,34 @@ private:
   Logger logger;
   CtxTree ctxTree_;
   std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
+  /* Class IDs Explanation
+   * 1. First, we go through all the class declarations and add them to the context of their own
+   *    file, which gives each class a unique ID. It also adds the ID to the global classIds_ map.
+   * 2. When a class name appears in a src file, it is parsed as a Class Type, but it has no id.
+   *    Every language structure that contains a Type calls Ctx::checkType(), which, if it is a
+   *    Class Type, validates that it refers to an actual class and determines its ID via the
+   *    CtxTree.
+   * 3. Finally, when we do a method invocation or member access, we get a Class Type from the
+   *    object, from which we can grab the class ID and perform the necessary lookup via the global
+   *    classIds_ map. Using the ID for this lookup rather than the class name prevents a situation
+   *    such as the following:
+   *
+   *    <file_obj.prez>
+   *    class FileObj;
+   *
+   *    <file.prez>
+   *    import "file_obj.prez"
+   *    file_obj::FileObj getFile();
+   *
+   *    <main.prez>
+   *    import "file.prez"
+   *    file::getFile().method();
+   *
+   *    If we just used the name of the returned Type (FileObj), main.prez would not have the
+   *    correct import. Even if it did, the qualifiers might be incorrect because they would be
+   *    based on those of file.prez.
+   */
+  std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
 };
 
 #endif  // CONTEXT_HPP

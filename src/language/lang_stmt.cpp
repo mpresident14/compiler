@@ -262,7 +262,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
   vector<string> toStringPath = Program::importPathParts;
-  toStringPath.push_back("to_string");
+  toStringPath.push_back("string");
   im::ExprPtr callToString =
       CallExpr(move(toStringPath), "toString", move(toPrint), line_).toImExpr(ctx).imExpr;
 

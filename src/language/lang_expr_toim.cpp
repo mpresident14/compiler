@@ -1,6 +1,6 @@
 #include "src/language/language.hpp"
 
-#include <climits>
+#include <prez/print_stuff.hpp>
 
 using namespace std;
 
@@ -353,10 +353,11 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
     return dummyInfo();
   } else if (eInfo.type->typeName == TypeName::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-    const Ctx::ClassInfo* classInfo =
-        ctx.lookupClassRec(classTy->qualifiers, classTy->className, line_);
+    const Ctx::ClassInfo* classInfo = ctx.lookupClass(classTy->id);
     if (!classInfo) {
-      throw runtime_error("MemberAccess::toImExpr");
+      // If we hit this case, we already logged an undefined class error somewhere else, so don't
+      // duplicate it
+      return dummyInfo();
     }
     auto iter = classInfo->fields.find(member_);
     if (iter == classInfo->fields.end()) {
@@ -399,7 +400,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   }
 
   const Ctx::FnInfo* fnInfo =
-      ctx.lookupMethod(classTy->qualifiers, classTy->className, methodName_, paramTypes, line_);
+      ctx.lookupMethod(classTy->id, classTy->className, methodName_, paramTypes, line_);
   if (!fnInfo) {
     // Undefined function
     return dummyInfo();

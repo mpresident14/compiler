@@ -33,8 +33,11 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 }
 
 
-Ctx::Ctx(string_view filename, const shared_ptr<unordered_map<string, string>>& fileIds)
-    : filename_(filename), logger(filename), fileIds_(fileIds) {}
+Ctx::Ctx(
+    string_view filename,
+    const shared_ptr<unordered_map<string, string>>& fileIds,
+    const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
+    : filename_(filename), logger(filename), fileIds_(fileIds), classIds_(classIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -121,6 +124,14 @@ Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
   return { LookupStatus::FOUND, &iter->second, filename_ };
 }
 
+const Ctx::ClassInfo* Ctx::lookupClass(int id) {
+  auto iter = classIds_->find(id);
+  if (iter == classIds_->end()) {
+    return nullptr;
+  }
+  return iter->second;
+}
+
 const Ctx::ClassInfo*
 Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t line) {
   LookupRes lookupRes =
@@ -131,7 +142,7 @@ Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t
 
 
 const Ctx::FnInfo* Ctx::lookupMethod(
-    const vector<string>& qualifiers,
+    int id,
     const string& className,
     const string& methodName,
     const vector<TypePtr>& paramTypes,
@@ -139,14 +150,11 @@ const Ctx::FnInfo* Ctx::lookupMethod(
   // The only way this will not be FOUND is if the object that was created was not a valid type.
   // If this is the case, the error was already logged, so we don't want to log an error for every
   // method invocation on this object. Thus, we don't use lookupClassRec.
-  LookupRes classLookup =
-      qualifiers.empty() ? lookupClass(className) : ctxTree_.lookupClass(qualifiers, className);
-  if (classLookup.status != LookupStatus::FOUND) {
-    return nullptr;
-  }
-
-  const ClassInfo* classInfo = get<const ClassInfo*>(classLookup.result);
+  // TODO: Wrong if object is an rvalue, e.g., MyObject(1).doStuff();
+  const ClassInfo* classInfo = lookupClass(id);
   if (!classInfo) {
+    // If we hit this case, we already logged an undefined class error somewhere else, so don't
+    // duplicate it
     return nullptr;
   }
 
@@ -154,7 +162,7 @@ const Ctx::FnInfo* Ctx::lookupMethod(
   methodLookup.searchedPath = classInfo->declFile;
   return handleFnLookupRes(
       methodLookup,
-      qualifiers,
+      {},
       string(className).append("::").append(methodName),
       paramTypes,
       line);
@@ -490,8 +498,11 @@ Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>&
   }
 }
 
-void Ctx::addClassId(std::string_view className, int id, size_t line) {
-  if (!classMap_.emplace(className, ClassInfo{ {},  {}, filename_, id }).second) {
+void Ctx::addClassId(string_view className, int id, size_t line) {
+  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, filename_, id });
+  if (p.second) {
+    classIds_->emplace(id, &p.first->second);
+  } else {
     ostringstream& err = logger.logError(line);
     err << "Redefinition of class " << className;
   }

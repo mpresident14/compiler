@@ -222,7 +222,8 @@ public:
   void initContext(
       std::string_view filename,
       std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
-      std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds);
+      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
+      const std::shared_ptr<std::unordered_map<int, Ctx::ClassInfo*>>& classIds);
 
   im::Program toImProg() const;
 
