@@ -9,7 +9,10 @@ namespace {
 
 /* Allows us to proceed through compile errors so that we don't have to report
  * one at a time */
-language::ExprInfo dummyInfo() { cout << "RAN" << endl;return { make_unique<im::Temp>(newTemp()), anyType }; }
+language::ExprInfo dummyInfo() {
+  cout << "RAN" << endl;
+  return { make_unique<im::Temp>(newTemp()), anyType };
+}
 
 }  // namespace
 
@@ -96,12 +99,15 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
       return toImExprArith(im::BOp::AND, ctx);
     case BOp::BIT_OR:
       return toImExprArith(im::BOp::OR, ctx);
-    case BOp::XOR:
-      // XOR is valid for both ints and bools
-      // This translates e1_ twice, but oh well
-      if (isIntegral(*e1_->toImExpr(ctx).type)) {
+    case BOp::XOR: {
+      // XOR is valid for both integers and booleans
+      bool isLValue = e1_->isLValue();
+      ExprInfo lhsInfo = e1_->toImExpr(ctx);
+      e1_ = make_unique<ImWrapper>(move(lhsInfo.imExpr), lhsInfo.type, isLValue, line_);
+      if (isIntegral(*lhsInfo.type)) {
         return toImExprArith(im::BOp::XOR, ctx);
       }
+    }
       // Fall thru
     default:
       // boolean operator
@@ -124,6 +130,8 @@ namespace {
     return true;
   }
 }  // namespace
+
+
 
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   ExprInfo eInfo1 = e1_->toImExpr(ctx);
