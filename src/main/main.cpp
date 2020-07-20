@@ -30,29 +30,27 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
   Logger logger;
   bool hasErr = false;
   try {
-    // Parse builtins before so that their function IDs will match the precompiled assembly
+    // Parse builtins first so that their function IDs will match the precompiled assembly
     vector<language::Program> builtIns;
+    auto classIds = make_shared<unordered_map<int, Ctx::ClassInfo*>>();
     for (string builtInFile : builtInFiles) {
-      builtIns.push_back(parser::parse(builtInFile));
+      language::Program prog = parser::parse(builtInFile);
+      prog.initContext(builtInFile, initializedProgs, {}, classIds);
+      builtIns.push_back(move(prog));
     }
 
-    decltype(initializedProgs)::iterator iter;
     try {
       // Mark as initiailized before recursing to allow circular dependencies
-      iter = initializedProgs
-                 .emplace(srcFilename, make_unique<language::Program>(parser::parse(srcFilename)))
-                 .first;
+      auto iter =
+          initializedProgs
+              .emplace(srcFilename, make_unique<language::Program>(parser::parse(srcFilename)))
+              .first;
+      // Recursively record all declarations
+      iter->second->initContext(srcFilename, initializedProgs, builtIns, classIds);
     } catch (const runtime_error& e) {
       // Catch "can't open file" error
       logger.logFatal(0, e.what());
     }
-
-    // Recursively record all declarations
-    iter->second->initContext(
-        srcFilename,
-        initializedProgs,
-        builtIns,
-        make_shared<unordered_map<int, Ctx::ClassInfo*>>());
 
     // Convert to assembly
     vector<assem::Program> assemProgs;
@@ -91,7 +89,6 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
 
 
 int main(int argc, char** argv) {
-
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 
@@ -100,7 +97,7 @@ int main(int argc, char** argv) {
     return compile(srcFile, asmFile, {});
   }
 
-  #ifndef __INTELLISENSE__
+#ifndef __INTELLISENSE__
   return compile(srcFile, asmFile, { IMPORT_DIR "/string.prez" });
-  #endif
+#endif
 }

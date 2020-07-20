@@ -43,7 +43,7 @@ function(success_test TEST_NAME EXPECTED_OUT)
     DEPENDS
       main
       ${SRC}/imports/syscall.s
-      ${SRC}/imports/string.prez
+      ${SRC}/imports/string.s
       ${SUCCESS_DIR}/${SRC_FILE}
       ${IMPORTS}
       ${EXTRA_DEPENDS})
@@ -74,6 +74,37 @@ function(error_test TEST_NAME EXPECTED_OUT)
           ${EXPECTED_OUT})
 endfunction()
 
+add_custom_command(
+    OUTPUT ${SRC}/imports/string.s
+    WORKING_DIRECTORY ${SRC}/imports
+    COMMAND
+        ${RUNTIME_OUTPUT_DIRECTORY}/main
+        ${SRC}/imports/string.prez
+        ${SRC}/imports/string.s
+        builtin
+    # To prevent duplicate labels
+    COMMAND sed 's/_L/_M/g' -i ${SRC}/imports/string.s
+    DEPENDS
+        main
+        ${SRC}/imports/syscall.s
+        ${SRC}/imports/string.prez)
+
+add_custom_target(
+    sandbox
+    COMMAND
+        ${RUNTIME_OUTPUT_DIRECTORY}/main
+        ${CMAKE_CURRENT_SOURCE_DIR}/sandbox.prez
+        ${LOG_DIRECTORY}/sandbox.s
+    COMMAND as
+        ${LOG_DIRECTORY}/sandbox.s
+        ${SRC}/imports/syscall.s
+        ${SRC}/imports/string.s
+        -o ${RUNTIME_OUTPUT_DIRECTORY}/sandbox.o
+    COMMAND ld
+        ${RUNTIME_OUTPUT_DIRECTORY}/sandbox.o
+        -o ${RUNTIME_OUTPUT_DIRECTORY}/sandbox
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/sandbox
+    DEPENDS main ${SRC}/imports/string.s ${SRC}/imports/syscall.s)
 
 # Running Tests
 success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")

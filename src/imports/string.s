@@ -71,28 +71,28 @@ String_append_2:
 	movq %rsp, %rbp
 	pushq %rbx
 	pushq %r12
-	movq %rdi, %r12
-	movq %rsi, %rbx
-	mov 16(%rbx), %rcx
-	mov 8(%rbx), %rax
+	movq %rdi, %rbx
+	movq %rsi, %r12
+	mov 16(%r12), %rcx
+	mov 8(%r12), %rax
 	mov (%rax), %rax
 	cmpq %rcx, %rax
 	jne _M6
 _M5:
-	movq %rbx, %rdi
+	movq %r12, %rdi
 	callq String_resize_4
 	jmp _M7
 _M6:
 _M7:
-	mov 8(%rbx), %rdi
-	leaq 16(%rbx), %rax
-	mov (%rax), %rdx
-	leaq (%rax), %rax
+	mov 8(%r12), %rdx
+	leaq 16(%r12), %rax
 	mov (%rax), %rcx
-	incq %rcx
-	movq %rcx, (%rax)
-	movb %r12b, 8(%rdi, %rdx, 1)
-	movq %rbx, %rax
+	leaq (%rax), %rax
+	mov (%rax), %rdi
+	incq %rdi
+	movq %rdi, (%rax)
+	movb %bl, 8(%rdx, %rcx, 1)
+	movq %r12, %rax
 	popq %r12
 	popq %rbx
 	movq %rbp, %rsp
@@ -162,10 +162,10 @@ toString_5:
 	pushq %rbx
 	pushq %r13
 	pushq %r12
-	movq %rdi, %rbx
+	movq %rdi, %r13
 	callq String_0
 	movq %rax, %r12
-	cmpq $0, %rbx
+	cmpq $0, %r13
 	jne _M13
 _M12:
 	movq $48, %rdi
@@ -180,19 +180,19 @@ _M12:
 	jmp _M14
 _M13:
 _M14:
-	movq $0, %r13
-	cmpq $0, %rbx
+	movq $0, %rbx
+	cmpq $0, %r13
 	jge _M16
 _M15:
-	negq %rbx
-	movq $1, %r13
+	negq %r13
+	movq $1, %rbx
 	jmp _M17
 _M16:
 _M17:
-	cmpq $0, %rbx
+	cmpq $0, %r13
 	je _M19
 _M18:
-	movq %rbx, %rax
+	movq %r13, %rax
 	movq $10, %rcx
 	cqto
 	idivq %rcx
@@ -200,15 +200,15 @@ _M18:
 	movsbq %dl, %rdi
 	movq %r12, %rsi
 	callq String_append_2
-	movq %rbx, %rax
+	movq %r13, %rax
 	movq $10, %rcx
 	cqto
 	idivq %rcx
-	movq %rax, %rbx
-	cmpq $0, %rbx
+	movq %rax, %r13
+	cmpq $0, %r13
 	jne _M18
 _M19:
-	cmpq $0, %r13
+	cmpq $0, %rbx
 	je _M21
 _M20:
 	movq $45, %rdi

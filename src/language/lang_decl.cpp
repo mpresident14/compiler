@@ -42,18 +42,9 @@ void Program::initContext(
   // Create a new context
   ctx_ = make_unique<Ctx>(filename, classIds);
 
-  // Add builtin declarations to the context. We add class names before functions/methods so that
-  // parameters and return types that are classes will already be in the context.
+  // Add builtin declarations to the context
   for (const Program& prog : builtIns) {
-    for (const unique_ptr<ClassDecl>& cls : prog.classes_) {
-      // TODO: Build the ClassInfo object up front so we don't have to redo the work for every
-      // source file
-      cls->addAsBuiltIn(*ctx_);
-    }
-    for (const unique_ptr<Func>& fn : prog.funcs_) {
-      // TODO: Same as above for FnInfo
-      fn->addToCtx(*ctx_);
-    }
+    ctx_->includeDecls(*prog.ctx_);
   }
 
   // Go through the imports and build the context tree so we have access
@@ -278,18 +269,8 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
   }
 }
 
-void ClassDecl::addToCtx(Ctx& ctx) {
-  shared_ptr<Class> classTy = addAsBuiltIn(ctx);
-  // We don't want to change the method parameters for built-in classes since they are added to
-  // every source file compiled, so we've moved the functionality to a separate method
-  for (unique_ptr<Func>& method : methods_) {
-    // Add "this" parameter as the last argument AFTER inserting it into the context
-    method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(classTy);
-  }
-}
 
-shared_ptr<Class> ClassDecl::addAsBuiltIn(Ctx& ctx) {
+void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
@@ -337,9 +318,9 @@ shared_ptr<Class> ClassDecl::addAsBuiltIn(Ctx& ctx) {
         method->returnType_,
         method->id_,
         method->line_);
+    method->paramNames_.push_back(THIS);
+    method->paramTypes_.push_back(classTy);
   }
-
-  return classTy;
 }
 
 

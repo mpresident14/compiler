@@ -1,0 +1,29 @@
+int fac(int n) {
+  if (n <= 1) {
+    return 1;
+  }
+
+  return n * fac(n-1);
+}
+
+void g(int a, int b, int c) {
+  print(a);
+  print(b);
+  print(c);
+}
+
+void main() {
+  bool[] arr = bool[]{true, false};
+  print(true);
+  print(arr[0]);
+  print(arr[1]);
+
+  String s = String();
+  print(s.len);
+}
+
+// gdb ~/cs/compiler/bin/main
+// r ~/cs/compiler/src/main/test.prez ~/cs/compiler/log/test.s
+
+// gdb ~/cs/compiler/bin/parsegen
+// r -g ~/cs/compiler/src/main/lang.pgen -f ~/cs/compiler/src/main/parser

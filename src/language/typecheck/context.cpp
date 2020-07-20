@@ -28,12 +28,20 @@ Ctx::Ctx(
     : filename_(filename), logger(filename), classIds_(classIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
-
 Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
-
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
-
 void Ctx::setCurrentRetType(const TypePtr& type) noexcept { currentRetType_ = type; }
+
+void Ctx::includeDecls(Ctx& ctx) {
+  for (const auto& p : ctx.fnMap_) {
+    fnMap_.insert(p);
+  }
+
+  for (const auto& p : ctx.classMap_) {
+    classMap_.insert(p);
+  }
+}
+
 
 int Ctx::insertVar(string_view name, const TypePtr& type, size_t line) {
   int temp = newTemp();

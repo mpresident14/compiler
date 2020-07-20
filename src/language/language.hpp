@@ -195,7 +195,6 @@ public:
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToCtx(Ctx& ctx) override;
-  std::shared_ptr<Class> addAsBuiltIn(Ctx& ctx);
   Category getCategory() const noexcept override { return Category::CLASS; }
 
   std::string name_;

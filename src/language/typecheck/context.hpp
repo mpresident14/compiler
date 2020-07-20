@@ -123,6 +123,7 @@ public:
   const Type& getCurrentRetType() const noexcept;
   void setCurrentRetType(const TypePtr& type) noexcept;
 
+  void includeDecls(Ctx& ctx);
   int insertVar(std::string_view name, const TypePtr& type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
