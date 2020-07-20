@@ -25,11 +25,17 @@ using namespace std;
 // <token>" or "no reduction" error)
 
 /* Return true if no errors */
-bool compile(const string& srcFilename, const string& asmFilename) {
+bool compile(const string& srcFilename, const string& asmFilename, vector<string> builtInFiles) {
   unordered_map<string, unique_ptr<language::Program>> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
+    // Parse builtins before so that their function IDs will match the precompiled assembly
+    vector<language::Program> builtIns;
+    for (string builtInFile : builtInFiles) {
+      builtIns.push_back(parser::parse(builtInFile));
+    }
+
     decltype(initializedProgs)::iterator iter;
     try {
       // Mark as initiailized before recursing to allow circular dependencies
@@ -45,6 +51,7 @@ bool compile(const string& srcFilename, const string& asmFilename) {
     iter->second->initContext(
         srcFilename,
         initializedProgs,
+        builtIns,
         make_shared<unordered_map<int, Ctx::ClassInfo*>>());
 
     // Convert to assembly
@@ -83,12 +90,17 @@ bool compile(const string& srcFilename, const string& asmFilename) {
 }
 
 
-int main(int, char** argv) {
-#ifndef __INTELLISENSE__
-  language::Program::setImportPath(IMPORT_DIR);
-#endif
+int main(int argc, char** argv) {
+
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 
-  return compile(srcFile, asmFile);
+  // For built-in files
+  if (argc == 4) {
+    return compile(srcFile, asmFile, {});
+  }
+
+  #ifndef __INTELLISENSE__
+  return compile(srcFile, asmFile, { IMPORT_DIR "/string.prez" });
+  #endif
 }

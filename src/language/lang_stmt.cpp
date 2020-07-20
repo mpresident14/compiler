@@ -261,14 +261,14 @@ Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
-  vector<string> toStringPath = Program::importPathParts;
-  toStringPath.push_back("string");
-  static TypePtr strType = make_shared<Class>(vector<string>(toStringPath), "String");
+
+  // Move to type.hpp
+  static TypePtr strType = make_shared<Class>(vector<string>(), "String");
 
   // Put the String in a temporary
   static const string strVar = "_str";
   ExprPtr callToString =
-      make_unique<CallExpr>(move(toStringPath), "toString", move(toPrint), line_);
+      make_unique<CallExpr>(vector<string>(), "toString", move(toPrint), line_);
   StmtPtr assignStr = make_unique<VarDecl>(TypePtr(strType), strVar, move(callToString), line_);
 
   vector<im::ExprPtr> printArgs;

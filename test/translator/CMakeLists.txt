@@ -34,12 +34,13 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${LOG_DIRECTORY}/${ASM_FILE}
     COMMAND as
         ${LOG_DIRECTORY}/${ASM_FILE}
-        ${SRC}/main/syscall.s
+        ${SRC}/imports/syscall.s
+        ${SRC}/imports/string.s
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
     COMMAND ld
         ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
-    DEPENDS main ${SRC}/main/syscall.s ${SUCCESS_DIR}/${SRC_FILE} ${IMPORTS} ${EXTRA_DEPENDS})
+    DEPENDS main ${SRC}/imports/syscall.s ${SRC}/imports/string.s ${SUCCESS_DIR}/${SRC_FILE} ${IMPORTS} ${EXTRA_DEPENDS})
 
   add_test(
       NAME ${TEST_NAME}

@@ -195,6 +195,7 @@ public:
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToCtx(Ctx& ctx) override;
+  void addAsBuiltIn(Ctx& ctx);
   Category getCategory() const noexcept override { return Category::CLASS; }
 
   std::string name_;
@@ -217,20 +218,14 @@ struct Import {
 
 class Program {
 public:
-  static void setImportPath(std::string_view importPath);
-
-  /* Directory for imports provided by the language */
-  static std::string importDir;
-  static std::vector<std::string> importPathParts;
-
   Program(std::vector<Import>&& imports, std::vector<DeclPtr>&& decls);
+  im::Program toImProg() const;
   assem::Program toAssemProg() const;
   void initContext(
       std::string_view filename,
       std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
+      const std::vector<Program>& builtIns,
       const std::shared_ptr<std::unordered_map<int, Ctx::ClassInfo*>>& classIds);
-
-  im::Program toImProg() const;
 
   std::vector<Import> imports_;
   std::vector<std::unique_ptr<ClassDecl>> classes_;

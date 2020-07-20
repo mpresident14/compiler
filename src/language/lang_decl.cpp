@@ -15,14 +15,6 @@ namespace language {
  * Program *
  ***********/
 
-string Program::importDir = "";
-vector<string> Program::importPathParts = {};
-
-void Program::setImportPath(string_view importPath) {
-  importDir = importPath;
-  boost::split(importPathParts, importPath, [](char c) { return c == '/'; });
-}
-
 // TODO: Imports should be relative to the file in which they were declared, not to the working
 // directory where the compiler exe was called
 // TODO: When we use an absolute path as the main file, it will compile the main file twice if a
@@ -32,7 +24,6 @@ void Program::setImportPath(string_view importPath) {
 // ~/cs/compiler/test/translator/success/import_test.prez ~/cs/compiler/log/import_test.s
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), ctx_(nullptr) {
-  imports_.push_back({ importDir + "/string.prez", 0 });
   for (DeclPtr& decl : decls) {
     if (decl->getCategory() == Decl::Category::CLASS) {
       classes_.emplace_back(static_cast<ClassDecl*>(decl.release()));
@@ -46,9 +37,24 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
+    const std::vector<Program>& builtIns,
     const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
   // Create a new context
   ctx_ = make_unique<Ctx>(filename, classIds);
+
+  // Add builtin declarations to the context. We add class names before functions/methods so that
+  // parameters and return types that are classes will already be in the context.
+  for (const Program& prog : builtIns) {
+    for (const unique_ptr<ClassDecl>& cls : prog.classes_) {
+      // TODO: Build the ClassInfo object up front so we don't have to redo the work for every
+      // source file
+      cls->addAsBuiltIn(*ctx_);
+    }
+    for (const unique_ptr<Func>& fn : prog.funcs_) {
+      // TODO: Same as above for FnInfo
+      fn->addToCtx(*ctx_);
+    }
+  }
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -66,7 +72,7 @@ void Program::initContext(
         auto iter = initializedProgs.emplace(importName, nullptr).first;
         iter->second = make_unique<Program>(parser::parse(importName));
         prog = iter->second.get();
-        prog->initContext(importName, initializedProgs, classIds);
+        prog->initContext(importName, initializedProgs, builtIns, classIds);
       } catch (const runtime_error& e) {
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
@@ -150,8 +156,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
   ctx.removeParams(paramNames_, line_);
-  imDecls.emplace_back(
-      new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -239,8 +244,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.removeParams(paramNames_, line_);
   ctx.removeVars({ { ClassDecl::THIS, 0 } });
 
-  imDecls.emplace_back(
-      new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -274,8 +278,19 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
   }
 }
 
-
 void ClassDecl::addToCtx(Ctx& ctx) {
+  addAsBuiltIn(ctx);
+  // We don't want to change the method parameters for built-in classes since they are added to
+  // every source file compiled, so we've moved the functionality to a separate method
+  for (unique_ptr<Func>& method : methods_) {
+    // Add "this" parameter as the last argument AFTER inserting it into the context
+    method->paramNames_.push_back(THIS);
+    // TODO: Reuse from function below
+    method->paramTypes_.push_back(make_shared<Class>(vector<string>(), name_));
+  }
+}
+
+void ClassDecl::addAsBuiltIn(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
@@ -318,10 +333,13 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // Add methods
   for (unique_ptr<Func>& method : methods_) {
     method->checkTypes(ctx);
-    ctx.insertFn(classInfo.methods, method->name_, method->paramTypes_, method->returnType_, method->id_, method->line_);
-    // Add "this" parameter as the last argument AFTER inserting it into the context
-    method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(classTy);
+    ctx.insertFn(
+        classInfo.methods,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        method->id_,
+        method->line_);
   }
 }
 
