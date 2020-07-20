@@ -279,18 +279,17 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 }
 
 void ClassDecl::addToCtx(Ctx& ctx) {
-  addAsBuiltIn(ctx);
+  shared_ptr<Class> classTy = addAsBuiltIn(ctx);
   // We don't want to change the method parameters for built-in classes since they are added to
   // every source file compiled, so we've moved the functionality to a separate method
   for (unique_ptr<Func>& method : methods_) {
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);
-    // TODO: Reuse from function below
-    method->paramTypes_.push_back(make_shared<Class>(vector<string>(), name_));
+    method->paramTypes_.push_back(classTy);
   }
 }
 
-void ClassDecl::addAsBuiltIn(Ctx& ctx) {
+shared_ptr<Class> ClassDecl::addAsBuiltIn(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
@@ -303,10 +302,8 @@ void ClassDecl::addAsBuiltIn(Ctx& ctx) {
 
   // Class starts with vtable pointer
   size_t currentOffset = 8;
-  size_t objSize = 8;
   for (const auto& [type, name, line] : fields_) {
     if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
-      objSize += type->numBytes;
       currentOffset += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
@@ -325,7 +322,7 @@ void ClassDecl::addAsBuiltIn(Ctx& ctx) {
           << " inside declaration of class " << name_;
       continue;
     }
-    ctor.objSize_ = objSize;
+    ctor.objSize_ = currentOffset;
     ctor.returnType_ = classTy;
     ctor.addToCtx(ctx);
   }
@@ -341,6 +338,8 @@ void ClassDecl::addAsBuiltIn(Ctx& ctx) {
         method->id_,
         method->line_);
   }
+
+  return classTy;
 }
 
 

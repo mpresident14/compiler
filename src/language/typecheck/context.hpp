@@ -120,7 +120,6 @@ public:
 
   Logger& getLogger() noexcept;
   CtxTree& getCtxTree() noexcept;
-  const std::string& getFilename() const noexcept;
   const Type& getCurrentRetType() const noexcept;
   void setCurrentRetType(const TypePtr& type) noexcept;
 

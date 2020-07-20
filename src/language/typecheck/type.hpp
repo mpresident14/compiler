@@ -63,6 +63,7 @@ const TypePtr shortType = std::make_shared<Type>(TypeName::SHORT, 2, true);
 const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1, true);
 const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL, 1);
 const TypePtr voidType = std::make_shared<Type>(TypeName::VOID, 0);
+const TypePtr strType = std::make_shared<Class>(std::vector<std::string>(), "String");
 const TypePtr anyType = std::make_shared<Type>(TypeName::ANY, 0, true);
 
 #endif  // TYPE_HPP

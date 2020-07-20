@@ -162,7 +162,6 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
-// TODO: Add tests for non-lvalue types (also for Update and IncDec)
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (!lValue_->isLValue()) {
     ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
@@ -261,9 +260,6 @@ Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<ExprPtr> toPrint;
   toPrint.push_back(move(expr_));
-
-  // Move to type.hpp
-  static TypePtr strType = make_shared<Class>(vector<string>(), "String");
 
   // Put the String in a temporary
   static const string strVar = "_str";

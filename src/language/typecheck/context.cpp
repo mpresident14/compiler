@@ -31,8 +31,6 @@ Logger& Ctx::getLogger() noexcept { return logger; }
 
 Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 
-const string& Ctx::getFilename() const noexcept { return filename_; }
-
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }
 
 void Ctx::setCurrentRetType(const TypePtr& type) noexcept { currentRetType_ = type; }

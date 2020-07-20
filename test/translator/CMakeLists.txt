@@ -40,7 +40,13 @@ function(success_test TEST_NAME EXPECTED_OUT)
     COMMAND ld
         ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
-    DEPENDS main ${SRC}/imports/syscall.s ${SRC}/imports/string.s ${SUCCESS_DIR}/${SRC_FILE} ${IMPORTS} ${EXTRA_DEPENDS})
+    DEPENDS
+      main
+      ${SRC}/imports/syscall.s
+      ${SRC}/imports/string.prez
+      ${SUCCESS_DIR}/${SRC_FILE}
+      ${IMPORTS}
+      ${EXTRA_DEPENDS})
 
   add_test(
       NAME ${TEST_NAME}
