@@ -27,6 +27,7 @@ public:
   struct FnInfo {
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
+    size_t id;
     std::string declFile;
     size_t line;
   };
@@ -110,7 +111,6 @@ public:
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
 
   Ctx(std::string_view filename,
-      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
       const std::shared_ptr<std::unordered_map<int, ClassInfo*>>& classIds);
   ~Ctx() = default;
   Ctx(const Ctx&) = delete;
@@ -146,12 +146,14 @@ public:
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
+      size_t id,
       size_t line);
   void insertFn(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
+      size_t id,
       size_t line);
   /* Only searches this context */
   FnLookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
@@ -164,14 +166,10 @@ public:
   /* Checks if this is a valid type. If the type is a Class, then it sets its id if it is not yet
    * set */
   void checkType(Type& type, size_t line);
-  /* Mangle all user functions based on the filename (My special functions begin
+  /* Mangle all user functions based on the function ID (My special functions begin
    * with "__") Return the function name if it doesn't need to be mangled */
-  std::string mangleFn(
-      std::string_view fnName,
-      const std::string& filename,
-      const std::vector<TypePtr>& paramTypes);
+  std::string mangleFn(std::string_view fnName, size_t id);
   void addClassId(std::string_view className, int id, size_t line);
-  void addFileId(std::string_view filename);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
@@ -251,7 +249,6 @@ private:
   std::string filename_;
   Logger logger;
   CtxTree ctxTree_;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> fileIds_;
   /* Class IDs Explanation
    * 1. First, we go through all the class declarations and add them to the context of their own
    *    file, which gives each class a unique ID. It also adds the ID to the global classIds_ map.

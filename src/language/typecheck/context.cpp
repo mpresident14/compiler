@@ -10,17 +10,6 @@
 
 using namespace std;
 
-
-namespace {
-
-string newFileId() {
-  static size_t i = 0;
-  return to_string(i++);
-}
-
-}  // namespace
-
-
 void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
   err << '(';
   if (!paramTypes.empty()) {
@@ -35,9 +24,8 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 
 Ctx::Ctx(
     string_view filename,
-    const shared_ptr<unordered_map<string, string>>& fileIds,
     const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
-    : filename_(filename), logger(filename), fileIds_(fileIds), classIds_(classIds) {}
+    : filename_(filename), logger(filename), classIds_(classIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }
 
@@ -161,11 +149,7 @@ const Ctx::FnInfo* Ctx::lookupMethod(
   LookupRes methodLookup = lookupFn(classInfo->methods, methodName, paramTypes);
   methodLookup.searchedPath = classInfo->declFile;
   return handleFnLookupRes(
-      methodLookup,
-      {},
-      string(className).append("::").append(methodName),
-      paramTypes,
-      line);
+      methodLookup, {}, string(className).append("::").append(methodName), paramTypes, line);
 }
 
 
@@ -200,8 +184,9 @@ void Ctx::insertFn(
     const string& name,
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
+    size_t id,
     size_t line) {
-  insertFn(fnMap_, name, paramTypes, returnType, line);
+  insertFn(fnMap_, name, paramTypes, returnType, id, line);
 }
 
 void Ctx::insertFn(
@@ -209,6 +194,7 @@ void Ctx::insertFn(
     const string& name,
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
+    size_t id,
     size_t line) {
   auto iterPair = funcMap.equal_range(name);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
@@ -222,7 +208,7 @@ void Ctx::insertFn(
       return;
     }
   }
-  funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), filename_, line });
+  funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), id, filename_, line });
 }
 
 Ctx::FnLookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
@@ -481,21 +467,12 @@ void Ctx::checkType(Type& type, size_t line) {
 }
 
 
-string
-Ctx::mangleFn(string_view fnName, const string& filename, const vector<TypePtr>& paramTypes) {
-  if (!fnName.starts_with("__")) {
-    string newName = "_";
-    newName.append(fnName);
-    newName.append(fileIds_->at(filename));
-
-    for (const TypePtr& type : paramTypes) {
-      newName.push_back('_');
-      newName.append(type->getId());
-    }
-    return newName;
-  } else {
+string Ctx::mangleFn(string_view fnName, size_t id) {
+  if (fnName.starts_with("__") || fnName == "main") {
     return string(fnName);
   }
+
+  return string(fnName).append(1, '_').append(to_string(id));
 }
 
 void Ctx::addClassId(string_view className, int id, size_t line) {
@@ -507,8 +484,6 @@ void Ctx::addClassId(string_view className, int id, size_t line) {
     err << "Redefinition of class " << className;
   }
 }
-
-void Ctx::addFileId(string_view filename) { fileIds_->emplace(filename, newFileId()); }
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
   ostringstream& err = logger.logError(line);

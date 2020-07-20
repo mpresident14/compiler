@@ -132,7 +132,6 @@ namespace {
 }  // namespace
 
 
-
 ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
   ExprInfo eInfo1 = e1_->toImExpr(ctx);
   ExprInfo eInfo2 = e2_->toImExpr(ctx);
@@ -209,8 +208,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   }
 
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(
-                   ctx.mangleFn(name_, fnInfo->declFile, fnInfo->paramTypes)),
+               make_unique<im::LabelAddr>(ctx.mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
@@ -417,19 +415,14 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   // Push back "this" as last argument (AFTER the context lookup)
   paramImExprs.push_back(move(eInfo.imExpr));
 
-  // When we mangle the function name, we need to append the type id of the "this" argument at the
-  // end
-  return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(
-                   ctx.mangleFn(
-                          ClassDecl::mangleMethod(classTy->className, methodName_),
-                          fnInfo->declFile,
-                          fnInfo->paramTypes)
-                       .append("_")
-                       .append(classTy->getId())),
-               move(paramImExprs),
-               fnInfo->returnType != voidType),
-           move(fnInfo->returnType) };
+  return {
+    make_unique<im::CallExpr>(
+        make_unique<im::LabelAddr>(
+            ctx.mangleFn(ClassDecl::mangleMethod(classTy->className, methodName_), fnInfo->id)),
+        move(paramImExprs),
+        fnInfo->returnType != voidType),
+    move(fnInfo->returnType)
+  };
 }
 
 /**********

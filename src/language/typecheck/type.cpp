@@ -15,37 +15,6 @@ Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
 Class::Class(vector<string>&& quals, string_view name)
     : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
 
-string Type::getId() const {
-  switch (typeName) {
-    case TypeName::LONG:
-      return "l";
-    case TypeName::INT:
-      return "i";
-    case TypeName::SHORT:
-      return "s";
-    case TypeName::CHAR:
-      return "c";
-    case TypeName::BOOL:
-      return "b";
-    case TypeName::VOID:
-      return "v";
-    case TypeName::ANY:
-      return "x";
-    default:
-      throw invalid_argument("Type::getId");
-  }
-}
-
-string Array::getId() const { return string("a_").append(arrType->getId()); }
-
-string Class::getId() const {
-  if (id == ID_EMPTY) {
-    throw runtime_error("Class::getId");
-  }
-
-  return to_string(id);
-}
-
 
 bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
   if (from == to) {
@@ -106,6 +75,7 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
       case TypeName::ARRAY:
         return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case TypeName::CLASS:
+      // Everything equals ID_UNKNOWN so we don't give an error explosion for an undefined class
         return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id ||
                static_cast<const Class&>(t1).id == Class::ID_UNKNOWN ||
                static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;

@@ -46,11 +46,9 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 void Program::initContext(
     string_view filename,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
-    const shared_ptr<unordered_map<string, string>>& fileIds,
     const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
   // Create a new context
-  ctx_ = make_unique<Ctx>(filename, fileIds, classIds);
-  ctx_->addFileId(filename);
+  ctx_ = make_unique<Ctx>(filename, classIds);
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
@@ -68,7 +66,7 @@ void Program::initContext(
         auto iter = initializedProgs.emplace(importName, nullptr).first;
         iter->second = make_unique<Program>(parser::parse(importName));
         prog = iter->second.get();
-        prog->initContext(importName, initializedProgs, fileIds, classIds);
+        prog->initContext(importName, initializedProgs, classIds);
       } catch (const runtime_error& e) {
         // Catch "can't open file" errors
         ctx_->getLogger().logError(imported.line, e.what());
@@ -116,13 +114,15 @@ im::Program Program::toImProg() const {
  * Func *
  ********/
 
+size_t Func::nextId_ = 0;
+
 Func::Func(
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)) {
+    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)), id_(nextId_++) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
   for (const auto& [type, name] : params) {
@@ -134,7 +134,7 @@ Func::Func(
 
 void Func::addToCtx(Ctx& ctx) {
   checkTypes(ctx);
-  ctx.insertFn(name_, paramTypes_, returnType_, line_);
+  ctx.insertFn(name_, paramTypes_, returnType_, id_, line_);
 }
 
 void Func::checkTypes(Ctx& ctx) const {
@@ -152,7 +152,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   body_->toImStmts(imStmts, ctx);
   ctx.removeParams(paramNames_, line_);
   imDecls.emplace_back(
-      new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
+      new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -241,7 +241,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.removeVars({ { ClassDecl::THIS, 0 } });
 
   imDecls.emplace_back(
-      new im::Func(ctx.mangleFn(name_, ctx.getFilename(), paramTypes_), move(imStmts)));
+      new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -249,23 +249,15 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
  * Class *
  *********/
 
-namespace {
-
-  int newTypeId() {
-    static int i = 0;
-    return i++;
-  }
-
-}  // namespace
-
 const string ClassDecl::THIS = "this";
+int ClassDecl::nextId_ = 0;
 
 string ClassDecl::mangleMethod(string_view className, string_view fnName) {
   return string(className).append("_").append(fnName);
 }
 
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
-    : Decl(line), name_(name), id_(newTypeId()) {
+    : Decl(line), name_(name), id_(nextId_++) {
   for (ClassElem& elem : classElems) {
     switch (elem.type) {
       case ClassElem::Type::FIELD:
@@ -326,7 +318,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   unordered_multimap<string, Ctx::FnInfo> methodMap;
   for (unique_ptr<Func>& method : methods_) {
     method->checkTypes(ctx);
-    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->line_);
+    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->id_, method->line_);
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(classTy);

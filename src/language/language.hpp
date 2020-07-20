@@ -148,6 +148,7 @@ public:
   std::vector<TypePtr> paramTypes_;
   std::vector<std::string> paramNames_;
   std::unique_ptr<Block> body_;
+  size_t id_;
 
 protected:
   virtual std::vector<im::StmtPtr> paramsToImStmts(Ctx& ctx);
@@ -155,6 +156,8 @@ protected:
 private:
   /* Check if for no return at end of function and handle accordingly */
   void checkForReturn(Ctx& ctx);
+
+  static size_t nextId_;
 };
 
 class Constructor : public Func {
@@ -198,7 +201,10 @@ public:
   std::vector<Field> fields_;
   std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> methods_;
-  size_t id_;
+  int id_;
+
+private:
+  static int nextId_;
 };
 
 /***********
@@ -222,7 +228,6 @@ public:
   void initContext(
       std::string_view filename,
       std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
-      const std::shared_ptr<std::unordered_map<std::string, std::string>>& fileIds,
       const std::shared_ptr<std::unordered_map<int, Ctx::ClassInfo*>>& classIds);
 
   im::Program toImProg() const;

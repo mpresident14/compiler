@@ -14,7 +14,7 @@ __mallocaddr:
 .globl _start
 _start:
   callq __findheap
-  callq _main0
+  callq main
   callq __exit
 
 __exit:
