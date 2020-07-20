@@ -90,18 +90,16 @@ void Ctx::removeTemp(const string& var, size_t line) {
   varMap_.erase(var);
 }
 
-
-void Ctx::insertClass(
-    const string& name,
-    unordered_multimap<string, Ctx::FnInfo>&& methods,
-    unordered_map<string, Ctx::FieldInfo>&& fields) {
-  auto iter = classMap_.find(name);
-  if (iter == classMap_.end()) {
-    throw runtime_error("Ctx::addClassId should be called before Ctx::insertClass");
+Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
+  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, filename_, id });
+  if (p.second) {
+    classIds_->emplace(id, &p.first->second);
+  } else {
+    ostringstream& err = logger.logError(line);
+    err << "Redefinition of class " << className;
   }
 
-  iter->second.methods = move(methods);
-  iter->second.fields = move(fields);
+  return p.first->second;
 }
 
 Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
@@ -473,16 +471,6 @@ string Ctx::mangleFn(string_view fnName, size_t id) {
   }
 
   return string(fnName).append(1, '_').append(to_string(id));
-}
-
-void Ctx::addClassId(string_view className, int id, size_t line) {
-  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, filename_, id });
-  if (p.second) {
-    classIds_->emplace(id, &p.first->second);
-  } else {
-    ostringstream& err = logger.logError(line);
-    err << "Redefinition of class " << className;
-  }
 }
 
 void Ctx::typeError(const Type& expected, const Type& got, size_t line) {

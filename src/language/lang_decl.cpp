@@ -87,7 +87,6 @@ void Program::initContext(
   // Add this program's declarations to its own context. We add class names before functions/methods
   // so that parameters and return types that are classes will already be in the context.
   for (const unique_ptr<ClassDecl>& cls : classes_) {
-    ctx_->addClassId(cls->name_, cls->id_, cls->line_);
     cls->addToCtx(*ctx_);
   }
   for (const unique_ptr<Func>& fn : funcs_) {
@@ -280,16 +279,18 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
+  Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
+
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
   sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
     return f1.type->numBytes < f2.type->numBytes;
   });
-  unordered_map<string, Ctx::FieldInfo> fieldMap;
+
   // Class starts with vtable pointer
   size_t currentOffset = 8;
   size_t objSize = 8;
   for (const auto& [type, name, line] : fields_) {
-    if (fieldMap.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
+    if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       objSize += type->numBytes;
       currentOffset += type->numBytes;
     } else {
@@ -315,16 +316,13 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   }
 
   // Add methods
-  unordered_multimap<string, Ctx::FnInfo> methodMap;
   for (unique_ptr<Func>& method : methods_) {
     method->checkTypes(ctx);
-    ctx.insertFn(methodMap, method->name_, method->paramTypes_, method->returnType_, method->id_, method->line_);
+    ctx.insertFn(classInfo.methods, method->name_, method->paramTypes_, method->returnType_, method->id_, method->line_);
     // Add "this" parameter as the last argument AFTER inserting it into the context
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(classTy);
   }
-
-  ctx.insertClass(name_, move(methodMap), move(fieldMap));
 }
 
 

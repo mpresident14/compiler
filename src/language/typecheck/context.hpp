@@ -128,10 +128,7 @@ public:
   const VarInfo* lookupVar(const std::string& name, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
-  void insertClass(
-      const std::string& name,
-      std::unordered_multimap<std::string, Ctx::FnInfo>&& methods,
-      std::unordered_map<std::string, Ctx::FieldInfo>&& fields);
+  Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name);
   /* Searches global classIds_ */
@@ -169,7 +166,6 @@ public:
   /* Mangle all user functions based on the function ID (My special functions begin
    * with "__") Return the function name if it doesn't need to be mangled */
   std::string mangleFn(std::string_view fnName, size_t id);
-  void addClassId(std::string_view className, int id, size_t line);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
