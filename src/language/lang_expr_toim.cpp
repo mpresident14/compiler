@@ -415,14 +415,12 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   // Push back "this" as last argument (AFTER the context lookup)
   paramImExprs.push_back(move(eInfo.imExpr));
 
-  return {
-    make_unique<im::CallExpr>(
-        make_unique<im::LabelAddr>(
-            ctx.mangleFn(ClassDecl::mangleMethod(classTy->className, methodName_), fnInfo->id)),
-        move(paramImExprs),
-        fnInfo->returnType != voidType),
-    move(fnInfo->returnType)
-  };
+  return { make_unique<im::CallExpr>(
+               make_unique<im::LabelAddr>(ctx.mangleFn(
+                   ClassDecl::mangleMethod(classTy->className, methodName_), fnInfo->id)),
+               move(paramImExprs),
+               fnInfo->returnType != voidType),
+           move(fnInfo->returnType) };
 }
 
 /**********
@@ -438,9 +436,11 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
 
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
+  size_t eLine = lValue_->line_;
+  ExprInfo eInfo = lValue_->toImExpr(ctx);
+  im::Expr::Category category = eInfo.imExpr->getCategory();
 
-  if (lValue_->getCategory() == Category::VAR) {
-    ExprInfo eInfo = lValue_->clone()->toImExpr(ctx);
+  if (category == im::Expr::Category::TEMP) {
     int tVar = static_cast<im::Temp*>(eInfo.imExpr.get())->t_;
     int tPostRes;
 
@@ -452,18 +452,21 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
     }
 
     // var +/-= 1
-    Update(move(lValue_), bOp, make_unique<ConstInt>(1, line_)).toImStmts(imStmts, ctx);
+    Update(
+        make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, eLine),
+        bOp,
+        make_unique<ConstInt>(1, line_))
+        .toImStmts(imStmts, ctx);
 
     // return var (pre) or tPostRes (post)
     return { make_unique<im::DoThenEval>(
                  move(imStmts), make_unique<im::Temp>(pre_ ? tVar : tPostRes)),
              move(eInfo.type) };
 
-  } else {
+  } else if (category == im::Expr::Category::MEM_DEREF) {
     // As with Update, we have to make sure we don't duplicated any side effects
     // by calculating the memory address twice
-    size_t eLine = lValue_->line_;
-    ExprInfo eInfo = lValue_->toImExpr(ctx);
+
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
 
     // movq &expr, tAddr
@@ -492,6 +495,8 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
                  pre_ ? Update::derefTemp(tAddr, memDeref->numBytes_)
                       : (im::ExprPtr)make_unique<im::Temp>(tPostRes)),
              move(eInfo.type) };
+  } else {
+    throw runtime_error("IncDec::toImStmts");
   }
 }
 

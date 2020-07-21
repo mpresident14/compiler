@@ -208,19 +208,24 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
-  if (lValue_->getCategory() == Expr::Category::VAR) {
-    ExprPtr lValueClone = lValue_->clone();
-    Assign(move(lValueClone), make_unique<BinaryOp>(move(lValue_), move(rhs_), bOp_))
+  // All lvalues translate into a Temp or a MemDeref
+  ExprInfo eInfo = lValue_->toImExpr(ctx);
+  size_t lValueLine = lValue_->line_;
+  im::Expr::Category category = eInfo.imExpr->getCategory();
+
+  if (category == im::Expr::Category::TEMP) {
+    im::Temp* imTemp = static_cast<im::Temp*>(eInfo.imExpr.get());
+    Assign(
+        make_unique<ImWrapper>(make_unique<im::Temp>(imTemp->t_), eInfo.type, true, lValueLine),
+        make_unique<BinaryOp>(
+            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, lValueLine), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
-  } else {
+  } else if (category == im::Expr::Category::MEM_DEREF) {
     // For memory dereferences, we have to ensure that we don't calculate them
     // twice because then any side effects will be duplicated. Therefore, we
     // calculate the address and save that to a temp before performing the
     // update.
-    size_t lValueLine = lValue_->line_;
-    ExprInfo eInfo = lValue_->toImExpr(ctx);
     im::MemDeref* memDeref = static_cast<im::MemDeref*>(eInfo.imExpr.get());
-
     int t = newTemp();
     imStmts.push_back(assignAddr(t, memDeref));
 
@@ -228,9 +233,10 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
         make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
     ExprPtr memWrapper2 =
         make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
-
     Assign(move(memWrapper1), make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
+  } else {
+    throw runtime_error("Update::toImStmts");
   }
 }
 
@@ -263,8 +269,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
   // Put the String in a temporary
   static const string strVar = "_str";
-  ExprPtr callToString =
-      make_unique<CallExpr>(vector<string>(), "toString", move(toPrint), line_);
+  ExprPtr callToString = make_unique<CallExpr>(vector<string>(), "toString", move(toPrint), line_);
   StmtPtr assignStr = make_unique<VarDecl>(TypePtr(strType), strVar, move(callToString), line_);
 
   vector<im::ExprPtr> printArgs;
