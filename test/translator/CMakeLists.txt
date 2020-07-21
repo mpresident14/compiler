@@ -1,6 +1,8 @@
 # Project's name
 project(translator_test)
 
+include(CTest)
+
 set(SUCCESS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/success)
 file(GLOB IMPORTS LIST_DIRECTORIES false "${SRC}/imports/*")
 set(ERROR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/error)
