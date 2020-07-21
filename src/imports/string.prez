@@ -30,6 +30,27 @@ class String {
     return this;
   }
 
+  String append(String str) {
+    long myLen = this.len;
+    long otherLen = str.len;
+    long sum = myLen + otherLen;
+
+    if (sum > this.arr.length) {
+      char[] newArr = char[](sum);
+      for (long i = 0; i < myLen; ++i) {
+        newArr[i] = this.arr[i];
+      }
+      this.arr = newArr;
+    }
+
+    for (long i = 0; i < otherLen; ++i) {
+      this.arr[myLen + i] = str.arr[i];
+    }
+
+    this.len = sum;
+    return this;
+  }
+
   void reverse() {
     long left = 0;
     long right = this.len - 1;
@@ -50,6 +71,10 @@ class String {
       newArr[i] = this.arr[i];
     }
     this.arr = newArr;
+  }
+
+  String toString() {
+    return this;
   }
 }
 

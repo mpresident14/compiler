@@ -264,17 +264,27 @@ void VarDecl::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  vector<ExprPtr> toPrint;
-  toPrint.push_back(move(expr_));
+  size_t eLine = expr_->line_;
+  bool isLValue = expr_->isLValue();
+  ExprInfo eInfo = expr_->toImExpr(ctx);
+  auto imWrapExpr = make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, isLValue, eLine);
 
   // Put the String in a temporary
   static const string strVar = "_str";
-  ExprPtr callToString = make_unique<CallExpr>(vector<string>(), "toString", move(toPrint), line_);
-  StmtPtr assignStr = make_unique<VarDecl>(TypePtr(strType), strVar, move(callToString), line_);
+  const char toString[] = "toString";
+
+  ExprPtr callToString;
+  if (eInfo.type->typeName == TypeName::CLASS) {
+      callToString = make_unique<MethodInvocation>(move(imWrapExpr), toString, vector<ExprPtr>(), line_);
+  } else {
+    vector<ExprPtr> toPrint;
+    toPrint.push_back(move(imWrapExpr));
+    callToString = make_unique<CallExpr>(vector<string>(), toString, move(toPrint), line_);
+  }
+
+  VarDecl(TypePtr(strType), strVar, move(callToString), line_).toImStmts(imStmts, ctx);
 
   vector<im::ExprPtr> printArgs;
-  assignStr->toImStmts(imStmts, ctx);
-
   // Address of the char[] + 8 to skip length field
   printArgs.push_back(make_unique<im::BinOp>(
       MemberAccess(make_unique<Var>(strVar, line_), "arr", line_).toImExpr(ctx).imExpr,
