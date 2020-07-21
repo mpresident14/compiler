@@ -161,7 +161,7 @@ error_test(unused_test
     "('Warning','1','Unused')
     ('Warning','2','Unused')")
 error_test(bad_import_test
-    "('Error','2','Could')
+    "('Error','2','No')
     ('Note','4','Duplicate')
     ('Error','13','Undefined')
     ('Error','14','Undefined')

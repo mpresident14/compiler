@@ -9,6 +9,7 @@
 
 #include <string.h>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -19,6 +20,7 @@
 #include <vector>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 // TODO: Generate more informative parser errors by analyzing stack and
 // remaining tokens. Can also update the parser code itself (e.g., "expected
@@ -39,18 +41,19 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
       builtIns.push_back(move(prog));
     }
 
-    try {
-      // Mark as initiailized before recursing to allow circular dependencies
-      auto iter =
-          initializedProgs
-              .emplace(srcFilename, make_unique<language::Program>(parser::parse(srcFilename)))
-              .first;
-      // Recursively record all declarations
-      iter->second->initContext(srcFilename, initializedProgs, builtIns, classIds);
-    } catch (const runtime_error& e) {
-      // Catch "can't open file" error
-      logger.logFatal(0, e.what());
+    // Mark as initiailized before recursing to allow circular dependencies
+    error_code ec;
+    fs::path srcPath = fs::canonical(srcFilename, ec);
+    if (ec) {
+      logger.logFatal(0, ec.message().append(" \"").append(srcFilename).append(1, '"'));
     }
+
+    auto iter = initializedProgs
+                    .emplace(srcPath, make_unique<language::Program>(parser::parse(srcFilename)))
+                    .first;
+    // Recursively record all declarations
+    iter->second->initContext(srcPath, initializedProgs, builtIns, classIds);
+
 
     // Convert to assembly
     vector<assem::Program> assemProgs;

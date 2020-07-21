@@ -13,6 +13,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <filesystem>
 
 namespace language {
 
@@ -221,7 +222,7 @@ public:
   im::Program toImProg() const;
   assem::Program toAssemProg() const;
   void initContext(
-      std::string_view filename,
+      const std::filesystem::path& filename,
       std::unordered_map<std::string, std::unique_ptr<Program>>& initializedProgs,
       const std::vector<Program>& builtIns,
       const std::shared_ptr<std::unordered_map<int, Ctx::ClassInfo*>>& classIds);

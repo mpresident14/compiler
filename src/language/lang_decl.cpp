@@ -6,7 +6,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 using namespace std;
-
+namespace fs = std::filesystem;
 
 namespace language {
 
@@ -15,13 +15,6 @@ namespace language {
  * Program *
  ***********/
 
-// TODO: Imports should be relative to the file in which they were declared, not to the working
-// directory where the compiler exe was called
-// TODO: When we use an absolute path as the main file, it will compile the main file twice if a
-// relative import is used in another file.
-// Ex: mpresident@mpresident-XPS-15-9550:~/cs/compiler/test/translator/success$
-// ~/cs/compiler/bin/main
-// ~/cs/compiler/test/translator/success/import_test.prez ~/cs/compiler/log/import_test.s
 Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
     : imports_(move(imports)), ctx_(nullptr) {
   for (DeclPtr& decl : decls) {
@@ -34,13 +27,23 @@ Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
 }
 
 
+namespace {
+  fs::path toCanonical(const fs::path& parent, fs::path imported, error_code& ec) {
+    if (imported.is_relative()) {
+      return fs::canonical(fs::path(parent).replace_filename(imported), ec);
+    }
+    return fs::canonical(imported, ec);
+  }
+}  // namespace
+
+
 void Program::initContext(
-    string_view filename,
+    const fs::path& filePath,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
     const std::vector<Program>& builtIns,
     const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
   // Create a new context
-  ctx_ = make_unique<Ctx>(filename, classIds);
+  ctx_ = make_unique<Ctx>(filePath.c_str(), classIds);
 
   // Add builtin declarations to the context
   for (const Program& prog : builtIns) {
@@ -49,9 +52,16 @@ void Program::initContext(
 
   // Go through the imports and build the context tree so we have access
   // to all imported declarations.
+  error_code ec;
   for (const Import& imported : imports_) {
-    const string& importName = imported.filename;
-    auto progsIter = initializedProgs.find(importName);
+    fs::path importPath = toCanonical(filePath, imported.filename, ec);
+    if (ec) {
+      ostream& err = ctx_->getLogger().logError(imported.line, ec.message());
+      err << " \"" << imported.filename << "\"";
+      continue;
+    }
+
+    auto progsIter = initializedProgs.find(importPath);
     Program* prog = nullptr;
     if (progsIter == initializedProgs.end()) {
       // We haven't initialized this program yet
@@ -60,15 +70,12 @@ void Program::initContext(
         // We use a nullptr as a placeholder to mark that we already tried to
         // parse the program. This way, we don't try parsing it again if it is
         // imported somewhere else
-        auto iter = initializedProgs.emplace(importName, nullptr).first;
-        iter->second = make_unique<Program>(parser::parse(importName));
+        auto iter = initializedProgs.emplace(importPath, nullptr).first;
+        iter->second = make_unique<Program>(parser::parse(importPath));
         prog = iter->second.get();
-        prog->initContext(importName, initializedProgs, builtIns, classIds);
-      } catch (const runtime_error& e) {
-        // Catch "can't open file" errors
-        ctx_->getLogger().logError(imported.line, e.what());
+        prog->initContext(importPath, initializedProgs, builtIns, classIds);
       } catch (const parser::ParseException& e) {
-        cerr << e.what() << "\n(Imported at " << filename << ", line " << imported.line << ")\n"
+        cerr << e.what() << "\n(Imported at " << filePath << ", line " << imported.line << ")\n"
              << endl;
       }
     } else {
@@ -76,10 +83,11 @@ void Program::initContext(
     }
 
     // If the program parsed, put the import's context in our context tree
-    if (prog && !ctx_->getCtxTree().addCtx(importName, prog->ctx_.get())) {
-      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + importName + "'");
+    if (prog && !ctx_->getCtxTree().addCtx(imported.filename, prog->ctx_.get())) {
+      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + imported.filename + "'");
     }
   }
+
 
   // Add this program's declarations to its own context. We add class names before functions/methods
   // so that parameters and return types that are classes will already be in the context.
@@ -89,7 +97,7 @@ void Program::initContext(
   for (const unique_ptr<Func>& fn : funcs_) {
     fn->addToCtx(*ctx_);
   }
-}
+}  // namespace language
 
 
 assem::Program Program::toAssemProg() const { return toImProg().toAssemProg(); }

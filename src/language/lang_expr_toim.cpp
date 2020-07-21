@@ -10,7 +10,6 @@ namespace {
 /* Allows us to proceed through compile errors so that we don't have to report
  * one at a time */
 language::ExprInfo dummyInfo() {
-  cout << "RAN" << endl;
   return { make_unique<im::Temp>(newTemp()), anyType };
 }
 
