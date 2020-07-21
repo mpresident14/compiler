@@ -26,7 +26,7 @@ namespace language {
 ExprInfo ConstInt::toImExpr(Ctx&) {
   // Constant integers are the smallest type possible so that we allow implicit
   // conversion to larger types if required
-  return { make_unique<im::Const>(n_), smallestIntegral(n_) };
+  return { make_unique<im::Const>(n_), Type::smallestIntegral(n_) };
 }
 
 /*************
@@ -65,7 +65,8 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
                    e_->toImExprAssert(*boolType, ctx), make_unique<im::Const>(1), im::BOp::XOR),
                boolType };
     case UOp::NEG: {
-      ExprInfo eInfo = e_->toImExprAssert(isIntegral, "Unary minus requires an integer.", ctx);
+      ExprInfo eInfo = e_->toImExprAssert(
+          mem_fun_ref(&Type::isIntegral), "Unary minus requires an integer.", ctx);
       return { make_unique<im::BinOp>(make_unique<im::Const>(-1), move(eInfo.imExpr), im::BOp::MUL),
                move(eInfo.type) };
     }
@@ -104,7 +105,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
       bool isLValue = e1_->isLValue();
       ExprInfo lhsInfo = e1_->toImExpr(ctx);
       e1_ = make_unique<ImWrapper>(move(lhsInfo.imExpr), lhsInfo.type, isLValue, line_);
-      if (isIntegral(*lhsInfo.type)) {
+      if (lhsInfo.type->isIntegral()) {
         return toImExprArith(im::BOp::XOR, ctx);
       }
     }
@@ -121,7 +122,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
 
 namespace {
   bool checkIntegral(const Type& type, im::BOp op, size_t line, Ctx& ctx) {
-    if (!isIntegral(type)) {
+    if (!type.isIntegral()) {
       ostringstream err;
       err << "Operator " << op << " expected integral types, got " << type;
       ctx.getLogger().logError(line, err.str());
@@ -157,7 +158,7 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
   size_t e2Line = e2_->line_;
   ExprInfo e1Info = e1_->toImExpr(ctx);
   ExprInfo e2Info = e2_->toImExpr(ctx);
-  if (!isConvertible(*e1Info.type, *e2Info.type, nullptr)) {
+  if (!e1Info.type->isConvertibleTo(*e2Info.type, nullptr)) {
     ctx.getLogger().logError();
   }
   const TypePtr& widerType =
@@ -222,7 +223,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
 ExprInfo Cast::toImExpr(Ctx& ctx) {
   ctx.checkType(*toType_, line_);
   ExprInfo eInfo = expr_->toImExpr(ctx);
-  if (!isConvertible(*eInfo.type, *toType_, nullptr)) {
+  if (!eInfo.type->isConvertibleTo(*toType_, nullptr)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
@@ -252,7 +253,7 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) {
 
 ExprInfo NewArray::toImExprElems(Ctx& ctx) {
   size_t len = elems_.size();
-  long maxLong = minMaxValue(*longType).second;
+  long maxLong = longType->minMaxValue().second;
   if (len > (size_t)maxLong) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << len << " is greater than the maximum array size " << maxLong;
@@ -283,7 +284,7 @@ pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(Type& type, ExprPtr&& nu
   // Store the length of the array in a temporary
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
-      numElems->toImExprAssert(isIntegral, "Array size requires an integral type", ctx).imExpr);
+      numElems->toImExprAssert(mem_fun_ref(&Type::isIntegral), "Array size requires an integral type", ctx).imExpr);
 
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
@@ -325,7 +326,7 @@ bool ArrayAccess::isLValue() const noexcept { return true; }
 ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   ExprInfo exprInfo = arrExpr_->toImExpr(ctx);
   const Type& type = *exprInfo.type;
-  if (type.typeName != TypeName::ARRAY) {
+  if (type.typeName != Type::Category::ARRAY) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Operator[] can only be used on an arrays, not type " << type;
     return dummyInfo();
@@ -334,7 +335,7 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   const Type& arrType = *static_cast<const Array&>(type).arrType;
 
   im::ExprPtr imIndex =
-      index_->toImExprAssert(isIntegral, "Operator[] requires an integral type", ctx).imExpr;
+      index_->toImExprAssert(mem_fun_ref(&Type::isIntegral), "Operator[] requires an integral type", ctx).imExpr;
 
   // Add 8 bytes to skip the size field
   return { make_unique<im::MemDeref>(8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
@@ -351,13 +352,13 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = objExpr_->toImExpr(ctx);
 
   // The only member of an array is length
-  if (eInfo.type->typeName == TypeName::ARRAY) {
+  if (eInfo.type->typeName == Type::Category::ARRAY) {
     if (member_ == "length") {
       return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), longType };
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();
-  } else if (eInfo.type->typeName == TypeName::CLASS) {
+  } else if (eInfo.type->typeName == Type::Category::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
     const Ctx::ClassInfo* classInfo = ctx.lookupClass(classTy->id);
     if (!classInfo) {
@@ -387,7 +388,7 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
 
 ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   ExprInfo eInfo = objExpr_->toImExpr(ctx);
-  if (eInfo.type->typeName != TypeName::CLASS) {
+  if (eInfo.type->typeName != Type::Category::CLASS) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << "Cannot invoke method on expression of type " << *eInfo.type;
     return dummyInfo();
@@ -530,7 +531,7 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   ExprInfo exprInfo = toImExpr(ctx);
   const Type& eType = *exprInfo.type;
   bool isNarrowing;
-  if (isConvertible(eType, type, &isNarrowing)) {
+  if (eType.isConvertibleTo(type, &isNarrowing)) {
     if (isNarrowing) {
       ostream& warning = ctx.getLogger().logWarning(line_);
       warning << "Narrowing conversion from " << eType << " to " << type;

@@ -10,23 +10,38 @@
 
 using namespace std;
 
-Array::Array(const TypePtr& type) : Type(TypeName::ARRAY, 8), arrType(type) {}
+Array::Array(const TypePtr& type) : Type(Type::Category::ARRAY, 8), arrType(type) {}
 
 Class::Class(vector<string>&& quals, string_view name)
-    : Type(TypeName::CLASS, 8), qualifiers(move(quals)), className(name) {}
+    : Type(Type::Category::CLASS, 8), qualifiers(move(quals)), className(name) {}
 
 
-bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
-  if (from == to) {
+bool Type::isIntegral() const noexcept {
+  switch (typeName) {
+    case Type::Category::LONG:
+      return true;
+    case Type::Category::INT:
+      return true;
+    case Type::Category::SHORT:
+      return true;
+    case Type::Category::CHAR:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool Type::isConvertibleTo(const Type& to, bool* isNarrowing) const noexcept {
+  if (*this == to) {
     if (isNarrowing) {
       *isNarrowing = false;
     }
     return true;
   }
 
-  if (isIntegral(from) && isIntegral(to)) {
+  if (isIntegral() && to.isIntegral()) {
     if (isNarrowing) {
-      if (to.numBytes < from.numBytes) {
+      if (to.numBytes < numBytes) {
         *isNarrowing = true;
       } else {
         *isNarrowing = false;
@@ -38,25 +53,25 @@ bool isConvertible(const Type& from, const Type& to, bool* isNarrowing) {
   return false;
 }
 
-pair<long, long> minMaxValue(const Type& integralType) {
-  switch (integralType.typeName) {
-    case TypeName::LONG:
+pair<long, long> Type::minMaxValue() const {
+  switch (typeName) {
+    case Type::Category::LONG:
       return { numeric_limits<long>::min(), numeric_limits<long>::max() };
-    case TypeName::INT:
+    case Type::Category::INT:
       return { numeric_limits<int>::min(), numeric_limits<int>::max() };
-    case TypeName::SHORT:
+    case Type::Category::SHORT:
       return { numeric_limits<short>::min(), numeric_limits<short>::max() };
-    case TypeName::CHAR:
+    case Type::Category::CHAR:
       return { numeric_limits<char>::min(), numeric_limits<char>::max() };
     default:
       throw invalid_argument("minMaxValue: Not an integral type");
   }
 }
 
-const TypePtr& smallestIntegral(long n) {
+const TypePtr& Type::smallestIntegral(long n) {
   static const TypePtr* constIntTypes[]{ &shortType, &intType, &longType };
   for (const TypePtr* type : constIntTypes) {
-    auto p = minMaxValue(**type);
+    auto p = (*type)->minMaxValue();
     if (p.first <= n && n <= p.second) {
       return *type;
     }
@@ -66,16 +81,16 @@ const TypePtr& smallestIntegral(long n) {
 
 
 bool operator==(const Type& t1, const Type& t2) noexcept {
-  if (t1.typeName == TypeName::ANY || t2.typeName == TypeName::ANY) {
+  if (t1.typeName == Type::Category::ANY || t2.typeName == Type::Category::ANY) {
     return true;
   }
 
   if (t1.typeName == t2.typeName) {
     switch (t1.typeName) {
-      case TypeName::ARRAY:
+      case Type::Category::ARRAY:
         return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
-      case TypeName::CLASS:
-      // Everything equals ID_UNKNOWN so we don't give an error explosion for an undefined class
+      case Type::Category::CLASS:
+        // Everything equals ID_UNKNOWN so we don't give an error explosion for an undefined class
         return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id ||
                static_cast<const Class&>(t1).id == Class::ID_UNKNOWN ||
                static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;
@@ -90,28 +105,28 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept { return *t1 == *
 
 ostream& operator<<(ostream& out, const Type& type) {
   switch (type.typeName) {
-    case TypeName::LONG:
+    case Type::Category::LONG:
       out << "long";
       break;
-    case TypeName::INT:
+    case Type::Category::INT:
       out << "int";
       break;
-    case TypeName::SHORT:
+    case Type::Category::SHORT:
       out << "short";
       break;
-    case TypeName::CHAR:
+    case Type::Category::CHAR:
       out << "char";
       break;
-    case TypeName::BOOL:
+    case Type::Category::BOOL:
       out << "bool";
       break;
-    case TypeName::VOID:
+    case Type::Category::VOID:
       out << "void";
       break;
-    case TypeName::ARRAY:
+    case Type::Category::ARRAY:
       out << *static_cast<const Array&>(type).arrType << "[]";
       break;
-    case TypeName::CLASS:
+    case Type::Category::CLASS:
       if (static_cast<const Class&>(type).id == Class::ID_UNKNOWN) {
         out << "???";
       } else {
@@ -119,7 +134,7 @@ ostream& operator<<(ostream& out, const Type& type) {
             static_cast<const Class&>(type).qualifiers, static_cast<const Class&>(type).className);
       }
       break;
-    case TypeName::ANY:
+    case Type::Category::ANY:
       out << "???";
       break;
     default:

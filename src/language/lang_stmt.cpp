@@ -142,7 +142,7 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   const Type& retType = ctx.getCurrentRetType();
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
-    if (retType.typeName != TypeName::VOID) {
+    if (retType.typeName != Type::Category::VOID) {
       ostringstream& err = ctx.getLogger().logError(line_);
       err << "Function has return type " << retType << " but may return void.";
     }
@@ -170,7 +170,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
   if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
-          TypeName::ARRAY) {
+          Type::Category::ARRAY) {
     ctx.getLogger().logError(line_, "Cannot assign to length field of an array.");
     return;
   }
@@ -274,7 +274,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   const char toString[] = "toString";
 
   ExprPtr callToString;
-  if (eInfo.type->typeName == TypeName::CLASS) {
+  if (eInfo.type->typeName == Type::Category::CLASS) {
       callToString = make_unique<MethodInvocation>(move(imWrapExpr), toString, vector<ExprPtr>(), line_);
   } else {
     vector<ExprPtr> toPrint;

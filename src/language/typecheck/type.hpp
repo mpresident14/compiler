@@ -14,29 +14,37 @@
  * Type *
  ********/
 
-/* ANY used to proceed through errors */
-// TODO: Nest within Type
-enum class TypeName { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
-
-struct Type {
-  virtual ~Type() {}
-  constexpr Type(TypeName name, u_char nBytes, bool integral = false)
-      : typeName(name), numBytes(nBytes), isIntegral(integral) {}
-
-  TypeName typeName;
-  u_char numBytes;
-  bool isIntegral;
-};
-
+class Type;
 using TypePtr = std::shared_ptr<Type>;
 
-struct Array : public Type {
+class Type {
+public:
+  /* ANY used to proceed through errors */
+  enum class Category { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
+
+  /* Determines the smallest integral type (excluding CHAR) that the arg fits in */
+  static const TypePtr& smallestIntegral(long n);
+
+  virtual ~Type() {}
+  constexpr Type(Category name, u_char nBytes) : typeName(name), numBytes(nBytes) {}
+  bool isIntegral() const noexcept;
+  bool isConvertibleTo(const Type& to, bool* isNarrowing) const noexcept;
+  std::pair<long, long> minMaxValue() const;
+
+  Category typeName;
+  u_char numBytes;
+};
+
+
+class Array : public Type {
+public:
   Array(const TypePtr& type);
 
   TypePtr arrType;
 };
 
-struct Class : public Type {
+class Class : public Type {
+public:
   static const int ID_EMPTY = -1;
   static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
@@ -46,10 +54,6 @@ struct Class : public Type {
   int id = Class::ID_EMPTY;
 };
 
-constexpr bool isIntegral(const Type& t) { return t.isIntegral; }
-bool isConvertible(const Type& from, const Type& to, bool* isNarrowing);
-std::pair<long, long> minMaxValue(const Type& integralType);
-const TypePtr& smallestIntegral(long n);
 
 bool operator==(const Type& t1, const Type& t2) noexcept;
 // Because I will inevitably call this one by mistake instead of the one above
@@ -57,13 +61,13 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
 
-const TypePtr longType = std::make_shared<Type>(TypeName::LONG, 8, true);
-const TypePtr intType = std::make_shared<Type>(TypeName::INT, 4, true);
-const TypePtr shortType = std::make_shared<Type>(TypeName::SHORT, 2, true);
-const TypePtr charType = std::make_shared<Type>(TypeName::CHAR, 1, true);
-const TypePtr boolType = std::make_shared<Type>(TypeName::BOOL, 1);
-const TypePtr voidType = std::make_shared<Type>(TypeName::VOID, 0);
+const TypePtr longType = std::make_shared<Type>(Type::Category::LONG, 8);
+const TypePtr intType = std::make_shared<Type>(Type::Category::INT, 4);
+const TypePtr shortType = std::make_shared<Type>(Type::Category::SHORT, 2);
+const TypePtr charType = std::make_shared<Type>(Type::Category::CHAR, 1);
+const TypePtr boolType = std::make_shared<Type>(Type::Category::BOOL, 1);
+const TypePtr voidType = std::make_shared<Type>(Type::Category::VOID, 0);
 const TypePtr strType = std::make_shared<Class>(std::vector<std::string>(), "String");
-const TypePtr anyType = std::make_shared<Type>(TypeName::ANY, 0, true);
+const TypePtr anyType = std::make_shared<Type>(Type::Category::ANY, 0);
 
 #endif  // TYPE_HPP

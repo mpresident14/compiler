@@ -240,7 +240,7 @@ Ctx::FnLookupRes Ctx::lookupFn(
                    fnParamTypes.cend(),
                    [&isNarrowing](const TypePtr& from, const TypePtr& to) {
                      bool b;
-                     bool res = isConvertible(*from, *to, &b);
+                     bool res = from->isConvertibleTo(*to, &b);
                      isNarrowing |= b;
                      return res;
                    })) {
@@ -451,7 +451,7 @@ void Ctx::undefClassAmbigQuals(
 
 void Ctx::checkType(Type& type, size_t line) {
   // Built-in types are always valid
-  if (type.typeName != TypeName::CLASS) {
+  if (type.typeName != Type::Category::CLASS) {
     return;
   }
 

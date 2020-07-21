@@ -85,7 +85,7 @@ void BinaryOp::asBoolComp(
   // Make sure we are comparing two integral types
   ExprInfo info1 = e1_->toImExpr(ctx);
   ExprInfo info2 = e2_->toImExpr(ctx);
-  if (!(info1.type->isIntegral && info2.type->isIntegral)) {
+  if (!(info1.type->isIntegral() && info2.type->isIntegral())) {
     ostream& err =
         ctx.getLogger().logError(line_, "Comparison operator requires integral types. Got ");
     err << *info1.type << " and " << *info2.type;
