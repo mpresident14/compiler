@@ -1,6 +1,8 @@
 # Project's name
 project(parser_test)
 
+include(CTest)
+
 # Directory variables
 set(PARSER_SRC_DIR ${SRC}/parser)
 set(UTIL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils)
