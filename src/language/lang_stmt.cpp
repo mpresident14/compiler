@@ -218,7 +218,9 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     Assign(
         make_unique<ImWrapper>(make_unique<im::Temp>(imTemp->t_), eInfo.type, true, lValueLine),
         make_unique<BinaryOp>(
-            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, lValueLine), move(rhs_), bOp_))
+            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, lValueLine),
+            move(rhs_),
+            bOp_))
         .toImStmts(imStmts, ctx);
   } else if (category == im::Expr::Category::MEM_DEREF) {
     // For memory dereferences, we have to ensure that we don't calculate them
@@ -275,7 +277,8 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
   ExprPtr callToString;
   if (eInfo.type->typeName == Type::Category::CLASS) {
-      callToString = make_unique<MethodInvocation>(move(imWrapExpr), toString, vector<ExprPtr>(), line_);
+    callToString =
+        make_unique<MethodInvocation>(move(imWrapExpr), toString, vector<ExprPtr>(), line_);
   } else {
     vector<ExprPtr> toPrint;
     toPrint.push_back(move(imWrapExpr));

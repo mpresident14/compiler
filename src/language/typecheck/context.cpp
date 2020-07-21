@@ -22,9 +22,7 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 }
 
 
-Ctx::Ctx(
-    string_view filename,
-    const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
+Ctx::Ctx(string_view filename, const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
     : filename_(filename), logger(filename), classIds_(classIds) {}
 
 Logger& Ctx::getLogger() noexcept { return logger; }

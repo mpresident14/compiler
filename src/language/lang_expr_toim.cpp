@@ -284,7 +284,10 @@ pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(Type& type, ExprPtr&& nu
   // Store the length of the array in a temporary
   im::StmtPtr storeLen = make_unique<im::Assign>(
       make_unique<im::Temp>(tLen),
-      numElems->toImExprAssert(mem_fun_ref(&Type::isIntegral), "Array size requires an integral type", ctx).imExpr);
+      numElems
+          ->toImExprAssert(
+              mem_fun_ref(&Type::isIntegral), "Array size requires an integral type", ctx)
+          .imExpr);
 
   // Compute the size of the array in bytes
   im::ExprPtr mul = make_unique<im::BinOp>(
@@ -335,7 +338,10 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
   const Type& arrType = *static_cast<const Array&>(type).arrType;
 
   im::ExprPtr imIndex =
-      index_->toImExprAssert(mem_fun_ref(&Type::isIntegral), "Operator[] requires an integral type", ctx).imExpr;
+      index_
+          ->toImExprAssert(
+              mem_fun_ref(&Type::isIntegral), "Operator[] requires an integral type", ctx)
+          .imExpr;
 
   // Add 8 bytes to skip the size field
   return { make_unique<im::MemDeref>(8, move(exprInfo.imExpr), move(imIndex), arrType.numBytes),
