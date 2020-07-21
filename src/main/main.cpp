@@ -36,8 +36,9 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
     vector<language::Program> builtIns;
     auto classIds = make_shared<unordered_map<int, Ctx::ClassInfo*>>();
     for (string builtInFile : builtInFiles) {
-      language::Program prog = parser::parse(builtInFile);
-      prog.initContext(builtInFile, initializedProgs, {}, classIds);
+      fs::path builtInPath = fs::canonical(builtInFile);
+      language::Program prog = parser::parse(builtInPath);
+      prog.initContext(builtInPath, initializedProgs, {}, classIds);
       builtIns.push_back(move(prog));
     }
 
