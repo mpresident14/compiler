@@ -56,4 +56,4 @@ src/main/parser.cpp
 
 
 # Playground files
-src/main/sandbox.prez
+test/translator/sandbox.prez

@@ -1,2 +1,2 @@
 # compiler
-Simple compiler for my simple made-up language. WIP.
+A Java-ish language for x86-64. WIP.
