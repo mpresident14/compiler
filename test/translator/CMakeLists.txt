@@ -4,7 +4,7 @@ project(translator_test)
 include(CTest)
 
 set(SUCCESS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/success)
-file(GLOB IMPORTS LIST_DIRECTORIES false "${SRC}/imports/*")
+file(GLOB IMPORTS LIST_DIRECTORIES false "${SRC}/built_in/*")
 set(ERROR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/error)
 set(MY_TESTS "")
 set(MY_TEST_EXES "")
@@ -36,16 +36,16 @@ function(success_test TEST_NAME EXPECTED_OUT)
         ${LOG_DIRECTORY}/${ASM_FILE}
     COMMAND as
         ${LOG_DIRECTORY}/${ASM_FILE}
-        ${SRC}/imports/syscall.s
-        ${SRC}/imports/string.s
+        ${SRC}/built_in/syscall.s
+        ${SRC}/built_in/string.s
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
     COMMAND ld
         ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}.o
         -o ${RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}
     DEPENDS
       main
-      ${SRC}/imports/syscall.s
-      ${SRC}/imports/string.s
+      ${SRC}/built_in/syscall.s
+      ${SRC}/built_in/string.s
       ${SUCCESS_DIR}/${SRC_FILE}
       ${IMPORTS}
       ${EXTRA_DEPENDS})
@@ -77,19 +77,19 @@ function(error_test TEST_NAME EXPECTED_OUT)
 endfunction()
 
 add_custom_command(
-    OUTPUT ${SRC}/imports/string.s
-    WORKING_DIRECTORY ${SRC}/imports
+    OUTPUT ${SRC}/built_in/string.s
+    WORKING_DIRECTORY ${SRC}/built_in
     COMMAND
         ${RUNTIME_OUTPUT_DIRECTORY}/main
-        ${SRC}/imports/string.prez
-        ${SRC}/imports/string.s
+        ${SRC}/built_in/string.prez
+        ${SRC}/built_in/string.s
         builtin
     # To prevent duplicate labels
-    COMMAND sed 's/_L/_M/g' -i ${SRC}/imports/string.s
+    COMMAND sed 's/_L/_M/g' -i ${SRC}/built_in/string.s
     DEPENDS
         main
-        ${SRC}/imports/syscall.s
-        ${SRC}/imports/string.prez)
+        ${SRC}/built_in/syscall.s
+        ${SRC}/built_in/string.prez)
 
 add_custom_target(
     sandbox
@@ -99,14 +99,14 @@ add_custom_target(
         ${LOG_DIRECTORY}/sandbox.s
     COMMAND as
         ${LOG_DIRECTORY}/sandbox.s
-        ${SRC}/imports/syscall.s
-        ${SRC}/imports/string.s
+        ${SRC}/built_in/syscall.s
+        ${SRC}/built_in/string.s
         -o ${RUNTIME_OUTPUT_DIRECTORY}/sandbox.o
     COMMAND ld
         ${RUNTIME_OUTPUT_DIRECTORY}/sandbox.o
         -o ${RUNTIME_OUTPUT_DIRECTORY}/sandbox
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/sandbox
-    DEPENDS main ${SRC}/imports/string.s ${SRC}/imports/syscall.s)
+    DEPENDS main ${SRC}/built_in/string.s ${SRC}/built_in/syscall.s)
 
 # Running Tests
 success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")

@@ -5,7 +5,7 @@ add_executable(main main.cpp)
 add_library(my_parser_lib parser.cpp)
 target_link_libraries(main my_parser_lib lang_lib)
 
-target_compile_definitions(main PUBLIC IMPORT_DIR="${SRC}/imports")
+target_compile_definitions(main PUBLIC IMPORT_DIR="${SRC}/built_in")
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/parser.hpp ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp
