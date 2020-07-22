@@ -31,13 +31,12 @@
     ret.reserve(len);
     size_t i = 0;
     while (i < len) {
-      char c = str[i];
+      char c = str[i++];
       if (c == '\\' && i != len) {
-        ret.push_back(escape(str[i+1]));
-        i += 2;
+        ret.push_back(escape(str[i]));
+        ++i;
       } else {
         ret.push_back(c);
-        ++i;
       }
     }
     return ret;

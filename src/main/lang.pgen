@@ -25,15 +25,37 @@
     return sv.substr(1,sv.size() - 2);
   }
 
+  char escape(char c) {
+    switch (c) {
+      case 'n': return '\n';
+      case 't': return '\t';
+      default: return c;
+    }
+  }
+
   char maybeEscape(string_view str) {
     if (str[0] == '\\') {
-      switch (str[1]) {
-        case 'n': return '\n';
-        case 't': return '\t';
-        default: return str[1];
-      }
+      return escape(str[1]);
     }
     return str[0];
+  }
+
+  string escapeStrLit(string_view str) {
+    str = removeQuotes(str);
+    size_t len = str.size();
+    string ret;
+    ret.reserve(len);
+    size_t i = 0;
+    while (i < len) {
+      char c = str[i++];
+      if (c == '\\' && i != len) {
+        ret.push_back(escape(str[i]));
+        ++i;
+      } else {
+        ret.push_back(c);
+      }
+    }
+    return ret;
   }
 
   long stolThrow(string_view str, size_t* idx, int base, size_t line) {
@@ -131,6 +153,7 @@ HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { long }    % stolThrow(#s
 IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string }  % #str %
 SRCFILE     "\"([^\n]*/)*[^\n]+\.prez\""           -> { string }  % removeQuotes(#str) %
 CHARLIT     "'(.|\\t|\\n)'"                        -> { char }    % maybeEscape(removeQuotes(#str)) %
+STRLIT      "\"([^\"]|\\\")*\""                    -> { string }  % escapeStrLit(#str) %
 
 #prec
 
@@ -232,6 +255,7 @@ ExprNoVar -> { ExprPtr }
    | TRUE                                       % make_unique<ConstBool>(true, #line) %
    | FALSE                                      % make_unique<ConstBool>(false, #line) %
    | CHARLIT                                    % make_unique<ConstChar>(#0, #line) %
+   | STRLIT                                     % make_unique<StrLit>(#0, #line) %
    | MINUS Expr   #prec UNARY_MINUS             % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
    | BANG Expr                                  % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
    | Expr PLUS Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %

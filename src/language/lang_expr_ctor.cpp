@@ -13,6 +13,9 @@ ExprPtr ConstChar::clone() const { return make_unique<ConstChar>(c_, line_); }
 
 ExprPtr ConstBool::clone() const { return make_unique<ConstBool>(b_, line_); }
 
+StrLit::StrLit(std::string_view sv, size_t line) : Expr(line), str_(sv) {}
+ExprPtr StrLit::clone() const { return make_unique<StrLit>(str_, line_); }
+
 Var::Var(string_view name, size_t line) : Expr(line), name_(name) {}
 ExprPtr Var::clone() const { return make_unique<Var>(name_, line_); }
 

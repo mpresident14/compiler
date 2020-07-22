@@ -72,6 +72,7 @@ GrammarData CONFIG_GRAMMAR = {
 const char ADDL_CODE[] =
     R"(
       using namespace std;
+
       string rmEnclosure(string_view str) {
         return string(str.substr(1, str.size() - 2));
       }

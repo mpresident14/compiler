@@ -154,7 +154,7 @@ MergedRgxDFA buildMergedRgxDFA(const GrammarData& gd) {
         newStates.push_back({ successor, token });
         if (successor->getValue()->isNullable()) {
           // Multiple regex DFAs accept the same string. We pick the regex
-          // that was listed first.
+          // that was listed first (tokens are negative, so greater tokens listed first)
           if (token > stateToken) {
             stateToken = token;
           }

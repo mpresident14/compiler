@@ -80,6 +80,7 @@ public:
     CONST_INT,
     CONST_CHAR,
     CONST_BOOL,
+    STRLIT,
     VAR,
     UNARY_OP,
     BINARY_OP,
@@ -380,6 +381,17 @@ public:
   ExprPtr clone() const override;
 
   bool b_;
+};
+
+
+class StrLit : public Expr {
+public:
+  StrLit(std::string_view sv, size_t line);
+  Category getCategory() const noexcept override { return Category::STRLIT; }
+  ExprInfo toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+
+  std::string str_;
 };
 
 

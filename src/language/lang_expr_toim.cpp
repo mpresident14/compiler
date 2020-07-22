@@ -38,6 +38,25 @@ ExprInfo ConstChar::toImExpr(Ctx&) { return { make_unique<im::Const>(c_), charTy
  *************/
 ExprInfo ConstBool::toImExpr(Ctx&) { return { make_unique<im::Const>(b_), boolType }; }
 
+/**********
+ * StrLit *
+ **********/
+
+ExprInfo StrLit::toImExpr(Ctx& ctx) {
+  vector<ExprPtr> chars;
+  chars.reserve(str_.size());
+  for (char c : str_) {
+    chars.push_back(make_unique<ConstChar>(c, line_));
+  }
+
+  vector<ExprPtr> params;
+  params.push_back(make_unique<NewArray>(TypePtr(charType), move(chars), line_));
+  params.push_back(make_unique<ConstBool>(true, line_));
+  return CallExpr(vector<string>(), "String", move(params), line_).toImExpr(ctx);
+}
+
+
+
 /*******
  * Var *
  *******/
