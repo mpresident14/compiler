@@ -123,6 +123,7 @@ success_test(opt_test "2,73,89,292,88,-2,89")
 success_test(update_test "1,2,4,1,9,2,3,3")
 success_test(incdec_test "2,3,3,2,1,4,4,5,4,20,5,26,6")
 success_test(class_test "5,5,4,4,1,1,2,2,3,18")
+success_test(strlit_test "Hello world!,Good-bye!,E\"sca\tpe\nd")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
 success_test(import_test "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
