@@ -172,7 +172,6 @@ public:
 
 
 private:
-  const VarInfo* lookupTempVar(const std::string& name);
   void removeTemp(const std::string& var, size_t line);
   FnLookupRes lookupFn(
       const std::unordered_multimap<std::string, FnInfo>& funcMap,

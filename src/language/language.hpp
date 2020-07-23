@@ -208,9 +208,9 @@ public:
   std::string name_;
   std::vector<Field> fields_;
   std::vector<Constructor> ctors_;
-  std::vector<std::unique_ptr<Func>> methods_;
+  std::vector<std::unique_ptr<Func>> nonVMethods_;
+  std::vector<std::unique_ptr<Func>> vMethods_;
   int id_;
-  bool hasVirtual_;
 
 private:
   std::string vTableName();

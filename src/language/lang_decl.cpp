@@ -220,6 +220,8 @@ Constructor::Constructor(
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
+    // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
+    // a new shared_ptr for each ctor
     : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
 
 
@@ -238,21 +240,23 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
               make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
           returnType_,
           false,
-          0),
-      0)
+          line_),
+      line_)
       .toImStmts(imStmts, ctx);
 
   // Create pointer to vtable if necessary
   if (vTableName_) {
     imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(0, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::MemDeref>(
+            line_, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
         make_unique<im::LabelAddr>(*vTableName_)));
   }
 
+  // Implicit return of the object we created. We insert it into the body rather than inserting it
+  // manually into imStmts so that nicer errors are given if a user redefines "this"
+  body_->stmts_.push_back(
+      make_unique<Return>(optional<ExprPtr>{ make_unique<Var>(ClassDecl::THIS, 0) }, 0));
   body_->toImStmts(imStmts, ctx);
-
-  // Implicit return of the object we created
-  Return({ make_unique<Var>(ClassDecl::THIS, 0) }, 0).toImStmts(imStmts, ctx);
 
   ctx.removeParams(paramNames_, line_);
   ctx.removeVars({ { ClassDecl::THIS, 0 } });
@@ -275,7 +279,6 @@ string ClassDecl::mangleMethod(string_view className, string_view fnName) {
 
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
     : Decl(line), name_(name), id_(nextId_++) {
-  bool hasVirtual = false;
   for (ClassElem& elem : classElems) {
     switch (elem.type) {
       case ClassElem::Type::FIELD:
@@ -284,15 +287,19 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
       case ClassElem::Type::CTOR:
         ctors_.push_back(move(get<Constructor>(elem.elem)));
         break;
-      case ClassElem::Type::METHOD:
-        methods_.push_back(move(get<unique_ptr<Func>>(elem.elem)));
-        hasVirtual |= methods_.back()->isVirtual();
+      case ClassElem::Type::METHOD: {
+        unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
+        if (method->isVirtual()) {
+          vMethods_.push_back(move(method));
+        } else {
+          nonVMethods_.push_back(move(method));
+        }
         break;
+      }
       default:
         throw runtime_error("ClassDecl::ClassDecl");
     }
   }
-  hasVirtual_ = hasVirtual;
 }
 
 
@@ -300,7 +307,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
-  // TODO: ClassInfo need vTableOffset map
+  // TODO: ClassInfo needs vTableOffset map
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
@@ -308,8 +315,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     return f1.type->numBytes < f2.type->numBytes;
   });
 
-  // Class starts with vtable pointer
-  size_t currentOffset = hasVirtual_ ? 8 : 0;
+  // Class starts with vtable pointer if there are any virtual methods
+  size_t currentOffset = vMethods_.empty() ? 0 : 8;
   for (const auto& [type, name, line] : fields_) {
     if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       currentOffset += type->numBytes;
@@ -323,7 +330,19 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
 
   // Add methods
-  for (unique_ptr<Func>& method : methods_) {
+  for (const unique_ptr<Func>& method : nonVMethods_) {
+    method->checkTypes(ctx);
+    ctx.insertFn(
+        classInfo.methods,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        method->id_,
+        method->line_);
+    method->paramNames_.push_back(THIS);
+    method->paramTypes_.push_back(classTy);
+  }
+  for (const unique_ptr<Func>& method : vMethods_) {
     method->checkTypes(ctx);
     ctx.insertFn(
         classInfo.methods,
@@ -336,7 +355,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(classTy);
   }
 
-  optional<string> vtable = hasVirtual_ ? vTableName() : optional<string>();
+  optional<string> vtable = vMethods_.empty() ? optional<string>() : vTableName();
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
@@ -346,7 +365,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       continue;
     }
     ctor.objSize_ = currentOffset;
-    // TODO: Assign this in constructor
     ctor.returnType_ = classTy;
     ctor.vTableName_ = vtable;
     ctor.addToCtx(ctx);
@@ -359,14 +377,15 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     ctor.toImDecls(imDecls, ctx);
   }
 
-  // TODO: Probably cleaner to just split method into virtual and nonvirtual in constructor. Then we
-  // can also replace the hasVirtual_ member with a call to vector::empty()
   vector<string> vMethodNames;
-  for (const unique_ptr<Func>& method : methods_) {
+  for (const unique_ptr<Func>& method : nonVMethods_) {
+    method->name_ = mangleMethod(name_, method->name_);
+    method->toImDecls(imDecls, ctx);
+  }
+
+  for (const unique_ptr<Func>& method : vMethods_) {
     string mangledName = mangleMethod(name_, method->name_);
-    if (method->isVirtual()) {
-      vMethodNames.push_back(ctx.mangleFn(mangledName, method->id_));
-    }
+    vMethodNames.push_back(ctx.mangleFn(mangledName, method->id_));
     method->name_ = move(mangledName);
     method->toImDecls(imDecls, ctx);
   }
@@ -374,14 +393,12 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // TODO: Grab the virtual functions from the superclass that are not overridden here
 
   // Create the vtable if necessary
-  if (hasVirtual_) {
+  if (!vMethods_.empty()) {
     imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vMethodNames)));
   }
 }
 
 
-string ClassDecl::vTableName() {
-  return string(name_).append("_vtable_").append(to_string(id_));
-}
+string ClassDecl::vTableName() { return string(name_).append("_vtable_").append(to_string(id_)); }
 
 }  // namespace language
