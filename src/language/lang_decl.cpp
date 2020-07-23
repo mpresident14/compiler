@@ -121,7 +121,7 @@ im::Program Program::toImProg() const {
 size_t Func::nextId_ = 0;
 
 Func::Func(
-    Inheritance inheritance,
+    Ctx::FnInfo::Inheritance inheritance,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
@@ -161,7 +161,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
   ctx.removeParams(paramNames_, line_);
-  imDecls.push_back(make_unique<im::Func>(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.push_back(make_unique<im::Func>(Ctx::mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -222,7 +222,7 @@ Constructor::Constructor(
     size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
-    : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
+    : Func(Ctx::FnInfo::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
 
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -247,8 +247,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Create pointer to vtable if necessary
   if (vTableName_) {
     imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(
-            line_, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::MemDeref>(line_, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
         make_unique<im::LabelAddr>(*vTableName_)));
   }
 
@@ -261,7 +260,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.removeParams(paramNames_, line_);
   ctx.removeVars({ { ClassDecl::THIS, 0 } });
 
-  imDecls.push_back(make_unique<im::Func>(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.push_back(make_unique<im::Func>(Ctx::mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -290,6 +289,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
         if (method->isVirtual()) {
+          vTableEntries_.push_back(Ctx::mangleFn(mangleMethod(name_, method->name_), method->id_));
           vMethods_.push_back(move(method));
         } else {
           nonVMethods_.push_back(move(method));
@@ -303,11 +303,22 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 }
 
 
+ClassDecl::ClassDecl(
+    std::string_view name,
+    std::vector<std::string>&& superQuals,
+    std::string_view superName,
+    std::vector<ClassElem>&& classElems,
+    size_t line)
+    : ClassDecl(name, move(classElems), line) {
+  superQuals_ = move(superQuals);
+  superName_ = superName;
+}
+
+
 void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
-  // TODO: ClassInfo needs vTableOffset map
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
@@ -326,14 +337,69 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     }
   }
 
+  // TODO: Add fields (here and in ctor)
+
+  // Add all (virtual and nonvirtual) methods that weren't overridden from the superclass
+  if (superName_) {
+    const Ctx::ClassInfo* superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_);
+    if (superInfo) {
+      for (const auto& [name, info] : superInfo->methods) {
+        // TODO: The declFiles will not be correct here
+        if (info.inheritance == Ctx::FnInfo::Inheritance::NONE) {
+          ctx.insertMethod(
+              classInfo.methods,
+              info.inheritance,
+              name,
+              info.paramTypes,
+              info.returnType,
+              info.id,
+              info.line);
+        }
+        // TODO: Is linear search the best option here?
+        else if (
+            find_if(
+                vMethods_.cbegin(),
+                vMethods_.cend(),
+                [& supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
+                  // cout << "supMethname: " << supMethName;
+                  // Ctx::streamParamTypes(supMethInfo.paramTypes, cout);
+                  // cout << endl;
+                  // cout << "vMeth->name_: " << vMeth->name_;
+                  // Ctx::streamParamTypes(vMeth->paramTypes_, cout);
+                  // cout << endl;
+                  return vMeth->inheritance_ == Ctx::FnInfo::Inheritance::OVERRIDE &&
+                         vMeth->name_ == supMethName &&
+                         equal(
+                             vMeth->paramTypes_.cbegin(),
+                             vMeth->paramTypes_.cend(),
+                             supMethInfo.paramTypes.cbegin(),
+                             supMethInfo.paramTypes.cend());
+                }) == vMethods_.cend()) {
+          cout << "INSERT: " << name << endl;
+          ctx.insertMethod(
+              classInfo.methods,
+              info.inheritance,
+              name,
+              info.paramTypes,
+              info.returnType,
+              info.id,
+              info.line);
+          vTableEntries_.push_back(Ctx::mangleFn(name, info.id));
+        }
+      }
+    }
+  }
+
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
 
-  // Add methods
+  // Add methods (AFTER checking for base class methods so that the "this" parameter doesn't mess up
+  // matching)
   for (const unique_ptr<Func>& method : nonVMethods_) {
     method->checkTypes(ctx);
-    ctx.insertFn(
+    ctx.insertMethod(
         classInfo.methods,
+        method->inheritance_,
         method->name_,
         method->paramTypes_,
         method->returnType_,
@@ -342,10 +408,13 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(classTy);
   }
+
+  size_t vMethodCnt = 0;
   for (const unique_ptr<Func>& method : vMethods_) {
     method->checkTypes(ctx);
-    ctx.insertFn(
+    ctx.insertMethod(
         classInfo.methods,
+        method->inheritance_,
         method->name_,
         method->paramTypes_,
         method->returnType_,
@@ -353,7 +422,9 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         method->line_);
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(classTy);
+    classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
   }
+
 
   optional<string> vtable = vMethods_.empty() ? optional<string>() : vTableName();
   // Add constructors to this context
@@ -369,7 +440,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     ctor.vTableName_ = vtable;
     ctor.addToCtx(ctx);
   }
-}
+}  // namespace language
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -377,24 +448,19 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     ctor.toImDecls(imDecls, ctx);
   }
 
-  vector<string> vMethodNames;
   for (const unique_ptr<Func>& method : nonVMethods_) {
     method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
 
   for (const unique_ptr<Func>& method : vMethods_) {
-    string mangledName = mangleMethod(name_, method->name_);
-    vMethodNames.push_back(ctx.mangleFn(mangledName, method->id_));
-    method->name_ = move(mangledName);
+    method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
 
-  // TODO: Grab the virtual functions from the superclass that are not overridden here
-
   // Create the vtable if necessary
   if (!vMethods_.empty()) {
-    imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vMethodNames)));
+    imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vTableEntries_)));
   }
 }
 

@@ -25,8 +25,11 @@ public:
 
 
   struct FnInfo {
+    enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
+
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
+    Inheritance inheritance;
     size_t id;
     std::string declFile;
     size_t line;
@@ -40,6 +43,7 @@ public:
   struct ClassInfo {
     std::unordered_multimap<std::string, FnInfo> methods;
     std::unordered_map<std::string, FieldInfo> fields;
+    std::unordered_map<size_t, size_t> vTableOffsets;
     std::string declFile;
     int id;
   };
@@ -109,6 +113,9 @@ public:
   };
 
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
+  /* Mangle all user functions based on the function ID (My special functions begin
+   * with "__") Return the function name if it doesn't need to be mangled */
+  static std::string mangleFn(std::string_view fnName, size_t id);
 
   Ctx(std::string_view filename,
       const std::shared_ptr<std::unordered_map<int, ClassInfo*>>& classIds);
@@ -133,6 +140,9 @@ public:
   ClsLookupRes lookupClass(const std::string& name);
   /* Searches global classIds_ */
   const ClassInfo* lookupClass(int id);
+  /* Also searches context tree, nullptr if it doesn't exist */
+  const ClassInfo*
+  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
   const FnInfo* lookupMethod(
       int id,
       const std::string& className,
@@ -145,8 +155,9 @@ public:
       const TypePtr& returnType,
       size_t id,
       size_t line);
-  void insertFn(
+  void insertMethod(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
+      const FnInfo::Inheritance inheritance,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
@@ -163,9 +174,6 @@ public:
   /* Checks if this is a valid type. If the type is a Class, then it sets its id if it is not yet
    * set */
   void checkType(Type& type, size_t line);
-  /* Mangle all user functions based on the function ID (My special functions begin
-   * with "__") Return the function name if it doesn't need to be mangled */
-  std::string mangleFn(std::string_view fnName, size_t id);
   void typeError(const Type& expected, const Type& got, size_t line);
   void displayLogs() const;
   bool hasErrors() const noexcept;
@@ -213,9 +221,6 @@ private:
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
       size_t line);
-  /* Also searches context tree, nullptr if it doesn't exist */
-  const ClassInfo*
-  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
   const ClassInfo* handleClassLookupRes(
       const ClsLookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,

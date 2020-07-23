@@ -88,7 +88,8 @@ void Ctx::removeTemp(const string& var, size_t line) {
 }
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
-  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, filename_, id });
+  // TODO: Use try_emplace here (ClassInfo will need a ctor)
+  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, {}, filename_, id });
   if (p.second) {
     classIds_->emplace(id, &p.first->second);
   } else {
@@ -130,10 +131,6 @@ const Ctx::FnInfo* Ctx::lookupMethod(
     const string& methodName,
     const vector<TypePtr>& paramTypes,
     size_t line) {
-  // The only way this will not be FOUND is if the object that was created was not a valid type.
-  // If this is the case, the error was already logged, so we don't want to log an error for every
-  // method invocation on this object. Thus, we don't use lookupClassRec.
-  // TODO: Wrong if object is an rvalue, e.g., MyObject(1).doStuff();
   const ClassInfo* classInfo = lookupClass(id);
   if (!classInfo) {
     // If we hit this case, we already logged an undefined class error somewhere else, so don't
@@ -181,11 +178,12 @@ void Ctx::insertFn(
     const TypePtr& returnType,
     size_t id,
     size_t line) {
-  insertFn(fnMap_, name, paramTypes, returnType, id, line);
+  insertMethod(fnMap_, FnInfo::Inheritance::NONE, name, paramTypes, returnType, id, line);
 }
 
-void Ctx::insertFn(
+void Ctx::insertMethod(
     unordered_multimap<string, Ctx::FnInfo>& funcMap,
+    const FnInfo::Inheritance inheritance,
     const string& name,
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
@@ -203,8 +201,9 @@ void Ctx::insertFn(
       return;
     }
   }
-  funcMap.emplace(name, FnInfo{ paramTypes, move(returnType), id, filename_, line });
+  funcMap.emplace(name, FnInfo{ paramTypes, returnType, inheritance, id, filename_, line });
 }
+
 
 Ctx::FnLookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
   return lookupFn(fnMap_, name, paramTypes);

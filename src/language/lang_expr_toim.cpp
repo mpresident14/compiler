@@ -227,7 +227,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   }
 
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(ctx.mangleFn(name_, fnInfo->id)),
+               make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
                fnInfo->returnType != voidType),
            move(fnInfo->returnType) };
@@ -441,7 +441,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   paramImExprs.push_back(move(eInfo.imExpr));
 
   return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(ctx.mangleFn(
+               make_unique<im::LabelAddr>(Ctx::mangleFn(
                    ClassDecl::mangleMethod(classTy->className, methodName_), fnInfo->id)),
                move(paramImExprs),
                fnInfo->returnType != voidType),

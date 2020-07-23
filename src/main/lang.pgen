@@ -199,9 +199,13 @@ Decls -> { vector<DeclPtr> }
    | Decls Decl                   % (#0.push_back(move(#1)), move(#0)) %
 
 Decl -> { DeclPtr }
-  := Function                   % move(#0) %
-   | CLASS IDENT LBRACE
-     ClassElements RBRACE       % make_unique<ClassDecl>(#1, move(#3), #line) %
+  := Function                            % move(#0) %
+   | CLASS IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, move(#3), #line) %
+   | CLASS IDENT COLON IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, vector<string>(), #3, move(#5), #line) %
+   | CLASS IDENT COLON Qualifiers IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, move(#3), #4, move(#6), #line) %
 
 ClassElements -> { vector<ClassDecl::ClassElem> }
   :=              #prec EPSILON   % vector<ClassDecl::ClassElem>() %
@@ -215,8 +219,8 @@ ClassElement -> { ClassDecl::ClassElem }
    | Method    % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, { move(#0) } } %
 
 Function -> { std::unique_ptr<Func> }
-  := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Inheritance::NONE, move(#0), #1, move(#3), move(#5), #line) %
-  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Inheritance::NONE, TypePtr(voidType), #1, move(#3), move(#5), #line) %
+  := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Ctx::FnInfo::Inheritance::NONE, move(#0), #1, move(#3), move(#5), #line) %
+  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Ctx::FnInfo::Inheritance::NONE, TypePtr(voidType), #1, move(#3), move(#5), #line) %
 
 Method -> { std::unique_ptr<Func> }
   := Function             % move(#0) %
@@ -364,6 +368,6 @@ Qualifiers -> { vector<string> }
 Qualifier -> { string }
   := IDENT COLON2        % #0 %
 
-InheritKW -> { Func::Inheritance }
-  := VIRTUAL   % Func::Inheritance::VIRTUAL %
-   | OVERRIDE  % Func::Inheritance::OVERRIDE %
+InheritKW -> { Ctx::FnInfo::Inheritance }
+  := VIRTUAL   % Ctx::FnInfo::Inheritance::VIRTUAL %
+   | OVERRIDE  % Ctx::FnInfo::Inheritance::OVERRIDE %

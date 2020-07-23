@@ -6,6 +6,7 @@
 #include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -13,7 +14,6 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#include <filesystem>
 
 namespace language {
 
@@ -134,10 +134,8 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
-  enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
-
   Func(
-      Inheritance inheritance,
+      Ctx::FnInfo::Inheritance inheritance,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -147,9 +145,9 @@ public:
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
-  constexpr bool isVirtual() const noexcept { return inheritance_ != Inheritance::NONE; }
+  constexpr bool isVirtual() const noexcept { return inheritance_ != Ctx::FnInfo::Inheritance::NONE; }
 
-  Inheritance inheritance_;
+  Ctx::FnInfo::Inheritance inheritance_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;
@@ -201,16 +199,26 @@ public:
   static const std::string THIS;
 
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
+  ClassDecl(
+      std::string_view name,
+      std::vector<std::string>&& superQuals,
+      std::string_view superName,
+      std::vector<ClassElem>&& classElems,
+      size_t line);
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::CLASS; }
 
   std::string name_;
+  std::vector<std::string> superQuals_;
+  std::optional<std::string> superName_;
   std::vector<Field> fields_;
   std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> nonVMethods_;
   std::vector<std::unique_ptr<Func>> vMethods_;
   int id_;
+  /* All the entries in the vtable, including from the superclass */
+  std::vector<std::string> vTableEntries_;
 
 private:
   std::string vTableName();
