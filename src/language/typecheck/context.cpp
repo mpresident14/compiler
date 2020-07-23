@@ -178,15 +178,15 @@ void Ctx::insertFn(
     const TypePtr& returnType,
     size_t id,
     size_t line) {
-  insertMethod(fnMap_, FnInfo::Inheritance::NONE, name, paramTypes, returnType, id, line);
+  insertMethod(fnMap_, name, paramTypes, returnType, false, id, line);
 }
 
 void Ctx::insertMethod(
     unordered_multimap<string, Ctx::FnInfo>& funcMap,
-    const FnInfo::Inheritance inheritance,
     const string& name,
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
+    bool isVirtual,
     size_t id,
     size_t line) {
   auto iterPair = funcMap.equal_range(name);
@@ -201,7 +201,7 @@ void Ctx::insertMethod(
       return;
     }
   }
-  funcMap.emplace(name, FnInfo{ paramTypes, returnType, inheritance, id, filename_, line });
+  funcMap.emplace(name, FnInfo{ paramTypes, returnType, isVirtual, id, filename_, line });
 }
 
 

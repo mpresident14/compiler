@@ -121,7 +121,7 @@ im::Program Program::toImProg() const {
 size_t Func::nextId_ = 0;
 
 Func::Func(
-    Ctx::FnInfo::Inheritance inheritance,
+    Func::Inheritance inheritance,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
@@ -222,7 +222,7 @@ Constructor::Constructor(
     size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
-    : Func(Ctx::FnInfo::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
+    : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
 
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -271,9 +271,9 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
 const string ClassDecl::THIS = "this";
 int ClassDecl::nextId_ = 0;
 
-string ClassDecl::mangleMethod(string_view className, string_view fnName) {
-  return string(className).append("_").append(fnName);
-}
+// string ClassDecl::mangleMethod(string_view className, string_view fnName) {
+//   return string(className).append("_").append(fnName);
+// }
 
 
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
@@ -289,7 +289,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
         if (method->isVirtual()) {
-          vTableEntries_.push_back(Ctx::mangleFn(mangleMethod(name_, method->name_), method->id_));
+          vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
           vMethods_.push_back(move(method));
         } else {
           nonVMethods_.push_back(move(method));
@@ -321,53 +321,38 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
-  // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
-  sort(fields_.begin(), fields_.end(), [](const Field& f1, const Field& f2) {
-    return f1.type->numBytes < f2.type->numBytes;
-  });
-
   // Class starts with vtable pointer if there are any virtual methods
   size_t currentOffset = vMethods_.empty() ? 0 : 8;
-  for (const auto& [type, name, line] : fields_) {
-    if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
-      currentOffset += type->numBytes;
-    } else {
-      ostringstream& err = ctx.getLogger().logError(line);
-      err << "Redefinition of field " << name << " in class " << name_;
-    }
-  }
 
-  // TODO: Add fields (here and in ctor)
-
-  // Add all (virtual and nonvirtual) methods that weren't overridden from the superclass
   if (superName_) {
     const Ctx::ClassInfo* superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_);
     if (superInfo) {
+      // Add all fields from superclass
+      for (const auto& [name, info] : superInfo->fields) {
+        classInfo.fields.emplace(name, info);
+        currentOffset = info.offset;
+      }
+
+      // Add all (virtual and nonvirtual) methods that weren't overridden from the superclass
       for (const auto& [name, info] : superInfo->methods) {
         // TODO: The declFiles will not be correct here
-        if (info.inheritance == Ctx::FnInfo::Inheritance::NONE) {
+        if (!info.isVirtual) {
           ctx.insertMethod(
-              classInfo.methods,
-              info.inheritance,
-              name,
-              info.paramTypes,
-              info.returnType,
-              info.id,
-              info.line);
+              classInfo.methods, name, info.paramTypes, info.returnType, false, info.id, info.line);
         }
         // TODO: Is linear search the best option here?
         else if (
             find_if(
                 vMethods_.cbegin(),
                 vMethods_.cend(),
-                [&supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
+                [& supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
                   // cout << "supMethname: " << supMethName;
                   // Ctx::streamParamTypes(supMethInfo.paramTypes, cout);
                   // cout << endl;
                   // cout << "vMeth->name_: " << vMeth->name_;
                   // Ctx::streamParamTypes(vMeth->paramTypes_, cout);
                   // cout << endl;
-                  return vMeth->inheritance_ == Ctx::FnInfo::Inheritance::OVERRIDE &&
+                  return vMeth->inheritance_ == Func::Inheritance::OVERRIDE &&
                          vMeth->name_ == supMethName &&
                          equal(
                              vMeth->paramTypes_.cbegin(),
@@ -375,18 +360,20 @@ void ClassDecl::addToCtx(Ctx& ctx) {
                              supMethInfo.paramTypes.cbegin(),
                              supMethInfo.paramTypes.cend());
                 }) == vMethods_.cend()) {
-          cout << "INSERT: " << name << endl;
           ctx.insertMethod(
-              classInfo.methods,
-              info.inheritance,
-              name,
-              info.paramTypes,
-              info.returnType,
-              info.id,
-              info.line);
+              classInfo.methods, name, info.paramTypes, info.returnType, true, info.id, info.line);
           vTableEntries_.push_back(Ctx::mangleFn(name, info.id));
         }
       }
+    }
+  }
+
+  for (const auto& [type, name, line] : fields_) {
+    if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
+      currentOffset += type->numBytes;
+    } else {
+      ostringstream& err = ctx.getLogger().logError(line);
+      err << "Redefinition of field " << name << " in class " << name_;
     }
   }
 
@@ -399,10 +386,10 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(
         classInfo.methods,
-        method->inheritance_,
         method->name_,
         method->paramTypes_,
         method->returnType_,
+        false,
         method->id_,
         method->line_);
     method->paramNames_.push_back(THIS);
@@ -414,10 +401,10 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(
         classInfo.methods,
-        method->inheritance_,
         method->name_,
         method->paramTypes_,
         method->returnType_,
+        true,
         method->id_,
         method->line_);
     method->paramNames_.push_back(THIS);
@@ -449,12 +436,12 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   }
 
   for (const unique_ptr<Func>& method : nonVMethods_) {
-    method->name_ = mangleMethod(name_, method->name_);
+    // method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
 
   for (const unique_ptr<Func>& method : vMethods_) {
-    method->name_ = mangleMethod(name_, method->name_);
+    // method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
 

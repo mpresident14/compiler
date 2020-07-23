@@ -437,12 +437,15 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   // Push back "this" as last argument (AFTER the context lookup)
   paramImExprs.push_back(move(eInfo.imExpr));
 
-  return { make_unique<im::CallExpr>(
-               make_unique<im::LabelAddr>(Ctx::mangleFn(
-                   ClassDecl::mangleMethod(classTy->className, methodName_), fnInfo->id)),
-               move(paramImExprs),
-               fnInfo->returnType != voidType),
-           move(fnInfo->returnType) };
+  // if (fnInfo->isVirtual) {
+
+  // } else {
+    return { make_unique<im::CallExpr>(
+                 make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
+                 move(paramImExprs),
+                 fnInfo->returnType != voidType),
+             move(fnInfo->returnType) };
+  // }
 }
 
 /**********

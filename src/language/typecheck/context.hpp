@@ -25,11 +25,9 @@ public:
 
 
   struct FnInfo {
-    enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
-
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
-    Inheritance inheritance;
+    bool isVirtual;
     size_t id;
     std::string declFile;
     size_t line;
@@ -157,10 +155,10 @@ public:
       size_t line);
   void insertMethod(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
-      const FnInfo::Inheritance inheritance,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
+      bool isVirtual,
       size_t id,
       size_t line);
   /* Only searches this context */

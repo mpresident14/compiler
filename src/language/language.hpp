@@ -134,8 +134,10 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
+  enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
+
   Func(
-      Ctx::FnInfo::Inheritance inheritance,
+      Inheritance inheritance,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -146,10 +148,10 @@ public:
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
   constexpr bool isVirtual() const noexcept {
-    return inheritance_ != Ctx::FnInfo::Inheritance::NONE;
+    return inheritance_ != Inheritance::NONE;
   }
 
-  Ctx::FnInfo::Inheritance inheritance_;
+  Inheritance inheritance_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;
@@ -196,7 +198,7 @@ public:
     std::variant<Field, Constructor, std::unique_ptr<Func>> elem;
   };
 
-  static std::string mangleMethod(std::string_view className, std::string_view fnName);
+  // static std::string mangleMethod(std::string_view className, std::string_view fnName);
 
   static const std::string THIS;
 
