@@ -155,6 +155,7 @@ public:
       size_t line);
   void insertMethod(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
+      std::string_view className,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,

@@ -140,8 +140,11 @@ pair<const Ctx::ClassInfo*, const Ctx::FnInfo*> Ctx::lookupMethod(
 
   LookupRes methodLookup = lookupFn(classInfo->methods, methodName, paramTypes);
   methodLookup.searchedPath = classInfo->declFile;
-  return {classInfo, handleFnLookupRes(
-      methodLookup, {}, string(className).append("::").append(methodName), paramTypes, line)};
+  return {
+    classInfo,
+    handleFnLookupRes(
+        methodLookup, {}, string(className).append("::").append(methodName), paramTypes, line)
+  };
 }
 
 
@@ -178,11 +181,12 @@ void Ctx::insertFn(
     const TypePtr& returnType,
     size_t id,
     size_t line) {
-  insertMethod(fnMap_, name, paramTypes, returnType, false, id, line);
+  insertMethod(fnMap_, "", name, paramTypes, returnType, false, id, line);
 }
 
 void Ctx::insertMethod(
     unordered_multimap<string, Ctx::FnInfo>& funcMap,
+    string_view className,
     const string& name,
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
@@ -195,7 +199,8 @@ void Ctx::insertMethod(
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
     if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       ostream& errStream = logger.logError(line);
-      errStream << "Redefinition of function '" << name;
+      errStream << "Redefinition of function '"
+                << (className.empty() ? name : string(className).append("::").append(name));
       Ctx::streamParamTypes(paramTypes, errStream);
       errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;

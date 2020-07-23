@@ -6,7 +6,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 using namespace std;
-namespace fs = std::filesystem;
+namespace fs = filesystem;
 
 namespace language {
 
@@ -40,7 +40,7 @@ namespace {
 void Program::initContext(
     const fs::path& filePath,
     unordered_map<string, unique_ptr<Program>>& initializedProgs,
-    const std::vector<Program>& builtIns,
+    const vector<Program>& builtIns,
     const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
   // Create a new context
   ctx_ = make_unique<Ctx>(filePath.c_str(), classIds);
@@ -170,7 +170,7 @@ void Func::checkForReturn(Ctx& ctx) {
   if (!last || !(dynamic_cast<Return*>(last->get()))) {
     if (*returnType_ == *voidType) {
       // Add implicit return for functions with void return type if needed
-      body_->stmts_.push_back(make_unique<Return>(std::optional<ExprPtr>(), 0));
+      body_->stmts_.push_back(make_unique<Return>(optional<ExprPtr>(), 0));
     } else {
       ostringstream& error = ctx.getLogger().logError(line_);
       error << "Some paths through non-void function '" << *returnType_ << ' ' << name_;
@@ -304,10 +304,10 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
 
 
 ClassDecl::ClassDecl(
-    std::string_view name,
-    std::vector<std::string>&& superQuals,
-    std::string_view superName,
-    std::vector<ClassElem>&& classElems,
+    string_view name,
+    vector<string>&& superQuals,
+    string_view superName,
+    vector<ClassElem>&& classElems,
     size_t line)
     : ClassDecl(name, move(classElems), line) {
   superQuals_ = move(superQuals);
@@ -335,23 +335,17 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
       // Add all (virtual and nonvirtual) methods that weren't overridden from the superclass
       for (const auto& [name, info] : superInfo->methods) {
-        // TODO: The declFiles will not be correct here
         if (!info.isVirtual) {
-          ctx.insertMethod(
-              classInfo.methods, name, info.paramTypes, info.returnType, false, info.id, info.line);
+          // No error-checking required here. If there was an error, we will have already reported
+          // it in the superclass
+          classInfo.methods.emplace(name, info);
         }
         // TODO: Is linear search the best option here?
         else if (
             find_if(
                 vMethods_.cbegin(),
                 vMethods_.cend(),
-                [& supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
-                  // cout << "supMethname: " << supMethName;
-                  // Ctx::streamParamTypes(supMethInfo.paramTypes, cout);
-                  // cout << endl;
-                  // cout << "vMeth->name_: " << vMeth->name_;
-                  // Ctx::streamParamTypes(vMeth->paramTypes_, cout);
-                  // cout << endl;
+                [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
                   return vMeth->inheritance_ == Func::Inheritance::OVERRIDE &&
                          vMeth->name_ == supMethName &&
                          equal(
@@ -360,8 +354,9 @@ void ClassDecl::addToCtx(Ctx& ctx) {
                              supMethInfo.paramTypes.cbegin(),
                              supMethInfo.paramTypes.cend());
                 }) == vMethods_.cend()) {
-          ctx.insertMethod(
-              classInfo.methods, name, info.paramTypes, info.returnType, true, info.id, info.line);
+          // No error-checking required here. If there was an error, we will have already reported
+          // it in the superclass
+          classInfo.methods.emplace(name, info);
           vTableEntries_.push_back(Ctx::mangleFn(name, info.id));
         }
       }
@@ -386,6 +381,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(
         classInfo.methods,
+        name_,
         method->name_,
         method->paramTypes_,
         method->returnType_,
@@ -401,6 +397,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(
         classInfo.methods,
+        name_,
         method->name_,
         method->paramTypes_,
         method->returnType_,

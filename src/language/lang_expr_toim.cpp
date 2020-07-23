@@ -444,8 +444,10 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
     return { make_unique<im::DoThenEval>(
                  move(assignThis),
                  make_unique<im::CallExpr>(
+                     // method = *(vTableAddr + offset)
                      make_unique<im::MemDeref>(
                          vTableOffset * 8,
+                         // vTableAddr = *this
                          make_unique<im::MemDeref>(0, make_unique<im::Temp>(tThis), nullptr, 8),
                          nullptr,
                          8),
