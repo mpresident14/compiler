@@ -360,7 +360,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
             find_if(
                 vMethods_.cbegin(),
                 vMethods_.cend(),
-                [& supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
+                [&supMethName = name, &supMethInfo = info](const std::unique_ptr<Func>& vMeth) {
                   // cout << "supMethname: " << supMethName;
                   // Ctx::streamParamTypes(supMethInfo.paramTypes, cout);
                   // cout << endl;

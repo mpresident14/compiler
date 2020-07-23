@@ -152,7 +152,8 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
  * VTable *
  ********/
 
-VTable::VTable(string_view name, vector<std::string>&& fnNames) : label_(name), fnNames_(move(fnNames)) {}
+VTable::VTable(string_view name, vector<std::string>&& fnNames)
+    : label_(name), fnNames_(move(fnNames)) {}
 
 
 void VTable::toCode(std::ostream& out) {

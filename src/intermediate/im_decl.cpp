@@ -42,7 +42,8 @@ assem::DeclPtr Func::toAssemDecl() {
  * VTable *
  ********/
 
-VTable::VTable(string_view name, vector<std::string>&& fnNames) : label_(name), fnNames_(move(fnNames)) {}
+VTable::VTable(string_view name, vector<std::string>&& fnNames)
+    : label_(name), fnNames_(move(fnNames)) {}
 
 assem::DeclPtr VTable::toAssemDecl() { return make_unique<assem::VTable>(label_, move(fnNames_)); }
 

@@ -9,9 +9,7 @@ namespace {
 
 /* Allows us to proceed through compile errors so that we don't have to report
  * one at a time */
-language::ExprInfo dummyInfo() {
-  return { make_unique<im::Temp>(newTemp()), anyType };
-}
+language::ExprInfo dummyInfo() { return { make_unique<im::Temp>(newTemp()), anyType }; }
 
 }  // namespace
 
@@ -54,7 +52,6 @@ ExprInfo StrLit::toImExpr(Ctx& ctx) {
   params.push_back(make_unique<ConstBool>(true, line_));
   return CallExpr(vector<string>(), "String", move(params), line_).toImExpr(ctx);
 }
-
 
 
 /*******

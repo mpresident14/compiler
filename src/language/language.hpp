@@ -145,7 +145,9 @@ public:
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
-  constexpr bool isVirtual() const noexcept { return inheritance_ != Ctx::FnInfo::Inheritance::NONE; }
+  constexpr bool isVirtual() const noexcept {
+    return inheritance_ != Ctx::FnInfo::Inheritance::NONE;
+  }
 
   Ctx::FnInfo::Inheritance inheritance_;
   TypePtr returnType_;
