@@ -121,12 +121,18 @@ im::Program Program::toImProg() const {
 size_t Func::nextId_ = 0;
 
 Func::Func(
+    Inheritance inheritance,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Decl(line), returnType_(move(returnType)), name_(name), body_(move(body)), id_(nextId_++) {
+    : Decl(line),
+      inheritance_(inheritance),
+      returnType_(move(returnType)),
+      name_(name),
+      body_(move(body)),
+      id_(nextId_++) {
   paramTypes_.reserve(params.size());
   paramNames_.reserve(params.size());
   for (const auto& [type, name] : params) {
@@ -155,7 +161,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
   ctx.removeParams(paramNames_, line_);
-  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.push_back(make_unique<im::Func>(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -164,7 +170,7 @@ void Func::checkForReturn(Ctx& ctx) {
   if (!last || !(dynamic_cast<Return*>(last->get()))) {
     if (*returnType_ == *voidType) {
       // Add implicit return for functions with void return type if needed
-      body_->stmts_.emplace_back(new Return({}, 0));
+      body_->stmts_.push_back(make_unique<Return>(std::optional<ExprPtr>(), 0));
     } else {
       ostringstream& error = ctx.getLogger().logError(line_);
       error << "Some paths through non-void function '" << *returnType_ << ' ' << name_;
@@ -186,8 +192,8 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
     TypePtr& pType = paramTypes_[i];
     ctx.checkType(*pType, line_);
     int temp = ctx.insertVar(paramNames_[i], pType, line_);
-    imStmts.emplace_back(
-        new im::Assign(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
+    imStmts.push_back(
+        make_unique<im::Assign>(make_unique<im::Temp>(temp), make_unique<im::Temp>(ARG_REGS[i])));
   }
 
   // Move extra parameters from stack into temporaries
@@ -196,7 +202,7 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
     ctx.checkType(*pType, line_);
     int temp = ctx.insertVar(paramNames_[i], pType, line_);
     size_t offset = 16 + 8 * (i - numRegParams);
-    imStmts.emplace_back(new im::Assign(
+    imStmts.push_back(make_unique<im::Assign>(
         make_unique<im::Temp>(temp),
         make_unique<im::MemDeref>(offset, make_unique<im::Temp>(RBP), nullptr, 8)));
   }
@@ -214,7 +220,7 @@ Constructor::Constructor(
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
-    : Func(nullptr, name, move(params), move(body), line) {}
+    : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
 
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -235,6 +241,14 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
           0),
       0)
       .toImStmts(imStmts, ctx);
+
+  // Create pointer to vtable if necessary
+  if (vTableName_) {
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::MemDeref>(0, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::LabelAddr>(*vTableName_)));
+  }
+
   body_->toImStmts(imStmts, ctx);
 
   // Implicit return of the object we created
@@ -243,7 +257,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.removeParams(paramNames_, line_);
   ctx.removeVars({ { ClassDecl::THIS, 0 } });
 
-  imDecls.emplace_back(new im::Func(ctx.mangleFn(name_, id_), move(imStmts)));
+  imDecls.push_back(make_unique<im::Func>(ctx.mangleFn(name_, id_), move(imStmts)));
 }
 
 
@@ -258,8 +272,10 @@ string ClassDecl::mangleMethod(string_view className, string_view fnName) {
   return string(className).append("_").append(fnName);
 }
 
+
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
     : Decl(line), name_(name), id_(nextId_++) {
+  bool hasVirtual = false;
   for (ClassElem& elem : classElems) {
     switch (elem.type) {
       case ClassElem::Type::FIELD:
@@ -270,11 +286,13 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         break;
       case ClassElem::Type::METHOD:
         methods_.push_back(move(get<unique_ptr<Func>>(elem.elem)));
+        hasVirtual |= methods_.back()->isVirtual();
         break;
       default:
         throw runtime_error("ClassDecl::ClassDecl");
     }
   }
+  hasVirtual_ = hasVirtual;
 }
 
 
@@ -282,6 +300,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
+  // TODO: ClassInfo need vTableOffset map
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Arrange fields from greatest size to least so that we don't overlap 8-byte intervals
@@ -290,7 +309,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   });
 
   // Class starts with vtable pointer
-  size_t currentOffset = 8;
+  size_t currentOffset = hasVirtual_ ? 8 : 0;
   for (const auto& [type, name, line] : fields_) {
     if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       currentOffset += type->numBytes;
@@ -302,19 +321,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
-
-  // Add constructors to this context
-  for (Constructor& ctor : ctors_) {
-    if (ctor.name_ != name_) {
-      ostringstream& err = ctx.getLogger().logError(ctor.line_);
-      err << "Cannot declare a constructor for class " << ctor.name_
-          << " inside declaration of class " << name_;
-      continue;
-    }
-    ctor.objSize_ = currentOffset;
-    ctor.returnType_ = classTy;
-    ctor.addToCtx(ctx);
-  }
 
   // Add methods
   for (unique_ptr<Func>& method : methods_) {
@@ -329,6 +335,22 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramNames_.push_back(THIS);
     method->paramTypes_.push_back(classTy);
   }
+
+  optional<string> vtable = hasVirtual_ ? vTableName() : optional<string>();
+  // Add constructors to this context
+  for (Constructor& ctor : ctors_) {
+    if (ctor.name_ != name_) {
+      ostringstream& err = ctx.getLogger().logError(ctor.line_);
+      err << "Cannot declare a constructor for class " << ctor.name_
+          << " inside declaration of class " << name_;
+      continue;
+    }
+    ctor.objSize_ = currentOffset;
+    // TODO: Assign this in constructor
+    ctor.returnType_ = classTy;
+    ctor.vTableName_ = vtable;
+    ctor.addToCtx(ctx);
+  }
 }
 
 
@@ -336,9 +358,30 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   for (Constructor& ctor : ctors_) {
     ctor.toImDecls(imDecls, ctx);
   }
+
+  // TODO: Probably cleaner to just split method into virtual and nonvirtual in constructor. Then we
+  // can also replace the hasVirtual_ member with a call to vector::empty()
+  vector<string> vMethodNames;
   for (const unique_ptr<Func>& method : methods_) {
-    method->name_ = mangleMethod(name_, method->name_), method->toImDecls(imDecls, ctx);
+    string mangledName = mangleMethod(name_, method->name_);
+    if (method->isVirtual()) {
+      vMethodNames.push_back(ctx.mangleFn(mangledName, method->id_));
+    }
+    method->name_ = move(mangledName);
+    method->toImDecls(imDecls, ctx);
   }
+
+  // TODO: Grab the virtual functions from the superclass that are not overridden here
+
+  // Create the vtable if necessary
+  if (hasVirtual_) {
+    imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vMethodNames)));
+  }
+}
+
+
+string ClassDecl::vTableName() {
+  return string(name_).append("_vtable_").append(to_string(id_));
 }
 
 }  // namespace language

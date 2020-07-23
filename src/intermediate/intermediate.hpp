@@ -93,13 +93,13 @@ public:
 };
 
 
-class Ints : public Decl {
+class VTable : public Decl {
 public:
-  Ints(std::string_view label, std::vector<int>&& nums);
+  VTable(std::string_view label, std::vector<std::string>&& fnNames);
   assem::DeclPtr toAssemDecl() override;
 
   std::string label_;
-  std::vector<int> nums_;
+  std::vector<std::string> fnNames_;
 };
 
 

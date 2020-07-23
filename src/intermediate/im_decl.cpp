@@ -39,12 +39,12 @@ assem::DeclPtr Func::toAssemDecl() {
 
 
 /********
- * Ints *
+ * VTable *
  ********/
 
-Ints::Ints(string_view name, vector<int>&& nums) : label_(name), nums_(move(nums)) {}
+VTable::VTable(string_view name, vector<std::string>&& fnNames) : label_(name), fnNames_(move(fnNames)) {}
 
-assem::DeclPtr Ints::toAssemDecl() { return make_unique<assem::Ints>(label_, move(nums_)); }
+assem::DeclPtr VTable::toAssemDecl() { return make_unique<assem::VTable>(label_, move(fnNames_)); }
 
 
 }  // namespace im

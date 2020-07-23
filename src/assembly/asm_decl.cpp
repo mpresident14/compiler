@@ -149,16 +149,16 @@ std::pair<std::vector<InstrPtr>, std::vector<InstrPtr>> Function::preserveRegs(
 
 
 /********
- * Ints *
+ * VTable *
  ********/
 
-Ints::Ints(string_view name, vector<int>&& nums) : label_(name), nums_(move(nums)) {}
+VTable::VTable(string_view name, vector<std::string>&& fnNames) : label_(name), fnNames_(move(fnNames)) {}
 
 
-void Ints::toCode(std::ostream& out) {
+void VTable::toCode(std::ostream& out) {
   out << label_ << ":\n";
-  for (int n : nums_) {
-    out << "\t.quad " << n << '\n';
+  for (const string& str : fnNames_) {
+    out << "\t.quad " << str << '\n';
   }
 }
 

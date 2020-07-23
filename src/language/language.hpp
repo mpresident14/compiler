@@ -134,7 +134,10 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
+  enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
+
   Func(
+      Inheritance inheritance,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -144,7 +147,9 @@ public:
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
+  constexpr bool isVirtual() const noexcept { return inheritance_ != Inheritance::NONE; }
 
+  Inheritance inheritance_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;
@@ -172,6 +177,7 @@ public:
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
 
   size_t objSize_ = 0;
+  std::optional<std::string> vTableName_ = {};
 };
 
 
@@ -204,8 +210,11 @@ public:
   std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> methods_;
   int id_;
+  bool hasVirtual_;
 
 private:
+  std::string vTableName();
+
   static int nextId_;
 };
 
