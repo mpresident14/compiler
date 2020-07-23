@@ -41,9 +41,9 @@ void Ctx::includeDecls(Ctx& ctx) {
 }
 
 
-int Ctx::insertVar(string_view name, const TypePtr& type, size_t line) {
+int Ctx::insertVar(const string& name, const TypePtr& type, size_t line) {
   int temp = newTemp();
-  auto insertResult = varMap_.emplace(name, VarInfo{ type, temp, line, false });
+  auto insertResult = varMap_.try_emplace(name, type, temp, line);
   if (!insertResult.second) {
     auto& errStream = logger.logError(line);
     errStream << "Redefinition of variable '" << name << "'. Originally declared on line "
@@ -89,7 +89,7 @@ void Ctx::removeTemp(const string& var, size_t line) {
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
   // TODO: Use try_emplace here (ClassInfo will need a ctor)
-  auto p = classMap_.emplace(className, ClassInfo{ {}, {}, {}, filename_, id });
+  auto p = classMap_.try_emplace(className, filename_, id );
   if (p.second) {
     classIds_->emplace(id, &p.first->second);
   } else {

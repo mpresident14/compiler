@@ -17,10 +17,13 @@ public:
   using CtxPtr = std::unique_ptr<Ctx>;
 
   struct VarInfo {
+    VarInfo(const TypePtr& aType, int aTemp, size_t aLine)
+        : type(aType), temp(aTemp), line(aLine) {}
+
     TypePtr type;
     int temp;
     size_t line;
-    bool used;
+    bool used = false;
   };
 
 
@@ -39,6 +42,8 @@ public:
   };
 
   struct ClassInfo {
+    ClassInfo(std::string_view aDeclFile, int aId) : declFile(aDeclFile), id(aId) {}
+
     std::unordered_multimap<std::string, FnInfo> methods;
     std::unordered_map<std::string, FieldInfo> fields;
     std::unordered_map<size_t, size_t> vTableOffsets;
@@ -129,7 +134,7 @@ public:
   void setCurrentRetType(const TypePtr& type) noexcept;
 
   void includeDecls(Ctx& ctx);
-  int insertVar(std::string_view name, const TypePtr& type, size_t line);
+  int insertVar(const std::string& name, const TypePtr& type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
