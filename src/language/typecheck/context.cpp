@@ -125,7 +125,7 @@ Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t
 }
 
 
-const Ctx::FnInfo* Ctx::lookupMethod(
+pair<const Ctx::ClassInfo*, const Ctx::FnInfo*> Ctx::lookupMethod(
     int id,
     const string& className,
     const string& methodName,
@@ -135,13 +135,13 @@ const Ctx::FnInfo* Ctx::lookupMethod(
   if (!classInfo) {
     // If we hit this case, we already logged an undefined class error somewhere else, so don't
     // duplicate it
-    return nullptr;
+    return { nullptr, nullptr };
   }
 
   LookupRes methodLookup = lookupFn(classInfo->methods, methodName, paramTypes);
   methodLookup.searchedPath = classInfo->declFile;
-  return handleFnLookupRes(
-      methodLookup, {}, string(className).append("::").append(methodName), paramTypes, line);
+  return {classInfo, handleFnLookupRes(
+      methodLookup, {}, string(className).append("::").append(methodName), paramTypes, line)};
 }
 
 

@@ -427,25 +427,40 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
     paramTypes.push_back(move(exprInfo.type));
   }
 
-  const Ctx::FnInfo* fnInfo =
+  auto classFnInfo =
       ctx.lookupMethod(classTy->id, classTy->className, methodName_, paramTypes, line_);
-  if (!fnInfo) {
+  const Ctx::FnInfo* fnInfo = classFnInfo.second;
+  if (!classFnInfo.second) {
     // Undefined function
     return dummyInfo();
   }
 
-  // Push back "this" as last argument (AFTER the context lookup)
-  paramImExprs.push_back(move(eInfo.imExpr));
-
-  // if (fnInfo->isVirtual) {
-
-  // } else {
+  if (fnInfo->isVirtual) {
+    vector<im::StmtPtr> assignThis;
+    int tThis = newTemp();
+    assignThis.push_back(make_unique<im::Assign>(make_unique<im::Temp>(tThis), move(eInfo.imExpr)));
+    paramImExprs.push_back(make_unique<im::Temp>(tThis));
+    size_t vTableOffset = classFnInfo.first->vTableOffsets.at(fnInfo->id);
+    return { make_unique<im::DoThenEval>(
+                 move(assignThis),
+                 make_unique<im::CallExpr>(
+                     make_unique<im::MemDeref>(
+                         vTableOffset * 8,
+                         make_unique<im::MemDeref>(0, make_unique<im::Temp>(tThis), nullptr, 8),
+                         nullptr,
+                         8),
+                     move(paramImExprs),
+                     fnInfo->returnType != voidType)),
+             move(fnInfo->returnType) };
+  } else {
+    // Push back "this" as last argument (AFTER the context lookup)
+    paramImExprs.push_back(move(eInfo.imExpr));
     return { make_unique<im::CallExpr>(
                  make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
                  move(paramImExprs),
                  fnInfo->returnType != voidType),
              move(fnInfo->returnType) };
-  // }
+  }
 }
 
 /**********

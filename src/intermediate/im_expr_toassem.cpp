@@ -263,7 +263,7 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     int t = addr_->toAssemInstrs(instrs);
     srcTemps.push_back(t);
     instrs.emplace_back(
-        new assem::Operation("callq *`8S0", move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
+        new assem::Operation("callq *`8S" + to_string(numRegParams), move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
   }
 
   // Decrement stack for overflow parameters

@@ -141,7 +141,7 @@ public:
   /* Also searches context tree, nullptr if it doesn't exist */
   const ClassInfo*
   lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
-  const FnInfo* lookupMethod(
+  std::pair<const Ctx::ClassInfo*, const Ctx::FnInfo*> lookupMethod(
       int id,
       const std::string& className,
       const std::string& methodName,

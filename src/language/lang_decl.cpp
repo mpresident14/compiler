@@ -247,7 +247,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Create pointer to vtable if necessary
   if (vTableName_) {
     imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(line_, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::MemDeref>(0, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
         make_unique<im::LabelAddr>(*vTableName_)));
   }
 
