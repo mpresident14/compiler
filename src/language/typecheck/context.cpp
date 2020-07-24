@@ -1,5 +1,5 @@
 #include "src/language/typecheck/context.hpp"
-
+#include "src/language/language.hpp"
 #include "src/assembly/temp.hpp"
 #include "src/language/utils.hpp"
 
@@ -67,17 +67,17 @@ const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
 
 void Ctx::removeVars(const vector<pair<string, size_t>>& vars) {
   for (const auto& [var, line] : vars) {
-    removeTemp(var, line);
+    removeVar(var, line);
   }
 }
 
 void Ctx::removeParams(const vector<string>& params, size_t line) {
   for (const string& param : params) {
-    removeTemp(param, line);
+    removeVar(param, line);
   }
 }
 
-void Ctx::removeTemp(const string& var, size_t line) {
+void Ctx::removeVar(const string& var, size_t line) {
   // If we had a variable redefinition error, we may have already removed this
   // variable
   auto iter = varMap_.find(var);
@@ -85,6 +85,10 @@ void Ctx::removeTemp(const string& var, size_t line) {
     logger.logWarning(line, string("Unused variable '").append(var).append("'"));
   }
   varMap_.erase(var);
+}
+
+void Ctx::removeThis() {
+  varMap_.erase(language::ClassDecl::THIS);
 }
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
@@ -99,6 +103,10 @@ Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
 
   return p.first->second;
 }
+
+
+void Ctx::enterClass() { insideClass_ = true; }
+void Ctx::exitClass() { insideClass_ = false; }
 
 Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
   auto iter = classMap_.find(name);

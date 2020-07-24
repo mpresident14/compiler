@@ -158,9 +158,17 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.checkType(*returnType_, line_);
   checkForReturn(ctx);
   ctx.setCurrentRetType(returnType_);
+
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
+
+  if (ctx.insideClass()) {
+    // Prevent undefined variable "this" warning
+    // TODO: Log note that this method can be static methods (after we implement static methods)
+    ctx.removeThis();
+  }
   ctx.removeParams(paramNames_, line_);
+
   imDecls.push_back(make_unique<im::Func>(Ctx::mangleFn(name_, id_), move(imStmts)));
 }
 
@@ -257,8 +265,8 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
       make_unique<Return>(optional<ExprPtr>{ make_unique<Var>(ClassDecl::THIS, 0) }, 0));
   body_->toImStmts(imStmts, ctx);
 
+  ctx.removeThis();
   ctx.removeParams(paramNames_, line_);
-  ctx.removeVars({ { ClassDecl::THIS, 0 } });
 
   imDecls.push_back(make_unique<im::Func>(Ctx::mangleFn(name_, id_), move(imStmts)));
 }
@@ -428,6 +436,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
+  ctx.enterClass();
   for (Constructor& ctor : ctors_) {
     ctor.toImDecls(imDecls, ctx);
   }
@@ -446,6 +455,8 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   if (!vMethods_.empty()) {
     imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vTableEntries_)));
   }
+
+  ctx.exitClass();
 }
 
 

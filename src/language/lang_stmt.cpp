@@ -118,7 +118,7 @@ void For::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   While whileStmt(move(boolE_), move(body_), line_);
   whileStmt.body_->stmts_.push_back(move(update_));
   whileStmt.toImStmts(imStmts, ctx);
-  ctx.removeVars({ { varDecl_->name_, line_ } });
+  ctx.removeVar(varDecl_->name_, line_);
 }
 
 /************
@@ -303,7 +303,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 
   imStmts.push_back(move(callPrint));
 
-  ctx.removeVars({ { strVar, line_ } });
+  ctx.removeVar(strVar, line_);
 }
 
 

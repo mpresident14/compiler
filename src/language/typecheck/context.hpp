@@ -136,8 +136,13 @@ public:
   void includeDecls(Ctx& ctx);
   int insertVar(const std::string& name, const TypePtr& type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
+  void removeVar(const std::string& var, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
+  void removeThis();
+  void enterClass();
+  void exitClass();
+  constexpr bool insideClass() const noexcept { return insideClass_; }
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name);
@@ -184,7 +189,6 @@ public:
 
 
 private:
-  void removeTemp(const std::string& var, size_t line);
   FnLookupRes lookupFn(
       const std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
@@ -281,6 +285,7 @@ private:
    *    based on those of file.prez.
    */
   std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
+  bool insideClass_ = false;
 };
 
 #endif  // CONTEXT_HPP
