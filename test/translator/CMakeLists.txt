@@ -124,6 +124,7 @@ success_test(update_test "1,2,4,1,9,2,3,3")
 success_test(incdec_test "2,3,3,2,1,4,4,5,4,20,5,26,6")
 success_test(class_test "5,5,4,4,1,1,2,2,3,18")
 success_test(strlit_test "Hello world!,Good-bye!,E\"sca\tpe\nd")
+success_test(inheritance_test "100,vFunc,Base,200,vFunc,Derived,dvFunc,nonVFunc,300,vFunc,GrandChild,dvFunc,nonVFunc")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
 success_test(import_test "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
@@ -196,6 +197,11 @@ error_test(rvalue_assign_test
     "('Error','7','Operator')
     ('Error','8','Left')
     ('Error','9','Left')")
+error_test(bad_inheritance_test
+    "('Error','22','Redefinition')
+    ('Error','26','Redefinition')
+    ('Error','32','Redefinition')
+    ('Error','34','Redefinition')")
 
 add_custom_target(
     translator_check

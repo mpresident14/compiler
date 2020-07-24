@@ -294,7 +294,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       currentOffset += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
-      err << "Redefinition of field " << name << " in class " << name_;
+      err << "Redefinition of field '" << name << "' in class " << name_;
     }
   }
 
