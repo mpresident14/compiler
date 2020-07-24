@@ -2,6 +2,8 @@
 
 #include "src/language/stmt.hpp"
 
+#include <prez/print_stuff.hpp>
+
 using namespace std;
 
 namespace language {
@@ -189,7 +191,6 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
         if (method->isVirtual()) {
-          vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
           vMethods_.push_back(move(method));
         } else {
           nonVMethods_.push_back(move(method));
@@ -223,41 +224,66 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // Class starts with vtable pointer if there are any virtual methods
   size_t currentOffset = vMethods_.empty() ? 0 : 8;
-
+  size_t vMethodCnt = 0;
   if (superName_) {
     const Ctx::ClassInfo* superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_);
     if (superInfo) {
+      vMethodCnt = superInfo->vTableOffsets.size();
+      vTableEntries_.resize(vMethodCnt);
+
       // Add all fields from superclass
       for (const auto& [name, info] : superInfo->fields) {
         classInfo.fields.emplace(name, info);
         currentOffset = info.offset;
       }
 
-      // Add all (virtual and nonvirtual) methods that weren't overridden from the superclass
+      // Add all methods that from the superclass (including those we override)
       for (const auto& [name, info] : superInfo->methods) {
         if (!info.isVirtual) {
           // No error-checking required here. If there was an error, we will have already reported
           // it in the superclass
           classInfo.methods.emplace(name, info);
-        }
-        // TODO: Is linear search the best option here?
-        else if (
-            find_if(
-                vMethods_.cbegin(),
-                vMethods_.cend(),
-                [&supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
-                  return vMeth->inheritance_ == Func::Inheritance::OVERRIDE &&
-                         vMeth->name_ == supMethName &&
-                         equal(
-                             vMeth->paramTypes_.cbegin(),
-                             vMeth->paramTypes_.cend(),
-                             supMethInfo.paramTypes.cbegin(),
-                             supMethInfo.paramTypes.cend());
-                }) == vMethods_.cend()) {
-          // No error-checking required here. If there was an error, we will have already reported
-          // it in the superclass
-          classInfo.methods.emplace(name, info);
-          vTableEntries_.push_back(Ctx::mangleFn(name, info.id));
+        } else {
+          // We need to make sure that this class's vtable entries are in the same order as its
+          // superclass, otherwise casting and invoking a method won't work. Therefore, we find any
+          // methods that override superclass methods and insert them at the same vtable index
+
+          // TODO: Is linear search the best option here? Instead, we could iterate thru this
+          // class's vMethods, which would also allow us to utilize the hashmap and find override
+          // methods that aren't overriding anything
+          auto overrideIter = find_if(
+              vMethods_.cbegin(),
+              vMethods_.cend(),
+              [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
+                return vMeth->inheritance_ == Func::Inheritance::OVERRIDE
+                       && vMeth->name_ == supMethName
+                       && equal(
+                           vMeth->paramTypes_.cbegin(),
+                           vMeth->paramTypes_.cend(),
+                           supMethInfo.paramTypes.cbegin(),
+                           supMethInfo.paramTypes.cend());
+              });
+          // No redefinition/type checking required here. If there was an error, we will have
+          // already reported it in the superclass
+          size_t funcId;
+          if (overrideIter == vMethods_.cend()) {
+            funcId = info.id;
+            classInfo.methods.emplace(name, info);
+          } else {
+            funcId = (*overrideIter)->id_;
+            classInfo.methods.emplace(
+                name,
+                Ctx::FnInfo{info.paramTypes,
+                info.returnType,
+                true,
+                funcId,
+                ctx.getFilename(),
+                (*overrideIter)->line_});
+          }
+
+          size_t vTableIndex = superInfo->vTableOffsets.at(info.id);
+          vTableEntries_[vTableIndex] = Ctx::mangleFn(name, funcId);
+          classInfo.vTableOffsets.emplace(funcId, vTableIndex);
         }
       }
     }
@@ -292,23 +318,29 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(classTy);
   }
 
-  size_t vMethodCnt = 0;
   for (const unique_ptr<Func>& method : vMethods_) {
-    method->checkTypes(ctx);
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        true,
-        method->id_,
-        method->line_);
-    method->paramNames_.push_back(THIS);
-    method->paramTypes_.push_back(classTy);
-    classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
+    // We already added the overridden methods above
+    // TODO: Check for methods declared override that don't override anything
+    if (method->inheritance_ != Func::Inheritance::OVERRIDE) {
+      method->checkTypes(ctx);
+      ctx.insertMethod(
+          classInfo.methods,
+          name_,
+          method->name_,
+          method->paramTypes_,
+          method->returnType_,
+          true,
+          method->id_,
+          method->line_);
+      method->paramNames_.push_back(THIS);
+      method->paramTypes_.push_back(classTy);
+      vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
+      classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
+    }
   }
 
+  // cout << vTableEntries_ << endl;
+  // cout << classInfo.vTableOffsets << endl;
 
   optional<string> vtable = vMethods_.empty() ? optional<string>() : vTableName();
   // Add constructors to this context

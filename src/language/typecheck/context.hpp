@@ -128,6 +128,7 @@ public:
   Ctx& operator=(const Ctx&) = delete;
   Ctx& operator=(Ctx&&) = default;
 
+  const std::string& getFilename() const noexcept;
   Logger& getLogger() noexcept;
   CtxTree& getCtxTree() noexcept;
   const Type& getCurrentRetType() const noexcept;

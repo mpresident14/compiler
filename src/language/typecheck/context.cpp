@@ -26,6 +26,7 @@ void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
 Ctx::Ctx(string_view filename, const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
     : filename_(filename), logger(filename), classIds_(classIds) {}
 
+const std::string& Ctx::getFilename() const noexcept { return filename_; }
 Logger& Ctx::getLogger() noexcept { return logger; }
 Ctx::CtxTree& Ctx::getCtxTree() noexcept { return ctxTree_; };
 const Type& Ctx::getCurrentRetType() const noexcept { return *currentRetType_; }

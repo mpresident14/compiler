@@ -239,11 +239,14 @@ Expr::Info CallExpr::toImExpr(Ctx& ctx) {
 Expr::Info Cast::toImExpr(Ctx& ctx) {
   ctx.checkType(*toType_, line_);
   Info eInfo = expr_->toImExpr(ctx);
+
+  // if (eInfo.type->typeName != Type::Category::CLASS) {
+
   if (!eInfo.type->isConvertibleTo(*toType_, nullptr)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
-  return { make_unique<im::Cast>(move(eInfo.imExpr), toType_->numBytes), move(toType_) };
+  return { make_unique<im::IntCast>(move(eInfo.imExpr), toType_->numBytes), move(toType_) };
 }
 
 

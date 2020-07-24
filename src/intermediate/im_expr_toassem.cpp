@@ -280,12 +280,12 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 }
 
 
-/********
- * Cast *
- ********/
-Cast::Cast(ExprPtr&& expr, u_char toNumBytes) : expr_(move(expr)), toNumBytes_(toNumBytes) {}
+/***********
+ * IntCast *
+ ***********/
+IntCast::IntCast(ExprPtr&& expr, u_char toNumBytes) : expr_(move(expr)), toNumBytes_(toNumBytes) {}
 
-void Cast::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
+void IntCast::toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const {
   int t = expr_->toAssemInstrs(instrs);
   ostringstream asmOp;
   asmOp << "mov" << movExtendSuffix(toNumBytes_) << " `" << (size_t)toNumBytes_ << "S0, `8D0";

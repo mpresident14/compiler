@@ -181,11 +181,11 @@ ExprPtr CallExpr::optimize() {
   return make_unique<CallExpr>(addr_->optimize(), move(optParams), hasReturnValue_);
 }
 
-/********
- * Cast *
- ********/
+/***********
+ * IntCast *
+ ***********/
 
-ExprPtr Cast::optimize() { return make_unique<Cast>(expr_->optimize(), toNumBytes_); }
+ExprPtr IntCast::optimize() { return make_unique<IntCast>(expr_->optimize(), toNumBytes_); }
 
 /*************
  * HalfConst *

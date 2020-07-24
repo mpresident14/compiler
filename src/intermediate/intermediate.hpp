@@ -294,9 +294,9 @@ public:
 };
 
 
-class Cast : public Expr {
+class IntCast : public Expr {
 public:
-  Cast(ExprPtr&& expr, u_char toNumBytes);
+  IntCast(ExprPtr&& expr, u_char toNumBytes);
   constexpr Category getCategory() const noexcept override { return Category::CAST; }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;
