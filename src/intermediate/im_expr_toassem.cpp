@@ -262,8 +262,8 @@ void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
     // If we are calling an address, we need to put it in a register
     int t = addr_->toAssemInstrs(instrs);
     srcTemps.push_back(t);
-    instrs.emplace_back(
-        new assem::Operation("callq *`8S" + to_string(numRegParams), move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
+    instrs.emplace_back(new assem::Operation(
+        "callq *`8S" + to_string(numRegParams), move(srcTemps), regsAsInts(CALLER_SAVE_REGS)));
   }
 
   // Decrement stack for overflow parameters

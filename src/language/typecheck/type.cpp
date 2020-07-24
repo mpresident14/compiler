@@ -10,6 +10,16 @@
 
 using namespace std;
 
+
+const TypePtr Type::LONG_TYPE = std::make_shared<Type>(Type::Category::LONG, 8);
+const TypePtr Type::INT_TYPE = std::make_shared<Type>(Type::Category::INT, 4);
+const TypePtr Type::SHORT_TYPE = std::make_shared<Type>(Type::Category::SHORT, 2);
+const TypePtr Type::CHAR_TYPE = std::make_shared<Type>(Type::Category::CHAR, 1);
+const TypePtr Type::BOOL_TYPE = std::make_shared<Type>(Type::Category::BOOL, 1);
+const TypePtr Type::VOID_TYPE = std::make_shared<Type>(Type::Category::VOID, 0);
+const TypePtr Type::STRING_TYPE = std::make_shared<Class>(std::vector<std::string>(), "String");
+const TypePtr Type::ANY_TYPE = std::make_shared<Type>(Type::Category::ANY, 0);
+
 Array::Array(const TypePtr& type) : Type(Type::Category::ARRAY, 8), arrType(type) {}
 
 Class::Class(vector<string>&& quals, string_view name)
@@ -69,7 +79,7 @@ pair<long, long> Type::minMaxValue() const {
 }
 
 const TypePtr& Type::smallestIntegral(long n) {
-  static const TypePtr* constIntTypes[]{ &shortType, &intType, &longType };
+  static const TypePtr* constIntTypes[]{ &SHORT_TYPE, &INT_TYPE, &LONG_TYPE };
   for (const TypePtr* type : constIntTypes) {
     auto p = (*type)->minMaxValue();
     if (p.first <= n && n <= p.second) {

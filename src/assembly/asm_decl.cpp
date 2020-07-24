@@ -14,10 +14,10 @@ namespace assem {
 /***********
  * Program *
  ***********/
-Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
+SrcFile::SrcFile(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
 
-void Program::toCode(ostream& asmFile) {
+void SrcFile::toCode(ostream& asmFile) {
   asmFile << ".text\n.align 16\n";
   for (DeclPtr& decl : decls_) {
     decl->toCode(asmFile);

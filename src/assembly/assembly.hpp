@@ -68,9 +68,9 @@ private:
 using DeclPtr = std::unique_ptr<Decl>;
 
 
-class Program {
+class SrcFile {
 public:
-  Program(std::vector<DeclPtr>&& decls);
+  SrcFile(std::vector<DeclPtr>&& decls);
   void toCode(std::ostream& asmFile);
 
 private:

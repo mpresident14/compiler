@@ -1,26 +1,25 @@
-#include "src/language/language.hpp"
-
-#include <prez/print_stuff.hpp>
+#include "src/language/expr.hpp"
+#include "src/language/stmt.hpp"
 
 using namespace std;
 
 
+namespace language {
+
 namespace {
 
-/* Allows us to proceed through compile errors so that we don't have to report
- * one at a time */
-language::ExprInfo dummyInfo() { return { make_unique<im::Temp>(newTemp()), anyType }; }
+  /* Allows us to proceed through compile errors so that we don't have to report
+   * one at a time */
+  Expr::Info dummyInfo() { return { make_unique<im::Temp>(newTemp()), Type::ANY_TYPE }; }
 
 }  // namespace
 
-
-namespace language {
 
 /************
  * ConstInt *
  ************/
 
-ExprInfo ConstInt::toImExpr(Ctx&) {
+Expr::Info ConstInt::toImExpr(Ctx&) {
   // Constant integers are the smallest type possible so that we allow implicit
   // conversion to larger types if required
   return { make_unique<im::Const>(n_), Type::smallestIntegral(n_) };
@@ -29,18 +28,18 @@ ExprInfo ConstInt::toImExpr(Ctx&) {
 /*************
  * ConstChar *
  *************/
-ExprInfo ConstChar::toImExpr(Ctx&) { return { make_unique<im::Const>(c_), charType }; }
+Expr::Info ConstChar::toImExpr(Ctx&) { return { make_unique<im::Const>(c_), Type::CHAR_TYPE }; }
 
 /*************
  * ConstBool *
  *************/
-ExprInfo ConstBool::toImExpr(Ctx&) { return { make_unique<im::Const>(b_), boolType }; }
+Expr::Info ConstBool::toImExpr(Ctx&) { return { make_unique<im::Const>(b_), Type::BOOL_TYPE }; }
 
 /**********
  * StrLit *
  **********/
 
-ExprInfo StrLit::toImExpr(Ctx& ctx) {
+Expr::Info StrLit::toImExpr(Ctx& ctx) {
   vector<ExprPtr> chars;
   chars.reserve(str_.size());
   for (char c : str_) {
@@ -48,7 +47,7 @@ ExprInfo StrLit::toImExpr(Ctx& ctx) {
   }
 
   vector<ExprPtr> params;
-  params.push_back(make_unique<NewArray>(TypePtr(charType), move(chars), line_));
+  params.push_back(make_unique<NewArray>(TypePtr(Type::CHAR_TYPE), move(chars), line_));
   params.push_back(make_unique<ConstBool>(true, line_));
   return CallExpr(vector<string>(), "String", move(params), line_).toImExpr(ctx);
 }
@@ -59,7 +58,7 @@ ExprInfo StrLit::toImExpr(Ctx& ctx) {
  *******/
 bool Var::isLValue() const noexcept { return true; }
 
-ExprInfo Var::toImExpr(Ctx& ctx) {
+Expr::Info Var::toImExpr(Ctx& ctx) {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
   if (!varInfo) {
     // Undefined variable
@@ -72,15 +71,17 @@ ExprInfo Var::toImExpr(Ctx& ctx) {
  * UnaryOp *
  ***********/
 
-ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
+Expr::Info UnaryOp::toImExpr(Ctx& ctx) {
   switch (uOp_) {
     case UOp::NOT:
       // !b = b ^ 1
-      return { make_unique<im::BinOp>(
-                   e_->toImExprAssert(*boolType, ctx), make_unique<im::Const>(1), im::BOp::XOR),
-               boolType };
+      return {
+        make_unique<im::BinOp>(
+            e_->toImExprAssert(*Type::BOOL_TYPE, ctx), make_unique<im::Const>(1), im::BOp::XOR),
+        Type::BOOL_TYPE
+      };
     case UOp::NEG: {
-      ExprInfo eInfo = e_->toImExprAssert(
+      Info eInfo = e_->toImExprAssert(
           mem_fun_ref(&Type::isIntegral), "Unary minus requires an integer.", ctx);
       return { make_unique<im::BinOp>(make_unique<im::Const>(-1), move(eInfo.imExpr), im::BOp::MUL),
                move(eInfo.type) };
@@ -95,7 +96,7 @@ ExprInfo UnaryOp::toImExpr(Ctx& ctx) {
  * BinaryOp *
  ************/
 
-ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
+Expr::Info BinaryOp::toImExpr(Ctx& ctx) {
   switch (bOp_) {
     case BOp::PLUS:
       return toImExprArith(im::BOp::PLUS, ctx);
@@ -118,7 +119,7 @@ ExprInfo BinaryOp::toImExpr(Ctx& ctx) {
     case BOp::XOR: {
       // XOR is valid for both integers and booleans
       bool isLValue = e1_->isLValue();
-      ExprInfo lhsInfo = e1_->toImExpr(ctx);
+      Info lhsInfo = e1_->toImExpr(ctx);
       e1_ = make_unique<ImWrapper>(move(lhsInfo.imExpr), lhsInfo.type, isLValue, line_);
       if (lhsInfo.type->isIntegral()) {
         return toImExprArith(im::BOp::XOR, ctx);
@@ -148,9 +149,9 @@ namespace {
 }  // namespace
 
 
-ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
-  ExprInfo eInfo1 = e1_->toImExpr(ctx);
-  ExprInfo eInfo2 = e2_->toImExpr(ctx);
+Expr::Info BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
+  Info eInfo1 = e1_->toImExpr(ctx);
+  Info eInfo2 = e2_->toImExpr(ctx);
   TypePtr& type1 = eInfo1.type;
   TypePtr& type2 = eInfo2.type;
   // We are not using toImExprAssert(isIntegral) b/c need to access the types to
@@ -168,11 +169,11 @@ ExprInfo BinaryOp::toImExprArith(im::BOp op, Ctx& ctx) {
  * TernaryOp *
  *************/
 
-ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
+Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   size_t e1Line = e1_->line_;
   size_t e2Line = e2_->line_;
-  ExprInfo e1Info = e1_->toImExpr(ctx);
-  ExprInfo e2Info = e2_->toImExpr(ctx);
+  Info e1Info = e1_->toImExpr(ctx);
+  Info e2Info = e2_->toImExpr(ctx);
   if (!e1Info.type->isConvertibleTo(*e2Info.type, nullptr)) {
     ctx.getLogger().logError();
   }
@@ -206,13 +207,13 @@ ExprInfo TernaryOp::toImExpr(Ctx& ctx) {
  * CallExpr *
  ************/
 
-ExprInfo CallExpr::toImExpr(Ctx& ctx) {
+Expr::Info CallExpr::toImExpr(Ctx& ctx) {
   vector<im::ExprPtr> paramImExprs;
   vector<TypePtr> paramTypes;
   size_t numParams = params_.size();
   // Get types and convert params
   for (size_t i = 0; i < numParams; ++i) {
-    ExprInfo exprInfo = params_[i]->toImExpr(ctx);
+    Info exprInfo = params_[i]->toImExpr(ctx);
     paramImExprs.push_back(move(exprInfo.imExpr));
     paramTypes.push_back(move(exprInfo.type));
   }
@@ -226,7 +227,7 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
-               fnInfo->returnType != voidType),
+               fnInfo->returnType != Type::VOID_TYPE),
            move(fnInfo->returnType) };
 }
 
@@ -235,9 +236,9 @@ ExprInfo CallExpr::toImExpr(Ctx& ctx) {
  * Cast *
  ********/
 
-ExprInfo Cast::toImExpr(Ctx& ctx) {
+Expr::Info Cast::toImExpr(Ctx& ctx) {
   ctx.checkType(*toType_, line_);
-  ExprInfo eInfo = expr_->toImExpr(ctx);
+  Info eInfo = expr_->toImExpr(ctx);
   if (!eInfo.type->isConvertibleTo(*toType_, nullptr)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
@@ -250,7 +251,7 @@ ExprInfo Cast::toImExpr(Ctx& ctx) {
  * NewArray *
  ************/
 
-ExprInfo NewArray::toImExpr(Ctx& ctx) {
+Expr::Info NewArray::toImExpr(Ctx& ctx) {
   if (numElems_) {
     return toImExprLen(ctx);
   }
@@ -258,7 +259,7 @@ ExprInfo NewArray::toImExpr(Ctx& ctx) {
 }
 
 
-ExprInfo NewArray::toImExprLen(Ctx& ctx) {
+Expr::Info NewArray::toImExprLen(Ctx& ctx) {
   auto p = makeArrayStmts(*type_, move(numElems_), ctx);
 
   return { make_unique<im::DoThenEval>(move(p.first), make_unique<im::Temp>(p.second)),
@@ -266,9 +267,9 @@ ExprInfo NewArray::toImExprLen(Ctx& ctx) {
 }
 
 
-ExprInfo NewArray::toImExprElems(Ctx& ctx) {
+Expr::Info NewArray::toImExprElems(Ctx& ctx) {
   size_t len = elems_.size();
-  long maxLong = longType->minMaxValue().second;
+  long maxLong = Type::LONG_TYPE->minMaxValue().second;
   if (len > (size_t)maxLong) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << len << " is greater than the maximum array size " << maxLong;
@@ -341,8 +342,8 @@ bool ArrayAccess::isLValue() const noexcept { return true; }
 
 // TODO: Throw if out of range
 
-ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
-  ExprInfo exprInfo = arrExpr_->toImExpr(ctx);
+Expr::Info ArrayAccess::toImExpr(Ctx& ctx) {
+  Info exprInfo = arrExpr_->toImExpr(ctx);
   const Type& type = *exprInfo.type;
   if (type.typeName != Type::Category::ARRAY) {
     ostream& err = ctx.getLogger().logError(line_);
@@ -369,13 +370,13 @@ ExprInfo ArrayAccess::toImExpr(Ctx& ctx) {
 
 bool MemberAccess::isLValue() const noexcept { return true; }
 
-ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
-  ExprInfo eInfo = objExpr_->toImExpr(ctx);
+Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
+  Info eInfo = objExpr_->toImExpr(ctx);
 
   // The only member of an array is length
   if (eInfo.type->typeName == Type::Category::ARRAY) {
     if (member_ == "length") {
-      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), longType };
+      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), Type::LONG_TYPE };
     }
     ctx.getLogger().logError(line_, "Array has no member " + member_);
     return dummyInfo();
@@ -407,8 +408,8 @@ ExprInfo MemberAccess::toImExpr(Ctx& ctx) {
  * MethodInvocation *
  ********************/
 
-ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
-  ExprInfo eInfo = objExpr_->toImExpr(ctx);
+Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
+  Info eInfo = objExpr_->toImExpr(ctx);
   if (eInfo.type->typeName != Type::Category::CLASS) {
     ostringstream& err = ctx.getLogger().logError(line_);
     err << "Cannot invoke method on expression of type " << *eInfo.type;
@@ -422,7 +423,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
   size_t numParams = params_.size();
   // Get types and convert params
   for (size_t i = 0; i < numParams; ++i) {
-    ExprInfo exprInfo = params_[i]->toImExpr(ctx);
+    Info exprInfo = params_[i]->toImExpr(ctx);
     paramImExprs.push_back(move(exprInfo.imExpr));
     paramTypes.push_back(move(exprInfo.type));
   }
@@ -452,7 +453,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
                          nullptr,
                          8),
                      move(paramImExprs),
-                     fnInfo->returnType != voidType)),
+                     fnInfo->returnType != Type::VOID_TYPE)),
              move(fnInfo->returnType) };
   } else {
     // Push back "this" as last argument (AFTER the context lookup)
@@ -460,7 +461,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
     return { make_unique<im::CallExpr>(
                  make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
                  move(paramImExprs),
-                 fnInfo->returnType != voidType),
+                 fnInfo->returnType != Type::VOID_TYPE),
              move(fnInfo->returnType) };
   }
 }
@@ -469,7 +470,7 @@ ExprInfo MethodInvocation::toImExpr(Ctx& ctx) {
  * IncDec *
  **********/
 
-ExprInfo IncDec::toImExpr(Ctx& ctx) {
+Expr::Info IncDec::toImExpr(Ctx& ctx) {
   if (!lValue_->isLValue()) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Operator " << (inc_ ? "++" : "--") << " requires an lvalue.";
@@ -479,7 +480,7 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
   size_t eLine = lValue_->line_;
-  ExprInfo eInfo = lValue_->toImExpr(ctx);
+  Info eInfo = lValue_->toImExpr(ctx);
   im::Expr::Category category = eInfo.imExpr->getCategory();
 
   if (category == im::Expr::Category::TEMP) {
@@ -549,7 +550,7 @@ ExprInfo IncDec::toImExpr(Ctx& ctx) {
 
 bool ImWrapper::isLValue() const noexcept { return isLValue_; }
 
-ExprInfo ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
+Expr::Info ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
 
 
 /********
@@ -559,8 +560,8 @@ ExprInfo ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
 bool Expr::isLValue() const noexcept { return false; }
 
 template <typename F>
-ExprInfo Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
-  ExprInfo exprInfo = toImExpr(ctx);
+Expr::Info Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
+  Info exprInfo = toImExpr(ctx);
   if (!condFn(*exprInfo.type)) {
     ctx.getLogger().logError(line_, errMsg);
   }
@@ -569,7 +570,7 @@ ExprInfo Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {
 
 
 im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
-  ExprInfo exprInfo = toImExpr(ctx);
+  Info exprInfo = toImExpr(ctx);
   const Type& eType = *exprInfo.type;
   bool isNarrowing;
   if (eType.isConvertibleTo(type, &isNarrowing)) {

@@ -1,118 +1,10 @@
-#include "src/language/language.hpp"
-#include "src/main/parser.hpp"
+#include "src/language/decl.hpp"
 
-#include <fstream>
-
-#include <boost/algorithm/string/split.hpp>
+#include "src/language/stmt.hpp"
 
 using namespace std;
-namespace fs = filesystem;
 
 namespace language {
-
-
-/***********
- * Program *
- ***********/
-
-Program::Program(vector<Import>&& imports, vector<DeclPtr>&& decls)
-    : imports_(move(imports)), ctx_(nullptr) {
-  for (DeclPtr& decl : decls) {
-    if (decl->getCategory() == Decl::Category::CLASS) {
-      classes_.emplace_back(static_cast<ClassDecl*>(decl.release()));
-    } else {
-      funcs_.emplace_back(static_cast<Func*>(decl.release()));
-    }
-  }
-}
-
-
-namespace {
-  fs::path toCanonical(const fs::path& parent, fs::path imported, error_code& ec) {
-    if (imported.is_relative()) {
-      return fs::canonical(fs::path(parent).replace_filename(imported), ec);
-    }
-    return fs::canonical(imported, ec);
-  }
-}  // namespace
-
-
-void Program::initContext(
-    const fs::path& filePath,
-    unordered_map<string, unique_ptr<Program>>& initializedProgs,
-    const vector<Program>& builtIns,
-    const shared_ptr<unordered_map<int, Ctx::ClassInfo*>>& classIds) {
-  // Create a new context
-  ctx_ = make_unique<Ctx>(filePath.c_str(), classIds);
-
-  // Add builtin declarations to the context
-  for (const Program& prog : builtIns) {
-    ctx_->includeDecls(*prog.ctx_);
-  }
-
-  // Go through the imports and build the context tree so we have access
-  // to all imported declarations.
-  error_code ec;
-  for (const Import& imported : imports_) {
-    fs::path importPath = toCanonical(filePath, imported.filename, ec);
-    if (ec) {
-      ostream& err = ctx_->getLogger().logError(imported.line, ec.message());
-      err << " \"" << imported.filename << "\"";
-      continue;
-    }
-
-    auto progsIter = initializedProgs.find(importPath);
-    Program* prog = nullptr;
-    if (progsIter == initializedProgs.end()) {
-      // We haven't initialized this program yet
-      // Mark as initialized before recursing to allow circular dependencies
-      try {
-        // We use a nullptr as a placeholder to mark that we already tried to
-        // parse the program. This way, we don't try parsing it again if it is
-        // imported somewhere else
-        auto iter = initializedProgs.emplace(importPath, nullptr).first;
-        iter->second = make_unique<Program>(parser::parse(importPath));
-        prog = iter->second.get();
-        prog->initContext(importPath, initializedProgs, builtIns, classIds);
-      } catch (const parser::ParseException& e) {
-        cerr << e.what() << "\n(Imported at " << filePath << ", line " << imported.line << ")\n"
-             << endl;
-      }
-    } else {
-      prog = progsIter->second.get();
-    }
-
-    // If the program parsed, put the import's context in our context tree
-    if (prog && !ctx_->getCtxTree().addCtx(imported.filename, prog->ctx_.get())) {
-      ctx_->getLogger().logNote(imported.line, "Duplicate import '" + imported.filename + "'");
-    }
-  }
-
-
-  // Add this program's declarations to its own context. We add class names before functions/methods
-  // so that parameters and return types that are classes will already be in the context.
-  for (const unique_ptr<ClassDecl>& cls : classes_) {
-    cls->addToCtx(*ctx_);
-  }
-  for (const unique_ptr<Func>& fn : funcs_) {
-    fn->addToCtx(*ctx_);
-  }
-}  // namespace language
-
-
-assem::Program Program::toAssemProg() const { return toImProg().toAssemProg(); }
-
-im::Program Program::toImProg() const {
-  vector<im::DeclPtr> imDecls;
-  for (const unique_ptr<ClassDecl>& cls : classes_) {
-    cls->toImDecls(imDecls, *ctx_);
-  }
-  for (const unique_ptr<Func>& fn : funcs_) {
-    fn->toImDecls(imDecls, *ctx_);
-  }
-  return im::Program(move(imDecls));
-}
-
 
 /********
  * Func *
@@ -176,7 +68,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
 void Func::checkForReturn(Ctx& ctx) {
   const StmtPtr* last = body_->lastStmt();
   if (!last || !(dynamic_cast<Return*>(last->get()))) {
-    if (*returnType_ == *voidType) {
+    if (*returnType_ == *Type::VOID_TYPE) {
       // Add implicit return for functions with void return type if needed
       body_->stmts_.push_back(make_unique<Return>(optional<ExprPtr>(), 0));
     } else {
@@ -353,7 +245,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
             find_if(
                 vMethods_.cbegin(),
                 vMethods_.cend(),
-                [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
+                [&supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
                   return vMeth->inheritance_ == Func::Inheritance::OVERRIDE &&
                          vMeth->name_ == supMethName &&
                          equal(

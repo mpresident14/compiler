@@ -28,16 +28,16 @@ namespace fs = std::filesystem;
 
 /* Return true if no errors */
 bool compile(const string& srcFilename, const string& asmFilename, vector<string> builtInFiles) {
-  unordered_map<string, unique_ptr<language::Program>> initializedProgs;
+  unordered_map<string, unique_ptr<language::SrcFile>> initializedProgs;
   Logger logger;
   bool hasErr = false;
   try {
     // Parse builtins first so that their function IDs will match the precompiled assembly
-    vector<language::Program> builtIns;
+    vector<language::SrcFile> builtIns;
     auto classIds = make_shared<unordered_map<int, Ctx::ClassInfo*>>();
     for (string builtInFile : builtInFiles) {
       fs::path builtInPath = fs::canonical(builtInFile);
-      language::Program prog = parser::parse(builtInPath);
+      language::SrcFile prog = parser::parse(builtInPath);
       prog.initContext(builtInPath, initializedProgs, {}, classIds);
       builtIns.push_back(move(prog));
     }
@@ -50,14 +50,14 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
     }
 
     auto iter = initializedProgs
-                    .emplace(srcPath, make_unique<language::Program>(parser::parse(srcFilename)))
+                    .emplace(srcPath, make_unique<language::SrcFile>(parser::parse(srcFilename)))
                     .first;
     // Recursively record all declarations
     iter->second->initContext(srcPath, initializedProgs, builtIns, classIds);
 
 
     // Convert to assembly
-    vector<assem::Program> assemProgs;
+    vector<assem::SrcFile> assemProgs;
     for (const auto& [filename, prog] : initializedProgs) {
       if (prog) {
         assemProgs.push_back(prog->toAssemProg());
@@ -70,7 +70,7 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
     if (!hasErr) {
       ofstream asmFile(asmFilename);
       logger.checkFile(asmFilename, asmFile);
-      for (assem::Program& prog : assemProgs) {
+      for (assem::SrcFile& prog : assemProgs) {
         prog.toCode(asmFile);
       }
     }

@@ -1,8 +1,8 @@
+#include "src/language/stmt.hpp"
+
 #include "src/assembly/assembly.hpp"
-#include "src/language/language.hpp"
 #include "src/language/utils.hpp"
 
-#include <sstream>
 #include <utility>
 
 using namespace std;
@@ -143,7 +143,7 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (!retValue_.has_value()) {
     // Make sure the function return type is void
     if (retType.typeName != Type::Category::VOID) {
-      ostringstream& err = ctx.getLogger().logError(line_);
+      ostream& err = ctx.getLogger().logError(line_);
       err << "Function has return type " << retType << " but may return void.";
     }
     imStmts.push_back(make_unique<im::ReturnStmt>(nullptr));
@@ -175,7 +175,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
-  ExprInfo lValueInfo = lValue_->toImExpr(ctx);
+  Expr::Info lValueInfo = lValue_->toImExpr(ctx);
   imStmts.emplace_back(
       new im::Assign(move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
 }
@@ -198,7 +198,7 @@ unique_ptr<im::Assign> Update::assignAddr(int temp, im::MemDeref* memDeref) {
           memDeref->numBytes_));
 }
 
-Update::Update(ExprPtr&& lValue, BOp bOp, ExprPtr&& rhs)
+Update::Update(ExprPtr&& lValue, Expr::BOp bOp, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)), bOp_(bOp) {}
 
 
@@ -209,7 +209,7 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   }
 
   // All lvalues translate into a Temp or a MemDeref
-  ExprInfo eInfo = lValue_->toImExpr(ctx);
+  Expr::Info eInfo = lValue_->toImExpr(ctx);
   size_t lValueLine = lValue_->line_;
   im::Expr::Category category = eInfo.imExpr->getCategory();
 
@@ -268,7 +268,7 @@ Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   size_t eLine = expr_->line_;
   bool isLValue = expr_->isLValue();
-  ExprInfo eInfo = expr_->toImExpr(ctx);
+  Expr::Info eInfo = expr_->toImExpr(ctx);
   auto imWrapExpr = make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, isLValue, eLine);
 
   // Put the String in a temporary
@@ -285,7 +285,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     callToString = make_unique<CallExpr>(vector<string>(), toString, move(toPrint), line_);
   }
 
-  VarDecl(TypePtr(strType), strVar, move(callToString), line_).toImStmts(imStmts, ctx);
+  VarDecl(TypePtr(Type::STRING_TYPE), strVar, move(callToString), line_).toImStmts(imStmts, ctx);
 
   vector<im::ExprPtr> printArgs;
   // Address of the char[] + 8 to skip length field

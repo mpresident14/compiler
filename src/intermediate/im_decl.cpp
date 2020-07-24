@@ -11,14 +11,14 @@ namespace im {
 /***********
  * Program *
  ***********/
-Program::Program(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
+SrcFile::SrcFile(vector<DeclPtr>&& decls) : decls_(move(decls)) {}
 
-assem::Program Program::toAssemProg() const {
+assem::SrcFile SrcFile::toAssemProg() const {
   vector<assem::DeclPtr> assemDecls;
   for (const DeclPtr& decl : decls_) {
     assemDecls.push_back(decl->toAssemDecl());
   }
-  return assem::Program(move(assemDecls));
+  return assem::SrcFile(move(assemDecls));
 }
 
 

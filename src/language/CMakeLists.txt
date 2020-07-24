@@ -2,15 +2,15 @@
 project(language)
 
 add_library(lang_lib
-    lang_decl.cpp
-    lang_stmt.cpp
-    lang_expr_ctor.cpp
-    lang_expr_toim.cpp
-    lang_expr_asbool.cpp
+    src_file.cpp
+    decl.cpp
+    stmt.cpp
+    expr_ctor.cpp
+    expr_to_im.cpp
+    expr_as_bool.cpp
     typecheck/context.cpp
     typecheck/ctx_tree.cpp
     typecheck/type.cpp
     utils.cpp)
 
-# Commented out to speed up compilation
 target_link_libraries(lang_lib my_parser_lib im_lib misc_lib)

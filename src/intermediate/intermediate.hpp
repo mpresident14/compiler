@@ -74,10 +74,10 @@ std::ostream& operator<<(std::ostream& out, BOp bOp);
  * Decl *
  ********/
 
-class Program {
+class SrcFile {
 public:
-  Program(std::vector<DeclPtr>&& decls);
-  assem::Program toAssemProg() const;
+  SrcFile(std::vector<DeclPtr>&& decls);
+  assem::SrcFile toAssemProg() const;
 
   std::vector<DeclPtr> decls_;
 };

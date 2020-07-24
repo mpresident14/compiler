@@ -1,6 +1,7 @@
 #include "src/language/typecheck/context.hpp"
-#include "src/language/language.hpp"
+
 #include "src/assembly/temp.hpp"
+#include "src/language/language.hpp"
 #include "src/language/utils.hpp"
 
 #include <algorithm>
@@ -87,13 +88,11 @@ void Ctx::removeVar(const string& var, size_t line) {
   varMap_.erase(var);
 }
 
-void Ctx::removeThis() {
-  varMap_.erase(language::ClassDecl::THIS);
-}
+void Ctx::removeThis() { varMap_.erase(language::ClassDecl::THIS); }
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
   // TODO: Use try_emplace here (ClassInfo will need a ctor)
-  auto p = classMap_.try_emplace(className, filename_, id );
+  auto p = classMap_.try_emplace(className, filename_, id);
   if (p.second) {
     classIds_->emplace(id, &p.first->second);
   } else {

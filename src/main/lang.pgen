@@ -183,15 +183,15 @@ COLON2                            #left
 
 #grammar
 
-Program -> { language::Program }
-  := Imports Decls  % Program(move(#0), move(#1)) %
-   | Decls          % Program(vector<Import>(), move(#0)) %
+SrcFile -> { language::SrcFile }
+  := Imports Decls  % SrcFile(move(#0), move(#1)) %
+   | Decls          % SrcFile(vector<SrcFile::Import>(), move(#0)) %
 
-Imports -> { vector<Import> }
-  := Import             % singletonVec<Import>(move(#0)) %
+Imports -> { vector<SrcFile::Import> }
+  := Import             % singletonVec<SrcFile::Import>(move(#0)) %
    | Imports Import     % (#0.push_back(move(#1)), move(#0)) %
 
-Import -> { Import }
+Import -> { SrcFile::Import }
   := IMPORT SRCFILE     % { move(#1), #line } %
 
 Decls -> { vector<DeclPtr> }
@@ -220,7 +220,7 @@ ClassElement -> { ClassDecl::ClassElem }
 
 Function -> { std::unique_ptr<Func> }
   := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Inheritance::NONE, move(#0), #1, move(#3), move(#5), #line) %
-  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Inheritance::NONE, TypePtr(voidType), #1, move(#3), move(#5), #line) %
+  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Inheritance::NONE, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#5), #line) %
 
 Method -> { std::unique_ptr<Func> }
   := Function             % move(#0) %
@@ -266,26 +266,26 @@ ExprNoVar -> { ExprPtr }
    | FALSE                                      % make_unique<ConstBool>(false, #line) %
    | CHARLIT                                    % make_unique<ConstChar>(#0, #line) %
    | STRLIT                                     % make_unique<StrLit>(#0, #line) %
-   | MINUS Expr   #prec UNARY_MINUS             % make_unique<UnaryOp>(move(#1), UOp::NEG, #line) %
-   | BANG Expr                                  % make_unique<UnaryOp>(move(#1), UOp::NOT, #line) %
-   | Expr PLUS Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::PLUS) %
-   | Expr MINUS Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::MINUS) %
-   | Expr STAR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::MUL) %
-   | Expr FSLASH Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::DIV) %
-   | Expr MOD Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::MOD) %
-   | Expr BITAND Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_AND) %
-   | Expr BITOR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), BOp::BIT_OR) %
-   | Expr XOR Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::XOR) %
-   | Expr LSHIFT Expr                           % make_unique<BinaryOp>(move(#0), move(#2), BOp::LSHIFT) %
-   | Expr ARSHIFT Expr                          % make_unique<BinaryOp>(move(#0), move(#2), BOp::ARSHIFT) %
-   | Expr AND Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::AND) %
-   | Expr OR Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::OR) %
-   | Expr EQEQ Expr                             % make_unique<BinaryOp>(move(#0), move(#2), BOp::EQ) %
-   | Expr NEQ Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::NEQ) %
-   | Expr LT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::LT) %
-   | Expr GT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), BOp::GT) %
-   | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::LTE) %
-   | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), BOp::GTE) %
+   | MINUS Expr   #prec UNARY_MINUS             % make_unique<UnaryOp>(move(#1), Expr::UOp::NEG, #line) %
+   | BANG Expr                                  % make_unique<UnaryOp>(move(#1), Expr::UOp::NOT, #line) %
+   | Expr PLUS Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::PLUS) %
+   | Expr MINUS Expr                            % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MINUS) %
+   | Expr STAR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MUL) %
+   | Expr FSLASH Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::DIV) %
+   | Expr MOD Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MOD) %
+   | Expr BITAND Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::BIT_AND) %
+   | Expr BITOR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::BIT_OR) %
+   | Expr XOR Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::XOR) %
+   | Expr LSHIFT Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LSHIFT) %
+   | Expr ARSHIFT Expr                          % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::ARSHIFT) %
+   | Expr AND Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::AND) %
+   | Expr OR Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::OR) %
+   | Expr EQEQ Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::EQ) %
+   | Expr NEQ Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::NEQ) %
+   | Expr LT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LT) %
+   | Expr GT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::GT) %
+   | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LTE) %
+   | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::GTE) %
    | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
    | LPAREN NonVoidTypeNoIdent RPAREN Expr
      #prec CAST                                 % make_unique<Cast>(move(#1), move(#3), #line) %
@@ -308,16 +308,16 @@ ForUpdate -> { StmtPtr }
 
 UpdateStmt -> { StmtPtr }
    := Expr EQ Expr                              % make_unique<Assign>(move(#0), move(#2)) %
-   | Expr PLUSEQ Expr                           % make_unique<Update>(move(#0), BOp::PLUS, move(#2)) %
-   | Expr MINUSEQ Expr                          % make_unique<Update>(move(#0), BOp::MINUS, move(#2)) %
-   | Expr STAREQ Expr                           % make_unique<Update>(move(#0), BOp::MUL, move(#2)) %
-   | Expr FSLASHEQ Expr                         % make_unique<Update>(move(#0), BOp::DIV, move(#2)) %
-   | Expr MODEQ Expr                            % make_unique<Update>(move(#0), BOp::MOD, move(#2)) %
-   | Expr BITANDEQ Expr                         % make_unique<Update>(move(#0), BOp::BIT_AND, move(#2)) %
-   | Expr BITOREQ Expr                          % make_unique<Update>(move(#0), BOp::BIT_OR, move(#2)) %
-   | Expr XOREQ Expr                            % make_unique<Update>(move(#0), BOp::XOR, move(#2)) %
-   | Expr LSHIFTEQ Expr                         % make_unique<Update>(move(#0), BOp::LSHIFT, move(#2)) %
-   | Expr ARSHIFTEQ Expr                        % make_unique<Update>(move(#0), BOp::ARSHIFT, move(#2)) %
+   | Expr PLUSEQ Expr                           % make_unique<Update>(move(#0), Expr::BOp::PLUS, move(#2)) %
+   | Expr MINUSEQ Expr                          % make_unique<Update>(move(#0), Expr::BOp::MINUS, move(#2)) %
+   | Expr STAREQ Expr                           % make_unique<Update>(move(#0), Expr::BOp::MUL, move(#2)) %
+   | Expr FSLASHEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::DIV, move(#2)) %
+   | Expr MODEQ Expr                            % make_unique<Update>(move(#0), Expr::BOp::MOD, move(#2)) %
+   | Expr BITANDEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::BIT_AND, move(#2)) %
+   | Expr BITOREQ Expr                          % make_unique<Update>(move(#0), Expr::BOp::BIT_OR, move(#2)) %
+   | Expr XOREQ Expr                            % make_unique<Update>(move(#0), Expr::BOp::XOR, move(#2)) %
+   | Expr LSHIFTEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::LSHIFT, move(#2)) %
+   | Expr ARSHIFTEQ Expr                        % make_unique<Update>(move(#0), Expr::BOp::ARSHIFT, move(#2)) %
 
 StmtExpr -> { ExprPtr }
   := INC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), true, true, #line) %
@@ -353,11 +353,11 @@ NonVoidType -> { TypePtr }
 
 // To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
 NonVoidTypeNoIdent -> { TypePtr }
-  := LONG                   % longType %
-   | INT                    % intType %
-   | SHORT                  % shortType %
-   | CHAR                   % charType %
-   | BOOL                   % boolType %
+  := LONG                   % Type::LONG_TYPE %
+   | INT                    % Type::INT_TYPE %
+   | SHORT                  % Type::SHORT_TYPE %
+   | CHAR                   % Type::CHAR_TYPE %
+   | BOOL                   % Type::BOOL_TYPE %
    | NonVoidType LRBRACKET  % make_shared<Array>(move(#0)) %
    | Qualifiers IDENT       % make_shared<Class>(move(#0), move(#1)) %
 

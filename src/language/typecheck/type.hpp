@@ -19,6 +19,15 @@ using TypePtr = std::shared_ptr<Type>;
 
 class Type {
 public:
+  static const TypePtr LONG_TYPE;
+  static const TypePtr INT_TYPE;
+  static const TypePtr SHORT_TYPE;
+  static const TypePtr CHAR_TYPE;
+  static const TypePtr BOOL_TYPE;
+  static const TypePtr VOID_TYPE;
+  static const TypePtr STRING_TYPE;
+  static const TypePtr ANY_TYPE;
+
   /* ANY used to proceed through errors */
   enum class Category { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
@@ -60,14 +69,5 @@ bool operator==(const Type& t1, const Type& t2) noexcept;
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;
 
 std::ostream& operator<<(std::ostream& out, const Type& type);
-
-const TypePtr longType = std::make_shared<Type>(Type::Category::LONG, 8);
-const TypePtr intType = std::make_shared<Type>(Type::Category::INT, 4);
-const TypePtr shortType = std::make_shared<Type>(Type::Category::SHORT, 2);
-const TypePtr charType = std::make_shared<Type>(Type::Category::CHAR, 1);
-const TypePtr boolType = std::make_shared<Type>(Type::Category::BOOL, 1);
-const TypePtr voidType = std::make_shared<Type>(Type::Category::VOID, 0);
-const TypePtr strType = std::make_shared<Class>(std::vector<std::string>(), "String");
-const TypePtr anyType = std::make_shared<Type>(Type::Category::ANY, 0);
 
 #endif  // TYPE_HPP
