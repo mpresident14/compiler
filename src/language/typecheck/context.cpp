@@ -108,7 +108,28 @@ Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
 void Ctx::enterClass() { insideClass_ = true; }
 void Ctx::exitClass() { insideClass_ = false; }
 
-Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
+bool Ctx::isBaseOf(const Class& classTy, const Type& base) const {
+  if (base.typeName != Type::Category::CLASS) {
+    return false;
+  }
+
+  int baseId = static_cast<const Class&>(base).id;
+  const ClassInfo* classInfo = lookupClass(classTy.id);
+
+  // cout << "baseId: " << baseId << endl;
+
+  while (classInfo) {
+  // cout << "classInfo->id: " << classInfo->id << endl;
+    if (classInfo->id == baseId) {
+      return true;
+    }
+    classInfo = classInfo->superInfo;
+  }
+
+  return false;
+}
+
+Ctx::ClsLookupRes Ctx::lookupClass(const string& name) const {
   auto iter = classMap_.find(name);
   if (iter == classMap_.end()) {
     return { LookupStatus::UNDEFINED, nullptr, filename_ };
@@ -116,7 +137,7 @@ Ctx::ClsLookupRes Ctx::lookupClass(const string& name) {
   return { LookupStatus::FOUND, &iter->second, filename_ };
 }
 
-const Ctx::ClassInfo* Ctx::lookupClass(int id) {
+const Ctx::ClassInfo* Ctx::lookupClass(int id) const {
   auto iter = classIds_->find(id);
   if (iter == classIds_->end()) {
     return nullptr;
@@ -124,8 +145,8 @@ const Ctx::ClassInfo* Ctx::lookupClass(int id) {
   return iter->second;
 }
 
-const Ctx::ClassInfo*
-Ctx::lookupClassRec(const vector<string>& qualifiers, const string& name, size_t line) {
+const Ctx::ClassInfo* Ctx::lookupClassRec(
+    const vector<string>& qualifiers, const string& name, size_t line) const {
   LookupRes lookupRes =
       qualifiers.empty() ? lookupClass(name) : ctxTree_.lookupClass(qualifiers, name);
 
@@ -138,7 +159,7 @@ pair<const Ctx::ClassInfo*, const Ctx::FnInfo*> Ctx::lookupMethod(
     const string& className,
     const string& methodName,
     const vector<TypePtr>& paramTypes,
-    size_t line) {
+    size_t line) const {
   const ClassInfo* classInfo = lookupClass(id);
   if (!classInfo) {
     // If we hit this case, we already logged an undefined class error somewhere else, so don't
@@ -160,7 +181,7 @@ const Ctx::ClassInfo* Ctx::handleClassLookupRes(
     const ClsLookupRes& lookupRes,
     const vector<string>& qualifiers,
     const string& name,
-    size_t line) {
+    size_t line) const {
   switch (lookupRes.status) {
     case LookupStatus::FOUND:
       return get<const ClassInfo*>(lookupRes.result);
@@ -218,14 +239,14 @@ void Ctx::insertMethod(
 }
 
 
-Ctx::FnLookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) {
+Ctx::FnLookupRes Ctx::lookupFn(const string& name, const vector<TypePtr>& paramTypes) const {
   return lookupFn(fnMap_, name, paramTypes);
 }
 
 Ctx::FnLookupRes Ctx::lookupFn(
     const unordered_multimap<string, FnInfo>& funcMap,
     const string& name,
-    const vector<TypePtr>& paramTypes) {
+    const vector<TypePtr>& paramTypes) const {
   vector<const FnInfo*> wideMatches;
   vector<const FnInfo*> narrowMatches;
   auto iterPair = funcMap.equal_range(name);
@@ -241,9 +262,9 @@ Ctx::FnLookupRes Ctx::lookupFn(
                    paramTypes.cend(),
                    fnParamTypes.cbegin(),
                    fnParamTypes.cend(),
-                   [&isNarrowing](const TypePtr& from, const TypePtr& to) {
+                   [&isNarrowing, this](const TypePtr& from, const TypePtr& to) {
                      bool b;
-                     bool res = from->isConvertibleTo(*to, &b);
+                     bool res = from->isConvertibleTo(*to, &b, *this);
                      isNarrowing |= b;
                      return res;
                    })) {
@@ -282,7 +303,7 @@ const Ctx::FnInfo* Ctx::lookupFnRec(
     const vector<string>& qualifiers,
     const string& name,
     const vector<TypePtr>& paramTypes,
-    size_t line) {
+    size_t line) const {
   LookupRes lookupRes = qualifiers.empty() ? lookupFn(name, paramTypes)
                                            : ctxTree_.lookupFn(qualifiers, name, paramTypes);
   return handleFnLookupRes(lookupRes, qualifiers, name, paramTypes, line);
@@ -293,7 +314,7 @@ const Ctx::FnInfo* Ctx::handleFnLookupRes(
     const vector<string>& qualifiers,
     const string& name,
     const vector<TypePtr>& paramTypes,
-    size_t line) {
+    size_t line) const {
   switch (lookupRes.status) {
     case LookupStatus::NARROWING: {
       const FnInfo* fnInfo = get<vector<const FnInfo*>>(lookupRes.result).front();
@@ -347,7 +368,7 @@ void Ctx::undefinedFn(
     const vector<TypePtr>& paramTypes,
     size_t line,
     const vector<const FnInfo*>& candidates,
-    string_view searchedFile) {
+    string_view searchedFile) const {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
@@ -367,7 +388,7 @@ void Ctx::undefFnBadQuals(
     const vector<string>& qualifiers,
     string_view fnName,
     const vector<TypePtr>& paramTypes,
-    size_t line) {
+    size_t line) const {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
@@ -380,7 +401,7 @@ void Ctx::undefFnAmbigQuals(
     const vector<TypePtr>& paramTypes,
     size_t line,
     const vector<const string*> candidates,
-    string_view searchedPath) {
+    string_view searchedPath) const {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
@@ -396,7 +417,7 @@ void Ctx::ambigOverload(
     const vector<TypePtr>& paramTypes,
     size_t line,
     const vector<const Ctx::FnInfo*>& candidates,
-    string_view searchedFile) {
+    string_view searchedFile) const {
   ostream& err = logger.logError(line);
   err << "Call of overloaded function '" << qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
@@ -408,9 +429,7 @@ void Ctx::ambigOverload(
 }
 
 void Ctx::warnNarrow(
-    const vector<TypePtr>& fromTypes,
-    const vector<TypePtr>& toTypes,
-    size_t line) {
+    const vector<TypePtr>& fromTypes, const vector<TypePtr>& toTypes, size_t line) const {
   size_t len = fromTypes.size();
   for (size_t i = 0; i < len; ++i) {
     const Type& from = *fromTypes[i];
@@ -427,13 +446,14 @@ void Ctx::undefinedClass(
     const vector<string>& qualifiers,
     string_view className,
     size_t line,
-    string_view searchedFile) {
+    string_view searchedFile) const {
   ostream& err = logger.logError(line);
   err << "Class '" << qualifiedName(qualifiers, className) << "' is not defined in "
       << searchedFile;
 }
 
-void Ctx::undefClassBadQuals(const vector<string>& qualifiers, string_view className, size_t line) {
+void Ctx::undefClassBadQuals(
+    const vector<string>& qualifiers, string_view className, size_t line) const {
   ostream& err = logger.logError(line);
   err << "Undefined class '" << qualifiedName(qualifiers, className)
       << "'. No imported file matches qualifiers.";
@@ -444,7 +464,7 @@ void Ctx::undefClassAmbigQuals(
     string_view className,
     size_t line,
     const vector<const string*> candidates,
-    string_view searchedPath) {
+    string_view searchedPath) const {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << qualifiedName(qualifiers, className) << "'. Found";
   for (const string* cand : candidates) {
@@ -452,7 +472,7 @@ void Ctx::undefClassAmbigQuals(
   }
 }
 
-void Ctx::checkType(Type& type, size_t line) {
+void Ctx::checkType(Type& type, size_t line) const {
   // Built-in types are always valid
   if (type.typeName != Type::Category::CLASS) {
     return;
@@ -480,11 +500,6 @@ string Ctx::mangleFn(string_view fnName, size_t id) {
   }
 
   return string(fnName).append(1, '_').append(to_string(id));
-}
-
-void Ctx::typeError(const Type& expected, const Type& got, size_t line) {
-  ostringstream& err = logger.logError(line);
-  err << "Expected " << expected << ", got " << got;
 }
 
 void Ctx::displayLogs() const { logger.streamLog(); }

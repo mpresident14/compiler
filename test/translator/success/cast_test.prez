@@ -20,4 +20,17 @@ void main() {
   l = 0xFFFF1000;
   short s = (short)l;
   print(s);
+
+  Derived d = Derived();
+  print(((Base) d).name());
+}
+
+class Base {
+  Base(){}
+  virtual String name() { return "Base"; }
+}
+
+class Derived : Base {
+  Derived(){}
+  override String name() { return "Derived"; }
 }

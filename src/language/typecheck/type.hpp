@@ -14,6 +14,7 @@
  * Type *
  ********/
 
+class Ctx;
 class Type;
 using TypePtr = std::shared_ptr<Type>;
 
@@ -37,7 +38,7 @@ public:
   virtual ~Type() {}
   constexpr Type(Category name, u_char nBytes) : typeName(name), numBytes(nBytes) {}
   bool isIntegral() const noexcept;
-  bool isConvertibleTo(const Type& to, bool* isNarrowing) const noexcept;
+  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept;
   std::pair<long, long> minMaxValue() const;
 
   Category typeName;
@@ -57,6 +58,7 @@ public:
   static const int ID_EMPTY = -1;
   static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
+  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept override;
 
   std::vector<std::string> qualifiers;
   std::string className;

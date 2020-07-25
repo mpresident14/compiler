@@ -228,6 +228,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   if (superName_) {
     const Ctx::ClassInfo* superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_);
     if (superInfo) {
+      classInfo.superInfo = superInfo;
       vMethodCnt = superInfo->vTableOffsets.size();
       vTableEntries_.resize(vMethodCnt);
 

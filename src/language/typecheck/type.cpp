@@ -41,7 +41,7 @@ bool Type::isIntegral() const noexcept {
   }
 }
 
-bool Type::isConvertibleTo(const Type& to, bool* isNarrowing) const noexcept {
+bool Type::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx&) const noexcept {
   if (*this == to) {
     if (isNarrowing) {
       *isNarrowing = false;
@@ -61,6 +61,13 @@ bool Type::isConvertibleTo(const Type& to, bool* isNarrowing) const noexcept {
   }
 
   return false;
+}
+
+bool Class::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept {
+  if (isNarrowing) {
+    *isNarrowing = false;
+  }
+  return to.typeName == Type::Category::ANY || ctx.isBaseOf(*this, to);
 }
 
 pair<long, long> Type::minMaxValue() const {
@@ -101,9 +108,9 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
         return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case Type::Category::CLASS:
         // Everything equals ID_UNKNOWN so we don't give an error explosion for an undefined class
-        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id ||
-               static_cast<const Class&>(t1).id == Class::ID_UNKNOWN ||
-               static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;
+        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id
+               || static_cast<const Class&>(t1).id == Class::ID_UNKNOWN
+               || static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;
       default:
         return true;
     }

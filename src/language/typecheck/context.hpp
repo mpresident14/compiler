@@ -47,6 +47,7 @@ public:
     std::unordered_multimap<std::string, FnInfo> methods;
     std::unordered_map<std::string, FieldInfo> fields;
     std::unordered_map<size_t, size_t> vTableOffsets;
+    const ClassInfo* superInfo = nullptr;
     std::string declFile;
     int id;
   };
@@ -143,21 +144,22 @@ public:
   void removeThis();
   void enterClass();
   void exitClass();
+  bool isBaseOf(const Class& classTy, const Type& base) const;
   constexpr bool insideClass() const noexcept { return insideClass_; }
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
-  ClsLookupRes lookupClass(const std::string& name);
+  ClsLookupRes lookupClass(const std::string& name) const;
   /* Searches global classIds_ */
-  const ClassInfo* lookupClass(int id);
+  const ClassInfo* lookupClass(int id) const;
   /* Also searches context tree, nullptr if it doesn't exist */
   const ClassInfo*
-  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line);
+  lookupClassRec(const std::vector<std::string>& qualifiers, const std::string& name, size_t line) const;
   std::pair<const Ctx::ClassInfo*, const Ctx::FnInfo*> lookupMethod(
       int id,
       const std::string& className,
       const std::string& methodName,
       const std::vector<TypePtr>& paramTypes,
-      size_t line);
+      size_t line) const;
   void insertFn(
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
@@ -174,17 +176,16 @@ public:
       size_t id,
       size_t line);
   /* Only searches this context */
-  FnLookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes);
+  FnLookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes) const;
   /* Also searches context tree, nullptr if it doesn't exist */
   const FnInfo* lookupFnRec(
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
-      size_t line);
+      size_t line) const;
   /* Checks if this is a valid type. If the type is a Class, then it sets its id if it is not yet
    * set */
-  void checkType(Type& type, size_t line);
-  void typeError(const Type& expected, const Type& got, size_t line);
+  void checkType(Type& type, size_t line) const;
   void displayLogs() const;
   bool hasErrors() const noexcept;
 
@@ -193,70 +194,70 @@ private:
   FnLookupRes lookupFn(
       const std::unordered_multimap<std::string, FnInfo>& funcMap,
       const std::string& name,
-      const std::vector<TypePtr>& paramTypes);
+      const std::vector<TypePtr>& paramTypes) const;
   const FnInfo* handleFnLookupRes(
       const FnLookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,
       const std::string& name,
       const std::vector<TypePtr>& paramTypes,
-      size_t line);
+      size_t line) const;
   void undefinedFn(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
       size_t line,
       const std::vector<const FnInfo*>& candidates,
-      std::string_view searchedFile);
+      std::string_view searchedFile) const;
   void undefFnBadQuals(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
-      size_t line);
+      size_t line) const;
   void undefFnAmbigQuals(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
       size_t line,
       const std::vector<const std::string*> candidates,
-      std::string_view searchedPath);
+      std::string_view searchedPath)const;
   void ambigOverload(
       const std::vector<std::string>& qualifiers,
       std::string_view fnName,
       const std::vector<TypePtr>& paramTypes,
       size_t line,
       const std::vector<const FnInfo*>& candidates,
-      std::string_view searchedFile);
+      std::string_view searchedFile)const;
   void warnNarrow(
       const std::vector<TypePtr>& fromTypes,
       const std::vector<TypePtr>& toTypes,
-      size_t line);
+      size_t line)const;
   const ClassInfo* handleClassLookupRes(
       const ClsLookupRes& lookupRes,
       const std::vector<std::string>& qualifiers,
       const std::string& name,
-      size_t line);
+      size_t line)const;
   void undefinedClass(
       const std::vector<std::string>& qualifiers,
       std::string_view className,
       size_t line,
-      std::string_view searchedFile);
+      std::string_view searchedFile)const;
   void undefClassBadQuals(
       const std::vector<std::string>& qualifiers,
       std::string_view className,
-      size_t line);
+      size_t line)const;
   void undefClassAmbigQuals(
       const std::vector<std::string>& qualifiers,
       std::string_view className,
       size_t line,
       const std::vector<const std::string*> candidates,
-      std::string_view searchedPath);
+      std::string_view searchedPath)const;
 
   std::unordered_map<std::string, VarInfo> varMap_;
   std::unordered_multimap<std::string, FnInfo> fnMap_;
   std::unordered_map<std::string, ClassInfo> classMap_;
   TypePtr currentRetType_;
   std::string filename_;
-  Logger logger;
+  mutable Logger logger;
   CtxTree ctxTree_;
   /* Class IDs Explanation
    * 1. First, we go through all the class declarations and add them to the context of their own

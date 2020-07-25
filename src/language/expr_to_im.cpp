@@ -174,7 +174,7 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   size_t e2Line = e2_->line_;
   Info e1Info = e1_->toImExpr(ctx);
   Info e2Info = e2_->toImExpr(ctx);
-  if (!e1Info.type->isConvertibleTo(*e2Info.type, nullptr)) {
+  if (!e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx)) {
     ctx.getLogger().logError();
   }
   const TypePtr& widerType =
@@ -240,13 +240,15 @@ Expr::Info Cast::toImExpr(Ctx& ctx) {
   ctx.checkType(*toType_, line_);
   Info eInfo = expr_->toImExpr(ctx);
 
-  // if (eInfo.type->typeName != Type::Category::CLASS) {
-
-  if (!eInfo.type->isConvertibleTo(*toType_, nullptr)) {
+  if (!eInfo.type->isConvertibleTo(*toType_, nullptr, ctx)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
-  return { make_unique<im::IntCast>(move(eInfo.imExpr), toType_->numBytes), move(toType_) };
+
+  return eInfo.type->typeName == Type::Category::CLASS
+             ? Expr::Info{ move(eInfo.imExpr), move(toType_) }
+             : Expr::Info{ make_unique<im::IntCast>(move(eInfo.imExpr), toType_->numBytes),
+                           move(toType_) };
 }
 
 
@@ -576,13 +578,14 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   Info exprInfo = toImExpr(ctx);
   const Type& eType = *exprInfo.type;
   bool isNarrowing;
-  if (eType.isConvertibleTo(type, &isNarrowing)) {
+  if (eType.isConvertibleTo(type, &isNarrowing, ctx)) {
     if (isNarrowing) {
       ostream& warning = ctx.getLogger().logWarning(line_);
       warning << "Narrowing conversion from " << eType << " to " << type;
     }
   } else {
-    ctx.typeError(type, eType, line_);
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Expected " << type << ", got " << eType;
   }
 
   return move(exprInfo.imExpr);

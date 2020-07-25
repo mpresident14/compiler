@@ -25,8 +25,11 @@ if __name__ == "__main__":
   asmFile = sys.argv[3]
 
   proc = subprocess.run((mainExe, prezFile, asmFile), stderr=subprocess.PIPE)
-  errOutput = proc.stderr.decode()
+  if proc.returncode < -1:
+    print(f"Exited with error code {-proc.returncode}")
+    exit(0)
 
+  errOutput = proc.stderr.decode()
   # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
   ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
   errOutput = ansi_escape.sub('', errOutput).split('\n')
