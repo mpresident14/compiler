@@ -53,9 +53,9 @@ const StmtPtr* If::lastStmt() const {
 }
 
 void If::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkIfLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
+  unique_ptr<im::MakeLabel> mkElseLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
 
   boolE_->asBool(imStmts, mkIfLabel->genInstr(), mkElseLabel->genInstr(), true, ctx);
   imStmts.emplace_back(move(mkIfLabel));
@@ -80,8 +80,8 @@ const StmtPtr* While::lastStmt() const {
 }
 
 void While::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  unique_ptr<im::MakeLabel> mkBodyLabel = make_unique<im::MakeLabel>(newLabel());
-  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkBodyLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
+  unique_ptr<im::MakeLabel> mkDoneLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
   assem::Label* bodyLabel = mkBodyLabel->genInstr();
   assem::Label* doneLabel = mkDoneLabel->genInstr();
 

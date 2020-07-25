@@ -91,10 +91,6 @@ public:
     std::variant<Field, Constructor, std::unique_ptr<Func>> elem;
   };
 
-  // static std::string mangleMethod(std::string_view className, std::string_view fnName);
-
-  static const std::string THIS;
-
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   ClassDecl(
       std::string_view name,

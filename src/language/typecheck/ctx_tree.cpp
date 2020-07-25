@@ -11,6 +11,17 @@ using namespace std;
 
 // TODO: Handle absolute paths: How do we distinguish "import /home/file1" and "import home/file1"?
 
+namespace {
+
+vector<string> splitPath(string_view importPath) {
+  importPath = importPath.substr(0, importPath.size() - sizeof(".prez") + 1);
+  vector<string> pathParts;
+  boost::split(pathParts, importPath, [](char c) { return c == '/'; });
+  return pathParts;
+}
+
+}
+
 bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
   vector<string> pathParts = splitPath(importPath);
   unordered_map<string, NodePtr>* currentMap = &roots_;

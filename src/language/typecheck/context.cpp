@@ -1,7 +1,6 @@
 #include "src/language/typecheck/context.hpp"
 
 #include "src/assembly/temp.hpp"
-#include "src/language/language.hpp"
 #include "src/language/utils.hpp"
 
 #include <algorithm>
@@ -89,7 +88,7 @@ void Ctx::removeVar(const string& var, size_t line) {
   varMap_.erase(var);
 }
 
-void Ctx::removeThis() { varMap_.erase(language::ClassDecl::THIS); }
+void Ctx::removeThis() { varMap_.erase(lang_utils::THIS); }
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
   // TODO: Use try_emplace here (ClassInfo will need a ctor)
@@ -370,7 +369,7 @@ void Ctx::undefinedFn(
     const vector<const FnInfo*>& candidates,
     string_view searchedFile) const {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedName(qualifiers, fnName);
+  err << "Undefined function '" << lang_utils::qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
 
   if (candidates.empty()) {
@@ -390,7 +389,7 @@ void Ctx::undefFnBadQuals(
     const vector<TypePtr>& paramTypes,
     size_t line) const {
   ostream& err = logger.logError(line);
-  err << "Undefined function '" << qualifiedName(qualifiers, fnName);
+  err << "Undefined function '" << lang_utils::qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
   err << "'. No imported file matches qualifiers.";
 }
@@ -403,7 +402,7 @@ void Ctx::undefFnAmbigQuals(
     const vector<const string*> candidates,
     string_view searchedPath) const {
   ostream& err = logger.logError(line);
-  err << "Ambiguous qualifier for function '" << qualifiedName(qualifiers, fnName);
+  err << "Ambiguous qualifier for function '" << lang_utils::qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
   err << "'. Found";
   for (const string* cand : candidates) {
@@ -419,7 +418,7 @@ void Ctx::ambigOverload(
     const vector<const Ctx::FnInfo*>& candidates,
     string_view searchedFile) const {
   ostream& err = logger.logError(line);
-  err << "Call of overloaded function '" << qualifiedName(qualifiers, fnName);
+  err << "Call of overloaded function '" << lang_utils::qualifiedName(qualifiers, fnName);
   streamParamTypes(paramTypes, err);
   err << "' is ambiguous. Candidate functions in " << searchedFile << ":";
   for (const FnInfo* fnInfo : candidates) {
@@ -448,14 +447,14 @@ void Ctx::undefinedClass(
     size_t line,
     string_view searchedFile) const {
   ostream& err = logger.logError(line);
-  err << "Class '" << qualifiedName(qualifiers, className) << "' is not defined in "
+  err << "Class '" << lang_utils::qualifiedName(qualifiers, className) << "' is not defined in "
       << searchedFile;
 }
 
 void Ctx::undefClassBadQuals(
     const vector<string>& qualifiers, string_view className, size_t line) const {
   ostream& err = logger.logError(line);
-  err << "Undefined class '" << qualifiedName(qualifiers, className)
+  err << "Undefined class '" << lang_utils::qualifiedName(qualifiers, className)
       << "'. No imported file matches qualifiers.";
 }
 
@@ -466,7 +465,7 @@ void Ctx::undefClassAmbigQuals(
     const vector<const string*> candidates,
     string_view searchedPath) const {
   ostream& err = logger.logError(line);
-  err << "Ambiguous qualifier for function '" << qualifiedName(qualifiers, className) << "'. Found";
+  err << "Ambiguous qualifier for function '" << lang_utils::qualifiedName(qualifiers, className) << "'. Found";
   for (const string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;
   }

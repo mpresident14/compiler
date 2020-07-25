@@ -1,8 +1,7 @@
 #include "src/language/decl.hpp"
 
 #include "src/language/stmt.hpp"
-
-#include <prez/print_stuff.hpp>
+#include "src/language/utils.hpp"
 
 using namespace std;
 
@@ -136,7 +135,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   mallocBytes.push_back(make_unique<im::Const>(objSize_));
   VarDecl(
       TypePtr(returnType_),
-      ClassDecl::THIS,
+      lang_utils::THIS,
       make_unique<ImWrapper>(
           make_unique<im::CallExpr>(
               make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
@@ -149,14 +148,14 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   // Create pointer to vtable if necessary
   if (vTableName_) {
     imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(0, Var(ClassDecl::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::MemDeref>(0, Var(lang_utils::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
         make_unique<im::LabelAddr>(*vTableName_)));
   }
 
   // Implicit return of the object we created. We insert it into the body rather than inserting it
   // manually into imStmts so that nicer errors are given if a user redefines "this"
   body_->stmts_.push_back(
-      make_unique<Return>(optional<ExprPtr>{ make_unique<Var>(ClassDecl::THIS, 0) }, 0));
+      make_unique<Return>(optional<ExprPtr>{ make_unique<Var>(lang_utils::THIS, 0) }, 0));
   body_->toImStmts(imStmts, ctx);
 
   ctx.removeThis();
@@ -170,7 +169,6 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
  * Class *
  *********/
 
-const string ClassDecl::THIS = "this";
 int ClassDecl::nextId_ = 0;
 
 // string ClassDecl::mangleMethod(string_view className, string_view fnName) {
@@ -315,7 +313,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         false,
         method->id_,
         method->line_);
-    method->paramNames_.push_back(THIS);
+    method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
 
@@ -333,7 +331,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
           true,
           method->id_,
           method->line_);
-      method->paramNames_.push_back(THIS);
+      method->paramNames_.push_back(lang_utils::THIS);
       method->paramTypes_.push_back(classTy);
       vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
       classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);

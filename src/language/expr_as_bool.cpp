@@ -101,7 +101,7 @@ void BinaryOp::asBoolAnd(
     assem::Label* ifFalse,
     bool flipEquiv,
     Ctx& ctx) {
-  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, midLabel, ifFalse, flipEquiv, ctx);
   imStmts.emplace_back(move(mkMidLabel));
@@ -114,7 +114,7 @@ void BinaryOp::asBoolOr(
     assem::Label* ifFalse,
     bool flipEquiv,
     Ctx& ctx) {
-  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(newLabel());
+  unique_ptr<im::MakeLabel> mkMidLabel = make_unique<im::MakeLabel>(lang_utils::newLabel());
   assem::Label* midLabel = mkMidLabel->genInstr();
   e1_->asBool(imStmts, ifTrue, midLabel, !flipEquiv, ctx);
   imStmts.emplace_back(move(mkMidLabel));

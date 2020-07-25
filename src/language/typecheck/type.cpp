@@ -147,7 +147,7 @@ ostream& operator<<(ostream& out, const Type& type) {
       if (static_cast<const Class&>(type).id == Class::ID_UNKNOWN) {
         out << "???";
       } else {
-        out << qualifiedName(
+        out << lang_utils::qualifiedName(
             static_cast<const Class&>(type).qualifiers, static_cast<const Class&>(type).className);
       }
       break;
