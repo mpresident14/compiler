@@ -31,10 +31,7 @@ ExprPtr TernaryOp::clone() const {
 }
 
 CallExpr::CallExpr(
-    vector<string>&& qualifiers,
-    string_view name,
-    vector<ExprPtr>&& params,
-    size_t line)
+    vector<string>&& qualifiers, string_view name, vector<ExprPtr>&& params, size_t line)
     : Expr(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
 ExprPtr CallExpr::clone() const {
   vector<ExprPtr> paramsClone;
@@ -76,10 +73,7 @@ ExprPtr MemberAccess::clone() const {
 }
 
 MethodInvocation::MethodInvocation(
-    ExprPtr&& objExpr,
-    std::string_view methodName,
-    std::vector<ExprPtr>&& params,
-    size_t line)
+    ExprPtr&& objExpr, std::string_view methodName, std::vector<ExprPtr>&& params, size_t line)
     : Expr(line), objExpr_(move(objExpr)), methodName_(methodName), params_(move(params)) {}
 ExprPtr MethodInvocation::clone() const {
   vector<ExprPtr> paramsClone;
@@ -88,6 +82,30 @@ ExprPtr MethodInvocation::clone() const {
   }
   return make_unique<MethodInvocation>(objExpr_->clone(), methodName_, move(paramsClone), line_);
 }
+
+QualifiedInvocation::QualifiedInvocation(
+    std::vector<std::string>&& qualifiers,
+    std::string_view className,
+    std::string_view methodName,
+    std::vector<ExprPtr>&& params,
+    size_t line)
+    : Expr(line),
+      classTy_(Class(move(qualifiers), className)),
+      methodName_(methodName),
+      params_(move(params)) {}
+ExprPtr QualifiedInvocation::clone() const {
+  vector<ExprPtr> paramsClone;
+  for (const ExprPtr& expr : params_) {
+    paramsClone.push_back(expr->clone());
+  }
+  return make_unique<QualifiedInvocation>(
+      vector<string>(classTy_.qualifiers),
+      classTy_.className,
+      methodName_,
+      move(paramsClone),
+      line_);
+}
+
 
 IncDec::IncDec(ExprPtr&& expr, bool inc, bool pre, size_t line)
     : Expr(line), lValue_(move(expr)), inc_(inc), pre_(pre) {}

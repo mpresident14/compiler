@@ -286,6 +286,7 @@ private:
    *    correct import. Even if it did, the qualifiers might be incorrect because they would be
    *    based on those of file.prez.
    */
+  // TODO: Make this a vector
   std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
   bool insideClass_ = false;
 };

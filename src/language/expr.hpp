@@ -323,6 +323,24 @@ public:
 };
 
 
+class QualifiedInvocation : public Expr {
+public:
+  QualifiedInvocation(
+      std::vector<std::string>&& qualifiers,
+      std::string_view className,
+      std::string_view methodName,
+      std::vector<ExprPtr>&& params,
+      size_t line);
+  Category getCategory() const noexcept override { return Category::METHOD_INVOCATION; }
+  Info toImExpr(Ctx& ctx) override;
+  ExprPtr clone() const override;
+
+  Class classTy_;
+  std::string methodName_;
+  std::vector<ExprPtr> params_;
+};
+
+
 class IncDec : public Expr {
 public:
   IncDec(ExprPtr&& lValue, bool inc, bool pre, size_t line);

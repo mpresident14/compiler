@@ -1,5 +1,6 @@
 #include "src/language/expr.hpp"
 #include "src/language/stmt.hpp"
+#include "src/language/utils.hpp"
 
 using namespace std;
 
@@ -414,6 +415,8 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
  ********************/
 
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
+  // TODO: Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
+  // exists, and if not, assume it is a className (or vice versa, see what Java does)
   Info eInfo = objExpr_->toImExpr(ctx);
   if (eInfo.type->typeName != Type::Category::CLASS) {
     ostringstream& err = ctx.getLogger().logError(line_);
@@ -421,18 +424,17 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-  const Class* classTy = static_cast<const Class*>(eInfo.type.get());
-
+  // Get types and convert params
   vector<im::ExprPtr> paramImExprs;
   vector<TypePtr> paramTypes;
   size_t numParams = params_.size();
-  // Get types and convert params
   for (size_t i = 0; i < numParams; ++i) {
     Info exprInfo = params_[i]->toImExpr(ctx);
     paramImExprs.push_back(move(exprInfo.imExpr));
     paramTypes.push_back(move(exprInfo.type));
   }
 
+  const Class* classTy = static_cast<const Class*>(eInfo.type.get());
   auto classFnInfo =
       ctx.lookupMethod(classTy->id, classTy->className, methodName_, paramTypes, line_);
   const Ctx::FnInfo* fnInfo = classFnInfo.second;
@@ -469,6 +471,44 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
                  fnInfo->returnType != Type::VOID_TYPE),
              move(fnInfo->returnType) };
   }
+}
+
+/***********************
+ * QualifiedInvocation *
+ ***********************/
+
+Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
+  ctx.checkType(classTy_, line_);
+
+  // Get types and convert params
+  vector<im::ExprPtr> paramImExprs;
+  vector<TypePtr> paramTypes;
+  size_t numParams = params_.size();
+  for (size_t i = 0; i < numParams; ++i) {
+    Info exprInfo = params_[i]->toImExpr(ctx);
+    paramImExprs.push_back(move(exprInfo.imExpr));
+    paramTypes.push_back(move(exprInfo.type));
+  }
+
+  auto classFnInfo =
+      ctx.lookupMethod(classTy_.id, classTy_.className, methodName_, paramTypes, line_);
+
+  const Ctx::FnInfo* fnInfo = classFnInfo.second;
+  if (!classFnInfo.second) {
+    // Undefined function
+    return dummyInfo();
+  }
+
+  // if (!fnInfo->isStatic) {
+  //
+  // }
+
+  paramImExprs.push_back(Var(lang_utils::THIS, line_).toImExpr(ctx).imExpr);
+  return { make_unique<im::CallExpr>(
+               make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
+               move(paramImExprs),
+               fnInfo->returnType != Type::VOID_TYPE),
+           move(fnInfo->returnType) };
 }
 
 /**********
