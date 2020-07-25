@@ -175,9 +175,16 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   size_t e2Line = e2_->line_;
   Info e1Info = e1_->toImExpr(ctx);
   Info e2Info = e2_->toImExpr(ctx);
-  if (!e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx)) {
-    ctx.getLogger().logError();
+
+  if (!(e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx)
+        || e2Info.type->isConvertibleTo(*e1Info.type, nullptr, ctx))) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Neither " << *e1Info.type << " nor " << *e2Info.type
+        << " is convertible to the other in the ternary expression";
+    return dummyInfo();
   }
+
+  // TODO: WiderType is isBaseOf for classes
   const TypePtr& widerType =
       e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
 
@@ -384,7 +391,8 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
     if (member_ == "length") {
       return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), Type::LONG_TYPE };
     }
-    ctx.getLogger().logError(line_, "Array has no member " + member_);
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Type " << *eInfo.type << " has no member " << member_;
     return dummyInfo();
   } else if (eInfo.type->typeName == Type::Category::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
@@ -410,7 +418,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
 }
 
 // TODO: Have some kind of check/guard against using getCategory() + static_cast b/c will fail on
-// ImWrappers
+// ImWrappers (see sandbox.prez for example of this going wrong)
 
 /********************
  * MethodInvocation *
