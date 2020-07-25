@@ -3,6 +3,8 @@
 #include "src/language/stmt.hpp"
 #include "src/language/utils.hpp"
 
+#include <prez/print_stuff.hpp>
+
 using namespace std;
 
 namespace language {
@@ -117,10 +119,7 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
  ***************/
 
 Constructor::Constructor(
-    string_view name,
-    vector<pair<TypePtr, string>>&& params,
-    unique_ptr<Block>&& body,
-    size_t line)
+    string_view name, vector<pair<TypePtr, string>>&& params, unique_ptr<Block>&& body, size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
     : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
@@ -218,6 +217,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
 
+  // We are inside the same file as the class declaration, so no qualifiers
+  shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Class starts with vtable pointer if there are any virtual methods
@@ -233,7 +234,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       // Add all fields from superclass
       for (const auto& [name, info] : superInfo->fields) {
         classInfo.fields.emplace(name, info);
-        currentOffset = info.offset;
+        currentOffset += info.type->numBytes;
       }
 
       // Add all methods that from the superclass (including those we override)
@@ -269,15 +270,18 @@ void ClassDecl::addToCtx(Ctx& ctx) {
             funcId = info.id;
             classInfo.methods.emplace(name, info);
           } else {
-            funcId = (*overrideIter)->id_;
+            Func& method = **overrideIter;
+            funcId = method.id_;
             classInfo.methods.emplace(
                 name,
-                Ctx::FnInfo{info.paramTypes,
-                info.returnType,
-                true,
-                funcId,
-                ctx.getFilename(),
-                (*overrideIter)->line_});
+                Ctx::FnInfo{ info.paramTypes,
+                             info.returnType,
+                             true,
+                             funcId,
+                             ctx.getFilename(),
+                             method.line_ });
+            method.paramNames_.push_back(lang_utils::THIS);
+            method.paramTypes_.push_back(classTy);
           }
 
           size_t vTableIndex = superInfo->vTableOffsets.at(info.id);
@@ -296,9 +300,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       err << "Redefinition of field '" << name << "' in class " << name_;
     }
   }
-
-  // We are inside the same file as the class declaration, so no qualifiers
-  shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
 
   // Add methods (AFTER checking for base class methods so that the "this" parameter doesn't mess up
   // matching)
