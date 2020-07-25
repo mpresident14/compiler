@@ -404,7 +404,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
     }
     auto iter = classInfo->fields.find(member_);
     if (iter == classInfo->fields.end()) {
-      ostringstream& err = ctx.getLogger().logError(line_);
+      ostream& err = ctx.getLogger().logError(line_);
       err << "Field " << member_ << " is not defined in class " << classTy->className;
       return dummyInfo();
     }
@@ -413,6 +413,8 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
                  fieldInfo.offset, move(eInfo.imExpr), nullptr, fieldInfo.type->numBytes),
              fieldInfo.type };
   } else {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Type " << *eInfo.type << " is a primitive and has no fields";
     return dummyInfo();
   }
 }
@@ -425,8 +427,9 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
  ********************/
 
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
-  // TODO: Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
+  // Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
   // exists, and if not, assume it is a className (or vice versa, see what Java does)
+  // TODO: Don't use getCategory() anymore
   if (objExpr_->getCategory() == Expr::Category::VAR) {
     string name = static_cast<const Var*>(objExpr_.get())->name_;
     const Ctx::VarInfo* varInfo = ctx.lookupVarNoError(name);
@@ -495,7 +498,6 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
  * QualifiedInvocation *
  ***********************/
 
-// TOOD: Make ctx const where applicable
 Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
   // TODO: Also use this for static functions
   ctx.checkType(classTy_, line_);

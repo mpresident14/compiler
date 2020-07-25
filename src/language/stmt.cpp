@@ -168,6 +168,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
+  // TODO: Remove this when we add "const"
   if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
           Type::Category::ARRAY) {
