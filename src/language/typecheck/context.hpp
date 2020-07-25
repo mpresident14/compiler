@@ -134,18 +134,20 @@ public:
   CtxTree& getCtxTree() noexcept;
   const Type& getCurrentRetType() const noexcept;
   void setCurrentRetType(const TypePtr& type) noexcept;
+  constexpr int getCurrentClass() const noexcept { return currentClassId_; }
 
   void includeDecls(Ctx& ctx);
   int insertVar(const std::string& name, const TypePtr& type, size_t line);
   const VarInfo* lookupVar(const std::string& name, size_t line);
+  const VarInfo* lookupVarNoError(const std::string& name);
   void removeVar(const std::string& var, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
   void removeThis();
-  void enterClass();
+  void enterClass(int classId);
   void exitClass();
-  bool isBaseOf(const Class& classTy, const Type& base) const;
-  constexpr bool insideClass() const noexcept { return insideClass_; }
+  constexpr bool insideClass() const noexcept { return currentClassId_ != NOT_IN_CLASS; }
+  bool isBaseOf(int classId, const Type& base) const;
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name) const;
@@ -288,7 +290,9 @@ private:
    */
   // TODO: Make this a vector
   std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
-  bool insideClass_ = false;
+
+  static const int NOT_IN_CLASS = -1;
+  int currentClassId_ = -NOT_IN_CLASS;
 };
 
 #endif  // CONTEXT_HPP

@@ -143,8 +143,6 @@ public:
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
-  const std::string& getName() const noexcept { return name_; }
-
   std::string name_;
 };
 

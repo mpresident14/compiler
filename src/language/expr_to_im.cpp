@@ -409,6 +409,8 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
   }
 }
 
+// TODO: Have some kind of check/guard against using getCategory() + static_cast b/c will fail on
+// ImWrappers
 
 /********************
  * MethodInvocation *
@@ -417,9 +419,17 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   // TODO: Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
   // exists, and if not, assume it is a className (or vice versa, see what Java does)
+  if (objExpr_->getCategory() == Expr::Category::VAR) {
+    string name = static_cast<const Var*>(objExpr_.get())->name_;
+    const Ctx::VarInfo* varInfo = ctx.lookupVarNoError(name);
+    if (!varInfo) {
+      return QualifiedInvocation({}, name, methodName_, move(params_), line_).toImExpr(ctx);
+    }
+  }
+
   Info eInfo = objExpr_->toImExpr(ctx);
   if (eInfo.type->typeName != Type::Category::CLASS) {
-    ostringstream& err = ctx.getLogger().logError(line_);
+    ostream& err = ctx.getLogger().logError(line_);
     err << "Cannot invoke method on expression of type " << *eInfo.type;
     return dummyInfo();
   }
@@ -477,7 +487,9 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
  * QualifiedInvocation *
  ***********************/
 
+// TOOD: Make ctx const where applicable
 Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
+  // TODO: Also use this for static functions
   ctx.checkType(classTy_, line_);
 
   // Get types and convert params
@@ -498,6 +510,17 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
     // Undefined function
     return dummyInfo();
   }
+
+  if (!(ctx.insideClass() && ctx.isBaseOf(ctx.getCurrentClass(), classTy_))) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Cannot not invoke non-static method '"
+        << lang_utils::qualifiedName(classTy_.qualifiers, classTy_.className)
+        << "::" << methodName_;
+    Ctx::streamParamTypes(paramTypes, err);
+    err << "' from a function or non-subclass method";
+    return dummyInfo();
+  }
+
 
   // if (!fnInfo->isStatic) {
   //

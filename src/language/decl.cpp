@@ -360,7 +360,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
-  ctx.enterClass();
+  ctx.enterClass(id_);
   for (Constructor& ctor : ctors_) {
     ctor.toImDecls(imDecls, ctx);
   }

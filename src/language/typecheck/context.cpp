@@ -53,11 +53,18 @@ int Ctx::insertVar(const string& name, const TypePtr& type, size_t line) {
   return temp;
 }
 
-
 const Ctx::VarInfo* Ctx::lookupVar(const string& name, size_t line) {
+  const Ctx::VarInfo* varInfo = lookupVarNoError(name);
+  if (!varInfo) {
+    logger.logError(line, string("Undefined variable '").append(name).append("'"));
+  }
+  return varInfo;
+}
+
+
+const Ctx::VarInfo* Ctx::lookupVarNoError(const std::string& name) {
   auto iter = varMap_.find(name);
   if (iter == varMap_.end()) {
-    logger.logError(line, string("Undefined variable '").append(name).append("'"));
     return nullptr;
   }
   VarInfo& varInfo = iter->second;
@@ -104,16 +111,16 @@ Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
 }
 
 
-void Ctx::enterClass() { insideClass_ = true; }
-void Ctx::exitClass() { insideClass_ = false; }
+void Ctx::enterClass(int id) { currentClassId_ = id; }
+void Ctx::exitClass() { currentClassId_ = NOT_IN_CLASS; }
 
-bool Ctx::isBaseOf(const Class& classTy, const Type& base) const {
+bool Ctx::isBaseOf(int classId, const Type& base) const {
   if (base.typeName != Type::Category::CLASS) {
     return false;
   }
 
   int baseId = static_cast<const Class&>(base).id;
-  const ClassInfo* classInfo = lookupClass(classTy.id);
+  const ClassInfo* classInfo = lookupClass(classId);
 
   // cout << "baseId: " << baseId << endl;
 
