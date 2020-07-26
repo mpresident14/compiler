@@ -224,9 +224,9 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // Class starts with vtable pointer if there are any virtual methods
   size_t currentOffset = vMethods_.empty() ? 0 : 8;
   size_t vMethodCnt = 0;
+  const Ctx::ClassInfo* superInfo = nullptr;
   if (superName_) {
-    const Ctx::ClassInfo* superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_);
-    if (superInfo) {
+    if ((superInfo = ctx.lookupClassRec(superQuals_, *superName_, line_))) {
       classInfo.superInfo = superInfo;
       vMethodCnt = superInfo->vTableOffsets.size();
       vTableEntries_.resize(vMethodCnt);
@@ -237,58 +237,61 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         currentOffset += info.type->numBytes;
       }
 
-      // Add all methods that from the superclass (including those we override)
-      for (const auto& [name, info] : superInfo->methods) {
-        if (!info.isVirtual) {
-          // No error-checking required here. If there was an error, we will have already reported
-          // it in the superclass
-          classInfo.methods.emplace(name, info);
-        } else {
-          // We need to make sure that this class's vtable entries are in the same order as its
-          // superclass, otherwise casting and invoking a method won't work. Therefore, we find any
-          // methods that override superclass methods and insert them at the same vtable index
+      /*
+       * For each this method
+       * If nonvirtual, add
+       * If virtual
+       * - If nonoverride, add
+       * - If override, check for the method in the super context and add at the same location
+       *
+       * For each super method:
+       * If not overridden, add it
+       */
 
-          // TODO: Is linear search the best option here? Instead, we could iterate thru this
-          // class's vMethods, which would also allow us to utilize the hashmap and find override
-          // methods that aren't overriding anything
-          auto overrideIter = find_if(
-              vMethods_.cbegin(),
-              vMethods_.cend(),
-              [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
-                return vMeth->inheritance_ == Func::Modifier::OVERRIDE
-                       && vMeth->name_ == supMethName
-                       && equal(
-                           vMeth->paramTypes_.cbegin(),
-                           vMeth->paramTypes_.cend(),
-                           supMethInfo.paramTypes.cbegin(),
-                           supMethInfo.paramTypes.cend());
-              });
-          // No redefinition/type checking required here. If there was an error, we will have
-          // already reported it in the superclass
-          size_t funcId;
-          if (overrideIter == vMethods_.cend()) {
-            funcId = info.id;
-            classInfo.methods.emplace(name, info);
-          } else {
-            Func& method = **overrideIter;
-            funcId = method.id_;
-            classInfo.methods.emplace(
-                name,
-                Ctx::FnInfo{ info.paramTypes,
-                             info.returnType,
-                             true,
-                             funcId,
-                             ctx.getFilename(),
-                             method.line_ });
-            method.paramNames_.push_back(lang_utils::THIS);
-            method.paramTypes_.push_back(classTy);
-          }
+      // Add nonvirtual methods declared in superclass
+      /* else {
 
-          size_t vTableIndex = superInfo->vTableOffsets.at(info.id);
-          vTableEntries_[vTableIndex] = Ctx::mangleFn(name, funcId);
-          classInfo.vTableOffsets.emplace(funcId, vTableIndex);
-        }
-      }
+
+         // TODO: Is linear search the best option here? Instead, we could iterate thru this
+         // class's vMethods, which would also allow us to utilize the hashmap and find override
+         // methods that aren't overriding anything
+         auto overrideIter = find_if(
+             vMethods_.cbegin(),
+             vMethods_.cend(),
+             [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
+               return vMeth->inheritance_ == Func::Modifier::OVERRIDE
+                      && vMeth->name_ == supMethName
+                      && equal(
+                          vMeth->paramTypes_.cbegin(),
+                          vMeth->paramTypes_.cend(),
+                          supMethInfo.paramTypes.cbegin(),
+                          supMethInfo.paramTypes.cend());
+             });
+         // No redefinition/type checking required here. If there was an error, we will have
+         // already reported it in the superclass
+         size_t funcId;
+         if (overrideIter == vMethods_.cend()) {
+           funcId = info.id;
+           classInfo.methods.emplace(name, info);
+         } else {
+           Func& method = **overrideIter;
+           funcId = method.id_;
+           classInfo.methods.emplace(
+               name,
+               Ctx::FnInfo{ info.paramTypes,
+                            info.returnType,
+                            true,
+                            funcId,
+                            ctx.getFilename(),
+                            method.line_ });
+           method.paramNames_.push_back(lang_utils::THIS);
+           method.paramTypes_.push_back(classTy);
+         }
+
+         size_t vTableIndex = superInfo->vTableOffsets.at(info.id);
+         vTableEntries_[vTableIndex] = Ctx::mangleFn(name, funcId);
+         classInfo.vTableOffsets.emplace(funcId, vTableIndex);
+       } */
     }
   }
 
@@ -301,8 +304,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     }
   }
 
-  // Add methods (AFTER checking for base class methods so that the "this" parameter doesn't mess up
-  // matching)
+  // Add nonvirtual methods declared in this class
   for (const unique_ptr<Func>& method : nonVMethods_) {
     method->checkTypes(ctx);
     ctx.insertMethod(
@@ -318,24 +320,84 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(classTy);
   }
 
+  // Add virtual methods declared in this class
+  unordered_set<const Ctx::FnInfo*> supsOverridden;
   for (const unique_ptr<Func>& method : vMethods_) {
-    // We already added the overridden methods above
-    // TODO: Check for methods declared override that don't override anything
-    if (method->inheritance_ != Func::Modifier::OVERRIDE) {
-      method->checkTypes(ctx);
-      ctx.insertMethod(
-          classInfo.methods,
-          name_,
-          method->name_,
-          method->paramTypes_,
-          method->returnType_,
-          true,
-          method->id_,
-          method->line_);
-      method->paramNames_.push_back(lang_utils::THIS);
-      method->paramTypes_.push_back(classTy);
+    method->checkTypes(ctx);
+
+    // Make sure all methods declared override are valid overrides
+    if (method->inheritance_ == Func::Modifier::OVERRIDE) {
+      // No superclass
+      if (!superInfo) {
+        ostream& err = ctx.getLogger().logError(line_);
+        err << "Method " << name_ << "::" << method->name_;
+        Ctx::streamParamTypes(method->paramTypes_, err);
+        err << " is declared override, but class " << name_ << " has no superclass";
+        continue;
+      }
+
+      auto supMethRange = superInfo->methods.equal_range(method->name_);
+      auto supMethIter = find_if(
+          supMethRange.first,
+          supMethRange.second,
+          [&method](const pair<const string, const Ctx::FnInfo>& p) {
+            const Ctx::FnInfo& supMethInfo = p.second;
+            return supMethInfo.isVirtual
+                   && equal(
+                       supMethInfo.paramTypes.cbegin(),
+                       supMethInfo.paramTypes.cend(),
+                       method->paramTypes_.cbegin(),
+                       method->paramTypes_.cend());
+          });
+
+      // No identical virtual method in superclass
+      if (supMethIter == supMethRange.second) {
+        ostream& err = ctx.getLogger().logError(line_);
+        err << "Method " << name_ << "::" << method->name_;
+        Ctx::streamParamTypes(method->paramTypes_, err);
+        err << " is declared override, but does not override a virtual method from the superclass";
+        continue;
+      }
+
+      const Ctx::FnInfo& supMethInfo = supMethIter->second;
+      supsOverridden.insert(&supMethInfo);
+      // We need to make sure that this class's vtable entries are in the same order as its
+      // superclass, otherwise casting and invoking a method won't work. Therefore, we find any
+      // methods that override superclass methods and insert them at the same vtable index
+      size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
+      vTableEntries_[vTableIndex] = Ctx::mangleFn(method->name_, method->id_);
+      classInfo.vTableOffsets.emplace(method->id_, vTableIndex);
+    } else {
       vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
       classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
+    }
+
+    ctx.insertMethod(
+        classInfo.methods,
+        name_,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        true,
+        method->id_,
+        method->line_);
+
+    method->paramNames_.push_back(lang_utils::THIS);
+    method->paramTypes_.push_back(classTy);
+  }
+
+  // Add superclass methods that were not overridden. No error-checking required here. If there was
+  // an error, we will have already reported it in the superclass
+  if (superInfo) {
+    for (const auto& [name, supMethInfo] : superInfo->methods) {
+      if (!supsOverridden.contains(&supMethInfo)) {
+        classInfo.methods.emplace(name, supMethInfo);
+        if (supMethInfo.isVirtual) {
+          size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
+          vTableEntries_[vTableIndex] = Ctx::mangleFn(name, supMethInfo.id);
+          classInfo.vTableOffsets.emplace(supMethInfo.id, vTableIndex);
+        }
+      }
     }
   }
 
