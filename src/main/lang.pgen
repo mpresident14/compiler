@@ -219,8 +219,8 @@ ClassElement -> { ClassDecl::ClassElem }
    | Method    % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, { move(#0) } } %
 
 Function -> { std::unique_ptr<Func> }
-  := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Inheritance::NONE, move(#0), #1, move(#3), move(#5), #line) %
-  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Inheritance::NONE, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#5), #line) %
+  := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Modifier::NONE, move(#0), #1, move(#3), move(#5), #line) %
+  |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Modifier::NONE, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#5), #line) %
 
 Method -> { std::unique_ptr<Func> }
   := Function             % move(#0) %
@@ -372,6 +372,6 @@ Qualifiers -> { vector<string> }
 Qualifier -> { string }
   := IDENT COLON2        % #0 %
 
-InheritKW -> { Func::Inheritance }
-  := VIRTUAL   % Func::Inheritance::VIRTUAL %
-   | OVERRIDE  % Func::Inheritance::OVERRIDE %
+InheritKW -> { Func::Modifier }
+  := VIRTUAL   % Func::Modifier::VIRTUAL %
+   | OVERRIDE  % Func::Modifier::OVERRIDE %

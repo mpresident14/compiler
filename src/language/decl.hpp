@@ -29,10 +29,10 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
-  enum class Inheritance { VIRTUAL, OVERRIDE, NONE };
+  enum class Modifier { VIRTUAL, OVERRIDE, STATIC, NONE };
 
   Func(
-      Inheritance inheritance,
+      Modifier inheritance,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -42,9 +42,11 @@ public:
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
-  constexpr bool isVirtual() const noexcept { return inheritance_ != Inheritance::NONE; }
+  constexpr bool isVirtual() const noexcept {
+    return inheritance_ == Modifier::VIRTUAL || inheritance_ == Modifier::OVERRIDE;
+  }
 
-  Inheritance inheritance_;
+  Modifier inheritance_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;

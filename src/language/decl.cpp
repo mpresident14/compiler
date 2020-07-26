@@ -16,7 +16,7 @@ namespace language {
 size_t Func::nextId_ = 0;
 
 Func::Func(
-    Func::Inheritance inheritance,
+    Func::Modifier inheritance,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
@@ -122,7 +122,7 @@ Constructor::Constructor(
     string_view name, vector<pair<TypePtr, string>>&& params, unique_ptr<Block>&& body, size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
-    : Func(Func::Inheritance::NONE, nullptr, name, move(params), move(body), line) {}
+    : Func(Func::Modifier::NONE, nullptr, name, move(params), move(body), line) {}
 
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
@@ -255,7 +255,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
               vMethods_.cbegin(),
               vMethods_.cend(),
               [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
-                return vMeth->inheritance_ == Func::Inheritance::OVERRIDE
+                return vMeth->inheritance_ == Func::Modifier::OVERRIDE
                        && vMeth->name_ == supMethName
                        && equal(
                            vMeth->paramTypes_.cbegin(),
@@ -321,7 +321,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   for (const unique_ptr<Func>& method : vMethods_) {
     // We already added the overridden methods above
     // TODO: Check for methods declared override that don't override anything
-    if (method->inheritance_ != Func::Inheritance::OVERRIDE) {
+    if (method->inheritance_ != Func::Modifier::OVERRIDE) {
       method->checkTypes(ctx);
       ctx.insertMethod(
           classInfo.methods,
