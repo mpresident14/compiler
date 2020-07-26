@@ -66,21 +66,33 @@ ExprPtr ArrayAccess::clone() const {
   return make_unique<ArrayAccess>(arrExpr_->clone(), index_->clone(), line_);
 }
 
-MemberAccess::MemberAccess(ExprPtr&& objExpr, string_view member, size_t line)
-    : Expr(line), objExpr_(move(objExpr)), member_(member) {}
+MemberAccess::MemberAccess(ExprPtr&& objExpr, string_view member)
+    : Expr(objExpr->line_), objExpr_(move(objExpr)), member_(member) {}
+MemberAccess::MemberAccess(std::string_view varName, string_view member, size_t line)
+    : Expr(line), objExpr_(make_unique<Var>(varName, line)), member_(member) {}
 ExprPtr MemberAccess::clone() const {
-  return make_unique<MemberAccess>(objExpr_->clone(), member_, line_);
+  return make_unique<MemberAccess>(objExpr_->clone(), member_);
 }
 
 MethodInvocation::MethodInvocation(
     ExprPtr&& objExpr, std::string_view methodName, std::vector<ExprPtr>&& params, size_t line)
     : Expr(line), objExpr_(move(objExpr)), methodName_(methodName), params_(move(params)) {}
+MethodInvocation::MethodInvocation(
+    std::string_view ident, std::string_view methodName, std::vector<ExprPtr>&& params, size_t line)
+    : Expr(line),
+      objExpr_(nullptr),
+      ident_(ident),
+      methodName_(methodName),
+      params_(move(params)) {}
 ExprPtr MethodInvocation::clone() const {
   vector<ExprPtr> paramsClone;
   for (const ExprPtr& expr : params_) {
     paramsClone.push_back(expr->clone());
   }
-  return make_unique<MethodInvocation>(objExpr_->clone(), methodName_, move(paramsClone), line_);
+  if (objExpr_) {
+    return make_unique<MethodInvocation>(objExpr_->clone(), methodName_, move(paramsClone), line_);
+  }
+  return make_unique<MethodInvocation>(ident_, methodName_, move(paramsClone), line_);
 }
 
 QualifiedInvocation::QualifiedInvocation(

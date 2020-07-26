@@ -168,7 +168,7 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     return;
   }
 
-  // TODO: Remove this when we add "const"
+  // TODO: Don't use getCategory() anymore when we implement const
   if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS &&
       static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
           Type::Category::ARRAY) {
@@ -291,13 +291,13 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   vector<im::ExprPtr> printArgs;
   // Address of the char[] + 8 to skip length field
   printArgs.push_back(make_unique<im::BinOp>(
-      MemberAccess(make_unique<Var>(strVar, line_), "arr", line_).toImExpr(ctx).imExpr,
+      MemberAccess(make_unique<Var>(strVar, line_), "arr").toImExpr(ctx).imExpr,
       make_unique<im::Const>(8),
       im::BOp::PLUS));
 
   // Number of bytes
   printArgs.push_back(
-      MemberAccess(make_unique<Var>(strVar, line_), "len", line_).toImExpr(ctx).imExpr);
+      MemberAccess(make_unique<Var>(strVar, line_), "len").toImExpr(ctx).imExpr);
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(
       make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));

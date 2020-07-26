@@ -11,6 +11,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <variant>
 
 namespace language {
 
@@ -293,7 +294,8 @@ public:
 
 class MemberAccess : public Expr {
 public:
-  MemberAccess(ExprPtr&& objExpr, std::string_view member, size_t line);
+  MemberAccess(ExprPtr&& objExpr, std::string_view member);
+  MemberAccess(std::string_view varName, std::string_view member, size_t line);
   bool isLValue() const noexcept override;
   Category getCategory() const noexcept override { return Category::MEMBER_ACCESS; }
   Info toImExpr(Ctx& ctx) override;
@@ -311,13 +313,22 @@ public:
       std::string_view methodName,
       std::vector<ExprPtr>&& params,
       size_t line);
+  MethodInvocation(
+      std::string_view ident,
+      std::string_view methodName,
+      std::vector<ExprPtr>&& params,
+      size_t line);
   Category getCategory() const noexcept override { return Category::METHOD_INVOCATION; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
   ExprPtr objExpr_;
+  std::string ident_;
   std::string methodName_;
   std::vector<ExprPtr> params_;
+
+private:
+  std::pair<Info, bool> resolveObjExpr(Ctx& ctx);
 };
 
 

@@ -419,26 +419,20 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
   }
 }
 
-// TODO: Have some kind of check/guard against using getCategory() + static_cast b/c will fail on
-// ImWrappers (see sandbox.prez for example of this going wrong)
 
 /********************
  * MethodInvocation *
  ********************/
 
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
-  // Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
-  // exists, and if not, assume it is a className (or vice versa, see what Java does)
-  // TODO: Don't use getCategory() anymore
-  if (objExpr_->getCategory() == Expr::Category::VAR) {
-    string name = static_cast<const Var*>(objExpr_.get())->name_;
-    const Ctx::VarInfo* varInfo = ctx.lookupVarNoError(name);
-    if (!varInfo) {
-      return QualifiedInvocation({}, name, methodName_, move(params_), line_).toImExpr(ctx);
-    }
+  // The method below returns true as the second element if it actually returned the
+  // QualifiedInvocation
+  pair<Info, bool> p = resolveObjExpr(ctx);
+  if (p.second) {
+    return move(p.first);
   }
 
-  Info eInfo = objExpr_->toImExpr(ctx);
+  Info& eInfo = p.first;
   if (eInfo.type->typeName != Type::Category::CLASS) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Cannot invoke method on expression of type " << *eInfo.type;
@@ -492,6 +486,20 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
                  fnInfo->returnType != Type::VOID_TYPE),
              move(fnInfo->returnType) };
   }
+}
+
+pair<Expr::Info, bool> MethodInvocation::resolveObjExpr(Ctx& ctx) {
+  // Parser cannot distinguish var.method() and ClassName.method(), so need to check if var
+  // exists, and if not, assume it is a className
+  if (!objExpr_) {
+    const Ctx::VarInfo* varInfo = ctx.lookupVarNoError(ident_);
+    if (!varInfo) {
+      return { QualifiedInvocation({}, ident_, methodName_, move(params_), line_).toImExpr(ctx),
+               true };
+    }
+    return { Expr::Info{ make_unique<im::Temp>(varInfo->temp), varInfo->type }, false };
+  }
+  return { objExpr_->toImExpr(ctx), false };
 }
 
 /***********************

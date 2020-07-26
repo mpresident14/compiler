@@ -299,7 +299,8 @@ ExprNoVar -> { ExprPtr }
    | LPAREN IDENT RPAREN                        % make_unique<Var>(#1, #line) %
    // lvalues
    | Expr LBRACKET Expr RBRACKET                % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
-   | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2, #line) %
+   | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2) %
+   | IDENT DOT IDENT                            % make_unique<MemberAccess>(#0, #2, #line) %
 
 
 ForUpdate -> { StmtPtr }
@@ -327,6 +328,7 @@ StmtExpr -> { ExprPtr }
    | IDENT LPAREN Exprs RPAREN                  % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
    | Qualifiers IDENT LPAREN Exprs RPAREN       % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
    | Expr DOT IDENT LPAREN Exprs RPAREN         % make_unique<MethodInvocation>(move(#0), #2, move(#4), #line) %
+   | IDENT DOT IDENT LPAREN Exprs RPAREN        % make_unique<MethodInvocation>(#0, #2, move(#4), #line) %
    | Qualifiers IDENT DOT IDENT
      LPAREN Exprs RPAREN                        % make_unique<QualifiedInvocation>(move(#0), #1, #3, move(#5), #line) %
 
