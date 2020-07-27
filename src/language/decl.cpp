@@ -123,27 +123,12 @@ Constructor::Constructor(
     string_view name, vector<pair<TypePtr, string>>&& params, unique_ptr<Block>&& body, size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
-    : Func(Func::Modifier::NONE, nullptr, name, move(params), move(body), line) {}
+    : Func(Func::Modifier::CTOR, nullptr, name, move(params), move(body), line) {}
 
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
-
-  // Initialize "this"
-  vector<im::ExprPtr> mallocBytes;
-  mallocBytes.push_back(make_unique<im::Const>(objSize_));
-  VarDecl(
-      TypePtr(returnType_),
-      lang_utils::THIS,
-      make_unique<ImWrapper>(
-          make_unique<im::CallExpr>(
-              make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true),
-          returnType_,
-          false,
-          line_),
-      line_)
-      .toImStmts(imStmts, ctx);
 
   // Create pointer to vtable if necessary
   if (vTableName_) {
@@ -226,7 +211,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Class starts with vtable pointer if there are any virtual methods
-  size_t currentOffset = hasVirtualFns() ? 8 : 0;
+  classInfo.numBytes = hasVirtualFns() ? 8 : 0;
   size_t vMethodCnt = 0;
   const Ctx::ClassInfo* superInfo = nullptr;
   if (superName_) {
@@ -238,15 +223,15 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       // Add all fields from superclass
       for (const auto& [name, info] : superInfo->fields) {
         classInfo.fields.emplace(name, info);
-        currentOffset += info.type->numBytes;
+        classInfo.numBytes += info.type->numBytes;
       }
     }
   }
 
   // Add fields declared in this class
   for (const auto& [type, name, line] : fields_) {
-    if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
-      currentOffset += type->numBytes;
+    if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, classInfo.numBytes }).second) {
+      classInfo.numBytes += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
       err << "Redefinition of field '" << name << "' in class " << name_;
@@ -357,10 +342,11 @@ void ClassDecl::addToCtx(Ctx& ctx) {
           << " inside declaration of class " << name_;
       continue;
     }
-    ctor.objSize_ = currentOffset;
     ctor.returnType_ = classTy;
     ctor.vTableName_ = vtable;
     ctor.addToCtx(ctx);
+    ctor.paramNames_.push_back(lang_utils::THIS);
+    ctor.paramTypes_.push_back(classTy);
   }
 }  // namespace language
 

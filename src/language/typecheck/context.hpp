@@ -58,6 +58,7 @@ public:
     const ClassInfo* superInfo = nullptr;
     std::string declFile;
     int id;
+    size_t numBytes;
   };
 
   enum class LookupStatus { FOUND, UNDEFINED, AMBIG_OVERLOAD, NARROWING, BAD_QUALS, AMBIG_QUALS };

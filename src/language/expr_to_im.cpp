@@ -233,10 +233,25 @@ Expr::Info CallExpr::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
+  if (Func::isCtor(fnInfo->modifiers)) {
+    const Ctx::ClassInfo* classInfo =
+        ctx.lookupClass(static_cast<const Class*>(fnInfo->returnType.get())->id);
+    if (!classInfo) {
+      throw runtime_error("CallExpr::toImExpr");
+    }
+
+    vector<im::ExprPtr> mallocBytes;
+    mallocBytes.push_back(make_unique<im::Const>(classInfo->numBytes));
+    paramImExprs.push_back(
+        make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+    paramTypes.push_back(fnInfo->returnType);
+  }
+
+
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
-               fnInfo->returnType != Type::VOID_TYPE),
+               *fnInfo->returnType != *Type::VOID_TYPE),
            move(fnInfo->returnType) };
 }
 
