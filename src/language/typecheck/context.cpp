@@ -125,7 +125,7 @@ bool Ctx::isBaseOf(int classId, const Type& base) const {
   // cout << "baseId: " << baseId << endl;
 
   while (classInfo) {
-  // cout << "classInfo->id: " << classInfo->id << endl;
+    // cout << "classInfo->id: " << classInfo->id << endl;
     if (classInfo->id == baseId) {
       return true;
     }
@@ -216,7 +216,7 @@ void Ctx::insertFn(
     const TypePtr& returnType,
     size_t id,
     size_t line) {
-  insertMethod(fnMap_, "", name, paramTypes, returnType, false, id, line);
+  insertMethod(fnMap_, "", name, paramTypes, returnType, false, false, id, line);
 }
 
 void Ctx::insertMethod(
@@ -226,6 +226,7 @@ void Ctx::insertMethod(
     const vector<TypePtr>& paramTypes,
     const TypePtr& returnType,
     bool isVirtual,
+    bool isStatic,
     size_t id,
     size_t line) {
   auto iterPair = funcMap.equal_range(name);
@@ -234,14 +235,15 @@ void Ctx::insertMethod(
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
     if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
       ostream& errStream = logger.logError(line);
-      errStream << "Redefinition of function '"
-                << (className.empty() ? name : string(className).append("::").append(name));
+      bool isMethod = className.empty();
+      errStream << "Redefinition of " << (isMethod ? "method '" : " function '")
+                << (isMethod ? name : string(className).append("::").append(name));
       Ctx::streamParamTypes(paramTypes, errStream);
       errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;
     }
   }
-  funcMap.emplace(name, FnInfo{ paramTypes, returnType, isVirtual, id, filename_, line });
+  funcMap.emplace(name, FnInfo{ paramTypes, returnType, isVirtual, isStatic, id, filename_, line });
 }
 
 
@@ -472,7 +474,8 @@ void Ctx::undefClassAmbigQuals(
     const vector<const string*> candidates,
     string_view searchedPath) const {
   ostream& err = logger.logError(line);
-  err << "Ambiguous qualifier for function '" << lang_utils::qualifiedName(qualifiers, className) << "'. Found";
+  err << "Ambiguous qualifier for function '" << lang_utils::qualifiedName(qualifiers, className)
+      << "'. Found";
   for (const string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;
   }

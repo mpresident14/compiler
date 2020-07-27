@@ -65,6 +65,7 @@ function(error_test TEST_NAME EXPECTED_OUT)
   set(SRC_FILE ${TEST_NAME})
   string(APPEND SRC_FILE ".prez")
 
+  string(APPEND TEST_NAME "_error")
   set(MY_TESTS "${MY_TESTS};${TEST_NAME}" PARENT_SCOPE)
 
   add_test(

@@ -1,8 +1,8 @@
 #include "src/language/decl.hpp"
 
 #include "src/language/stmt.hpp"
-#include "src/language/utils.hpp"
 #include "src/language/typecheck/context.hpp"
+#include "src/language/utils.hpp"
 
 #include <prez/print_stuff.hpp>
 
@@ -193,8 +193,9 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
           case Func::Modifier::OVERRIDE:
             overrideMethods_.push_back(move(method));
             break;
-          default:
-            throw runtime_error("ClassDecl::ClassDecl (Modifier)");
+          case Func::Modifier::STATIC:
+            staticMethods_.push_back(move(method));
+            break;
         }
         break;
       }
@@ -242,7 +243,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // Add fields declared in this class
   for (const auto& [type, name, line] : fields_) {
-    if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
+    if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       currentOffset += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
@@ -306,17 +307,18 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         method->paramTypes_,
         method->returnType_,
         true,
+        false,
         method->id_,
         method->line_);
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
 
-  // Add superclass methods that were not overridden. No error-checking required here. If there was
-  // an error, we will have already reported it in the superclass
+  // Add nonstatic superclass methods that were not overridden. No error-checking required here. If
+  // there was an error, we will have already reported it in the superclass
   if (superInfo) {
     for (const auto& [name, supMethInfo] : superInfo->methods) {
-      if (!supsOverridden.contains(&supMethInfo)) {
+      if (!supMethInfo.isStatic && !supsOverridden.contains(&supMethInfo)) {
         classInfo.methods.emplace(name, supMethInfo);
         if (supMethInfo.isVirtual) {
           size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
@@ -341,6 +343,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         method->paramTypes_,
         method->returnType_,
         true,
+        false,
         method->id_,
         method->line_);
     method->paramNames_.push_back(lang_utils::THIS);
@@ -357,10 +360,26 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         method->paramTypes_,
         method->returnType_,
         false,
+        false,
         method->id_,
         method->line_);
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
+  }
+
+  // Add static methods declared in this class
+  for (const unique_ptr<Func>& method : staticMethods_) {
+    method->checkTypes(ctx);
+    ctx.insertMethod(
+        classInfo.methods,
+        name_,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        false,
+        true,
+        method->id_,
+        method->line_);
   }
 
   optional<string> vtable = hasVirtualFns() ? vTableName() : optional<string>();
@@ -392,6 +411,9 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     method->toImDecls(imDecls, ctx);
   }
   for (const unique_ptr<Func>& method : overrideMethods_) {
+    method->toImDecls(imDecls, ctx);
+  }
+  for (const unique_ptr<Func>& method : staticMethods_) {
     method->toImDecls(imDecls, ctx);
   }
 

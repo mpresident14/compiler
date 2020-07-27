@@ -109,6 +109,7 @@ public:
   std::optional<std::string> superName_;
   std::vector<Field> fields_;
   std::vector<Constructor> ctors_;
+  std::vector<std::unique_ptr<Func>> staticMethods_;
   std::vector<std::unique_ptr<Func>> nonVMethods_;
   std::vector<std::unique_ptr<Func>> vMethods_;
   std::vector<std::unique_ptr<Func>> overrideMethods_;

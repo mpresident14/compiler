@@ -38,6 +38,7 @@ public:
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
     bool isVirtual;
+    bool isStatic;
     size_t id;
     std::string declFile;
     size_t line;
@@ -182,6 +183,7 @@ public:
       const std::vector<TypePtr>& paramTypes,
       const TypePtr& returnType,
       bool isVirtual,
+      bool isStatic,
       size_t id,
       size_t line);
   /* Only searches this context */

@@ -1,7 +1,7 @@
 #include "src/language/expr.hpp"
 #include "src/language/stmt.hpp"
-#include "src/language/utils.hpp"
 #include "src/language/typecheck/context.hpp"
+#include "src/language/utils.hpp"
 
 using namespace std;
 
@@ -508,7 +508,6 @@ pair<Expr::Info, bool> MethodInvocation::resolveObjExpr(Ctx& ctx) {
  ***********************/
 
 Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
-  // TODO: Also use this for static functions
   ctx.checkType(classTy_, line_);
 
   // Get types and convert params
@@ -530,22 +529,20 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-  if (!(ctx.insideClass() && ctx.isBaseOf(ctx.getCurrentClass(), classTy_))) {
-    ostream& err = ctx.getLogger().logError(line_);
-    err << "Cannot not invoke non-static method '"
-        << lang_utils::qualifiedName(classTy_.qualifiers, classTy_.className)
-        << "::" << methodName_;
-    Ctx::streamParamTypes(paramTypes, err);
-    err << "' from a function or non-subclass method";
-    return dummyInfo();
+  if (!fnInfo->isStatic) {
+    if (!(ctx.insideClass() && ctx.isBaseOf(ctx.getCurrentClass(), classTy_))) {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << "Cannot not invoke non-static method '"
+          << lang_utils::qualifiedName(classTy_.qualifiers, classTy_.className)
+          << "::" << methodName_;
+      Ctx::streamParamTypes(paramTypes, err);
+      err << "' from a function or non-subclass method";
+      return dummyInfo();
+    }
+
+    paramImExprs.push_back(Var(lang_utils::THIS, line_).toImExpr(ctx).imExpr);
   }
 
-
-  // if (!fnInfo->isStatic) {
-  //
-  // }
-
-  paramImExprs.push_back(Var(lang_utils::THIS, line_).toImExpr(ctx).imExpr);
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
                move(paramImExprs),
