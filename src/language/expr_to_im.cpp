@@ -415,7 +415,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
              fieldInfo.type };
   } else {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Type " << *eInfo.type << " is a primitive and has no fields";
+    err << "Type " << *eInfo.type << " has no fields";
     return dummyInfo();
   }
 }

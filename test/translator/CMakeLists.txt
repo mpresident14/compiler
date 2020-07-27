@@ -127,6 +127,7 @@ success_test(class "5,5,4,4,1,1,2,2,3,18")
 success_test(strlit "Hello world!,Good-bye!,E\"sca\tpe\nd")
 success_test(inheritance "100,vFunc,Base,200,vFunc,Derived,dvFunc,nonVFunc,300,vFunc,GrandChild,dvFunc,nonVFunc")
 success_test(base_method "Child of Derived,Grandchild of Base")
+success_test(static "Base,Base,Derived")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/imports/*)
 success_test(imports "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
@@ -205,6 +206,10 @@ error_test(inheritance
     ('Error','26','Redefinition')
     ('Error','32','Redefinition')
     ('Error','34','Redefinition')")
+error_test(static
+    "('Error','5','Type')
+    ('Error','5','Undefined')
+    ('Error','13','Undefined')")
 
 add_custom_target(
     translator_check
