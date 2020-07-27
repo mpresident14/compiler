@@ -1,9 +1,9 @@
-import "import_test.prez"
+import "imports.prez"
 
 int func() {
   return 1;
 }
 
 int func(int n) {
-  return import_test::add(n, 0);
+  return imports::add(n, 0);
 }

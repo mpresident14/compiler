@@ -1,0 +1,6 @@
+import "../../../imports.prez"
+
+int func() {
+  return imports::add(3, 4);
+}
+

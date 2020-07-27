@@ -1,6 +1,0 @@
-import "../../../import_test.prez"
-
-int func() {
-  return import_test::add(3, 4);
-}
-

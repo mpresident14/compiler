@@ -110,48 +110,48 @@ add_custom_target(
     DEPENDS main ${SRC}/built_in/string.s ${SRC}/built_in/syscall.s)
 
 # Running Tests
-success_test(arith_test "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
-success_test(comp_test "1,2,3,4,5,6,7,8,9,true")
-success_test(while_test "15,120")
-success_test(for_test "0,1,2,0,0,0")
-success_test(ternary_test "10,10,5,5,5")
-success_test(function_test "1,2,118,4,5,6")
-success_test(callee_save_test "9,9")
-success_test(spill_test "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
-success_test(array_test "0,1,1,2,3,5,8,13,21,34")
-success_test(cast_test "!,!,15,6,6,4096,Derived")
-success_test(opt_test "2,73,89,292,88,-2,89")
-success_test(update_test "1,2,4,1,9,2,3,3")
-success_test(incdec_test "2,3,3,2,1,4,4,5,4,20,5,26,6")
-success_test(class_test "5,5,4,4,1,1,2,2,3,18")
-success_test(strlit_test "Hello world!,Good-bye!,E\"sca\tpe\nd")
-success_test(inheritance_test "100,vFunc,Base,200,vFunc,Derived,dvFunc,nonVFunc,300,vFunc,GrandChild,dvFunc,nonVFunc")
-success_test(base_method_test "Child of Derived,Grandchild of Base")
+success_test(arith "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17")
+success_test(comp "1,2,3,4,5,6,7,8,9,true")
+success_test(while "15,120")
+success_test(for "0,1,2,0,0,0")
+success_test(ternary "10,10,5,5,5")
+success_test(function "1,2,118,4,5,6")
+success_test(callee_save "9,9")
+success_test(spill "0,1,1,2,3,5,8,13,21,34,55,89,144,233,2584")
+success_test(array "0,1,1,2,3,5,8,13,21,34")
+success_test(cast "!,!,15,6,6,4096,Derived")
+success_test(opt "2,73,89,292,88,-2,89")
+success_test(update "1,2,4,1,9,2,3,3")
+success_test(incdec "2,3,3,2,1,4,4,5,4,20,5,26,6")
+success_test(class "5,5,4,4,1,1,2,2,3,18")
+success_test(strlit "Hello world!,Good-bye!,E\"sca\tpe\nd")
+success_test(inheritance "100,vFunc,Base,200,vFunc,Derived,dvFunc,nonVFunc,300,vFunc,GrandChild,dvFunc,nonVFunc")
+success_test(base_method "Child of Derived,Grandchild of Base")
 
-file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/import_test/*)
-success_test(import_test "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
+file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/imports/*)
+success_test(imports "1,2,3,4,5,6,7,8,9,16" "${IMPORT_TEST_SRCS};${SUCCESS_DIR}/file.prez")
 
-error_test(redef_test
+error_test(redef
     "('Error','2','Redefinition')
     ('Error','9','Redefinition')
     ('Error','13','Redefinition')
     ('Error','17','Redefinition')")
-error_test(undef_test
+error_test(undef
     "('Error','2','Undefined')
     ('Error','7','Undefined')
     ('Error','12','Undefined')
     ('Error','13','Undefined')
     ('Error','20','Undefined')")
-error_test(return_test
+error_test(return
     "('Error','2','Expected')
     ('Error','7','Expected')
     ('Error','16','Some')
     ('Error','26','Some')
     ('Error','32','Some')")
-error_test(param_test
+error_test(param
     "('Error','2','Undefined')
     ('Error','6','Undefined')")
-error_test(type_test
+error_test(type
     "('Error','6','Expected')
     ('Error','7','Expected')
     ('Error','8','Operator')
@@ -163,10 +163,10 @@ error_test(type_test
     ('Error','26','Operator')
     ('Error','27','Operator')
     ('Error','32','Expected')")
-error_test(unused_test
+error_test(unused
     "('Warning','1','Unused')
     ('Warning','2','Unused')")
-error_test(bad_import_test
+error_test(imports
     "('Error','2','No')
     ('Note','4','Duplicate')
     ('Error','13','Undefined')
@@ -178,7 +178,7 @@ error_test(bad_import_test
     ('Error','20','Undefined')
     ('Error','23','Ambiguous')
     ('Error','23','Expected')")
-error_test(narrowing_test
+error_test(narrowing
     "('Warning','2','Narrowing')
     ('Warning','6','Narrowing')
     ('Warning','7','Narrowing')
@@ -186,9 +186,9 @@ error_test(narrowing_test
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')")
-error_test(bad_member_test
+error_test(member
     "('Error','3','Cannot')")
-error_test(bad_class_test
+error_test(class
     "('Error','5','Expected')
     ('Error','9','Expected')
     ('Warning','13','Narrowing')
@@ -196,11 +196,11 @@ error_test(bad_class_test
     ('Error','20','Expected')
     ('Error','22','Undefined')
     ('Error','23','Field')")
-error_test(rvalue_assign_test
+error_test(rvalue_assign
     "('Error','7','Operator')
     ('Error','8','Left')
     ('Error','9','Left')")
-error_test(bad_inheritance_test
+error_test(inheritance
     "('Error','22','Redefinition')
     ('Error','26','Redefinition')
     ('Error','32','Redefinition')

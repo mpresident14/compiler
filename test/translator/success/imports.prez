@@ -1,8 +1,8 @@
 import "file.prez"
-import "import_test/file.prez"
-import "import_test/folder/subfolder/file.prez"
-import "import_test/folder2/subfolder/file.prez"
-import "import_test/other_file.prez"
+import "imports/file.prez"
+import "imports/folder/subfolder/file.prez"
+import "imports/folder2/subfolder/file.prez"
+import "imports/other_file.prez"
 
 int func() {
   return 6;
@@ -14,17 +14,17 @@ int add(int a, int b) {
 
 void main() {
   print(file::func());
-  print(import_test::file::func());
+  print(imports::file::func());
   print(other_file::otherFunc());
   print(file::func(4));
-  print(import_test::file::func(4));
+  print(imports::file::func(4));
   print(func());
   print(folder::subfolder::file::func());
 
-  other_file::Rectangle r1 = import_test::other_file::Rectangle(1, 3);
+  other_file::Rectangle r1 = imports::other_file::Rectangle(1, 3);
   print(r1.perimeter());
 
-  import_test::file::Rectangle r2 = import_test::file::Rectangle(3, 3);
+  imports::file::Rectangle r2 = imports::file::Rectangle(3, 3);
   print(r2.area());
 
   print(scale(r1, 2).perimeter());
