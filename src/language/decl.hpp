@@ -111,11 +111,13 @@ public:
   std::vector<Constructor> ctors_;
   std::vector<std::unique_ptr<Func>> nonVMethods_;
   std::vector<std::unique_ptr<Func>> vMethods_;
+  std::vector<std::unique_ptr<Func>> overrideMethods_;
   int id_;
   /* All the entries in the vtable, including from the superclass */
   std::vector<std::string> vTableEntries_;
 
 private:
+  bool hasVirtualFns() const noexcept;
   std::string vTableName();
 
   static int nextId_;

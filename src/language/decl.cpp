@@ -170,11 +170,6 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
 
 int ClassDecl::nextId_ = 0;
 
-// string ClassDecl::mangleMethod(string_view className, string_view fnName) {
-//   return string(className).append("_").append(fnName);
-// }
-
-
 ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t line)
     : Decl(line), name_(name), id_(nextId_++) {
   for (ClassElem& elem : classElems) {
@@ -187,15 +182,23 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         break;
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
-        if (method->isVirtual()) {
-          vMethods_.push_back(move(method));
-        } else {
-          nonVMethods_.push_back(move(method));
+        switch (method->inheritance_) {
+          case Func::Modifier::NONE:
+            nonVMethods_.push_back(move(method));
+            break;
+          case Func::Modifier::VIRTUAL:
+            vMethods_.push_back(move(method));
+            break;
+          case Func::Modifier::OVERRIDE:
+            overrideMethods_.push_back(move(method));
+            break;
+          default:
+            throw runtime_error("ClassDecl::ClassDecl (Modifier)");
         }
         break;
       }
       default:
-        throw runtime_error("ClassDecl::ClassDecl");
+        throw runtime_error("ClassDecl::ClassDecl (ClassElem");
     }
   }
 }
@@ -216,13 +219,14 @@ ClassDecl::ClassDecl(
 void ClassDecl::addToCtx(Ctx& ctx) {
   // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
   // of circular dependency, and splitting them into their fields would make the code too messy imo
+  // TODO: Forward declare Ctx and include language in Ctx to achieve this
 
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Class starts with vtable pointer if there are any virtual methods
-  size_t currentOffset = vMethods_.empty() ? 0 : 8;
+  size_t currentOffset = hasVirtualFns() ? 8 : 0;
   size_t vMethodCnt = 0;
   const Ctx::ClassInfo* superInfo = nullptr;
   if (superName_) {
@@ -236,65 +240,10 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         classInfo.fields.emplace(name, info);
         currentOffset += info.type->numBytes;
       }
-
-      /*
-       * For each this method
-       * If nonvirtual, add
-       * If virtual
-       * - If nonoverride, add
-       * - If override, check for the method in the super context and add at the same location
-       *
-       * For each super method:
-       * If not overridden, add it
-       */
-
-      // Add nonvirtual methods declared in superclass
-      /* else {
-
-
-         // TODO: Is linear search the best option here? Instead, we could iterate thru this
-         // class's vMethods, which would also allow us to utilize the hashmap and find override
-         // methods that aren't overriding anything
-         auto overrideIter = find_if(
-             vMethods_.cbegin(),
-             vMethods_.cend(),
-             [& supMethName = name, &supMethInfo = info](const unique_ptr<Func>& vMeth) {
-               return vMeth->inheritance_ == Func::Modifier::OVERRIDE
-                      && vMeth->name_ == supMethName
-                      && equal(
-                          vMeth->paramTypes_.cbegin(),
-                          vMeth->paramTypes_.cend(),
-                          supMethInfo.paramTypes.cbegin(),
-                          supMethInfo.paramTypes.cend());
-             });
-         // No redefinition/type checking required here. If there was an error, we will have
-         // already reported it in the superclass
-         size_t funcId;
-         if (overrideIter == vMethods_.cend()) {
-           funcId = info.id;
-           classInfo.methods.emplace(name, info);
-         } else {
-           Func& method = **overrideIter;
-           funcId = method.id_;
-           classInfo.methods.emplace(
-               name,
-               Ctx::FnInfo{ info.paramTypes,
-                            info.returnType,
-                            true,
-                            funcId,
-                            ctx.getFilename(),
-                            method.line_ });
-           method.paramNames_.push_back(lang_utils::THIS);
-           method.paramTypes_.push_back(classTy);
-         }
-
-         size_t vTableIndex = superInfo->vTableOffsets.at(info.id);
-         vTableEntries_[vTableIndex] = Ctx::mangleFn(name, funcId);
-         classInfo.vTableOffsets.emplace(funcId, vTableIndex);
-       } */
     }
   }
 
+  // Add fields declared in this class
   for (const auto& [type, name, line] : fields_) {
     if (classInfo.fields.try_emplace(name, Ctx::FieldInfo{ type, currentOffset }).second) {
       currentOffset += type->numBytes;
@@ -304,73 +253,54 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     }
   }
 
-  // Add nonvirtual methods declared in this class
-  for (const unique_ptr<Func>& method : nonVMethods_) {
-    method->checkTypes(ctx);
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        false,
-        method->id_,
-        method->line_);
-    method->paramNames_.push_back(lang_utils::THIS);
-    method->paramTypes_.push_back(classTy);
-  }
+  // Add all methods declared in superclass first. This way, we will only log redefinition errors
+  // for new functions declared in this class
 
-  // Add virtual methods declared in this class
+  // Add virtual methods overriding a base class method
   unordered_set<const Ctx::FnInfo*> supsOverridden;
-  for (const unique_ptr<Func>& method : vMethods_) {
+  for (const unique_ptr<Func>& method : overrideMethods_) {
     method->checkTypes(ctx);
 
-    // Make sure all methods declared override are valid overrides
-    if (method->inheritance_ == Func::Modifier::OVERRIDE) {
-      // No superclass
-      if (!superInfo) {
-        ostream& err = ctx.getLogger().logError(line_);
-        err << "Method " << name_ << "::" << method->name_;
-        Ctx::streamParamTypes(method->paramTypes_, err);
-        err << " is declared override, but class " << name_ << " has no superclass";
-        continue;
-      }
-
-      auto supMethRange = superInfo->methods.equal_range(method->name_);
-      auto supMethIter = find_if(
-          supMethRange.first,
-          supMethRange.second,
-          [&method](const pair<const string, const Ctx::FnInfo>& p) {
-            const Ctx::FnInfo& supMethInfo = p.second;
-            return supMethInfo.isVirtual
-                   && equal(
-                       supMethInfo.paramTypes.cbegin(),
-                       supMethInfo.paramTypes.cend(),
-                       method->paramTypes_.cbegin(),
-                       method->paramTypes_.cend());
-          });
-
-      // No identical virtual method in superclass
-      if (supMethIter == supMethRange.second) {
-        ostream& err = ctx.getLogger().logError(line_);
-        err << "Method " << name_ << "::" << method->name_;
-        Ctx::streamParamTypes(method->paramTypes_, err);
-        err << " is declared override, but does not override a virtual method from the superclass";
-        continue;
-      }
-
-      const Ctx::FnInfo& supMethInfo = supMethIter->second;
-      supsOverridden.insert(&supMethInfo);
-      // We need to make sure that this class's vtable entries are in the same order as its
-      // superclass, otherwise casting and invoking a method won't work. Therefore, we find any
-      // methods that override superclass methods and insert them at the same vtable index
-      size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
-      vTableEntries_[vTableIndex] = Ctx::mangleFn(method->name_, method->id_);
-      classInfo.vTableOffsets.emplace(method->id_, vTableIndex);
-    } else {
-      vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
-      classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
+    // No superclass
+    if (!superInfo) {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << "Method " << name_ << "::" << method->name_;
+      Ctx::streamParamTypes(method->paramTypes_, err);
+      err << " is declared override, but class " << name_ << " has no superclass";
+      continue;
     }
+
+    auto supMethRange = superInfo->methods.equal_range(method->name_);
+    auto supMethIter = find_if(
+        supMethRange.first,
+        supMethRange.second,
+        [&method](const pair<const string, const Ctx::FnInfo>& p) {
+          const Ctx::FnInfo& supMethInfo = p.second;
+          return supMethInfo.isVirtual
+                 && equal(
+                     supMethInfo.paramTypes.cbegin(),
+                     supMethInfo.paramTypes.cend(),
+                     method->paramTypes_.cbegin(),
+                     method->paramTypes_.cend());
+        });
+
+    // No identical virtual method in superclass
+    if (supMethIter == supMethRange.second) {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << "Method " << name_ << "::" << method->name_;
+      Ctx::streamParamTypes(method->paramTypes_, err);
+      err << " is declared override, but does not override a virtual method from the superclass";
+      continue;
+    }
+
+    const Ctx::FnInfo& supMethInfo = supMethIter->second;
+    supsOverridden.insert(&supMethInfo);
+    // We need to make sure that this class's vtable entries are in the same order as its
+    // superclass, otherwise casting and invoking a method won't work. Therefore, we find any
+    // methods that override superclass methods and insert them at the same vtable index
+    size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
+    vTableEntries_[vTableIndex] = Ctx::mangleFn(method->name_, method->id_);
+    classInfo.vTableOffsets.emplace(method->id_, vTableIndex);
 
     ctx.insertMethod(
         classInfo.methods,
@@ -401,10 +331,47 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     }
   }
 
+  // Add nonvirtual methods declared in this class
+  for (const unique_ptr<Func>& method : vMethods_) {
+    method->checkTypes(ctx);
+
+    vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
+    classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
+
+    ctx.insertMethod(
+        classInfo.methods,
+        name_,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        true,
+        method->id_,
+        method->line_);
+    method->paramNames_.push_back(lang_utils::THIS);
+    method->paramTypes_.push_back(classTy);
+  }
+
+  // Add nonvirtual methods declared in this class
+  for (const unique_ptr<Func>& method : nonVMethods_) {
+    method->checkTypes(ctx);
+    ctx.insertMethod(
+        classInfo.methods,
+        name_,
+        method->name_,
+        method->paramTypes_,
+        method->returnType_,
+        false,
+        method->id_,
+        method->line_);
+    method->paramNames_.push_back(lang_utils::THIS);
+    method->paramTypes_.push_back(classTy);
+  }
+
+
   // cout << vTableEntries_ << endl;
   // cout << classInfo.vTableOffsets << endl;
 
-  optional<string> vtable = vMethods_.empty() ? optional<string>() : vTableName();
+  optional<string> vtable = hasVirtualFns() ? vTableName() : optional<string>();
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
@@ -437,15 +404,22 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
     method->toImDecls(imDecls, ctx);
   }
 
+  for (const unique_ptr<Func>& method : overrideMethods_) {
+    // method->name_ = mangleMethod(name_, method->name_);
+    method->toImDecls(imDecls, ctx);
+  }
+
   // Create the vtable if necessary
-  if (!vMethods_.empty()) {
+  if (hasVirtualFns()) {
     imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vTableEntries_)));
   }
 
   ctx.exitClass();
 }
 
-
+bool ClassDecl::hasVirtualFns() const noexcept {
+  return !(vMethods_.empty() && overrideMethods_.empty());
+}
 string ClassDecl::vTableName() { return string(name_).append("_vtable_").append(to_string(id_)); }
 
 }  // namespace language
