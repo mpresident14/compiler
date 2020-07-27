@@ -4,8 +4,8 @@
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/typecheck/type.hpp"
 
-#include <vector>
 #include <variant>
+#include <vector>
 
 class Ctx;
 namespace language {
@@ -29,10 +29,17 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
-  enum class Modifier { VIRTUAL, OVERRIDE, STATIC, NONE };
+  enum Modifier { NONE = 0x0, VIRTUAL = 0x2, OVERRIDE = 0x4, STATIC = 0x8 };
+
+  constexpr bool static isVirtual(int mods) noexcept {
+    return (mods & Modifier::VIRTUAL) || (mods & Modifier::OVERRIDE);
+  }
+  constexpr bool static isStatic(int mods) noexcept {
+    return mods & Modifier::STATIC;
+  }
 
   Func(
-      Modifier modifier,
+      int modifiers,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -42,11 +49,9 @@ public:
   void addToCtx(Ctx& ctx) override;
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
-  constexpr bool isVirtual() const noexcept {
-    return modifier_ == Modifier::VIRTUAL || modifier_ == Modifier::OVERRIDE;
-  }
+  constexpr bool isVirtual() const noexcept { return Func::isVirtual(modifiers_); }
 
-  Modifier modifier_;
+  int modifiers_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;

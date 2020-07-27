@@ -210,40 +210,27 @@ const Ctx::ClassInfo* Ctx::handleClassLookupRes(
   }
 }
 
-void Ctx::insertFn(
-    const string& name,
-    const vector<TypePtr>& paramTypes,
-    const TypePtr& returnType,
-    size_t id,
-    size_t line) {
-  insertMethod(fnMap_, "", name, paramTypes, returnType, false, false, id, line);
-}
+void Ctx::insertFn(const language::Func& func) { insertMethod(fnMap_, "", func); }
 
 void Ctx::insertMethod(
     unordered_multimap<string, Ctx::FnInfo>& funcMap,
     string_view className,
-    const string& name,
-    const vector<TypePtr>& paramTypes,
-    const TypePtr& returnType,
-    bool isVirtual,
-    bool isStatic,
-    size_t id,
-    size_t line) {
-  auto iterPair = funcMap.equal_range(name);
+    const language::Func& func) {
+  auto iterPair = funcMap.equal_range(func.name_);
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const FnInfo& fnInfo = iter->second;
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
-    if (equal(paramTypes.cbegin(), paramTypes.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
-      ostream& errStream = logger.logError(line);
+    if (equal(func.paramTypes_.cbegin(), func.paramTypes_.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
+      ostream& errStream = logger.logError(func.line_);
       bool isMethod = className.empty();
       errStream << "Redefinition of " << (isMethod ? "method '" : " function '")
-                << (isMethod ? name : string(className).append("::").append(name));
-      Ctx::streamParamTypes(paramTypes, errStream);
+                << (isMethod ? func.name_ : string(className).append("::").append(func.name_));
+      Ctx::streamParamTypes(func.paramTypes_, errStream);
       errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;
     }
   }
-  funcMap.emplace(name, FnInfo{ paramTypes, returnType, isVirtual, isStatic, id, filename_, line });
+  funcMap.emplace(func.name_, FnInfo{ func.paramTypes_, func.returnType_, func.modifiers_, func.id_, filename_, func.line_ });
 }
 
 

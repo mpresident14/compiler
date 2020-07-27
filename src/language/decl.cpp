@@ -17,14 +17,14 @@ namespace language {
 size_t Func::nextId_ = 0;
 
 Func::Func(
-    Func::Modifier modifier,
+    int modifiers,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
     : Decl(line),
-      modifier_(modifier),
+      modifiers_(modifiers),
       returnType_(move(returnType)),
       name_(name),
       body_(move(body)),
@@ -40,7 +40,7 @@ Func::Func(
 
 void Func::addToCtx(Ctx& ctx) {
   checkTypes(ctx);
-  ctx.insertFn(name_, paramTypes_, returnType_, id_, line_);
+  ctx.insertFn(*this);
 }
 
 void Func::checkTypes(Ctx& ctx) const {
@@ -183,7 +183,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         break;
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
-        switch (method->modifier_) {
+        switch (method->modifiers_) {
           case Func::Modifier::NONE:
             nonVMethods_.push_back(move(method));
             break;
@@ -196,6 +196,8 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
           case Func::Modifier::STATIC:
             staticMethods_.push_back(move(method));
             break;
+          default:
+            throw runtime_error("ClassDecl::ClassDecl (Modifier");
         }
         break;
       }
@@ -274,7 +276,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         supMethRange.second,
         [&method](const pair<const string, const Ctx::FnInfo>& p) {
           const Ctx::FnInfo& supMethInfo = p.second;
-          return supMethInfo.isVirtual
+          return Func::isVirtual(supMethInfo.modifiers)
                  && equal(
                      supMethInfo.paramTypes.cbegin(),
                      supMethInfo.paramTypes.cend(),
@@ -300,16 +302,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     vTableEntries_[vTableIndex] = Ctx::mangleFn(method->name_, method->id_);
     classInfo.vTableOffsets.emplace(method->id_, vTableIndex);
 
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        true,
-        false,
-        method->id_,
-        method->line_);
+    ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
@@ -318,9 +311,9 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // there was an error, we will have already reported it in the superclass
   if (superInfo) {
     for (const auto& [name, supMethInfo] : superInfo->methods) {
-      if (!supMethInfo.isStatic && !supsOverridden.contains(&supMethInfo)) {
+      if (!(Func::isStatic(supMethInfo.modifiers)) && !supsOverridden.contains(&supMethInfo)) {
         classInfo.methods.emplace(name, supMethInfo);
-        if (supMethInfo.isVirtual) {
+        if (Func::isVirtual(supMethInfo.modifiers)) {
           size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
           vTableEntries_[vTableIndex] = Ctx::mangleFn(name, supMethInfo.id);
           classInfo.vTableOffsets.emplace(supMethInfo.id, vTableIndex);
@@ -336,16 +329,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     vTableEntries_.push_back(Ctx::mangleFn(method->name_, method->id_));
     classInfo.vTableOffsets.emplace(method->id_, vMethodCnt++);
 
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        true,
-        false,
-        method->id_,
-        method->line_);
+    ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
@@ -353,16 +337,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // Add nonvirtual methods declared in this class
   for (const unique_ptr<Func>& method : nonVMethods_) {
     method->checkTypes(ctx);
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        false,
-        false,
-        method->id_,
-        method->line_);
+    ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
@@ -370,16 +345,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   // Add static methods declared in this class
   for (const unique_ptr<Func>& method : staticMethods_) {
     method->checkTypes(ctx);
-    ctx.insertMethod(
-        classInfo.methods,
-        name_,
-        method->name_,
-        method->paramTypes_,
-        method->returnType_,
-        false,
-        true,
-        method->id_,
-        method->line_);
+    ctx.insertMethod(classInfo.methods, name_, *method);
   }
 
   optional<string> vtable = hasVirtualFns() ? vTableName() : optional<string>();

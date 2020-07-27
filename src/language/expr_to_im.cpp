@@ -459,7 +459,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-  if (fnInfo->isVirtual) {
+  if (Func::isVirtual(fnInfo->modifiers)) {
     vector<im::StmtPtr> assignThis;
     int tThis = newTemp();
     assignThis.push_back(make_unique<im::Assign>(make_unique<im::Temp>(tThis), move(eInfo.imExpr)));
@@ -529,7 +529,7 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-  if (!fnInfo->isStatic) {
+  if (!Func::isStatic(fnInfo->modifiers)) {
     if (!(ctx.insideClass() && ctx.isBaseOf(ctx.getCurrentClass(), classTy_))) {
       ostream& err = ctx.getLogger().logError(line_);
       err << "Cannot not invoke non-static method '"

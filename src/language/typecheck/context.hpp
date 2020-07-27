@@ -2,6 +2,7 @@
 #define CONTEXT_HPP
 
 #include "src/assembly/temp.hpp"
+#include "src/language/decl.hpp"
 #include "src/language/typecheck/type.hpp"
 #include "src/misc/logger.hpp"
 
@@ -37,8 +38,7 @@ public:
   struct FnInfo {
     std::vector<TypePtr> paramTypes;
     TypePtr returnType;
-    bool isVirtual;
-    bool isStatic;
+    int modifiers;
     size_t id;
     std::string declFile;
     size_t line;
@@ -170,22 +170,11 @@ public:
       const std::string& methodName,
       const std::vector<TypePtr>& paramTypes,
       size_t line) const;
-  void insertFn(
-      const std::string& name,
-      const std::vector<TypePtr>& paramTypes,
-      const TypePtr& returnType,
-      size_t id,
-      size_t line);
+  void insertFn(const language::Func& fn);
   void insertMethod(
       std::unordered_multimap<std::string, FnInfo>& funcMap,
       std::string_view className,
-      const std::string& name,
-      const std::vector<TypePtr>& paramTypes,
-      const TypePtr& returnType,
-      bool isVirtual,
-      bool isStatic,
-      size_t id,
-      size_t line);
+      const language::Func& fn);
   /* Only searches this context */
   FnLookupRes lookupFn(const std::string& name, const std::vector<TypePtr>& paramTypes) const;
   /* Also searches context tree, nullptr if it doesn't exist */
