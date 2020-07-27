@@ -224,7 +224,7 @@ Function -> { std::unique_ptr<Func> }
 
 Method -> { std::unique_ptr<Func> }
   := Function             % move(#0) %
-  |  InheritKW Function   % (#1->inheritance_ = #0, move(#1)) %
+  |  InheritKW Function   % (#1->modifier_ = #0, move(#1)) %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %

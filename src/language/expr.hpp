@@ -3,7 +3,6 @@
 
 #include "src/assembly/assembly.hpp"
 #include "src/intermediate/intermediate.hpp"
-#include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
 
 #include <memory>
@@ -12,6 +11,9 @@
 #include <utility>
 #include <vector>
 #include <variant>
+
+
+class Ctx;
 
 namespace language {
 

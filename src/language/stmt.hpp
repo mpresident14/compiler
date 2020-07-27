@@ -4,7 +4,6 @@
 #include "src/assembly/assembly.hpp"
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/expr.hpp"
-#include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
 
 #include <memory>
@@ -13,6 +12,7 @@
 #include <string_view>
 #include <vector>
 
+class Ctx;
 namespace language {
 
 

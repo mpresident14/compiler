@@ -2,12 +2,12 @@
 #define DECL_HPP
 
 #include "src/intermediate/intermediate.hpp"
-#include "src/language/typecheck/context.hpp"
 #include "src/language/typecheck/type.hpp"
 
 #include <vector>
+#include <variant>
 
-
+class Ctx;
 namespace language {
 
 
@@ -32,7 +32,7 @@ public:
   enum class Modifier { VIRTUAL, OVERRIDE, STATIC, NONE };
 
   Func(
-      Modifier inheritance,
+      Modifier modifier,
       TypePtr&& returnType,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
@@ -43,10 +43,10 @@ public:
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
   constexpr bool isVirtual() const noexcept {
-    return inheritance_ == Modifier::VIRTUAL || inheritance_ == Modifier::OVERRIDE;
+    return modifier_ == Modifier::VIRTUAL || modifier_ == Modifier::OVERRIDE;
   }
 
-  Modifier inheritance_;
+  Modifier modifier_;
   TypePtr returnType_;
   std::string name_;
   std::vector<TypePtr> paramTypes_;

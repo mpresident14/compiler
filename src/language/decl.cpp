@@ -2,6 +2,7 @@
 
 #include "src/language/stmt.hpp"
 #include "src/language/utils.hpp"
+#include "src/language/typecheck/context.hpp"
 
 #include <prez/print_stuff.hpp>
 
@@ -16,14 +17,14 @@ namespace language {
 size_t Func::nextId_ = 0;
 
 Func::Func(
-    Func::Modifier inheritance,
+    Func::Modifier modifier,
     TypePtr&& returnType,
     string_view name,
     vector<pair<TypePtr, string>>&& params,
     unique_ptr<Block>&& body,
     size_t line)
     : Decl(line),
-      inheritance_(inheritance),
+      modifier_(modifier),
       returnType_(move(returnType)),
       name_(name),
       body_(move(body)),
@@ -182,7 +183,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         break;
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
-        switch (method->inheritance_) {
+        switch (method->modifier_) {
           case Func::Modifier::NONE:
             nonVMethods_.push_back(move(method));
             break;
@@ -217,10 +218,6 @@ ClassDecl::ClassDecl(
 
 
 void ClassDecl::addToCtx(Ctx& ctx) {
-  // I would rather have this logic in the Ctx class, but I can't have Func and Field in Ctx because
-  // of circular dependency, and splitting them into their fields would make the code too messy imo
-  // TODO: Forward declare Ctx and include language in Ctx to achieve this
-
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
@@ -311,7 +308,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         true,
         method->id_,
         method->line_);
-
     method->paramNames_.push_back(lang_utils::THIS);
     method->paramTypes_.push_back(classTy);
   }
@@ -367,10 +363,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(classTy);
   }
 
-
-  // cout << vTableEntries_ << endl;
-  // cout << classInfo.vTableOffsets << endl;
-
   optional<string> vtable = hasVirtualFns() ? vTableName() : optional<string>();
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
@@ -393,19 +385,13 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   for (Constructor& ctor : ctors_) {
     ctor.toImDecls(imDecls, ctx);
   }
-
   for (const unique_ptr<Func>& method : nonVMethods_) {
-    // method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
-
   for (const unique_ptr<Func>& method : vMethods_) {
-    // method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
-
   for (const unique_ptr<Func>& method : overrideMethods_) {
-    // method->name_ = mangleMethod(name_, method->name_);
     method->toImDecls(imDecls, ctx);
   }
 
