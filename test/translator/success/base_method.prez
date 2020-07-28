@@ -14,7 +14,9 @@ class Derived : file2::Base {
 }
 
 class GrandChild : Derived {
+  GrandChild(int n) : GrandChild(n, false) {}
   GrandChild(int n, bool b) : Derived(n, b) {}
+  GrandChild(int a, int b) : file2::Base(a + b) { this.b = false; }
 
   void sayHi() {
     print("Child of ".append(Derived.name()));
@@ -26,6 +28,14 @@ class GrandChild : Derived {
 void main() {
   GrandChild g = GrandChild(5, true);
   g.sayHi();
+  print(g.n);
+  print(g.b);
+
+  g = GrandChild(10, 1);
+  print(g.n);
+  print(g.b);
+
+  g = GrandChild(100);
   print(g.n);
   print(g.b);
 }
