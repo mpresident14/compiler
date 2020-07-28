@@ -156,6 +156,12 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   //   }
   // }
 
+  if (vTableName_) {
+    imStmts.push_back(make_unique<im::Assign>(
+        make_unique<im::MemDeref>(0, Var(lang_utils::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
+        make_unique<im::LabelAddr>(*vTableName_)));
+  }
+
   // Implicit return of the object we created. We insert it into the body rather than inserting it
   // manually into imStmts so that nicer errors are given if a user redefines "this"
   body_->stmts_.push_back(
@@ -353,6 +359,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   }
 
   // Add constructors to this context
+  bool hasVirtualFns = !vTableEntries_.empty();
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
       ostringstream& err = ctx.getLogger().logError(ctor.line_);
@@ -361,6 +368,9 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       continue;
     }
     ctor.returnType_ = classTy;
+    if (hasVirtualFns) {
+      ctor.vTableName_.emplace(ClassDecl::vTableName(name_, id_));
+    }
     ctor.addToCtx(ctx);
     ctor.paramNames_.push_back(lang_utils::THIS);
     ctor.paramTypes_.push_back(classTy);
@@ -392,11 +402,6 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   }
 
   ctx.exitClass();
-}
-
-// TODO: This doesn't account for when all virtual methods are inherited.
-bool ClassDecl::hasVirtualFns() const noexcept {
-  return !(vMethods_.empty() && overrideMethods_.empty());
 }
 
 std::string ClassDecl::vTableName(string_view className, int id) {

@@ -88,6 +88,7 @@ public:
 
   std::optional<Class> supClass_;
   std::vector<ExprPtr> supParams_;
+  std::optional<std::string> vTableName_;
 };
 
 
@@ -133,8 +134,6 @@ public:
   std::vector<std::string> vTableEntries_;
 
 private:
-  bool hasVirtualFns() const noexcept;
-
   static int nextId_;
 };
 
