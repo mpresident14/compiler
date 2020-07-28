@@ -51,7 +51,7 @@ Expr::Info StrLit::toImExpr(Ctx& ctx) {
   vector<ExprPtr> params;
   params.push_back(make_unique<NewArray>(TypePtr(Type::CHAR_TYPE), move(chars), line_));
   params.push_back(make_unique<ConstBool>(true, line_));
-  return CallExpr(vector<string>(), "String", move(params), line_).toImExpr(ctx);
+  return Call(vector<string>(), "String", move(params), line_).toImExpr(ctx);
 }
 
 
@@ -213,10 +213,10 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
 
 
 /************
- * CallExpr *
+ * Call *
  ************/
 
-Expr::Info CallExpr::toImExpr(Ctx& ctx) {
+Expr::Info Call::toImExpr(Ctx& ctx) {
   vector<im::ExprPtr> paramImExprs;
   vector<TypePtr> paramTypes;
   size_t numParams = params_.size();
@@ -241,14 +241,18 @@ Expr::Info CallExpr::toImExpr(Ctx& ctx) {
     }
 
     // Allocate the object
-    vector<im::ExprPtr> mallocBytes;
-    mallocBytes.push_back(make_unique<im::Const>(classInfo->numBytes));
-    paramImExprs.push_back(
-        make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+    if (ctorAlloc_) {
+      vector<im::ExprPtr> mallocBytes;
+      mallocBytes.push_back(make_unique<im::Const>(classInfo->numBytes));
+      paramImExprs.push_back(
+          make_unique<im::Call>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+    } else {
+      paramImExprs.push_back(Var(lang_utils::THIS, line_).toImExpr(ctx).imExpr);
+    }
     paramTypes.push_back(fnInfo->returnType);
   }
 
-  return { make_unique<im::CallExpr>(
+  return { make_unique<im::Call>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
                *fnInfo->returnType != *Type::VOID_TYPE),
@@ -346,7 +350,7 @@ pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(Type& type, ExprPtr&& nu
   mallocBytes.emplace_back(move(arrBytes));
   im::StmtPtr callMalloc = make_unique<im::Assign>(
       make_unique<im::Temp>(tArrAddr),
-      make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+      make_unique<im::Call>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
 
   // Arrays will start with the number of elements they contain
   im::StmtPtr setSize = make_unique<im::Assign>(
@@ -482,7 +486,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
     size_t vTableOffset = classFnInfo.first->vTableOffsets.at(fnInfo->id);
     return { make_unique<im::DoThenEval>(
                  move(assignThis),
-                 make_unique<im::CallExpr>(
+                 make_unique<im::Call>(
                      // method = *(vTableAddr + offset)
                      make_unique<im::MemDeref>(
                          vTableOffset * 8,
@@ -496,7 +500,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   } else {
     // Push back "this" as last argument (AFTER the context lookup)
     paramImExprs.push_back(move(eInfo.imExpr));
-    return { make_unique<im::CallExpr>(
+    return { make_unique<im::Call>(
                  make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
                  move(paramImExprs),
                  fnInfo->returnType != Type::VOID_TYPE),
@@ -558,7 +562,7 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
     paramImExprs.push_back(Var(lang_utils::THIS, line_).toImExpr(ctx).imExpr);
   }
 
-  return { make_unique<im::CallExpr>(
+  return { make_unique<im::Call>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(methodName_, fnInfo->id)),
                move(paramImExprs),
                fnInfo->returnType != Type::VOID_TYPE),

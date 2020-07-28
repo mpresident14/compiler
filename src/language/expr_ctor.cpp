@@ -30,15 +30,24 @@ ExprPtr TernaryOp::clone() const {
   return make_unique<TernaryOp>(boolE_->clone(), e1_->clone(), e2_->clone());
 }
 
-CallExpr::CallExpr(
-    vector<string>&& qualifiers, string_view name, vector<ExprPtr>&& params, size_t line)
-    : Expr(line), qualifiers_(move(qualifiers)), name_(name), params_(move(params)) {}
-ExprPtr CallExpr::clone() const {
+Call::Call(
+    vector<string>&& qualifiers,
+    string_view name,
+    vector<ExprPtr>&& params,
+    size_t line,
+    bool ctorAlloc)
+    : Expr(line),
+      qualifiers_(move(qualifiers)),
+      name_(name),
+      params_(move(params)),
+      ctorAlloc_(ctorAlloc) {}
+ExprPtr Call::clone() const {
   vector<ExprPtr> paramsClone;
   for (const ExprPtr& expr : params_) {
     paramsClone.push_back(expr->clone());
   }
-  return make_unique<CallExpr>(vector<string>(qualifiers_), name_, move(paramsClone), line_);
+  return make_unique<Call>(
+      vector<string>(qualifiers_), name_, move(paramsClone), line_, ctorAlloc_);
 }
 
 Cast::Cast(TypePtr&& toType, ExprPtr&& expr, size_t line)

@@ -148,13 +148,17 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
 
-  // if (supClass_) {
-  //   if (!ctx.isBaseOf(supClass_->id, *returnType_)) {
-  //     ostream& err = ctx.getLogger().logError(line_);
-  //     err << *supClass_ << " is not a superclass of " << *returnType_;
-  //     return;
-  //   }
-  // }
+  if (supClass_) {
+    if (ctx.isBaseOf(static_cast<const Class*>(returnType_.get())->id, *supClass_)) {
+      ExprStmt(
+          make_unique<Call>(
+              move(supClass_->qualifiers), supClass_->className, move(supParams_), line_, false))
+          .toImStmts(imStmts, ctx);
+    } else {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << *supClass_ << " is not a superclass of " << *returnType_;
+    }
+  }
 
   if (vTableName_) {
     imStmts.push_back(make_unique<im::Assign>(

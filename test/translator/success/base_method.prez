@@ -1,15 +1,20 @@
 import "file2.prez"
 
 class Derived : file2::Base {
+  bool b;
+
+  Derived(int n, bool b)
+      : file2::Base(n) {
+    this.b = b;
+  }
+
   override String name() {
     return "Derived";
   }
 }
 
 class GrandChild : Derived {
-  GrandChild() {
-    this.n = 1;
-  }
+  GrandChild(int n, bool b) : Derived(n, b) {}
 
   void sayHi() {
     print("Child of ".append(Derived.name()));
@@ -19,6 +24,8 @@ class GrandChild : Derived {
 
 
 void main() {
-  GrandChild g = GrandChild();
+  GrandChild g = GrandChild(5, true);
   g.sayHi();
+  print(g.n);
+  print(g.b);
 }

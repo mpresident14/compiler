@@ -230,13 +230,14 @@ public:
 };
 
 
-class CallExpr : public Expr {
+class Call : public Expr {
 public:
-  CallExpr(
+  Call(
       std::vector<std::string>&& qualifiers,
       std::string_view name,
       std::vector<ExprPtr>&& params,
-      size_t line);
+      size_t line,
+      bool ctorAlloc = true);
   Category getCategory() const noexcept override { return Category::CALL_EXPR; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -244,6 +245,7 @@ public:
   std::vector<std::string> qualifiers_;
   std::string name_;
   std::vector<ExprPtr> params_;
+  bool ctorAlloc_;
 };
 
 

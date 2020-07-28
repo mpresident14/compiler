@@ -169,16 +169,16 @@ ExprPtr DoThenEval::optimize() { return make_unique<DoThenEval>(move(stmts_), ex
 ExprPtr LabelAddr::optimize() { return make_unique<LabelAddr>(move(name_)); }
 
 /************
- * CallExpr *
+ * Call *
  ************/
 
-ExprPtr CallExpr::optimize() {
+ExprPtr Call::optimize() {
   vector<ExprPtr> optParams;
   optParams.reserve(params_.size());
   for (const ExprPtr& param : params_) {
     optParams.push_back(param->optimize());
   }
-  return make_unique<CallExpr>(addr_->optimize(), move(optParams), hasReturnValue_);
+  return make_unique<Call>(addr_->optimize(), move(optParams), hasReturnValue_);
 }
 
 /***********

@@ -125,7 +125,7 @@ void For::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
 /************
  * ExprStmt *
  ************/
-ExprStmt::ExprStmt(ExprPtr expr, size_t line) : Stmt(line), expr_(move(expr)) {}
+ExprStmt::ExprStmt(ExprPtr&& expr) : Stmt(expr->line_), expr_(move(expr)) {}
 
 void ExprStmt::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   // The grammar determines what Exprs can also be Stmts (see StmtExpr in lang.pgen)
@@ -284,7 +284,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   } else {
     vector<ExprPtr> toPrint;
     toPrint.push_back(move(imWrapExpr));
-    callToString = make_unique<CallExpr>(vector<string>(), toString, move(toPrint), line_);
+    callToString = make_unique<Call>(vector<string>(), toString, move(toPrint), line_);
   }
 
   VarDecl(TypePtr(Type::STRING_TYPE), strVar, move(callToString), line_).toImStmts(imStmts, ctx);
@@ -301,7 +301,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       MemberAccess(make_unique<Var>(strVar, line_), "len").toImExpr(ctx).imExpr);
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(
-      make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));
+      make_unique<im::Call>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));
 
   imStmts.push_back(move(callPrint));
 

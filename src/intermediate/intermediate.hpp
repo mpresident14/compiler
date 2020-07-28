@@ -280,9 +280,9 @@ public:
 
 
 /* Result of a function call  */
-class CallExpr : public Expr {
+class Call : public Expr {
 public:
-  CallExpr(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
+  Call(ExprPtr&& addr, std::vector<ExprPtr>&& params, bool hasReturnValue);
   constexpr Category getCategory() const noexcept override { return Category::CALL; }
   void toAssemInstrs(int temp, std::vector<assem::InstrPtr>& instrs) const override;
   ExprPtr optimize() override;

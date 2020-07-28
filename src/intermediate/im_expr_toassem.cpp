@@ -221,13 +221,13 @@ void LabelAddr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
 
 
 /************
- * CallExpr *
+ * Call *
  ************/
-CallExpr::CallExpr(ExprPtr&& addr, vector<ExprPtr>&& params, bool hasReturnValue)
+Call::Call(ExprPtr&& addr, vector<ExprPtr>&& params, bool hasReturnValue)
     : addr_(move(addr)), params_(move(params)), hasReturnValue_(hasReturnValue) {}
 
 
-void CallExpr::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
+void Call::toAssemInstrs(int temp, vector<assem::InstrPtr>& instrs) const {
   vector<int> argTemps;
   size_t numParams = params_.size();
 

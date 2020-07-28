@@ -126,7 +126,7 @@ success_test(incdec "2,3,3,2,1,4,4,5,4,20,5,26,6")
 success_test(class "5,5,4,4,1,1,2,2,3,18")
 success_test(strlit "Hello world!,Good-bye!,E\"sca\tpe\nd")
 success_test(inheritance "100,vFunc,Base,200,vFunc,Derived,dvFunc,nonVFunc,300,vFunc,GrandChild,dvFunc,nonVFunc")
-success_test(base_method "Child of Derived,Grandchild of Base")
+success_test(base_method "Child of Derived,Grandchild of Base,5,true")
 success_test(static "Base,Base,Derived")
 
 file(GLOB_RECURSE IMPORT_TEST_SRCS ${SUCCESS_DIR}/imports/*)

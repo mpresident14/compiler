@@ -94,7 +94,7 @@ public:
 
 class ExprStmt : public Stmt {
 public:
-  ExprStmt(ExprPtr expr, size_t line);
+  ExprStmt(ExprPtr&& expr);
   void toImStmts(std::vector<im::StmtPtr>& imStmts, Ctx& ctx) override;
 
   ExprPtr expr_;

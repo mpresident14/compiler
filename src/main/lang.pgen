@@ -214,10 +214,15 @@ ClassElements -> { vector<ClassDecl::ClassElem> }
 
 ClassElement -> { ClassDecl::ClassElem }
   := NonVoidType IDENT SEMI
-               % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, { ClassDecl::Field{move(#0), move(#1), #line } } } %
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{move(#0), move(#1), #line } } %
    | IDENT LPAREN Params RPAREN Block
-               % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, { Constructor(#0, move(#2), move(#4), #line) } } %
-   | Method    % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, { move(#0) } } %
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), move(#4), #line) } %
+   | IDENT LPAREN Params RPAREN COLON IDENT LPAREN Exprs RPAREN Block
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), Class(vector<string>(), #5), move(#7), move(#9), #line) } %
+   | IDENT LPAREN Params RPAREN COLON Qualifiers IDENT LPAREN Exprs RPAREN Block
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), Class(move(#5), #6), move(#8), move(#10), #line) } %
+   | Method
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, move(#0) } %
 
 Function -> { std::unique_ptr<Func> }
   := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Modifier::NONE, move(#0), #1, move(#3), move(#5), #line) %
@@ -244,7 +249,7 @@ Stmt -> { StmtPtr }
    | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
    | VarDecl                                     % move(#0) %
    | Block                                       % move(#0) %
-   | StmtExpr SEMI                               % make_unique<ExprStmt>(move(#0), #line) %
+   | StmtExpr SEMI                               % make_unique<ExprStmt>(move(#0)) %
    | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
    | UpdateStmt SEMI                             % move(#0) %
 
@@ -306,7 +311,7 @@ ExprNoVar -> { ExprPtr }
 
 ForUpdate -> { StmtPtr }
   := UpdateStmt                                 % move(#0) %
-   | StmtExpr                                   % make_unique<ExprStmt>(move(#0), #line) %
+   | StmtExpr                                   % make_unique<ExprStmt>(move(#0)) %
 
 UpdateStmt -> { StmtPtr }
    := Expr EQ Expr                              % make_unique<Assign>(move(#0), move(#2)) %
@@ -326,8 +331,8 @@ StmtExpr -> { ExprPtr }
    | DEC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), false, true, #line) %
    | Expr INC                                   % make_unique<IncDec>(move(#0), true, false, #line) %
    | Expr DEC                                   % make_unique<IncDec>(move(#0), false, false, #line) %
-   | IDENT LPAREN Exprs RPAREN                  % make_unique<CallExpr>(vector<string>(), #0, move(#2), #line) %
-   | Qualifiers IDENT LPAREN Exprs RPAREN       % make_unique<CallExpr>(move(#0), #1, move(#3), #line) %
+   | IDENT LPAREN Exprs RPAREN                  % make_unique<Call>(vector<string>(), #0, move(#2), #line) %
+   | Qualifiers IDENT LPAREN Exprs RPAREN       % make_unique<Call>(move(#0), #1, move(#3), #line) %
    | Expr DOT IDENT LPAREN Exprs RPAREN         % make_unique<MethodInvocation>(move(#0), #2, move(#4), #line) %
    | IDENT DOT IDENT LPAREN Exprs RPAREN        % make_unique<MethodInvocation>(#0, #2, move(#4), #line) %
    | Qualifiers IDENT DOT IDENT
