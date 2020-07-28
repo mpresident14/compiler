@@ -3,6 +3,7 @@
 
 #include "src/intermediate/intermediate.hpp"
 #include "src/language/typecheck/type.hpp"
+#include "src/language/expr.hpp"
 
 #include <variant>
 #include <vector>
@@ -34,12 +35,8 @@ public:
   constexpr bool static isVirtual(int mods) noexcept {
     return (mods & Modifier::VIRTUAL) || (mods & Modifier::OVERRIDE);
   }
-  constexpr bool static isStatic(int mods) noexcept {
-    return mods & Modifier::STATIC;
-  }
-  constexpr bool static isCtor(int mods) noexcept {
-    return mods & Modifier::CTOR;
-  }
+  constexpr bool static isStatic(int mods) noexcept { return mods & Modifier::STATIC; }
+  constexpr bool static isCtor(int mods) noexcept { return mods & Modifier::CTOR; }
 
   Func(
       int modifiers,
@@ -77,11 +74,20 @@ public:
   Constructor(
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
+      std::optional<Class>&& supClass,
+      std::vector<ExprPtr> supParams,
       std::unique_ptr<Block>&& body,
       size_t line);
+  Constructor(
+      std::string_view name,
+      std::vector<std::pair<TypePtr, std::string>>&& params,
+      std::unique_ptr<Block>&& body,
+      size_t line);
+  void addToCtx(Ctx& ctx) override;
   void toImDecls(std::vector<im::DeclPtr>& imDecls, Ctx& ctx) override;
 
-  std::optional<std::string> vTableName_ = {};
+  std::optional<Class> supClass_;
+  std::vector<ExprPtr> supParams_;
 };
 
 
@@ -99,6 +105,8 @@ public:
     Type type;
     std::variant<Field, Constructor, std::unique_ptr<Func>> elem;
   };
+
+  static std::string vTableName(std::string_view className, int id);
 
   ClassDecl(std::string_view name, std::vector<ClassElem>&& classElems, size_t line);
   ClassDecl(
@@ -126,7 +134,6 @@ public:
 
 private:
   bool hasVirtualFns() const noexcept;
-  std::string vTableName();
 
   static int nextId_;
 };

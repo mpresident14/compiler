@@ -121,21 +121,40 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
 
 Constructor::Constructor(
     string_view name, vector<pair<TypePtr, string>>&& params, unique_ptr<Block>&& body, size_t line)
+    : Constructor(name, move(params), {}, {}, move(body), line) {}
+
+Constructor::Constructor(
+    std::string_view name,
+    std::vector<std::pair<TypePtr, std::string>>&& params,
+    std::optional<Class>&& supClass,
+    std::vector<ExprPtr> supParams,
+    std::unique_ptr<Block>&& body,
+    size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
     // a new shared_ptr for each ctor
-    : Func(Func::Modifier::CTOR, nullptr, name, move(params), move(body), line) {}
+    : Func(Func::Modifier::CTOR, nullptr, name, move(params), move(body), line),
+      supClass_(move(supClass)),
+      supParams_(move(supParams)) {}
 
+
+void Constructor::addToCtx(Ctx& ctx) {
+  if (supClass_) {
+    ctx.checkType(*supClass_, line_);
+  }
+  Func::addToCtx(ctx);
+}
 
 void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.setCurrentRetType(returnType_);
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
 
-  // Create pointer to vtable if necessary
-  if (vTableName_) {
-    imStmts.push_back(make_unique<im::Assign>(
-        make_unique<im::MemDeref>(0, Var(lang_utils::THIS, 0).toImExpr(ctx).imExpr, nullptr, 8),
-        make_unique<im::LabelAddr>(*vTableName_)));
-  }
+  // if (supClass_) {
+  //   if (!ctx.isBaseOf(supClass_->id, *returnType_)) {
+  //     ostream& err = ctx.getLogger().logError(line_);
+  //     err << *supClass_ << " is not a superclass of " << *returnType_;
+  //     return;
+  //   }
+  // }
 
   // Implicit return of the object we created. We insert it into the body rather than inserting it
   // manually into imStmts so that nicer errors are given if a user redefines "this"
@@ -210,8 +229,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
-  // Class starts with vtable pointer if there are any virtual methods
-  classInfo.numBytes = hasVirtualFns() ? 8 : 0;
+  // Class starts with vtable pointer
+  classInfo.numBytes = 8;
   size_t vMethodCnt = 0;
   const Ctx::ClassInfo* superInfo = nullptr;
   if (superName_) {
@@ -333,7 +352,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     ctx.insertMethod(classInfo.methods, name_, *method);
   }
 
-  optional<string> vtable = hasVirtualFns() ? vTableName() : optional<string>();
   // Add constructors to this context
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
@@ -343,7 +361,6 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       continue;
     }
     ctor.returnType_ = classTy;
-    ctor.vTableName_ = vtable;
     ctor.addToCtx(ctx);
     ctor.paramNames_.push_back(lang_utils::THIS);
     ctor.paramTypes_.push_back(classTy);
@@ -370,16 +387,20 @@ void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   }
 
   // Create the vtable if necessary
-  if (hasVirtualFns()) {
-    imDecls.push_back(make_unique<im::VTable>(vTableName(), move(vTableEntries_)));
+  if (!vTableEntries_.empty()) {
+    imDecls.push_back(make_unique<im::VTable>(vTableName(name_, id_), move(vTableEntries_)));
   }
 
   ctx.exitClass();
 }
 
+// TODO: This doesn't account for when all virtual methods are inherited.
 bool ClassDecl::hasVirtualFns() const noexcept {
   return !(vMethods_.empty() && overrideMethods_.empty());
 }
-string ClassDecl::vTableName() { return string(name_).append("_vtable_").append(to_string(id_)); }
+
+std::string ClassDecl::vTableName(string_view className, int id) {
+  return string(className).append("_vtable_").append(to_string(id));
+}
 
 }  // namespace language

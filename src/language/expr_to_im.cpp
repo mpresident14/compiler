@@ -234,26 +234,49 @@ Expr::Info CallExpr::toImExpr(Ctx& ctx) {
   }
 
   if (Func::isCtor(fnInfo->modifiers)) {
-    const Ctx::ClassInfo* classInfo =
-        ctx.lookupClass(static_cast<const Class*>(fnInfo->returnType.get())->id);
+    int classId = static_cast<const Class*>(fnInfo->returnType.get())->id;
+    const Ctx::ClassInfo* classInfo = ctx.lookupClass(classId);
     if (!classInfo) {
       throw runtime_error("CallExpr::toImExpr");
     }
 
+    // Allocate the object
     vector<im::ExprPtr> mallocBytes;
     mallocBytes.push_back(make_unique<im::Const>(classInfo->numBytes));
-    paramImExprs.push_back(
-        make_unique<im::CallExpr>(make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
-    paramTypes.push_back(fnInfo->returnType);
-  }
+    if (classInfo->vTableOffsets.empty()) {
+      paramImExprs.push_back(make_unique<im::CallExpr>(
+          make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true));
+      paramTypes.push_back(fnInfo->returnType);
+    } else {
+      // If class has virtual functions, need to setup the vtable as well
+      vector<im::StmtPtr> vtableSetup;
+      int tThis = newTemp();
+      vtableSetup.push_back(make_unique<im::Assign>(
+          make_unique<im::Temp>(tThis),
+          make_unique<im::CallExpr>(
+              make_unique<im::LabelAddr>("__malloc"), move(mallocBytes), true)));
+      vtableSetup.push_back(make_unique<im::Assign>(
+          make_unique<im::MemDeref>(0, make_unique<im::Temp>(tThis), nullptr, 8),
+          make_unique<im::LabelAddr>(ClassDecl::vTableName(name_, classId))));
+      paramImExprs.push_back(make_unique<im::Temp>(tThis));
+      paramTypes.push_back(fnInfo->returnType);
 
+      return { make_unique<im::DoThenEval>(
+                   move(vtableSetup),
+                   make_unique<im::CallExpr>(
+                       make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
+                       move(paramImExprs),
+                       *fnInfo->returnType != *Type::VOID_TYPE)),
+               move(fnInfo->returnType) };
+    }
+  }
 
   return { make_unique<im::CallExpr>(
                make_unique<im::LabelAddr>(Ctx::mangleFn(name_, fnInfo->id)),
                move(paramImExprs),
                *fnInfo->returnType != *Type::VOID_TYPE),
            move(fnInfo->returnType) };
-}
+}  // namespace language
 
 
 /********
