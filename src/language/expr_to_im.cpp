@@ -177,17 +177,22 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   Info e1Info = e1_->toImExpr(ctx);
   Info e2Info = e2_->toImExpr(ctx);
 
-  if (!(e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx)
-        || e2Info.type->isConvertibleTo(*e1Info.type, nullptr, ctx))) {
+  bool e1ToE2 = e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx);
+  if (!(e1ToE2 || e2Info.type->isConvertibleTo(*e1Info.type, nullptr, ctx))) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Neither " << *e1Info.type << " nor " << *e2Info.type
         << " is convertible to the other in the ternary expression";
     return dummyInfo();
   }
 
-  // TODO: WiderType is isBaseOf for classes
-  const TypePtr& widerType =
-      e1Info.type->numBytes > e2Info.type->numBytes ? e1Info.type : e2Info.type;
+  // Wider type for classes is the base class
+  const TypePtr* widerType;
+  if (e1Info.type->typeName == Type::Category::CLASS) {
+    widerType = e1ToE2 ? &e2Info.type : &e1Info.type;
+  } else {
+    widerType =
+      e1Info.type->numBytes > e2Info.type->numBytes ? &e1Info.type : &e2Info.type;
+  }
 
   int t = newTemp();
   ExprPtr tempWrapper1 =
@@ -208,7 +213,7 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
   If(move(boolE_), move(ifBlock), move(elseBlock), line_).toImStmts(imStmts, ctx);
 
-  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(t)), move(widerType) };
+  return { make_unique<im::DoThenEval>(move(imStmts), make_unique<im::Temp>(t)), move(*widerType) };
 }
 
 
