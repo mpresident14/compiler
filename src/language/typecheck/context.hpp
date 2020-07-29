@@ -12,8 +12,6 @@
 #include <variant>
 #include <vector>
 
-// TODO: Align all classes and struct data members by size
-
 class Ctx {
 public:
   using CtxPtr = std::unique_ptr<Ctx>;
@@ -297,7 +295,6 @@ private:
    *    correct import. Even if it did, the qualifiers might be incorrect because they would be
    *    based on those of file.prez.
    */
-  // TODO: Make this a vector
   std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
   const language::ClassDecl* currentClass_ = nullptr;
 };
