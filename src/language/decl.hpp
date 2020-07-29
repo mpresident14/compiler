@@ -50,6 +50,7 @@ public:
   Category getCategory() const noexcept override { return Category::FUNC; }
   void checkTypes(Ctx& ctx) const;
   constexpr bool isVirtual() const noexcept { return Func::isVirtual(modifiers_); }
+  friend std::ostream& operator<<(std::ostream& out, const Func& func);
 
   int modifiers_;
   TypePtr returnType_;

@@ -203,6 +203,7 @@ error_test(rvalue_assign
     ('Error','9','Left')")
 error_test(inheritance
     "('Error','22','Redefinition')
+    ('Note','22','Method')
     ('Error','26','Redefinition')
     ('Error','32','Redefinition')
     ('Error','34','Redefinition')")

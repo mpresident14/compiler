@@ -126,6 +126,18 @@ public:
   };
 
   static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
+  template <typename Iter>
+  static void streamParamTypes(Iter begin, Iter end, std::ostream& err) {
+    err << '(';
+    if (begin != end) {
+      for (auto iter = begin; iter != prev(end); ++iter) {
+        err << **iter << ", ";
+      }
+      err << *end;
+    }
+    err << ')';
+  }
+
   /* Mangle all user functions based on the function ID (My special functions begin
    * with "__") Return the function name if it doesn't need to be mangled */
   static std::string mangleFn(std::string_view fnName, size_t id);
@@ -143,7 +155,7 @@ public:
   CtxTree& getCtxTree() noexcept;
   const Type& getCurrentRetType() const noexcept;
   void setCurrentRetType(const TypePtr& type) noexcept;
-  constexpr int getCurrentClass() const noexcept { return currentClassId_; }
+  constexpr int getCurrentClass() const noexcept { return currentClass_->id_; }
 
   void includeDecls(Ctx& ctx);
   int insertVar(const std::string& name, const TypePtr& type, size_t line);
@@ -152,10 +164,10 @@ public:
   void removeVar(const std::string& var, size_t line);
   void removeVars(const std::vector<std::pair<std::string, size_t>>& vars);
   void removeParams(const std::vector<std::string>& params, size_t line);
-  void removeThis();
-  void enterClass(int classId);
-  void exitClass();
-  constexpr bool insideClass() const noexcept { return currentClassId_ != NOT_IN_CLASS; }
+  bool removeThis();
+  constexpr void enterClass(const language::ClassDecl* classDecl) { currentClass_ = classDecl; }
+  constexpr void exitClass() { currentClass_ = nullptr; }
+  constexpr const language::ClassDecl* insideClass() const noexcept { return currentClass_; }
   bool isBaseOf(int classId, const Type& base) const;
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
@@ -287,9 +299,7 @@ private:
    */
   // TODO: Make this a vector
   std::shared_ptr<std::unordered_map<int, ClassInfo*>> classIds_;
-
-  static const int NOT_IN_CLASS = -1;
-  int currentClassId_ = -NOT_IN_CLASS;
+  const language::ClassDecl* currentClass_ = nullptr;
 };
 
 #endif  // CONTEXT_HPP

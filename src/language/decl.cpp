@@ -58,11 +58,15 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
   body_->toImStmts(imStmts, ctx);
 
-  if (ctx.insideClass()) {
-    // Prevent undefined variable "this" warning
-    // TODO: Log note that this method can be static methods (after we implement static methods)
-    ctx.removeThis();
+  const ClassDecl* enclosingClass = ctx.insideClass();
+  // Prevents "unused THIS" warning and notes that a method can be static
+  if (enclosingClass && !Func::isStatic(modifiers_) && !ctx.removeThis() && !isVirtual()) {
+    ostream& note = ctx.getLogger().logNote(line_);
+    note << "Method '" << enclosingClass->name_ << "::" << name_;
+    Ctx::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), note);
+    note << "' can be declared static";
   }
+
   ctx.removeParams(paramNames_, line_);
 
   imDecls.push_back(make_unique<im::Func>(Ctx::mangleFn(name_, id_), move(imStmts)));
@@ -76,14 +80,19 @@ void Func::checkForReturn(Ctx& ctx) {
       // Add implicit return for functions with void return type if needed
       body_->stmts_.push_back(make_unique<Return>(optional<ExprPtr>(), 0));
     } else {
+      const ClassDecl* enclosingClass = ctx.insideClass();
       ostringstream& error = ctx.getLogger().logError(line_);
-      error << "Some paths through non-void function '" << *returnType_ << ' ' << name_;
-      Ctx::streamParamTypes(paramTypes_, error);
+      error << "Some paths through non-void function '" << *returnType_ << ' ';
+      if (enclosingClass) {
+        error << enclosingClass->name_ << "::" << name_;
+        Ctx::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), error);
+      } else {
+        error << *this;
+      }
       error << "' do not return a value";
     }
   }
 }
-
 
 vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   vector<im::StmtPtr> imStmts;
@@ -114,6 +123,12 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
   return imStmts;
 }
 
+std::ostream& operator<<(std::ostream& out, const Func& func) {
+  out << func.name_;
+  Ctx::streamParamTypes(func.paramTypes_, out);
+  return out;
+}
+
 
 /***************
  * Constructor *
@@ -130,8 +145,8 @@ Constructor::Constructor(
     std::vector<ExprPtr> supParams,
     std::unique_ptr<Block>&& body,
     size_t line)
-    // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent creating
-    // a new shared_ptr for each ctor
+    // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent
+    // creating a new shared_ptr for each ctor
     : Func(Func::Modifier::CTOR, nullptr, name, move(params), move(body), line),
       supClass_(move(supClass)),
       supParams_(move(supParams)) {}
@@ -278,9 +293,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     // No superclass
     if (!superInfo) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Method " << name_ << "::" << method->name_;
-      Ctx::streamParamTypes(method->paramTypes_, err);
-      err << " is declared override, but class " << name_ << " has no superclass";
+      err << "Method " << name_ << "::" << *method << " is declared override, but class " << name_
+          << " has no superclass";
       continue;
     }
 
@@ -301,9 +315,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     // No identical virtual method in superclass
     if (supMethIter == supMethRange.second) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Method " << name_ << "::" << method->name_;
-      Ctx::streamParamTypes(method->paramTypes_, err);
-      err << " is declared override, but does not override a virtual method from the superclass";
+      err << "Method " << name_ << "::" << *method
+          << " is declared override, but does not override a virtual method from the superclass";
       continue;
     }
 
@@ -321,8 +334,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(classTy);
   }
 
-  // Add nonstatic superclass methods that were not overridden. No error-checking required here. If
-  // there was an error, we will have already reported it in the superclass
+  // Add nonstatic superclass methods that were not overridden. No error-checking required here.
+  // If there was an error, we will have already reported it in the superclass
   if (superInfo) {
     for (const auto& [name, supMethInfo] : superInfo->methods) {
       if (!(Func::isStatic(supMethInfo.modifiers)) && !supsOverridden.contains(&supMethInfo)) {
@@ -383,7 +396,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
-  ctx.enterClass(id_);
+  ctx.enterClass(this);
   for (Constructor& ctor : ctors_) {
     ctor.toImDecls(imDecls, ctx);
   }

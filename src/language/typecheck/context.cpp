@@ -11,14 +11,7 @@
 using namespace std;
 
 void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
-  err << '(';
-  if (!paramTypes.empty()) {
-    for (auto iter = paramTypes.cbegin(); iter != prev(paramTypes.cend()); ++iter) {
-      err << **iter << ", ";
-    }
-    err << *paramTypes.back();
-  }
-  err << ')';
+  streamParamTypes(paramTypes.cbegin(), paramTypes.end(), err);
 }
 
 
@@ -95,10 +88,14 @@ void Ctx::removeVar(const string& var, size_t line) {
   varMap_.erase(var);
 }
 
-void Ctx::removeThis() { varMap_.erase(lang_utils::THIS); }
+bool Ctx::removeThis() {
+  auto iter = varMap_.find(lang_utils::THIS);
+  bool used = iter->second.used;
+  varMap_.erase(iter);
+  return used;
+}
 
 Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
-  // TODO: Use try_emplace here (ClassInfo will need a ctor)
   auto p = classMap_.try_emplace(className, filename_, id);
   if (p.second) {
     classIds_->emplace(id, &p.first->second);
@@ -109,10 +106,6 @@ Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
 
   return p.first->second;
 }
-
-
-void Ctx::enterClass(int id) { currentClassId_ = id; }
-void Ctx::exitClass() { currentClassId_ = NOT_IN_CLASS; }
 
 bool Ctx::isBaseOf(int classId, const Type& base) const {
   if (base.typeName != Type::Category::CLASS) {
@@ -220,7 +213,11 @@ void Ctx::insertMethod(
   for (auto iter = iterPair.first; iter != iterPair.second; ++iter) {
     const FnInfo& fnInfo = iter->second;
     const vector<TypePtr>& fnParamTypes = fnInfo.paramTypes;
-    if (equal(func.paramTypes_.cbegin(), func.paramTypes_.cend(), fnParamTypes.cbegin(), fnParamTypes.cend())) {
+    if (equal(
+            func.paramTypes_.cbegin(),
+            func.paramTypes_.cend(),
+            fnParamTypes.cbegin(),
+            fnParamTypes.cend())) {
       ostream& errStream = logger.logError(func.line_);
       bool isMethod = className.empty();
       errStream << "Redefinition of " << (isMethod ? "method '" : " function '")
@@ -230,7 +227,10 @@ void Ctx::insertMethod(
       return;
     }
   }
-  funcMap.emplace(func.name_, FnInfo{ func.paramTypes_, func.returnType_, func.modifiers_, func.id_, filename_, func.line_ });
+  funcMap.emplace(
+      func.name_,
+      FnInfo{
+          func.paramTypes_, func.returnType_, func.modifiers_, func.id_, filename_, func.line_ });
 }
 
 
