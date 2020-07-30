@@ -127,11 +127,12 @@ public:
   template <typename Iter>
   static void streamParamTypes(Iter begin, Iter end, std::ostream& err) {
     err << '(';
+    auto penult = prev(end);
     if (begin != end) {
-      for (auto iter = begin; iter != prev(end); ++iter) {
+      for (auto iter = begin; iter != penult; ++iter) {
         err << **iter << ", ";
       }
-      err << *end;
+      err << **penult;
     }
     err << ')';
   }

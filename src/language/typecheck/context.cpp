@@ -219,9 +219,9 @@ void Ctx::insertMethod(
             fnParamTypes.cbegin(),
             fnParamTypes.cend())) {
       ostream& errStream = logger.logError(func.line_);
-      bool isMethod = className.empty();
+      bool isMethod = !className.empty();
       errStream << "Redefinition of " << (isMethod ? "method '" : " function '")
-                << (isMethod ? func.name_ : string(className).append("::").append(func.name_));
+                << (isMethod ? string(className).append("::").append(func.name_) : func.name_ );
       Ctx::streamParamTypes(func.paramTypes_, errStream);
       errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;

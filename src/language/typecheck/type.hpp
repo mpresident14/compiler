@@ -20,6 +20,8 @@ using TypePtr = std::shared_ptr<Type>;
 
 class Type {
 public:
+  enum class Category { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
+
   static const TypePtr LONG_TYPE;
   static const TypePtr INT_TYPE;
   static const TypePtr SHORT_TYPE;
@@ -36,8 +38,8 @@ public:
   static const TypePtr CHAR_TYPE_FIN;
   static const TypePtr BOOL_TYPE_FIN;
 
-  enum class Category { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
-
+  /* Same as operator== except that ANY is not equal to everything */
+  static bool equalNoAny(const Type& t1, const Type& t2) noexcept;
   /* Determines the smallest integral type (excluding CHAR) that the arg fits in */
   static const TypePtr& smallestIntegral(long n);
   static TypePtr makeFinal(const TypePtr& t);
@@ -54,6 +56,11 @@ public:
   u_char numBytes;
   bool isFinal = false;
   bool isConst = false;
+
+protected:
+  constexpr bool canConvertConst(const Type& to) const noexcept {
+    return !isConst || to.isConst;
+  }
 };
 
 
@@ -77,7 +84,7 @@ public:
   int id = Class::ID_EMPTY;
 };
 
-
+bool operator==(const Type& t1, const Type& t2) noexcept;
 bool operator==(const Type& t1, const Type& t2) noexcept;
 // Because I will inevitably call this one by mistake instead of the one above
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept;

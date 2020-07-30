@@ -430,9 +430,16 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
       return dummyInfo();
     }
     const Ctx::FieldInfo& fieldInfo = iter->second;
+    TypePtr fieldTy;
+    if (eInfo.type->isConst) {
+      fieldTy = Type::makeConst(fieldInfo.type);
+      fieldTy->isFinal = true;
+    } else {
+      fieldTy = fieldInfo.type;
+    }
     return { make_unique<im::MemDeref>(
                  fieldInfo.offset, move(eInfo.imExpr), nullptr, fieldInfo.type->numBytes),
-             fieldInfo.type };
+             move(fieldTy) };
   } else {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Type " << *eInfo.type << " has no fields";

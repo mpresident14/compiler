@@ -52,6 +52,12 @@ void Func::checkTypes(Ctx& ctx) const {
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   checkForReturn(ctx);
+  // 'final' is not allowed for return types, but 'const' primitives turn into 'final' for ease of
+  // implementation
+  if (returnType_->isFinal) {
+    returnType_->isFinal = false;
+    ctx.getLogger().logWarning(line_, "'const' qualifier on return type has no effect");
+  }
   ctx.setCurrentRetType(returnType_);
 
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);

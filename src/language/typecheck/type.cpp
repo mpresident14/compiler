@@ -47,12 +47,23 @@ bool Type::isIntegral() const noexcept {
   }
 }
 
+namespace {
+void maybeSetFalse(bool* ptr) {
+  if (ptr) {
+    *ptr = false;
+  }
+}
+}  // namespace
+
 bool Type::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx&) const noexcept {
-  if (*this == to) {
-    if (isNarrowing) {
-      *isNarrowing = false;
-    }
+  if (typeName == Type::Category::ANY || to.typeName == Type::Category::ANY) {
+    maybeSetFalse(isNarrowing);
     return true;
+  }
+
+  if (equalNoAny(*this, to)) {
+    maybeSetFalse(isNarrowing);
+    return canConvertConst(to);
   }
 
   if (isIntegral() && to.isIntegral()) {
@@ -63,17 +74,15 @@ bool Type::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx&) const 
         *isNarrowing = false;
       }
     }
-    return true;
+    return canConvertConst(to);
   }
 
   return false;
 }
 
 bool Class::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept {
-  if (isNarrowing) {
-    *isNarrowing = false;
-  }
-  return to.typeName == Type::Category::ANY || ctx.isBaseOf(id, to);
+  maybeSetFalse(isNarrowing);
+  return to.typeName == Type::Category::ANY || (canConvertConst(to) && ctx.isBaseOf(id, to));
 }
 
 pair<long, long> Type::minMaxValue() const {
@@ -169,23 +178,28 @@ const TypePtr& Type::smallestIntegral(long n) {
   throw invalid_argument("smallestIntegral");
 }
 
-
 bool operator==(const Type& t1, const Type& t2) noexcept {
-  if (t1.typeName == Type::Category::ANY || t2.typeName == Type::Category::ANY) {
-    return true;
-  }
+  return t1.typeName == Type::Category::ANY || t2.typeName == Type::Category::ANY
+         || Type::equalNoAny(t1, t2);
+}
 
+bool Type::equalNoAny(const Type& t1, const Type& t2) noexcept {
   if (t1.typeName == t2.typeName) {
+    bool constOk = t1.isConst == t2.isConst;
     switch (t1.typeName) {
       case Type::Category::ARRAY:
-        return static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
+        return constOk
+               && static_cast<const Array&>(t1).arrType == static_cast<const Array&>(t2).arrType;
       case Type::Category::CLASS:
         // Everything equals ID_UNKNOWN so we don't give an error explosion for an undefined class
-        return static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id
-               || static_cast<const Class&>(t1).id == Class::ID_UNKNOWN
-               || static_cast<const Class&>(t2).id == Class::ID_UNKNOWN;
+        return constOk
+               && (static_cast<const Class&>(t1).id == static_cast<const Class&>(t2).id
+                   || static_cast<const Class&>(t1).id == Class::ID_UNKNOWN
+                   || static_cast<const Class&>(t2).id == Class::ID_UNKNOWN);
       default:
-        return true;
+        // Through we put 'final' inside the Type class because the impl was easier, the keyword
+        // really belongs to the variable, so we don't check that the isFinal field
+        return constOk;
     }
   }
   return false;
@@ -196,6 +210,9 @@ bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept { return *t1 == *
 ostream& operator<<(ostream& out, const Type& type) {
   if (type.isFinal) {
     out << "final ";
+  }
+  if (type.isConst) {
+    out << "const ";
   }
   switch (type.typeName) {
     case Type::Category::LONG:
