@@ -44,7 +44,7 @@ public:
   TokenStream& operator=(TokenStream&& other) = delete;
 
   void parseError(int tokenId) {
-    logger.logError(
+    logger.logFatal(
         tokens_[pos_].getLine(),
         string("Expected ")
             .append(symName(tokenId, CONFIG_GRAMMAR))
