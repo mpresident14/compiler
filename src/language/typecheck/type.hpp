@@ -41,6 +41,7 @@ public:
   /* Determines the smallest integral type (excluding CHAR) that the arg fits in */
   static const TypePtr& smallestIntegral(long n);
   static TypePtr makeFinal(const TypePtr& t);
+  static TypePtr makeConst(const TypePtr& t);
 
   virtual ~Type() {}
   constexpr Type(Category name, u_char nBytes, bool aIsFinal = false)
@@ -52,6 +53,7 @@ public:
   Category typeName;
   u_char numBytes;
   bool isFinal = false;
+  bool isConst = false;
 };
 
 

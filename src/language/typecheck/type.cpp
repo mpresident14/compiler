@@ -124,6 +124,40 @@ TypePtr Type::makeFinal(const TypePtr& t) {
   }
 }
 
+TypePtr Type::makeConst(const TypePtr& t) {
+  // For primitive types, final does the same thing as const
+  switch (t->typeName) {
+    case Type::Category::LONG:
+      return LONG_TYPE_FIN;
+    case Type::Category::INT:
+      return INT_TYPE_FIN;
+    case Type::Category::SHORT:
+      return SHORT_TYPE_FIN;
+    case Type::Category::CHAR:
+      return CHAR_TYPE_FIN;
+    case Type::Category::BOOL:
+      return BOOL_TYPE_FIN;
+    case Type::Category::ARRAY: {
+      if (t->isConst) {
+        return t;
+      }
+      TypePtr tConst = make_shared<Array>(static_cast<const Array&>(*t));
+      tConst->isConst = true;
+      return tConst;
+    }
+    case Type::Category::CLASS: {
+      if (t->isConst) {
+        return t;
+      }
+      TypePtr tConst = make_shared<Class>(static_cast<const Class&>(*t));
+      tConst->isConst = true;
+      return tConst;
+    }
+    default:
+      throw invalid_argument("Type::makeConst");
+  }
+}
+
 const TypePtr& Type::smallestIntegral(long n) {
   static const TypePtr* constIntTypes[]{ &SHORT_TYPE, &INT_TYPE, &LONG_TYPE };
   for (const TypePtr* type : constIntTypes) {

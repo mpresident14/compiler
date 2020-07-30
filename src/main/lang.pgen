@@ -148,6 +148,7 @@ VIRTUAL     "virtual"
 OVERRIDE    "override"
 STATIC      "static"
 FINAL       "final"
+CONST       "const"
 DOT         "\."
 
 PRINT       "print"
@@ -179,7 +180,7 @@ STAR FSLASH MOD                   #left
 UNARY_MINUS BANG                  #nonassoc
 INC DEC PRE_INCDEC                #nonassoc
 CAST                              #nonassoc
-LPAREN LBRACKET DOT               #left
+LPAREN LBRACKET LRBRACKET DOT     #left
 COLON2                            #left
 
 
@@ -214,9 +215,9 @@ ClassElements -> { vector<ClassDecl::ClassElem> }
    | ClassElements ClassElement   % (#0.push_back(move(#1)), move(#0)) %
 
 ClassElement -> { ClassDecl::ClassElem }
-  := NonVoidType IDENT SEMI
+  := NonVoid IDENT SEMI
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{move(#0), move(#1), #line } } %
-   | FINAL NonVoidType IDENT SEMI
+   | FINAL NonVoid IDENT SEMI
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{Type::makeFinal(#1), move(#2), #line } } %
    | IDENT LPAREN Params RPAREN Block
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), move(#4), #line) } %
@@ -228,7 +229,7 @@ ClassElement -> { ClassDecl::ClassElem }
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, move(#0) } %
 
 Function -> { std::unique_ptr<Func> }
-  := NonVoidType IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Modifier::NONE, move(#0), #1, move(#3), move(#5), #line) %
+  := NonVoid IDENT LPAREN Params RPAREN Block   % make_unique<Func>(Func::Modifier::NONE, move(#0), #1, move(#3), move(#5), #line) %
   |  VOID IDENT LPAREN Params RPAREN Block          % make_unique<Func>(Func::Modifier::NONE, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#5), #line) %
 
 Method -> { std::unique_ptr<Func> }
@@ -257,8 +258,8 @@ Stmt -> { StmtPtr }
    | UpdateStmt SEMI                             % move(#0) %
 
 VarDecl -> { std::unique_ptr<VarDecl> }
-  := NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
-  |  FINAL NonVoidType IDENT EQ Expr SEMI        % make_unique<VarDecl>(Type::makeFinal(#1), #2, move(#4), #line) %
+  := NonVoid IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
+  |  FINAL NonVoid IDENT EQ Expr SEMI        % make_unique<VarDecl>(Type::makeFinal(#1), #2, move(#4), #line) %
 
 ElseStmt -> { StmtPtr }
   := Block                                       % move(#0) %
@@ -297,17 +298,20 @@ ExprNoVar -> { ExprPtr }
    | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LTE) %
    | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::GTE) %
    | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
-   | LPAREN NonVoidTypeNoIdent RPAREN Expr
+   | LPAREN NonVoidNoIdNoC RPAREN Expr
      #prec CAST                                 % make_unique<Cast>(move(#1), move(#3), #line) %
-   | LPAREN IDENT RPAREN Expr     #prec CAST    % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
+   | LPAREN CONST NonVoidNoIdNoC RPAREN Expr
+     #prec CAST                                 % make_unique<Cast>(Type::makeConst(#2), move(#4), #line) %
+   | LPAREN IDENT RPAREN Expr
+     #prec CAST    % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
    // This syntax is used to avoid conflict between indexing "arr[index]" and a new array "MyClass[len]"
-   | NonVoidType LRBRACKET
+   | NonVoidNoConst LRBRACKET
      LPAREN Expr RPAREN                         % make_unique<NewArray>(move(#0), move(#3), #line) %
-   | NonVoidType LRBRACKET LBRACE Exprs RBRACE  % make_unique<NewArray>(move(#0), move(#3), #line) %
+   | NonVoidNoConst LRBRACKET
+     LBRACE Exprs RBRACE                        % make_unique<NewArray>(move(#0), move(#3), #line) %
    | StmtExpr                                   % move(#0) %
    | LPAREN ExprNoVar RPAREN                    % move(#1) %
    | LPAREN IDENT RPAREN                        % make_unique<Var>(#1, #line) %
-   // lvalues
    | Expr LBRACKET Expr RBRACKET                % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
    | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2) %
    | IDENT DOT IDENT                            % make_unique<MemberAccess>(#0, #2, #line) %
@@ -359,22 +363,26 @@ Paramz -> { vector<pair<TypePtr, string>> }
    | Paramz COMMA Param               % (#0.push_back(move(#2)), move(#0)) %
 
 Param -> { pair<TypePtr, string> }
-  := NonVoidType IDENT         % { move(#0), #1 } %
-   | FINAL NonVoidType IDENT   % { Type::makeFinal(#1), #2 } %
+  := NonVoid IDENT         % { move(#0), #1 } %
+   | FINAL NonVoid IDENT   % { Type::makeFinal(#1), #2 } %
 
-NonVoidType -> { TypePtr }
-  := NonVoidTypeNoIdent     % move(#0) %
+NonVoid -> { TypePtr }
+  := NonVoidNoConst         % move(#0) %
+   | CONST NonVoidNoConst   % Type::makeConst(#1) %
+
+NonVoidNoConst -> { TypePtr }
+  := NonVoidNoIdNoC         % move(#0) %
    | IDENT                  % make_shared<Class>(vector<string>(), move(#0)) %
 
 // To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
-NonVoidTypeNoIdent -> { TypePtr }
-  := LONG                   % Type::LONG_TYPE %
-   | INT                    % Type::INT_TYPE %
-   | SHORT                  % Type::SHORT_TYPE %
-   | CHAR                   % Type::CHAR_TYPE %
-   | BOOL                   % Type::BOOL_TYPE %
-   | NonVoidType LRBRACKET  % make_shared<Array>(move(#0)) %
-   | Qualifiers IDENT       % make_shared<Class>(move(#0), move(#1)) %
+NonVoidNoIdNoC -> { TypePtr }
+  := LONG                        % Type::LONG_TYPE %
+   | INT                         % Type::INT_TYPE %
+   | SHORT                       % Type::SHORT_TYPE %
+   | CHAR                        % Type::CHAR_TYPE %
+   | BOOL                        % Type::BOOL_TYPE %
+   | NonVoidNoConst LRBRACKET    % make_shared<Array>(move(#0)) %
+   | Qualifiers IDENT            % make_shared<Class>(move(#0), move(#1)) %
 
 Qualifiers -> { vector<string> }
   := Qualifier               % singletonVec<string>(move(#0)) %
