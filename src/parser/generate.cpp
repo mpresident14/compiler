@@ -4,12 +4,11 @@
 #include "src/parser/build_parser.hpp"
 #include "src/parser/regex_merge.hpp"
 #include "src/parser/regex_parser.hpp"
+#include "src/parser/utils.hpp"
 
 #include <cstddef>
 #include <fstream>
 #include <sstream>
-
-#include <boost/utility/string_view.hpp>
 
 using namespace std;
 
@@ -21,68 +20,43 @@ Logger logger;
  * TO CODE *
  ***********/
 
-inline void toCode(ostream& out, const string& str);
-inline void toCode(ostream& out, int n);
-inline void toCode(ostream& out, Assoc assoc);
-template <typename T>
-inline void toCode(ostream& out, const vector<T>& v);
-inline void toCode(ostream& out, const Token& token);
-inline void toCode(ostream& out, const Concrete& concrete);
-inline void toCode(ostream& out, const Variable& var);
-inline void toCode(ostream& out, const GrammarData& gd);
+inline void strToCode(ostream& out, const string& str) { out << '"' << str << '"'; }
 
-inline void toCode(ostream& out, const string& str) { out << '"' << str << '"'; }
-
-inline void toCode(ostream& out, int n) { out << to_string(n); }
-
-inline void toCode(ostream& out, Assoc assoc) { out << "Assoc::" << assoc; }
-
-template <typename T>
-inline void toCode(ostream& out, const vector<T>& v) {
+inline void tokToCode(ostream& out, const Token& token) {
   out << '{';
-  for_each(v.cbegin(), v.cend(), [&out](const T& item) {
-    toCode(out, item);
-    out << ',';
-  });
-  out << '}';
+  strToCode(out, token.name);
+  out << ',';
+  strToCode(out, token.type);
+  out << ',';
+  intToCode(out, token.precedence);
+  out << ',';
+  out << "Assoc::" << token.assoc << '}';
+  // Other fields not needed for shift-reducing
 }
 
-inline void toCode(ostream& out, const Token& token) {
+inline void concToCode(ostream& out, const Concrete& concrete) {
   out << '{';
-  toCode(out, token.name);
-  out << ',';
-  toCode(out, token.type);
-  out << ',';
-  toCode(out, token.precedence);
-  out << ',';
-  toCode(out, token.assoc);
+  intToCode(out, concrete.varType);
   out << '}';
   // Other fields not needed for shift-reducing
 }
 
-inline void toCode(ostream& out, const Concrete& concrete) {
+inline void varToCode(ostream& out, const Variable& var) {
   out << '{';
-  toCode(out, concrete.varType);
+  strToCode(out, var.name);
+  out << ',';
+  strToCode(out, var.type);
   out << '}';
   // Other fields not needed for shift-reducing
 }
 
-inline void toCode(ostream& out, const Variable& var) {
+inline void gdToCode(ostream& out, const GrammarData& gd) {
   out << '{';
-  toCode(out, var.name);
+  vecToCode(out, gd.tokens, tokToCode);
   out << ',';
-  toCode(out, var.type);
-  out << '}';
-  // Other fields not needed for shift-reducing
-}
-
-inline void toCode(ostream& out, const GrammarData& gd) {
-  out << '{';
-  toCode(out, gd.tokens);
+  vecToCode(out, gd.concretes, concToCode);
   out << ',';
-  toCode(out, gd.concretes);
-  out << ',';
-  toCode(out, gd.variables);
+  vecToCode(out, gd.variables, varToCode);
   out << '}';
 }
 
@@ -235,7 +209,7 @@ void gdDecl(ostream& out, const GrammarData& gd) {
     };
     )";
   out << "GrammarData GRAMMAR_DATA = ";
-  toCode(out, gd);
+  gdToCode(out, gd);
   out << ';';
 }
 
@@ -509,7 +483,7 @@ void dfaRuleDecl(ostream& out) {
       int concrete;
       vector<int> symbols;
       size_t pos;
-      mutable vector<bool> lookahead;
+      boost::dynamic_bitset<> lookahead;
     };
     )";
 }
@@ -716,6 +690,7 @@ void parserHppIncludes(ostream& out) {
   out << R"(
       #include <iostream>
       #include <string>
+      #include <boost/dynamic_bitset.hpp>
     )";
 }
 

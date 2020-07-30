@@ -522,41 +522,22 @@ vector<RuleData> condenseRuleSet(
 }
 
 void rdToCode(ostream& code, const RuleData& ruleData) {
-  code << "RuleData{";
-
+  code << "RuleData{DFARule{";
   const DFARule& rule = ruleData.reducibleRule;
-  // RuleData::reducibleRule::concrete
-  code << "DFARule{" << to_string(rule.concrete) << ',';
-
-  // RuleData::reducibleRule::symbols
-  code << '{';
-  for_each(
-      rule.symbols.cbegin(), rule.symbols.cend(), [&code](int n) { code << to_string(n) << ','; });
-  code << "},";
-
-  // RuleData::reducibleRule::pos
-  code << to_string(rule.pos) << ',';
-
-  // RuleData::reducibleRule::lookahead
-  code << '{';
-  const boost::dynamic_bitset<>& lookahead = rule.lookahead;
-  size_t lookaheadLen = lookahead.size();
-  for (size_t i = 0; i < lookaheadLen; ++i) {
-    code << to_string(lookahead[i]) << ',';
-  }
-  code << "}},";
-  // RuleData::precedence
-  code << to_string(ruleData.precedence) << '}';
+  intToCode(code, rule.concrete);
+  code << ',';
+  vecToCode(code, rule.symbols, intToCode);
+  code << ',';
+  intToCode(code, rule.pos);
+  code << ",boost::dynamic_bitset<>(string(\"" << rule.lookahead << "\"))},";
+  intToCode(code, ruleData.precedence);
+  code << '}';
 }
 
 string rdVecToCode(const vector<RuleData>& v) {
   ostringstream code;
-  code << "vector<RuleData>{";
-  for_each(v.cbegin(), v.cend(), [&code](const RuleData& rd) {
-    rdToCode(code, rd);
-    code << ',';
-  });
-  code << '}';
+  code << "vector<RuleData>";
+  vecToCode(code, v, rdToCode);
   return code.str();
 }
 

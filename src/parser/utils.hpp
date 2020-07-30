@@ -98,4 +98,16 @@ struct ParseFlags {
   std::string logFile;
 };
 
+inline void intToCode(std::ostream& out, int n) { out << std::to_string(n); }
+
+template <typename T, typename F>
+void vecToCode(std::ostream& out, const std::vector<T>& v, F&& toCodeFn) {
+  out << '{';
+  for (const T& item : v) {
+    toCodeFn(out, item);
+    out << ',';
+  }
+  out << '}';
+}
+
 #endif
