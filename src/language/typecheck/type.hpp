@@ -40,6 +40,7 @@ public:
 
   /* Determines the smallest integral type (excluding CHAR) that the arg fits in */
   static const TypePtr& smallestIntegral(long n);
+  static TypePtr makeFinal(const TypePtr& t);
 
   virtual ~Type() {}
   constexpr Type(Category name, u_char nBytes, bool aIsFinal = false)
@@ -47,7 +48,6 @@ public:
   bool isIntegral() const noexcept;
   virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept;
   std::pair<long, long> minMaxValue() const;
-  TypePtr makeFinal() const;
 
   Category typeName;
   u_char numBytes;

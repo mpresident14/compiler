@@ -91,8 +91,8 @@ pair<long, long> Type::minMaxValue() const {
   }
 }
 
-TypePtr Type::makeFinal() const {
-  switch (typeName) {
+TypePtr Type::makeFinal(const TypePtr& t) {
+  switch (t->typeName) {
     case Type::Category::LONG:
       return LONG_TYPE_FIN;
     case Type::Category::INT:
@@ -104,14 +104,20 @@ TypePtr Type::makeFinal() const {
     case Type::Category::BOOL:
       return BOOL_TYPE_FIN;
     case Type::Category::ARRAY: {
-      TypePtr t = make_shared<Array>(static_cast<const Array&>(*this));
-      t->isFinal = true;
-      return t;
+      if (t->isFinal) {
+        return t;
+      }
+      TypePtr tFinal = make_shared<Array>(static_cast<const Array&>(*t));
+      tFinal->isFinal = true;
+      return tFinal;
     }
     case Type::Category::CLASS: {
-      TypePtr t = make_shared<Class>(static_cast<const Class&>(*this));
-      t->isFinal = true;
-      return t;
+      if (t->isFinal) {
+        return t;
+      }
+      TypePtr tFinal = make_shared<Class>(static_cast<const Class&>(*t));
+      tFinal->isFinal = true;
+      return tFinal;
     }
     default:
       throw invalid_argument("Type::makeFinal");
