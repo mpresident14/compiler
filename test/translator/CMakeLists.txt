@@ -219,6 +219,15 @@ error_test(final
     ('Error','17','Cannot')
     ('Error','23','Cannot')
     ('Error','24','Cannot')")
+error_test(const
+    "('Error','4','Static')
+    ('Error','14','Redefinition')
+    ('Error','19','Expected')
+    ('Error','27','Non-method')
+    ('Error','32','Expected')
+    ('Error','35','Expected')
+    ('Error','36','Expected')
+    ('Error','37','Object')")
 
 add_custom_target(
     translator_check

@@ -485,7 +485,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
 
   if (eInfo.type->isConst && !Func::isConst(fnInfo->modifiers)) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Type '" << *eInfo.type << "' cannot invoke non-const method '" << classTy->className << "::" << methodName_;
+    err << "Object of type '" << *eInfo.type << "' cannot invoke non-const method '" << classTy->className << "::" << methodName_;
     Ctx::streamParamTypes(fnInfo->paramTypes, err);
     err << '\'';
   }

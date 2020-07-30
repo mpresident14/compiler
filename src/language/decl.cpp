@@ -387,7 +387,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(classInfo.methods, name_, *method);
     if (Func::isConst(method->modifiers_)) {
-      ostream& err = ctx.getLogger().logError(line_);
+      ostream& err = ctx.getLogger().logError(method->line_);
       err << "Static method '" << name_ << "::" << *method << "' cannot be declared const";
     }
   }

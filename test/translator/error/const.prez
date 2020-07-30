@@ -1,0 +1,39 @@
+class Obj {
+  String str;
+
+  static void f() const {} // ERROR
+
+  Obj(String s) {
+    this.str = s;
+  }
+
+  long method() const {
+    return this.str.len;
+  }
+
+  long method() { // ERROR
+    return this.str.len + 1;
+  }
+
+  String getStr() const {
+    return this.str; // ERROR
+  }
+
+  const String getConstStr() const {
+    return this.str;
+  }
+}
+
+void f() const {} // ERROR
+
+void main() {
+  Obj a = Obj("Nonconst");
+  const Obj b = Obj("Const");
+  a = b; // ERROR
+  b = a;
+  b.getStr();
+  String s = a.getConstStr(); // ERROR
+  s = b.getConstStr(); // ERROR
+  b.getConstStr().append("Hey"); // ERROR
+  print(s);
+}
