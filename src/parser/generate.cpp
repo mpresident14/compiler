@@ -124,10 +124,7 @@ void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const Gram
 
 
 string convertArgNum(
-    string_view argIndexStr,
-    int argIndex,
-    const Concrete& concrete,
-    const GrammarData& gd) {
+    string_view argIndexStr, int argIndex, const Concrete& concrete, const GrammarData& gd) {
   const vector<intptr_t>& argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
@@ -825,9 +822,7 @@ string lexerHppCode(const string& namespaceName, const string& headerGuard, cons
 }
 
 string parserCppCode(
-    const ParseFlags& parseFlags,
-    const string& namespaceName,
-    const ParseInfo& parseInfo) {
+    const ParseFlags& parseFlags, const string& namespaceName, const ParseInfo& parseInfo) {
   ostringstream out;
   const GrammarData& gd = parseInfo.gd;
 
@@ -900,9 +895,7 @@ string lexerCppCode(
 }  // namespace
 
 void generateParserCode(
-    const ParseInfo& parseInfo,
-    const ParseFlags& parseFlags,
-    std::ostream& warnings) {
+    const ParseInfo& parseInfo, const ParseFlags& parseFlags, std::ostream& warnings) {
   const string& parserFilePath = parseFlags.parserFilePath;
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string& namespaceName = thePair.first;

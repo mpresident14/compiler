@@ -2,8 +2,8 @@
 #define DECL_HPP
 
 #include "src/intermediate/intermediate.hpp"
-#include "src/language/typecheck/type.hpp"
 #include "src/language/expr.hpp"
+#include "src/language/typecheck/type.hpp"
 
 #include <variant>
 #include <vector>

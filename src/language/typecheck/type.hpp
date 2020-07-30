@@ -58,9 +58,7 @@ public:
   bool isConst = false;
 
 protected:
-  constexpr bool canConvertConst(const Type& to) const noexcept {
-    return !isConst || to.isConst;
-  }
+  constexpr bool canConvertConst(const Type& to) const noexcept { return !isConst || to.isConst; }
 };
 
 
@@ -76,8 +74,8 @@ public:
   static const int ID_EMPTY = -1;
   static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
-  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const
-      noexcept override;
+  virtual bool isConvertibleTo(
+      const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept override;
 
   std::vector<std::string> qualifiers;
   std::string className;

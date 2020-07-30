@@ -13,4 +13,4 @@ std::string qualifiedName(std::vector<std::string> qualifiers, std::string_view 
 
 const std::string THIS = "this";
 
-}
+}  // namespace lang_utils

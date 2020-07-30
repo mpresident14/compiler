@@ -9,13 +9,9 @@
 #include <string>
 
 void generateParserCode(
-    const ParseInfo& parseInfo,
-    const ParseFlags& parseFlags,
-    std::ostream& warnings);
+    const ParseInfo& parseInfo, const ParseFlags& parseFlags, std::ostream& warnings);
 
 void generateLexerCode(
-    const std::string& lexerFilePath,
-    const std::string& addlHdrIncludes,
-    const GrammarData& gd);
+    const std::string& lexerFilePath, const std::string& addlHdrIncludes, const GrammarData& gd);
 
 #endif

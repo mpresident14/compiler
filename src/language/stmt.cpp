@@ -210,9 +210,7 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     Assign(
         make_unique<ImWrapper>(make_unique<im::Temp>(imTemp->t_), eInfo.type, lValueLine),
         make_unique<BinaryOp>(
-            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, lValueLine),
-            move(rhs_),
-            bOp_))
+            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, lValueLine), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
   } else if (category == im::Expr::Category::MEM_DEREF) {
     // For memory dereferences, we have to ensure that we don't calculate them

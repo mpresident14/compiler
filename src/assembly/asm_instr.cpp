@@ -83,8 +83,8 @@ bool CondJumpOp::updateLiveOut(
     const Instruction* nextInstr,
     const std::unordered_map<const Instruction*, Liveness>& fgraph) const {
   // Instruction may jump or fall through
-  return Instruction::updateLiveOut(liveOut, nextInstr, fgraph) ||
-         JumpOp::updateLiveOut(liveOut, nextInstr, fgraph);
+  return Instruction::updateLiveOut(liveOut, nextInstr, fgraph)
+         || JumpOp::updateLiveOut(liveOut, nextInstr, fgraph);
 }
 
 bool Return::updateLiveOut(
@@ -97,13 +97,12 @@ bool Return::updateLiveOut(
 
 
 bool Instruction::updateLiveIn(
-    std::unordered_set<int>& liveIn,
-    const std::unordered_set<int>& liveOut) const {
+    std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut) const {
   return setUnion(liveIn, liveOut);
 }
 
-bool Move::updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut)
-    const {
+bool Move::updateLiveIn(
+    std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut) const {
   unordered_set<int> newLiveIn = liveOut;
   newLiveIn.erase(dst_);
   newLiveIn.insert(src_);
@@ -111,8 +110,7 @@ bool Move::updateLiveIn(std::unordered_set<int>& liveIn, const std::unordered_se
 }
 
 bool Operation::updateLiveIn(
-    std::unordered_set<int>& liveIn,
-    const std::unordered_set<int>& liveOut) const {
+    std::unordered_set<int>& liveIn, const std::unordered_set<int>& liveOut) const {
   unordered_set<int> newLiveIn = liveOut;
   setMinus<int, vector>(newLiveIn, dsts_);
   setUnion(newLiveIn, srcs_);
@@ -292,8 +290,7 @@ bool assignReg(int& temp, const unordered_map<int, MachineReg>& coloring) {
 void Label::assignRegs(const unordered_map<int, MachineReg>&, bitset<NUM_AVAIL_REGS>&) { return; }
 
 void Move::assignRegs(
-    const unordered_map<int, MachineReg>& coloring,
-    bitset<NUM_AVAIL_REGS>& writtenRegs) {
+    const unordered_map<int, MachineReg>& coloring, bitset<NUM_AVAIL_REGS>& writtenRegs) {
   assignReg(src_, coloring);
   if (assignReg(dst_, coloring)) {
     writtenRegs.set(dst_);
@@ -301,8 +298,7 @@ void Move::assignRegs(
 }
 
 void Operation::assignRegs(
-    const unordered_map<int, MachineReg>& coloring,
-    bitset<NUM_AVAIL_REGS>& writtenRegs) {
+    const unordered_map<int, MachineReg>& coloring, bitset<NUM_AVAIL_REGS>& writtenRegs) {
   for (int& src : srcs_) {
     assignReg(src, coloring);
   }
@@ -321,10 +317,7 @@ void Return::assignRegs(const unordered_map<int, MachineReg>&, bitset<NUM_AVAIL_
  **********/
 
 void tempToCode(
-    ostream& out,
-    int temp,
-    u_char numBytes,
-    const unordered_map<int, size_t>& varToStackOffset) {
+    ostream& out, int temp, u_char numBytes, const unordered_map<int, size_t>& varToStackOffset) {
   if (isRegister(temp)) {
     out << regToString(static_cast<MachineReg>(temp), numBytes);
   } else {

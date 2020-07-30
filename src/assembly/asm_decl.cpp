@@ -86,8 +86,7 @@ void Function::toCode(ostream& out) {
 
 
 bitset<NUM_AVAIL_REGS> Function::regAlloc(
-    const unordered_map<int, MachineReg>& coloring,
-    const vector<int>& spilled) {
+    const unordered_map<int, MachineReg>& coloring, const vector<int>& spilled) {
   // Assign each spilled temporary a spot on the stack
   for (int tempId : spilled) {
     if (!varToStackOffset_.contains(tempId)) {

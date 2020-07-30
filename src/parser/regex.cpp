@@ -80,10 +80,9 @@ RgxPtr makeAlt(RgxPtr r1, RgxPtr r2) {
   RgxType r2Type = r2->getType();
   // ^∅ | r2 = ^∅
   // r1 | ^∅ = ^∅
-  if ((r1Type == RgxType::NOT &&
-       static_cast<Not*>(r1.get())->rgx_->getType() == RgxType::EMPTYSET) ||
-      (r2Type == RgxType::NOT &&
-       static_cast<Not*>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
+  if ((r1Type == RgxType::NOT && static_cast<Not*>(r1.get())->rgx_->getType() == RgxType::EMPTYSET)
+      || (r2Type == RgxType::NOT
+          && static_cast<Not*>(r2.get())->rgx_->getType() == RgxType::EMPTYSET)) {
     return make_shared<Not>(new EmptySet);
   }
   // ∅ | r2 = r2
@@ -328,8 +327,8 @@ RgxPtr Range::getDeriv(char c) const {
 RgxType Range::getType() const { return RgxType::RANGE; }
 
 bool Range::operator==(const Regex& other) const {
-  return other.getType() == RgxType::RANGE && static_cast<const Range&>(other).start_ == start_ &&
-         static_cast<const Range&>(other).end_ == end_;
+  return other.getType() == RgxType::RANGE && static_cast<const Range&>(other).start_ == start_
+         && static_cast<const Range&>(other).end_ == end_;
 }
 
 size_t Range::hashFn() const noexcept {

@@ -117,8 +117,8 @@ void BinOp::handleDiv(bool isDiv, int temp, vector<assem::InstrPtr>& instrs) con
 }
 
 
-void BinOp::handleOthers(std::string asmCode, int temp, std::vector<assem::InstrPtr>& instrs)
-    const {
+void BinOp::handleOthers(
+    std::string asmCode, int temp, std::vector<assem::InstrPtr>& instrs) const {
   int t1 = expr1_->toAssemInstrs(instrs);
   int t2 = expr2_->toAssemInstrs(instrs);
   asmCode.append(" `8S1, `8D0");

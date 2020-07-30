@@ -14,4 +14,4 @@ string qualifiedName(vector<string> qualifiers, string_view name) {
   return boost::join(qualifiers, "::").append("::").append(name);
 }
 
-}
+}  // namespace lang_utils

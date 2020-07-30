@@ -1,6 +1,6 @@
 #include "src/language/expr.hpp"
-#include "src/language/utils.hpp"
 #include "src/language/typecheck/context.hpp"
+#include "src/language/utils.hpp"
 
 using namespace std;
 

@@ -18,8 +18,7 @@ using namespace std;
 
 /* Iterate to find the least fixed point */
 void computeNullabilities(
-    BitSetVars& nullabilities,
-    const vector<vector<vector<BitRef>>>& equations) {
+    BitSetVars& nullabilities, const vector<vector<vector<BitRef>>>& equations) {
   bool changed = true;
   size_t numVars = nullabilities.size();
   while (changed) {

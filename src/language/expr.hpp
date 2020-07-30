@@ -9,8 +9,8 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 #include <variant>
+#include <vector>
 
 
 class Ctx;
@@ -275,10 +275,7 @@ public:
 class MethodInvocation : public Expr {
 public:
   MethodInvocation(
-      ExprPtr&& objExpr,
-      std::string_view methodName,
-      std::vector<ExprPtr>&& params,
-      size_t line);
+      ExprPtr&& objExpr, std::string_view methodName, std::vector<ExprPtr>&& params, size_t line);
   MethodInvocation(
       std::string_view ident,
       std::string_view methodName,

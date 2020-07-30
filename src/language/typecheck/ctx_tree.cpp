@@ -20,7 +20,7 @@ vector<string> splitPath(string_view importPath) {
   return pathParts;
 }
 
-}
+}  // namespace
 
 bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
   vector<string> pathParts = splitPath(importPath);
@@ -62,9 +62,7 @@ bool Ctx::CtxTree::addCtx(string_view importPath, Ctx* ctx) {
 
 
 Ctx::FnLookupRes Ctx::CtxTree::lookupFn(
-    const vector<string> qualifiers,
-    const string& name,
-    const vector<TypePtr>& paramTypes) const {
+    const vector<string> qualifiers, const string& name, const vector<TypePtr>& paramTypes) const {
   CtxLookupRes ctxLookup = lookupCtx(qualifiers);
   if (ctxLookup.status == LookupStatus::FOUND) {
     FnLookupRes fnLookup = get<Ctx*>(ctxLookup.result)->lookupFn(name, paramTypes);
@@ -83,8 +81,8 @@ Ctx::FnLookupRes Ctx::CtxTree::lookupFn(
 }
 
 
-Ctx::ClsLookupRes Ctx::CtxTree::lookupClass(const vector<string> qualifiers, const string& name)
-    const {
+Ctx::ClsLookupRes Ctx::CtxTree::lookupClass(
+    const vector<string> qualifiers, const string& name) const {
   CtxLookupRes ctxLookup = lookupCtx(qualifiers);
   if (ctxLookup.status == LookupStatus::FOUND) {
     ClsLookupRes classLookup = get<Ctx*>(ctxLookup.result)->lookupClass(name);

@@ -30,8 +30,8 @@ namespace {
   /* HalfConst will have already optimized to a shift, so we'll convert that to
    * a leaq if possible */
   bool isValidLeaq(HalfConst* halfConst) {
-    return halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT &&
-           halfConst->n_ <= 4;
+    return halfConst && !halfConst->reversed_ && halfConst->bOp_ == BOp::LSHIFT
+           && halfConst->n_ <= 4;
   }
 }  // namespace
 

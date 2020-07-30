@@ -188,19 +188,14 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   if (e1Info.type->typeName == Type::Category::CLASS) {
     widerType = e1ToE2 ? &e2Info.type : &e1Info.type;
   } else {
-    widerType =
-      e1Info.type->numBytes > e2Info.type->numBytes ? &e1Info.type : &e2Info.type;
+    widerType = e1Info.type->numBytes > e2Info.type->numBytes ? &e1Info.type : &e2Info.type;
   }
 
   int t = newTemp();
-  ExprPtr tempWrapper1 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
-  ExprPtr tempWrapper2 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
-  ExprPtr e1Wrapper =
-      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
-  ExprPtr e2Wrapper =
-      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
+  ExprPtr tempWrapper1 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
+  ExprPtr tempWrapper2 = make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
+  ExprPtr e1Wrapper = make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
+  ExprPtr e2Wrapper = make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
 
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
   ifBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
@@ -260,7 +255,7 @@ Expr::Info Call::toImExpr(Ctx& ctx) {
                move(paramImExprs),
                *fnInfo->returnType != *Type::VOID_TYPE),
            move(fnInfo->returnType) };
-}  // namespace language
+}
 
 
 /********
@@ -276,6 +271,8 @@ Expr::Info Cast::toImExpr(Ctx& ctx) {
     err << "No valid cast from " << *eInfo.type << " to " << *toType_;
   }
 
+  // Integer casts need to be truncated or expanded to the correct number of bytes; im::IntCast
+  // handles this
   return eInfo.type->typeName == Type::Category::CLASS
              ? Expr::Info{ move(eInfo.imExpr), move(toType_) }
              : Expr::Info{ make_unique<im::IntCast>(move(eInfo.imExpr), toType_->numBytes),
@@ -631,8 +628,7 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
 
     // *tAddr +/-= 1
     Update(
-        make_unique<ImWrapper>(
-            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
+        make_unique<ImWrapper>(Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);

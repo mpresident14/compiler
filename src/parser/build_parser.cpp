@@ -493,8 +493,8 @@ struct RuleData {
  * Remove the pieces of the ruleSet we do not need to actually run the DFA.
  * Also find any shift- or reduce-reduce conflicts
  */
-vector<RuleData>
-condenseRuleSet(const DFARuleSet& ruleSet, const GrammarData& gd, ConflictMap& conflicts) {
+vector<RuleData> condenseRuleSet(
+    const DFARuleSet& ruleSet, const GrammarData& gd, ConflictMap& conflicts) {
   auto ruleCmp = [&gd](const DFARule* r1, const DFARule* r2) {
     return r1->getPrecedence(gd) > r2->getPrecedence(gd);
   };
