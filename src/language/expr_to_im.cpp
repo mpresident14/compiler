@@ -478,9 +478,16 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   auto classFnInfo =
       ctx.lookupMethod(classTy->id, classTy->className, methodName_, paramTypes, line_);
   const Ctx::FnInfo* fnInfo = classFnInfo.second;
-  if (!classFnInfo.second) {
+  if (!fnInfo) {
     // Undefined function
     return dummyInfo();
+  }
+
+  if (eInfo.type->isConst && !Func::isConst(fnInfo->modifiers)) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Type '" << *eInfo.type << "' cannot invoke non-const method '" << classTy->className << "::" << methodName_;
+    Ctx::streamParamTypes(fnInfo->paramTypes, err);
+    err << '\'';
   }
 
   if (Func::isVirtual(fnInfo->modifiers)) {

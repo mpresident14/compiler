@@ -40,6 +40,10 @@ Func::Func(
 
 void Func::addToCtx(Ctx& ctx) {
   checkTypes(ctx);
+  if (Func::isConst(modifiers_)) {
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Non-method '" << *this << " cannot be declared const";
+  }
   ctx.insertFn(*this);
 }
 
@@ -217,7 +221,9 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         break;
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
-        switch (method->modifiers_) {
+        // Only one of VIRTUAL, OVERRIDE, or STATIC can be set (enforced by parser)
+        switch (method->modifiers_
+                & (Func::Modifier::VIRTUAL | Func::Modifier::OVERRIDE | Func::Modifier::STATIC)) {
           case Func::Modifier::NONE:
             nonVMethods_.push_back(move(method));
             break;
@@ -231,12 +237,15 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
             staticMethods_.push_back(move(method));
             break;
           default:
-            throw runtime_error("ClassDecl::ClassDecl (Modifier");
+            cout << method->modifiers_ << endl;
+            cout << (Func::Modifier::VIRTUAL | Func::Modifier::OVERRIDE | Func::Modifier::STATIC)
+                 << endl;
+            throw runtime_error("ClassDecl::ClassDecl (Modifier)");
         }
         break;
       }
       default:
-        throw runtime_error("ClassDecl::ClassDecl (ClassElem");
+        throw runtime_error("ClassDecl::ClassDecl (ClassElem)");
     }
   }
 }
@@ -257,6 +266,7 @@ ClassDecl::ClassDecl(
 void ClassDecl::addToCtx(Ctx& ctx) {
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
+  TypePtr classTyConst = Type::makeConst(classTy);
   Ctx::ClassInfo& classInfo = ctx.insertClass(name_, id_, line_);
 
   // Class starts with vtable pointer
@@ -337,7 +347,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
     ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
-    method->paramTypes_.push_back(classTy);
+    method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
   }
 
   // Add nonstatic superclass methods that were not overridden. No error-checking required here.
@@ -364,7 +374,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
     ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
-    method->paramTypes_.push_back(classTy);
+    method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
   }
 
   // Add nonvirtual methods declared in this class
@@ -372,20 +382,24 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->checkTypes(ctx);
     ctx.insertMethod(classInfo.methods, name_, *method);
     method->paramNames_.push_back(lang_utils::THIS);
-    method->paramTypes_.push_back(classTy);
+    method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
   }
 
   // Add static methods declared in this class
   for (const unique_ptr<Func>& method : staticMethods_) {
     method->checkTypes(ctx);
     ctx.insertMethod(classInfo.methods, name_, *method);
+    if (Func::isConst(method->modifiers_)) {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << "Static method '" << name_ << "::" << *method << "' cannot be declared const";
+    }
   }
 
   // Add constructors to this context
   bool hasVirtualFns = !vTableEntries_.empty();
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
-      ostringstream& err = ctx.getLogger().logError(ctor.line_);
+      ostream& err = ctx.getLogger().logError(ctor.line_);
       err << "Cannot declare a constructor for class " << ctor.name_
           << " inside declaration of class " << name_;
       continue;
