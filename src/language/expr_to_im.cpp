@@ -140,7 +140,7 @@ namespace {
   bool checkIntegral(const Type& type, im::BOp op, size_t line, Ctx& ctx) {
     if (!type.isIntegral()) {
       ostringstream err;
-      err << "Operator " << op << " expected integral types, got " << type;
+      err << "Operator '" << op << "' expected integral types, got '" << type << '\'';
       ctx.getLogger().logError(line, err.str());
       return false;
     }
@@ -178,8 +178,8 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
   bool e1ToE2 = e1Info.type->isConvertibleTo(*e2Info.type, nullptr, ctx);
   if (!(e1ToE2 || e2Info.type->isConvertibleTo(*e1Info.type, nullptr, ctx))) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Neither " << *e1Info.type << " nor " << *e2Info.type
-        << " is convertible to the other in the ternary expression";
+    err << "Neither type '" << *e1Info.type << "' nor type '" << *e2Info.type
+        << "' is convertible to the other in the ternary expression";
     return dummyInfo();
   }
 
@@ -268,7 +268,7 @@ Expr::Info Cast::toImExpr(Ctx& ctx) {
 
   if (!eInfo.type->isConvertibleTo(*toType_, nullptr, ctx)) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "No valid cast from " << *eInfo.type << " to " << *toType_;
+    err << "No valid cast from type '" << *eInfo.type << "' to '" << *toType_ << '\'';
   }
 
   // Integer casts need to be truncated or expanded to the correct number of bytes; im::IntCast
@@ -379,7 +379,7 @@ Expr::Info ArrayAccess::toImExpr(Ctx& ctx) {
   const Type& type = *exprInfo.type;
   if (type.typeName != Type::Category::ARRAY) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Operator[] can only be used on an arrays, not type " << type;
+    err << "Operator '[]' can only be used on an arrays, not type '" << type << '\'';
     return dummyInfo();
   }
 
@@ -388,7 +388,7 @@ Expr::Info ArrayAccess::toImExpr(Ctx& ctx) {
   im::ExprPtr imIndex =
       index_
           ->toImExprAssert(
-              mem_fun_ref(&Type::isIntegral), "Operator[] requires an integral type", ctx)
+              mem_fun_ref(&Type::isIntegral), "Operator '[]' requires an integral type", ctx)
           .imExpr;
 
   // Add 8 bytes to skip the size field
@@ -410,7 +410,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
       return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), Type::LONG_TYPE_FIN };
     }
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Type " << *eInfo.type << " has no member " << member_;
+    err << "Type '" << *eInfo.type << "' has no member '" << member_ << '\'';
     return dummyInfo();
   } else if (eInfo.type->typeName == Type::Category::CLASS) {
     const Class* classTy = static_cast<const Class*>(eInfo.type.get());
@@ -423,7 +423,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
     auto iter = classInfo->fields.find(member_);
     if (iter == classInfo->fields.end()) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Field " << member_ << " is not defined in class " << classTy->className;
+      err << "Field '" << member_ << "' is not defined in class '" << classTy->className << '\'';
       return dummyInfo();
     }
     const Ctx::FieldInfo& fieldInfo = iter->second;
@@ -439,7 +439,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
              move(fieldTy) };
   } else {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Type " << *eInfo.type << " has no fields";
+    err << "Type '" << *eInfo.type << "' has no fields";
     return dummyInfo();
   }
 }
@@ -460,7 +460,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   Info& eInfo = p.first;
   if (eInfo.type->typeName != Type::Category::CLASS) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Cannot invoke method on expression of type " << *eInfo.type;
+    err << "Cannot invoke method on expression of type '" << *eInfo.type << '\'';
     return dummyInfo();
   }
 
@@ -649,7 +649,7 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
   } else {
     // All lvalues translate into a Temp or a MemDeref
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Operator " << (inc_ ? "++" : "--") << " requires an lvalue.";
+    err << "Operator '" << (inc_ ? "++" : "--") << "' requires an lvalue.";
     return dummyInfo();
   }
 }
@@ -684,11 +684,11 @@ im::ExprPtr Expr::toImExprAssert(const Type& type, Ctx& ctx) {
   if (eType.isConvertibleTo(type, &isNarrowing, ctx)) {
     if (isNarrowing) {
       ostream& warning = ctx.getLogger().logWarning(line_);
-      warning << "Narrowing conversion from " << eType << " to " << type;
+      warning << "Narrowing conversion from '" << eType << "' to '" << type << '\'';
     }
   } else {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Expected " << type << ", got " << eType;
+    err << "Expected '" << type << "', but got '" << eType << '\'';
   }
 
   return move(exprInfo.imExpr);

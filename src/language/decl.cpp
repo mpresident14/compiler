@@ -42,7 +42,7 @@ void Func::addToCtx(Ctx& ctx) {
   checkTypes(ctx);
   if (Func::isConst(modifiers_)) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Non-method '" << *this << " cannot be declared const";
+    err << "Non-method '" << *this << "' cannot be declared const";
   }
   ctx.insertFn(*this);
 }
@@ -180,7 +180,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
           .toImStmts(imStmts, ctx);
     } else {
       ostream& err = ctx.getLogger().logError(line_);
-      err << *supClass_ << " is not a superclass of " << *returnType_;
+      err << "Type '" << *supClass_ << "' is not a superclass of type '" << *returnType_ << '\'';
     }
   }
 
@@ -237,9 +237,6 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
             staticMethods_.push_back(move(method));
             break;
           default:
-            cout << method->modifiers_ << endl;
-            cout << (Func::Modifier::VIRTUAL | Func::Modifier::OVERRIDE | Func::Modifier::STATIC)
-                 << endl;
             throw runtime_error("ClassDecl::ClassDecl (Modifier)");
         }
         break;
@@ -294,7 +291,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       classInfo.numBytes += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
-      err << "Redefinition of field '" << name << "' in class " << name_;
+      err << "Redefinition of field '" << name << "' in class '" << name_ << '\'';
     }
   }
 
@@ -309,8 +306,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     // No superclass
     if (!superInfo) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Method " << name_ << "::" << *method << " is declared override, but class " << name_
-          << " has no superclass";
+      err << "Method '" << name_ << "::" << *method << "' is declared override, but class '" << name_
+          << "' has no superclass";
       continue;
     }
 
@@ -331,8 +328,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     // No identical virtual method in superclass
     if (supMethIter == supMethRange.second) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Method " << name_ << "::" << *method
-          << " is declared override, but does not override a virtual method from the superclass";
+      err << "Method '" << name_ << "::" << *method
+          << "' is declared override, but does not override a virtual method from the superclass";
       continue;
     }
 
@@ -400,8 +397,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   for (Constructor& ctor : ctors_) {
     if (ctor.name_ != name_) {
       ostream& err = ctx.getLogger().logError(ctor.line_);
-      err << "Cannot declare a constructor for class " << ctor.name_
-          << " inside declaration of class " << name_;
+      err << "Cannot declare a constructor for class '" << ctor.name_
+          << "' inside declaration of class '" << name_ << '\'';
       continue;
     }
     ctor.returnType_ = classTy;

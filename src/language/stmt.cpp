@@ -145,7 +145,7 @@ void Return::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     // Make sure the function return type is void
     if (retType.typeName != Type::Category::VOID) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Function has return type " << retType << " but may return void.";
+      err << "Function has return type '" << retType << "' but may return void.";
     }
     imStmts.push_back(make_unique<im::ReturnStmt>(nullptr));
   } else {
