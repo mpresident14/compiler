@@ -58,7 +58,6 @@ Expr::Info StrLit::toImExpr(Ctx& ctx) {
 /*******
  * Var *
  *******/
-bool Var::isLValue() const noexcept { return true; }
 
 Expr::Info Var::toImExpr(Ctx& ctx) {
   const Ctx::VarInfo* varInfo = ctx.lookupVar(name_, line_);
@@ -120,9 +119,8 @@ Expr::Info BinaryOp::toImExpr(Ctx& ctx) {
       return toImExprArith(im::BOp::OR, ctx);
     case BOp::XOR: {
       // XOR is valid for both integers and booleans
-      bool isLValue = e1_->isLValue();
       Info lhsInfo = e1_->toImExpr(ctx);
-      e1_ = make_unique<ImWrapper>(move(lhsInfo.imExpr), lhsInfo.type, isLValue, line_);
+      e1_ = make_unique<ImWrapper>(move(lhsInfo.imExpr), lhsInfo.type, line_);
       if (lhsInfo.type->isIntegral()) {
         return toImExprArith(im::BOp::XOR, ctx);
       }
@@ -196,13 +194,13 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
 
   int t = newTemp();
   ExprPtr tempWrapper1 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, true, e1Line);
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e1Info.type, e1Line);
   ExprPtr tempWrapper2 =
-      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, true, e2Line);
+      make_unique<ImWrapper>(make_unique<im::Temp>(t), e2Info.type, e2Line);
   ExprPtr e1Wrapper =
-      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1_->isLValue(), e1Line);
+      make_unique<ImWrapper>(move(e1Info.imExpr), e1Info.type, e1Line);
   ExprPtr e2Wrapper =
-      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2_->isLValue(), e2Line);
+      make_unique<ImWrapper>(move(e2Info.imExpr), e2Info.type, e2Line);
 
   unique_ptr<Block> ifBlock = make_unique<Block>(vector<StmtPtr>{}, e1Line);
   ifBlock->stmts_.push_back(make_unique<Assign>(move(tempWrapper1), move(e1Wrapper)));
@@ -376,7 +374,6 @@ pair<vector<im::StmtPtr>, int> NewArray::makeArrayStmts(Type& type, ExprPtr&& nu
  * ArrayAccess *
  ***************/
 
-bool ArrayAccess::isLValue() const noexcept { return true; }
 
 // TODO: Throw if out of range
 
@@ -406,7 +403,6 @@ Expr::Info ArrayAccess::toImExpr(Ctx& ctx) {
  * MemberAccess *
  ****************/
 
-bool MemberAccess::isLValue() const noexcept { return true; }
 
 Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
   Info eInfo = objExpr_->toImExpr(ctx);
@@ -579,12 +575,6 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
  **********/
 
 Expr::Info IncDec::toImExpr(Ctx& ctx) {
-  if (!lValue_->isLValue()) {
-    ostream& err = ctx.getLogger().logError(line_);
-    err << "Operator " << (inc_ ? "++" : "--") << " requires an lvalue.";
-    return dummyInfo();
-  }
-
   BOp bOp = inc_ ? BOp::PLUS : BOp::MINUS;
   vector<im::StmtPtr> imStmts;
   size_t eLine = lValue_->line_;
@@ -604,7 +594,7 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
 
     // var +/-= 1
     Update(
-        make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, eLine),
+        make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
@@ -635,7 +625,7 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
     // *tAddr +/-= 1
     Update(
         make_unique<ImWrapper>(
-            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, true, eLine),
+            Update::derefTemp(tAddr, memDeref->numBytes_), eInfo.type, eLine),
         bOp,
         make_unique<ConstInt>(1, line_))
         .toImStmts(imStmts, ctx);
@@ -647,7 +637,10 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
                       : (im::ExprPtr)make_unique<im::Temp>(tPostRes)),
              move(eInfo.type) };
   } else {
-    throw runtime_error("IncDec::toImStmts");
+    // All lvalues translate into a Temp or a MemDeref
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Operator " << (inc_ ? "++" : "--") << " requires an lvalue.";
+    return dummyInfo();
   }
 }
 
@@ -656,8 +649,6 @@ Expr::Info IncDec::toImExpr(Ctx& ctx) {
  * ImWrapper *
  *************/
 
-bool ImWrapper::isLValue() const noexcept { return isLValue_; }
-
 Expr::Info ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
 
 
@@ -665,7 +656,6 @@ Expr::Info ImWrapper::toImExpr(Ctx&) { return { move(imExpr_), type_ }; }
  * Expr *
  ********/
 
-bool Expr::isLValue() const noexcept { return false; }
 
 template <typename F>
 Expr::Info Expr::toImExprAssert(F&& condFn, string_view errMsg, Ctx& ctx) {

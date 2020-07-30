@@ -69,7 +69,6 @@ public:
   constexpr Expr(size_t line) : line_(line) {}
   virtual ~Expr() {}
   virtual Category getCategory() const noexcept = 0;
-  virtual bool isLValue() const noexcept;
 
   /* This and all related functions invalidate the Expr that calls it */
   virtual Info toImExpr(Ctx& ctx) = 0;
@@ -142,7 +141,6 @@ class Var : public Expr {
 public:
   Var(std::string_view name, size_t line);
   Category getCategory() const noexcept override { return Category::VAR; }
-  bool isLValue() const noexcept override;
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -286,7 +284,6 @@ private:
 class ArrayAccess : public Expr {
 public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
-  bool isLValue() const noexcept override;
   Category getCategory() const noexcept override { return Category::ARRAY_ACCESS; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -300,7 +297,6 @@ class MemberAccess : public Expr {
 public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member);
   MemberAccess(std::string_view varName, std::string_view member, size_t line);
-  bool isLValue() const noexcept override;
   Category getCategory() const noexcept override { return Category::MEMBER_ACCESS; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
@@ -370,15 +366,13 @@ public:
 
 class ImWrapper : public Expr {
 public:
-  ImWrapper(im::ExprPtr&& imExpr, TypePtr type, bool isLValue, size_t line);
-  bool isLValue() const noexcept override;
+  ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line);
   Category getCategory() const noexcept override { return Category::IM_WRAPPER; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
   im::ExprPtr imExpr_;
   TypePtr type_;
-  bool isLValue_;
 };
 
 

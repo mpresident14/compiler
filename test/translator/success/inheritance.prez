@@ -33,6 +33,8 @@ class Derived : Base {
   }
 
   void nonVFunc() {
+    // Just to avoid note that this method can be static
+    this.n = this.n;
     print("nonVFunc");
   }
 }

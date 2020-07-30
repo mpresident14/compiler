@@ -1,8 +1,8 @@
 #include "src/language/stmt.hpp"
 
 #include "src/assembly/assembly.hpp"
-#include "src/language/utils.hpp"
 #include "src/language/typecheck/context.hpp"
+#include "src/language/utils.hpp"
 
 #include <utility>
 
@@ -164,22 +164,22 @@ Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  if (!lValue_->isLValue()) {
-    ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
-    return;
-  }
-
   // TODO: Don't use getCategory() anymore when we implement const
-  if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS &&
-      static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName ==
-          Type::Category::ARRAY) {
+  if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS
+      && static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName
+             == Type::Category::ARRAY) {
     ctx.getLogger().logError(line_, "Cannot assign to length field of an array.");
     return;
   }
 
   Expr::Info lValueInfo = lValue_->toImExpr(ctx);
-  imStmts.emplace_back(
-      new im::Assign(move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
+  im::Expr::Category category = lValueInfo.imExpr->getCategory();
+  if (category == im::Expr::Category::TEMP || category == im::Expr::Category::MEM_DEREF) {
+    imStmts.emplace_back(
+        new im::Assign(move(lValueInfo.imExpr), rhs_->toImExprAssert(*lValueInfo.type, ctx)));
+  } else {
+    ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
+  }
 }
 
 /**********
@@ -205,12 +205,6 @@ Update::Update(ExprPtr&& lValue, Expr::BOp bOp, ExprPtr&& rhs)
 
 
 void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  if (!lValue_->isLValue()) {
-    ctx.getLogger().logError(line_, "Left side of assignment must be an lvalue.");
-    return;
-  }
-
-  // All lvalues translate into a Temp or a MemDeref
   Expr::Info eInfo = lValue_->toImExpr(ctx);
   size_t lValueLine = lValue_->line_;
   im::Expr::Category category = eInfo.imExpr->getCategory();
@@ -218,9 +212,9 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   if (category == im::Expr::Category::TEMP) {
     im::Temp* imTemp = static_cast<im::Temp*>(eInfo.imExpr.get());
     Assign(
-        make_unique<ImWrapper>(make_unique<im::Temp>(imTemp->t_), eInfo.type, true, lValueLine),
+        make_unique<ImWrapper>(make_unique<im::Temp>(imTemp->t_), eInfo.type, lValueLine),
         make_unique<BinaryOp>(
-            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, true, lValueLine),
+            make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, lValueLine),
             move(rhs_),
             bOp_))
         .toImStmts(imStmts, ctx);
@@ -234,13 +228,15 @@ void Update::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
     imStmts.push_back(assignAddr(t, memDeref));
 
     ExprPtr memWrapper1 =
-        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
     ExprPtr memWrapper2 =
-        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, true, lValueLine);
+        make_unique<ImWrapper>(derefTemp(t, memDeref->numBytes_), eInfo.type, lValueLine);
     Assign(move(memWrapper1), make_unique<BinaryOp>(move(memWrapper2), move(rhs_), bOp_))
         .toImStmts(imStmts, ctx);
   } else {
-    throw runtime_error("Update::toImStmts");
+    // All lvalues translate into a Temp or a MemDeref
+    ctx.getLogger().logError(line_, "Left side of an update operator must be an lvalue.");
+    return;
   }
 }
 
@@ -269,9 +265,8 @@ Print::Print(ExprPtr&& expr, size_t line) : Stmt(line), expr_(move(expr)) {}
 
 void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   size_t eLine = expr_->line_;
-  bool isLValue = expr_->isLValue();
   Expr::Info eInfo = expr_->toImExpr(ctx);
-  auto imWrapExpr = make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, isLValue, eLine);
+  auto imWrapExpr = make_unique<ImWrapper>(move(eInfo.imExpr), eInfo.type, eLine);
 
   // Put the String in a temporary
   static const string strVar = "_str";
@@ -297,8 +292,7 @@ void Print::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
       im::BOp::PLUS));
 
   // Number of bytes
-  printArgs.push_back(
-      MemberAccess(make_unique<Var>(strVar, line_), "len").toImExpr(ctx).imExpr);
+  printArgs.push_back(MemberAccess(make_unique<Var>(strVar, line_), "len").toImExpr(ctx).imExpr);
 
   im::StmtPtr callPrint = make_unique<im::ExprStmt>(
       make_unique<im::Call>(make_unique<im::LabelAddr>("__println"), move(printArgs), false));
