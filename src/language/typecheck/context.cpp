@@ -10,9 +10,7 @@
 
 using namespace std;
 
-void Ctx::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
-  streamParamTypes(paramTypes.cbegin(), paramTypes.end(), err);
-}
+
 
 
 Ctx::Ctx(string_view filename, const shared_ptr<unordered_map<int, ClassInfo*>>& classIds)
@@ -222,7 +220,7 @@ void Ctx::insertMethod(
       bool isMethod = !className.empty();
       errStream << "Redefinition of " << (isMethod ? "method '" : " function '")
                 << (isMethod ? string(className).append("::").append(func.name_) : func.name_);
-      Ctx::streamParamTypes(func.paramTypes_, errStream);
+      Type::streamParamTypes(func.paramTypes_, errStream);
       errStream << "'. Originally declared at " << fnInfo.declFile << ", line " << fnInfo.line;
       return;
     }
@@ -366,7 +364,7 @@ void Ctx::undefinedFn(
     string_view searchedFile) const {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << lang_utils::qualifiedName(qualifiers, fnName);
-  streamParamTypes(paramTypes, err);
+  Type::streamParamTypes(paramTypes, err);
 
   if (candidates.empty()) {
     err << "'\nNo candidate functions in " << searchedFile;
@@ -374,7 +372,7 @@ void Ctx::undefinedFn(
     err << "'\nCandidate functions in " << searchedFile << ":";
     for (const FnInfo* fnInfo : candidates) {
       err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' ' << fnName;
-      streamParamTypes(fnInfo->paramTypes, err);
+      Type::streamParamTypes(fnInfo->paramTypes, err);
     }
   }
 }
@@ -386,7 +384,7 @@ void Ctx::undefFnBadQuals(
     size_t line) const {
   ostream& err = logger.logError(line);
   err << "Undefined function '" << lang_utils::qualifiedName(qualifiers, fnName);
-  streamParamTypes(paramTypes, err);
+  Type::streamParamTypes(paramTypes, err);
   err << "'. No imported file matches qualifiers.";
 }
 
@@ -399,7 +397,7 @@ void Ctx::undefFnAmbigQuals(
     string_view searchedPath) const {
   ostream& err = logger.logError(line);
   err << "Ambiguous qualifier for function '" << lang_utils::qualifiedName(qualifiers, fnName);
-  streamParamTypes(paramTypes, err);
+  Type::streamParamTypes(paramTypes, err);
   err << "'. Found";
   for (const string* cand : candidates) {
     err << "\n\t" << *cand << "::" << searchedPath;
@@ -415,11 +413,11 @@ void Ctx::ambigOverload(
     string_view searchedFile) const {
   ostream& err = logger.logError(line);
   err << "Call of overloaded function '" << lang_utils::qualifiedName(qualifiers, fnName);
-  streamParamTypes(paramTypes, err);
+  Type::streamParamTypes(paramTypes, err);
   err << "' is ambiguous. Candidate functions in " << searchedFile << ":";
   for (const FnInfo* fnInfo : candidates) {
     err << "\n\tLine " << fnInfo->line << ": " << *fnInfo->returnType << ' ' << fnName;
-    streamParamTypes(fnInfo->paramTypes, err);
+    Type::streamParamTypes(fnInfo->paramTypes, err);
   }
 }
 

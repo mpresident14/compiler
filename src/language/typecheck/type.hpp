@@ -44,6 +44,11 @@ public:
   static const TypePtr& smallestIntegral(long n);
   static TypePtr makeFinal(const TypePtr& t);
   static TypePtr makeConst(const TypePtr& t);
+  static void streamParamTypes(const std::vector<TypePtr>& paramTypes, std::ostream& err);
+  static void streamParamTypes(
+      std::vector<TypePtr>::const_iterator begin,
+      std::vector<TypePtr>::const_iterator end,
+      std::ostream& err);
 
   virtual ~Type() {}
   constexpr Type(Category name, u_char nBytes, bool aIsFinal = false)
@@ -74,8 +79,8 @@ public:
   static const int ID_EMPTY = -1;
   static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
-  virtual bool isConvertibleTo(
-      const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept override;
+  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const
+      noexcept override;
 
   std::vector<std::string> qualifiers;
   std::string className;

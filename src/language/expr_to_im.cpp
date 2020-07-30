@@ -486,7 +486,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   if (eInfo.type->isConst && !Func::isConst(fnInfo->modifiers)) {
     ostream& err = ctx.getLogger().logError(line_);
     err << "Object of type '" << *eInfo.type << "' cannot invoke non-const method '" << classTy->className << "::" << methodName_;
-    Ctx::streamParamTypes(fnInfo->paramTypes, err);
+    Type::streamParamTypes(fnInfo->paramTypes, err);
     err << '\'';
   }
 
@@ -566,7 +566,7 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
       err << "Cannot not invoke non-static method '"
           << lang_utils::qualifiedName(classTy_.qualifiers, classTy_.className)
           << "::" << methodName_;
-      Ctx::streamParamTypes(paramTypes, err);
+      Type::streamParamTypes(paramTypes, err);
       err << "' from a function or non-subclass method";
       return dummyInfo();
     }

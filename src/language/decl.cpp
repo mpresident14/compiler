@@ -72,7 +72,7 @@ void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   if (enclosingClass && !Func::isStatic(modifiers_) && !ctx.removeThis() && !isVirtual()) {
     ostream& note = ctx.getLogger().logNote(line_);
     note << "Method '" << enclosingClass->name_ << "::" << name_;
-    Ctx::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), note);
+    Type::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), note);
     note << "' can be declared static";
   }
 
@@ -94,7 +94,7 @@ void Func::checkForReturn(Ctx& ctx) {
       error << "Some paths through non-void function '" << *returnType_ << ' ';
       if (enclosingClass) {
         error << enclosingClass->name_ << "::" << name_;
-        Ctx::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), error);
+        Type::streamParamTypes(paramTypes_.cbegin(), prev(paramTypes_.cend()), error);
       } else {
         error << *this;
       }
@@ -134,7 +134,7 @@ vector<im::StmtPtr> Func::paramsToImStmts(Ctx& ctx) {
 
 std::ostream& operator<<(std::ostream& out, const Func& func) {
   out << func.name_;
-  Ctx::streamParamTypes(func.paramTypes_, out);
+  Type::streamParamTypes(func.paramTypes_, out);
   return out;
 }
 

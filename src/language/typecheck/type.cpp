@@ -252,3 +252,22 @@ ostream& operator<<(ostream& out, const Type& type) {
   }
   return out;
 }
+
+void Type::streamParamTypes(const vector<TypePtr>& paramTypes, ostream& err) {
+  streamParamTypes(paramTypes.cbegin(), paramTypes.end(), err);
+}
+
+void Type::streamParamTypes(
+    std::vector<TypePtr>::const_iterator begin,
+    std::vector<TypePtr>::const_iterator end,
+    std::ostream& err) {
+  err << '(';
+  auto penult = prev(end);
+  if (begin != end) {
+    for (auto iter = begin; iter != penult; ++iter) {
+      err << **iter << ", ";
+    }
+    err << **penult;
+  }
+  err << ')';
+}
