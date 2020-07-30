@@ -211,6 +211,12 @@ error_test(static
     "('Error','5','Type')
     ('Error','5','Undefined')
     ('Error','13','Undefined')")
+error_test(final
+    "('Error','5','Cannot')
+    ('Error','10','Cannot')
+    ('Error','15','Cannot')
+    ('Error','16','Cannot')
+    ('Error','17','Cannot')")
 
 add_custom_target(
     translator_check

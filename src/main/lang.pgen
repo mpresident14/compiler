@@ -147,6 +147,7 @@ CLASS       "class"
 VIRTUAL     "virtual"
 OVERRIDE    "override"
 STATIC      "static"
+FINAL       "final"
 DOT         "\."
 
 PRINT       "print"
@@ -215,6 +216,8 @@ ClassElements -> { vector<ClassDecl::ClassElem> }
 ClassElement -> { ClassDecl::ClassElem }
   := NonVoidType IDENT SEMI
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{move(#0), move(#1), #line } } %
+   | FINAL NonVoidType IDENT SEMI
+     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{#1->makeFinal(), move(#2), #line } } %
    | IDENT LPAREN Params RPAREN Block
      % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), move(#4), #line) } %
    | IDENT LPAREN Params RPAREN COLON IDENT LPAREN Exprs RPAREN Block
@@ -255,6 +258,7 @@ Stmt -> { StmtPtr }
 
 VarDecl -> { std::unique_ptr<VarDecl> }
   := NonVoidType IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
+  |  FINAL NonVoidType IDENT EQ Expr SEMI        % make_unique<VarDecl>(#1->makeFinal(), #2, move(#4), #line) %
 
 ElseStmt -> { StmtPtr }
   := Block                                       % move(#0) %
@@ -356,6 +360,7 @@ Paramz -> { vector<pair<TypePtr, string>> }
 
 Param -> { pair<TypePtr, string> }
   := NonVoidType IDENT         % { move(#0), #1 } %
+   | FINAL NonVoidType IDENT   % { #1->makeFinal(), #2 } %
 
 NonVoidType -> { TypePtr }
   := NonVoidTypeNoIdent     % move(#0) %

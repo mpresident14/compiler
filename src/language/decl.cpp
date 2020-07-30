@@ -51,7 +51,6 @@ void Func::checkTypes(Ctx& ctx) const {
 }
 
 void Func::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
-  ctx.checkType(*returnType_, line_);
   checkForReturn(ctx);
   ctx.setCurrentRetType(returnType_);
 
@@ -274,6 +273,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // Add fields declared in this class
   for (const auto& [type, name, line] : fields_) {
+    ctx.checkType(*type, line_);
     if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, classInfo.numBytes }).second) {
       classInfo.numBytes += type->numBytes;
     } else {

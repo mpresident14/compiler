@@ -1,0 +1,22 @@
+class Obj {
+  final String str;
+
+  void setStr(String s) {
+    this.str = s;
+  }
+}
+
+long f(final long num) {
+  return ++num;
+}
+
+void main() {
+  final int x = 3;
+  x = 4;
+  x += 1;
+  --x;
+
+  int y = x;
+  print(y);
+}
+

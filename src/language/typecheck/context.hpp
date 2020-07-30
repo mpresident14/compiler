@@ -274,7 +274,8 @@ private:
    * 2. When a class name appears in a src file, it is parsed as a Class Type, but it has no id.
    *    Every language structure that contains a Type calls Ctx::checkType(), which, if it is a
    *    Class Type, validates that it refers to an actual class and determines its ID via the
-   *    CtxTree.
+   *    CtxTree. For declarations, checkType is called in addToCtx, so that the types in the Ctx
+   *    have their IDs set.
    * 3. Finally, when we do a method invocation or member access, we get a Class Type from the
    *    object, from which we can grab the class ID and perform the necessary lookup via the global
    *    classIds_ map. Using the ID for this lookup rather than the class name prevents a situation

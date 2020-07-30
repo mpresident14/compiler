@@ -173,6 +173,10 @@ void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
   }
 
   Expr::Info lValueInfo = lValue_->toImExpr(ctx);
+  if (lValueInfo.type->isFinal) {
+    ctx.getLogger().logError(line_, "Cannot assign to a final variable");
+  }
+
   im::Expr::Category category = lValueInfo.imExpr->getCategory();
   if (category == im::Expr::Category::TEMP || category == im::Expr::Category::MEM_DEREF) {
     imStmts.emplace_back(

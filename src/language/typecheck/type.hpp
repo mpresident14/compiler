@@ -27,22 +27,31 @@ public:
   static const TypePtr BOOL_TYPE;
   static const TypePtr VOID_TYPE;
   static const TypePtr STRING_TYPE;
+  /* ANY used to proceed through errors */
   static const TypePtr ANY_TYPE;
 
-  /* ANY used to proceed through errors */
+  static const TypePtr LONG_TYPE_FIN;
+  static const TypePtr INT_TYPE_FIN;
+  static const TypePtr SHORT_TYPE_FIN;
+  static const TypePtr CHAR_TYPE_FIN;
+  static const TypePtr BOOL_TYPE_FIN;
+
   enum class Category { LONG, INT, SHORT, CHAR, BOOL, VOID, ARRAY, CLASS, ANY };
 
   /* Determines the smallest integral type (excluding CHAR) that the arg fits in */
   static const TypePtr& smallestIntegral(long n);
 
   virtual ~Type() {}
-  constexpr Type(Category name, u_char nBytes) : typeName(name), numBytes(nBytes) {}
+  constexpr Type(Category name, u_char nBytes, bool aIsFinal = false)
+      : typeName(name), numBytes(nBytes), isFinal(aIsFinal) {}
   bool isIntegral() const noexcept;
   virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept;
   std::pair<long, long> minMaxValue() const;
+  TypePtr makeFinal() const;
 
   Category typeName;
   u_char numBytes;
+  bool isFinal = false;
 };
 
 
@@ -58,7 +67,8 @@ public:
   static const int ID_EMPTY = -1;
   static const int ID_UNKNOWN = -2;
   Class(std::vector<std::string>&& quals, std::string_view name);
-  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept override;
+  virtual bool isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const
+      noexcept override;
 
   std::vector<std::string> qualifiers;
   std::string className;

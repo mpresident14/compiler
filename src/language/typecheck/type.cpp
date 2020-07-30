@@ -20,6 +20,12 @@ const TypePtr Type::VOID_TYPE = std::make_shared<Type>(Type::Category::VOID, 0);
 const TypePtr Type::STRING_TYPE = std::make_shared<Class>(std::vector<std::string>(), "String");
 const TypePtr Type::ANY_TYPE = std::make_shared<Type>(Type::Category::ANY, 0);
 
+const TypePtr Type::LONG_TYPE_FIN = std::make_shared<Type>(Type::Category::LONG, 8, true);
+const TypePtr Type::INT_TYPE_FIN = std::make_shared<Type>(Type::Category::INT, 4, true);
+const TypePtr Type::SHORT_TYPE_FIN = std::make_shared<Type>(Type::Category::SHORT, 2, true);
+const TypePtr Type::CHAR_TYPE_FIN = std::make_shared<Type>(Type::Category::CHAR, 1, true);
+const TypePtr Type::BOOL_TYPE_FIN = std::make_shared<Type>(Type::Category::BOOL, 1, true);
+
 Array::Array(const TypePtr& type) : Type(Type::Category::ARRAY, 8), arrType(type) {}
 
 Class::Class(vector<string>&& quals, string_view name)
@@ -81,7 +87,34 @@ pair<long, long> Type::minMaxValue() const {
     case Type::Category::CHAR:
       return { numeric_limits<char>::min(), numeric_limits<char>::max() };
     default:
-      throw invalid_argument("minMaxValue: Not an integral type");
+      throw invalid_argument("Type::minMaxValue: Not an integral type");
+  }
+}
+
+TypePtr Type::makeFinal() const {
+  switch (typeName) {
+    case Type::Category::LONG:
+      return LONG_TYPE_FIN;
+    case Type::Category::INT:
+      return INT_TYPE_FIN;
+    case Type::Category::SHORT:
+      return SHORT_TYPE_FIN;
+    case Type::Category::CHAR:
+      return CHAR_TYPE_FIN;
+    case Type::Category::BOOL:
+      return BOOL_TYPE_FIN;
+    case Type::Category::ARRAY: {
+      TypePtr t = make_shared<Array>(static_cast<const Array&>(*this));
+      t->isFinal = true;
+      return t;
+    }
+    case Type::Category::CLASS: {
+      TypePtr t = make_shared<Class>(static_cast<const Class&>(*this));
+      t->isFinal = true;
+      return t;
+    }
+    default:
+      throw invalid_argument("Type::makeFinal");
   }
 }
 
@@ -121,6 +154,9 @@ bool operator==(const Type& t1, const Type& t2) noexcept {
 bool operator==(const TypePtr& t1, const TypePtr& t2) noexcept { return *t1 == *t2; }
 
 ostream& operator<<(ostream& out, const Type& type) {
+  if (type.isFinal) {
+    out << "final ";
+  }
   switch (type.typeName) {
     case Type::Category::LONG:
       out << "long";
