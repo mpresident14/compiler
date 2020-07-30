@@ -216,7 +216,9 @@ error_test(final
     ('Error','10','Cannot')
     ('Error','15','Cannot')
     ('Error','16','Cannot')
-    ('Error','17','Cannot')")
+    ('Error','17','Cannot')
+    ('Error','23','Cannot')
+    ('Error','24','Cannot')")
 
 add_custom_target(
     translator_check

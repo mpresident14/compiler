@@ -410,7 +410,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
   // The only member of an array is length
   if (eInfo.type->typeName == Type::Category::ARRAY) {
     if (member_ == "length") {
-      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), Type::LONG_TYPE };
+      return { make_unique<im::MemDeref>(0, move(eInfo.imExpr), nullptr, 8), Type::LONG_TYPE_FIN };
     }
     ostream& err = ctx.getLogger().logError(line_);
     err << "Type " << *eInfo.type << " has no member " << member_;

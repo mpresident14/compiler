@@ -18,5 +18,9 @@ void main() {
 
   int y = x;
   print(y);
+
+  int[] arr = int[]{1,2,3};
+  arr.length++;
+  arr.length = 7;
 }
 

@@ -19,26 +19,6 @@ namespace language {
 
 class Expr {
 public:
-  enum class Category {
-    CONST_INT,
-    CONST_CHAR,
-    CONST_BOOL,
-    STRLIT,
-    VAR,
-    UNARY_OP,
-    BINARY_OP,
-    TERNARY_OP,
-    CALL_EXPR,
-    CAST,
-    NEW_ARRAY,
-    NEW_OBJECT,
-    ARRAY_ACCESS,
-    MEMBER_ACCESS,
-    METHOD_INVOCATION,
-    INC_DEC,
-    IM_WRAPPER,
-  };
-
   enum class UOp { NEG, NOT };
   enum class BOp {
     PLUS,
@@ -68,7 +48,6 @@ public:
 
   constexpr Expr(size_t line) : line_(line) {}
   virtual ~Expr() {}
-  virtual Category getCategory() const noexcept = 0;
 
   /* This and all related functions invalidate the Expr that calls it */
   virtual Info toImExpr(Ctx& ctx) = 0;
@@ -96,7 +75,6 @@ using ExprPtr = std::unique_ptr<Expr>;
 class ConstInt : public Expr {
 public:
   constexpr explicit ConstInt(long n, size_t line) : Expr(line), n_(n) {}
-  Category getCategory() const noexcept override { return Category::CONST_INT; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -106,7 +84,6 @@ public:
 class ConstChar : public Expr {
 public:
   constexpr explicit ConstChar(char c, size_t line) : Expr(line), c_(c) {}
-  Category getCategory() const noexcept override { return Category::CONST_CHAR; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -117,7 +94,6 @@ public:
 class ConstBool : public Expr {
 public:
   constexpr explicit ConstBool(bool b, size_t line) : Expr(line), b_(b) {}
-  Category getCategory() const noexcept override { return Category::CONST_BOOL; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -128,7 +104,6 @@ public:
 class StrLit : public Expr {
 public:
   StrLit(std::string_view sv, size_t line);
-  Category getCategory() const noexcept override { return Category::STRLIT; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -140,7 +115,6 @@ public:
 class Var : public Expr {
 public:
   Var(std::string_view name, size_t line);
-  Category getCategory() const noexcept override { return Category::VAR; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -151,7 +125,6 @@ public:
 class UnaryOp : public Expr {
 public:
   UnaryOp(ExprPtr&& e, UOp uOp, size_t line);
-  Category getCategory() const noexcept override { return Category::UNARY_OP; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -170,7 +143,6 @@ public:
 class BinaryOp : public Expr {
 public:
   BinaryOp(ExprPtr&& e1, ExprPtr&& e2, BOp bOp);
-  Category getCategory() const noexcept override { return Category::BINARY_OP; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -218,7 +190,6 @@ private:
 class TernaryOp : public Expr {
 public:
   TernaryOp(ExprPtr&& boolE, ExprPtr&& e1, ExprPtr&& e2);
-  Category getCategory() const noexcept override { return Category::TERNARY_OP; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -236,7 +207,6 @@ public:
       std::vector<ExprPtr>&& params,
       size_t line,
       bool ctorAlloc = true);
-  Category getCategory() const noexcept override { return Category::CALL_EXPR; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -250,7 +220,6 @@ public:
 class Cast : public Expr {
 public:
   Cast(TypePtr&& toType, ExprPtr&& expr, size_t line);
-  Category getCategory() const noexcept override { return Category::CAST; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -263,7 +232,6 @@ class NewArray : public Expr {
 public:
   NewArray(TypePtr&& type, ExprPtr&& numElems, size_t line);
   NewArray(TypePtr&& type, std::vector<ExprPtr>&& elems, size_t line);
-  Category getCategory() const noexcept override { return Category::NEW_ARRAY; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -284,7 +252,6 @@ private:
 class ArrayAccess : public Expr {
 public:
   ArrayAccess(ExprPtr&& arrExpr, ExprPtr&& index, size_t line);
-  Category getCategory() const noexcept override { return Category::ARRAY_ACCESS; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -297,7 +264,6 @@ class MemberAccess : public Expr {
 public:
   MemberAccess(ExprPtr&& objExpr, std::string_view member);
   MemberAccess(std::string_view varName, std::string_view member, size_t line);
-  Category getCategory() const noexcept override { return Category::MEMBER_ACCESS; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -318,7 +284,6 @@ public:
       std::string_view methodName,
       std::vector<ExprPtr>&& params,
       size_t line);
-  Category getCategory() const noexcept override { return Category::METHOD_INVOCATION; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -340,7 +305,6 @@ public:
       std::string_view methodName,
       std::vector<ExprPtr>&& params,
       size_t line);
-  Category getCategory() const noexcept override { return Category::METHOD_INVOCATION; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -353,7 +317,6 @@ public:
 class IncDec : public Expr {
 public:
   IncDec(ExprPtr&& lValue, bool inc, bool pre, size_t line);
-  Category getCategory() const noexcept override { return Category::INC_DEC; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 
@@ -367,7 +330,6 @@ public:
 class ImWrapper : public Expr {
 public:
   ImWrapper(im::ExprPtr&& imExpr, TypePtr type, size_t line);
-  Category getCategory() const noexcept override { return Category::IM_WRAPPER; }
   Info toImExpr(Ctx& ctx) override;
   ExprPtr clone() const override;
 

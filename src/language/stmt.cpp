@@ -164,14 +164,6 @@ Assign::Assign(ExprPtr&& lValue, ExprPtr&& rhs)
     : Stmt(lValue->line_), lValue_(move(lValue)), rhs_(move(rhs)) {}
 
 void Assign::toImStmts(vector<im::StmtPtr>& imStmts, Ctx& ctx) {
-  // TODO: Don't use getCategory() anymore when we implement const
-  if (lValue_->getCategory() == Expr::Category::MEMBER_ACCESS
-      && static_cast<MemberAccess*>(lValue_.get())->objExpr_->toImExpr(ctx).type->typeName
-             == Type::Category::ARRAY) {
-    ctx.getLogger().logError(line_, "Cannot assign to length field of an array.");
-    return;
-  }
-
   Expr::Info lValueInfo = lValue_->toImExpr(ctx);
   if (lValueInfo.type->isFinal) {
     ctx.getLogger().logError(line_, "Cannot assign to a final variable");
