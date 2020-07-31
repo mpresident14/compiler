@@ -86,11 +86,6 @@ void Ctx::removeVar(const string& var, size_t line) {
 
 bool Ctx::removeThis() {
   auto iter = varMap_.find(lang_utils::THIS);
-  if (iter == varMap_.end()) {
-    // Can only happen if there was an error earlier that caused THIS not to be pushed back into the
-    // parameters
-    return true;
-  }
   bool used = iter->second.used;
   varMap_.erase(iter);
   return used;

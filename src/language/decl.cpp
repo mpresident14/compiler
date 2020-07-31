@@ -16,6 +16,19 @@ namespace language {
 
 size_t Func::nextId_ = 0;
 
+const char* Func::accessStr(int mods) {
+  switch (ACCESS_MODS & mods) {
+    case Modifier::PRIVATE:
+      return "private";
+    case Modifier::PROTECTED:
+      return "protected";
+    case Modifier::PUBLIC:
+      return "public";
+    default:
+      throw runtime_error("Func::accessStr");
+  }
+}
+
 Func::Func(
     int modifiers,
     TypePtr&& returnType,
@@ -227,8 +240,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
         // Only one of VIRTUAL, OVERRIDE, or STATIC can be set (enforced by parser)
-        switch (method->modifiers_
-                & (Func::Modifier::VIRTUAL | Func::Modifier::OVERRIDE | Func::Modifier::STATIC)) {
+        switch (method->modifiers_ & Func::VIRT_MODS) {
           case Func::Modifier::NONE:
             nonVMethods_.push_back(move(method));
             break;
@@ -269,8 +281,15 @@ ClassDecl::ClassDecl(
  *
  * Neither static nor private methods are inherited (and thus they can be redeclared in a subclass).
  * Only public and protected methods/fields can be accessed by a subclass.
- *
+ * Overridden methods must have same or lesser access modifier than that of the superclass method
  */
+
+namespace {
+  constexpr bool elevatedAccess(int subMods, int supMods) {
+    return (subMods & Func::ACCESS_MODS) > (supMods & Func::ACCESS_MODS);
+  }
+}  // namespace
+
 void ClassDecl::addToCtx(Ctx& ctx) {
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
@@ -345,10 +364,26 @@ void ClassDecl::addToCtx(Ctx& ctx) {
       ostream& err = ctx.getLogger().logError(method->line_);
       err << "Method '" << name_ << "::" << *method
           << "' is declared override, but does not override a virtual method from the superclass";
+      // Prevents errors down the road
+      method->paramNames_.push_back(lang_utils::THIS);
+      method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
       continue;
     }
 
+    // Check for elevated access
     const Ctx::FnInfo& supMethInfo = supMethIter->second;
+    if (elevatedAccess(method->modifiers_, supMethInfo.modifiers)) {
+      ostream& err = ctx.getLogger().logError(method->line_);
+      err << "Override method '" << name_ << "::" << *method
+          << "' cannot elevate scope of superclass method '" << *superName_ << "::" << *method
+          << "' (declared '" << Func::accessStr(supMethInfo.modifiers) << "' in "
+          << supMethInfo.declFile << " on line " << supMethInfo.line << '\'';
+      // Prevents errors down the road
+      method->paramNames_.push_back(lang_utils::THIS);
+      method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
+      continue;
+    }
+
     supsOverridden.insert(&supMethInfo);
     // We need to make sure that this class's vtable entries are in the same order as its
     // superclass, otherwise casting and invoking a method won't work. Therefore, we find any

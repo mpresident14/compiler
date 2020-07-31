@@ -222,18 +222,16 @@ namespace {
       const Class& declTy,
       size_t line,
       Ctx& ctx) {
-    const ClassDecl* enclosingClass = ctx.insideClass();
-    bool isPriv = Func::isPrivate(fnInfo.modifiers);
-
     // Private methods accessible only within the same class
     // Protected methods accessible only within the subclasses
-    if ((isPriv && !(enclosingClass && enclosingClass->id_ == declTy.id))
+    const ClassDecl* enclosingClass = ctx.insideClass();
+    if ((Func::isPrivate(fnInfo.modifiers) && !(enclosingClass && enclosingClass->id_ == declTy.id))
         || (Func::isProtected(fnInfo.modifiers)
             && !(enclosingClass && ctx.isSubClassOf(enclosingClass->id_, declTy.id)))) {
       ostream& err = ctx.getLogger().logError(line);
       err << "Method '" << declTy.className << "::" << methodName;
       Type::streamParamTypes(fnInfo.paramTypes, err);
-      err << "' is not accessible (declared " << (isPriv ? "'private'" : "'protected'") << " in "
+      err << "' is not accessible (declared '" << Func::accessStr(fnInfo.modifiers) << "' in "
           << fnInfo.declFile << " on line " << fnInfo.line << ')';
     }
   }
@@ -463,15 +461,15 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
     // Private fields accessible only within the same class
     // Protected fields accessible only within the subclasses
     const ClassDecl* enclosingClass = ctx.insideClass();
-    bool isPriv = Func::isPrivate(fieldInfo.accessMod);
-    if ((isPriv && !(enclosingClass && enclosingClass->id_ == fieldInfo.declClassId))
+    if ((Func::isPrivate(fieldInfo.accessMod)
+         && !(enclosingClass && enclosingClass->id_ == fieldInfo.declClassId))
         || (Func::isProtected(fieldInfo.accessMod)
             && !(enclosingClass && ctx.isSubClassOf(enclosingClass->id_, fieldInfo.declClassId)))) {
       ostream& err = ctx.getLogger().logError(line_);
       // TODO: Have Ctx::lookupClass return an iter so that we can access the class name in which
       // the field was declared (here and for methods too)
       err << "Field '" << classTy->className << "::" << member_ << "' is not accessible (declared "
-          << (isPriv ? "'private'" : "'protected'") << " in " << fieldInfo.declFile << " on line "
+          << Func::accessStr(fieldInfo.accessMod) << " in " << fieldInfo.declFile << " on line "
           << fieldInfo.line << ')';
     }
 

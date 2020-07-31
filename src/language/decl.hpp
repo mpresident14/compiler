@@ -42,6 +42,9 @@ public:
     PUBLIC = 0x80
   };
 
+  const static int ACCESS_MODS = Modifier::PRIVATE | Modifier::PROTECTED | Modifier::PUBLIC;
+  const static int VIRT_MODS = Modifier::VIRTUAL | Modifier::OVERRIDE | Modifier::STATIC;
+
   constexpr bool static isVirtual(int mods) noexcept {
     return (mods & Modifier::VIRTUAL) || (mods & Modifier::OVERRIDE);
   }
@@ -51,6 +54,7 @@ public:
   constexpr bool static isPrivate(int mods) noexcept { return mods & Modifier::PRIVATE; }
   constexpr bool static isProtected(int mods) noexcept { return mods & Modifier::PROTECTED; }
   constexpr bool static isPublic(int mods) noexcept { return mods & Modifier::PUBLIC; }
+  static const char* accessStr(int mods);
 
   Func(
       int modifiers,

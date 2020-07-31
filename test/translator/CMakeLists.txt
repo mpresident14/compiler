@@ -239,6 +239,7 @@ error_test(access
     ('Error','53','Redefinition')
     ('Error','56','Redefinition')
     ('Error','57','Method')
+    ('Error','58','Override')
     ('Error','63','Method')
     ('Error','64','Method')
     ('Error','67','Method')

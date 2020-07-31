@@ -55,8 +55,8 @@ class Derived : Base {
 
   protected virtual void virtProt() {} // ERROR
   private override void virtPriv() {}  // ERROR
+  public override void virtProt() {}
 }
-
 
 void main() {
   Base b = Base();
