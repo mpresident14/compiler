@@ -241,8 +241,8 @@ Ctor -> { std::unique_ptr<Constructor> }
      % make_unique<Constructor>(#0, #1, move(#3), Class(move(#6), #7), move(#9), move(#11), #line) %
 
 Field -> { ClassDecl::Field }
- := NonVoid IDENT SEMI          % ClassDecl::Field{move(#0), move(#1), #line } %
-   | FINAL NonVoid IDENT SEMI   % ClassDecl::Field{Type::makeFinal(#1), move(#2), #line } %
+ := AccessMod NonVoid IDENT SEMI          % ClassDecl::Field{#0, move(#1), move(#2), #line } %
+  | AccessMod FINAL NonVoid IDENT SEMI    % ClassDecl::Field{#0, Type::makeFinal(#2), move(#3), #line } %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %

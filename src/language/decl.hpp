@@ -112,6 +112,7 @@ public:
 class ClassDecl : public Decl {
 public:
   struct Field {
+    Func::Modifier access;
     TypePtr type;
     std::string name;
     size_t line;

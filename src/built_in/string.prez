@@ -1,6 +1,7 @@
 class String {
-  char[] arr;
-  long len;
+  // TODO: Figure out how to make these private without messing up language::Print
+  public char[] arr;
+  public long len;
 
   public String() {
     this.arr = char[](0);

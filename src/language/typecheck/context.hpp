@@ -45,6 +45,9 @@ public:
   struct FieldInfo {
     TypePtr type;
     size_t offset;
+    int accessMod;
+    std::string declFile;
+    size_t line;
   };
 
   struct ClassInfo {

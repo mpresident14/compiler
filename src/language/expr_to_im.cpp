@@ -449,13 +449,31 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
       // duplicate it
       return dummyInfo();
     }
+
     auto iter = classInfo->fields.find(member_);
+    // Undefined field
     if (iter == classInfo->fields.end()) {
       ostream& err = ctx.getLogger().logError(line_);
       err << "Field '" << member_ << "' is not defined in class '" << classTy->className << '\'';
       return dummyInfo();
     }
+
     const Ctx::FieldInfo& fieldInfo = iter->second;
+
+    // Private methods accessible only within the same class
+    // Protected methods accessible only within the subclasses
+    const ClassDecl* enclosingClass = ctx.insideClass();
+    bool isPriv = Func::isPrivate(fieldInfo.accessMod);
+    if ((isPriv && !(enclosingClass && enclosingClass->id_ == classTy->id))
+        || (Func::isProtected(fieldInfo.accessMod)
+            && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy->id)))) {
+      ostream& err = ctx.getLogger().logError(line_);
+      err << "Field '" << classTy->className << "::" << member_ << "' is not accessible (declared "
+          << (isPriv ? "'private'" : "'protected'") << " in " << fieldInfo.declFile << " on line "
+          << fieldInfo.line << ')';
+    }
+
+    // Check constness
     TypePtr fieldTy;
     if (eInfo.type->isConst) {
       fieldTy = Type::makeConst(fieldInfo.type);
@@ -463,6 +481,7 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
     } else {
       fieldTy = fieldInfo.type;
     }
+
     return { make_unique<im::MemDeref>(
                  fieldInfo.offset, move(eInfo.imExpr), nullptr, fieldInfo.type->numBytes),
              move(fieldTy) };

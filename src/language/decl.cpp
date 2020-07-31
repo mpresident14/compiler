@@ -291,9 +291,13 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // Add fields declared in this class
   // TODO: Add declfile and line on redefinition error
-  for (const auto& [type, name, line] : fields_) {
+  for (const auto& [access, type, name, line] : fields_) {
     ctx.checkType(*type, line_);
-    if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, classInfo.numBytes }).second) {
+    // TODO: Use try_emplace (needs FieldInfo ctor)
+    if (classInfo.fields
+            .emplace(
+                name, Ctx::FieldInfo{ type, classInfo.numBytes, access, ctx.getFilename(), line_ })
+            .second) {
       classInfo.numBytes += type->numBytes;
     } else {
       ostringstream& err = ctx.getLogger().logError(line);
