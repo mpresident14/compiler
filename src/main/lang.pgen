@@ -149,6 +149,9 @@ OVERRIDE    "override"
 STATIC      "static"
 FINAL       "final"
 CONST       "const"
+PRIVATE     "private"
+PROTECTED   "protected"
+PUBLIC      "public"
 DOT         "\."
 
 PRINT       "print"
@@ -235,8 +238,8 @@ Function -> { std::unique_ptr<Func> }
       % make_unique<Func>(#5, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#6), #line) %
 
 Method -> { std::unique_ptr<Func> }
-  := Function          % move(#0) %
-  |  FuncMod Function  % (#1->modifiers_ |= #0, move(#1)) %
+  := AccessMod Function          % (#1->modifiers_ |= #0, move(#1))%
+  |  AccessMod FuncMod Function  % (#2->modifiers_ |= (#0 | #1), move(#2)) %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %
@@ -393,10 +396,16 @@ Qualifiers -> { vector<string> }
 Qualifier -> { string }
   := IDENT COLON2        % #0 %
 
+AccessMod -> { Func::Modifier }
+  := PRIVATE    % Func::Modifier::PRIVATE %
+   | PROTECTED  % Func::Modifier::PROTECTED %
+   | PUBLIC     % Func::Modifier::PUBLIC %
+
 FuncMod -> { Func::Modifier }
-  := VIRTUAL   % Func::Modifier::VIRTUAL %
-   | OVERRIDE  % Func::Modifier::OVERRIDE %
-   | STATIC    % Func::Modifier::STATIC %
+  :=         #prec EPSILON    % Func::Modifier::NONE %
+   | VIRTUAL                  % Func::Modifier::VIRTUAL %
+   | OVERRIDE                 % Func::Modifier::OVERRIDE %
+   | STATIC                   % Func::Modifier::STATIC %
 
 MaybeConst -> { Func::Modifier }
   :=           #prec EPSILON   % Func::Modifier::NONE %

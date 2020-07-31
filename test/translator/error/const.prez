@@ -1,7 +1,7 @@
 class Obj {
   String str;
 
-  static void f() const {} // ERROR
+  static void f() const {}
 
   Obj(String s) {
     this.str = s;
@@ -11,12 +11,12 @@ class Obj {
     return this.str.len;
   }
 
-  long method() { // ERROR
+  long method() {
     return this.str.len + 1;
   }
 
   String getStr() const {
-    return this.str; // ERROR
+    return this.str;
   }
 
   const String getConstStr() const {
@@ -24,16 +24,16 @@ class Obj {
   }
 }
 
-void f() const {} // ERROR
+void f() const {}
 
 void main() {
   Obj a = Obj("Nonconst");
   const Obj b = Obj("Const");
-  a = b; // ERROR
+  a = b;
   b = a;
   b.getStr();
-  String s = a.getConstStr(); // ERROR
-  s = b.getConstStr(); // ERROR
-  b.getConstStr().append("Hey"); // ERROR
+  String s = a.getConstStr();
+  s = b.getConstStr();
+  b.getConstStr().append("Hey");
   print(s);
 }

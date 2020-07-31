@@ -483,9 +483,29 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
+
+  const ClassDecl* enclosingClass = ctx.insideClass();
+  if (Func::isPrivate(fnInfo->modifiers) && !(enclosingClass && enclosingClass->id_ == classTy->id)) {
+    // Private methods accessible only within the same class
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Method '" << classTy->className << "::" << methodName_;
+    Type::streamParamTypes(paramTypes, err);
+    err << "' is not accessible (declared 'private' in " << fnInfo->declFile << " on line "
+        << fnInfo->line << ')';
+  } else if (
+      Func::isProtected(fnInfo->modifiers) && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy->id))) {
+    // Protected methods accessible only within the subclasses
+    ostream& err = ctx.getLogger().logError(line_);
+    err << "Method '" << classTy->className << "::" << methodName_;
+    Type::streamParamTypes(paramTypes, err);
+    err << "' is not accessible (declared 'protected' in " << fnInfo->declFile << " on line "
+        << fnInfo->line << ')';
+  }
+
   if (eInfo.type->isConst && !Func::isConst(fnInfo->modifiers)) {
     ostream& err = ctx.getLogger().logError(line_);
-    err << "Object of type '" << *eInfo.type << "' cannot invoke non-const method '" << classTy->className << "::" << methodName_;
+    err << "Object of type '" << *eInfo.type << "' cannot invoke non-const method '"
+        << classTy->className << "::" << methodName_;
     Type::streamParamTypes(fnInfo->paramTypes, err);
     err << '\'';
   }

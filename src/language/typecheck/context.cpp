@@ -110,13 +110,13 @@ bool Ctx::isBaseOf(int classId, const Type& base) const {
     return false;
   }
 
-  int baseId = static_cast<const Class&>(base).id;
+  return isBaseOf(classId, static_cast<const Class&>(base).id);
+}
+
+bool Ctx::isBaseOf(int classId, int baseId) const {
   const ClassInfo* classInfo = lookupClass(classId);
 
-  // cout << "baseId: " << baseId << endl;
-
   while (classInfo) {
-    // cout << "classInfo->id: " << classInfo->id << endl;
     if (classInfo->id == baseId) {
       return true;
     }

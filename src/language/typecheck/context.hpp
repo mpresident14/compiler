@@ -168,6 +168,7 @@ public:
   constexpr void exitClass() { currentClass_ = nullptr; }
   constexpr const language::ClassDecl* insideClass() const noexcept { return currentClass_; }
   bool isBaseOf(int classId, const Type& base) const;
+  bool isBaseOf(int classId, int baseId) const;
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name) const;

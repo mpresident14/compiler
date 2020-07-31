@@ -21,7 +21,7 @@ class String {
     }
   }
 
-  String append(char c) {
+  public String append(char c) {
     if (this.arr.length == this.len) {
       this.resize();
     }
@@ -30,7 +30,7 @@ class String {
     return this;
   }
 
-  String append(String str) {
+  public String append(String str) {
     long myLen = this.len;
     long otherLen = str.len;
     long sum = myLen + otherLen;
@@ -51,7 +51,7 @@ class String {
     return this;
   }
 
-  void reverse() {
+  public void reverse() {
     long left = 0;
     long right = this.len - 1;
     while (left < right) {
@@ -64,7 +64,7 @@ class String {
     return;
   }
 
-  void resize() {
+  private void resize() {
     // Add 1 in case this.arr.length == 0
     char[] newArr = char[](this.arr.length * 2 + 1);
     for (long i = 0; i < this.len; ++i) {
@@ -73,7 +73,7 @@ class String {
     this.arr = newArr;
   }
 
-  String toString() {
+  public String toString() {
     return this;
   }
 }

@@ -285,6 +285,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   }
 
   // Add fields declared in this class
+  // TODO: Add declfile and line on redefinition error
   for (const auto& [type, name, line] : fields_) {
     ctx.checkType(*type, line_);
     if (classInfo.fields.emplace(name, Ctx::FieldInfo{ type, classInfo.numBytes }).second) {
@@ -306,8 +307,8 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     // No superclass
     if (!superInfo) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Method '" << name_ << "::" << *method << "' is declared override, but class '" << name_
-          << "' has no superclass";
+      err << "Method '" << name_ << "::" << *method << "' is declared override, but class '"
+          << name_ << "' has no superclass";
       continue;
     }
 
@@ -347,16 +348,18 @@ void ClassDecl::addToCtx(Ctx& ctx) {
     method->paramTypes_.push_back(Func::isConst(method->modifiers_) ? classTyConst : classTy);
   }
 
-  // Add nonstatic superclass methods that were not overridden. No error-checking required here.
-  // If there was an error, we will have already reported it in the superclass
+  // Add nonprivate, nonstatic superclass methods that were not overridden. No error-checking
+  // required here. If there was an error, we will have already reported it in the superclass
   if (superInfo) {
     for (const auto& [name, supMethInfo] : superInfo->methods) {
-      if (!(Func::isStatic(supMethInfo.modifiers)) && !supsOverridden.contains(&supMethInfo)) {
-        classInfo.methods.emplace(name, supMethInfo);
-        if (Func::isVirtual(supMethInfo.modifiers)) {
-          size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
-          vTableEntries_[vTableIndex] = Ctx::mangleFn(name, supMethInfo.id);
-          classInfo.vTableOffsets.emplace(supMethInfo.id, vTableIndex);
+      if (!Func::isPrivate(supMethInfo.modifiers)) {
+        if (!(Func::isStatic(supMethInfo.modifiers)) && !supsOverridden.contains(&supMethInfo)) {
+          classInfo.methods.emplace(name, supMethInfo);
+          if (Func::isVirtual(supMethInfo.modifiers)) {
+            size_t vTableIndex = superInfo->vTableOffsets.at(supMethInfo.id);
+            vTableEntries_[vTableIndex] = Ctx::mangleFn(name, supMethInfo.id);
+            classInfo.vTableOffsets.emplace(supMethInfo.id, vTableIndex);
+          }
         }
       }
     }

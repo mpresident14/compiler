@@ -30,7 +30,17 @@ using DeclPtr = std::unique_ptr<Decl>;
 class Block;
 class Func : public Decl {
 public:
-  enum Modifier { NONE = 0x0, VIRTUAL = 0x1, OVERRIDE = 0x2, STATIC = 0x4, CTOR = 0x8, CONST = 0x10 };
+  enum Modifier {
+    NONE = 0x0,
+    VIRTUAL = 0x1,
+    OVERRIDE = 0x2,
+    STATIC = 0x4,
+    CTOR = 0x8,
+    CONST = 0x10,
+    PRIVATE = 0x20,
+    PROTECTED = 0x40,
+    PUBLIC = 0x80
+  };
 
   constexpr bool static isVirtual(int mods) noexcept {
     return (mods & Modifier::VIRTUAL) || (mods & Modifier::OVERRIDE);
@@ -38,6 +48,9 @@ public:
   constexpr bool static isStatic(int mods) noexcept { return mods & Modifier::STATIC; }
   constexpr bool static isCtor(int mods) noexcept { return mods & Modifier::CTOR; }
   constexpr bool static isConst(int mods) noexcept { return mods & Modifier::CONST; }
+  constexpr bool static isPrivate(int mods) noexcept { return mods & Modifier::PRIVATE; }
+  constexpr bool static isProtected(int mods) noexcept { return mods & Modifier::PROTECTED; }
+  constexpr bool static isPublic(int mods) noexcept { return mods & Modifier::PUBLIC; }
 
   Func(
       int modifiers,
