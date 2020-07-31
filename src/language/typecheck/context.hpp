@@ -43,14 +43,26 @@ public:
   };
 
   struct FieldInfo {
-    FieldInfo(const TypePtr& aType, size_t off, int access, std::string_view file, size_t aLine)
-        : type(aType), offset(off), accessMod(access), declFile(file), line(aLine) {}
+    FieldInfo(
+        const TypePtr& aType,
+        size_t off,
+        int access,
+        std::string_view file,
+        size_t aLine,
+        int aDeclClassId)
+        : type(aType),
+          offset(off),
+          accessMod(access),
+          declFile(file),
+          line(aLine),
+          declClassId(aDeclClassId) {}
 
     TypePtr type;
     size_t offset;
     int accessMod;
     std::string declFile;
     size_t line;
+    int declClassId;
   };
 
   struct ClassInfo {
@@ -172,8 +184,8 @@ public:
   constexpr void enterClass(const language::ClassDecl* classDecl) { currentClass_ = classDecl; }
   constexpr void exitClass() { currentClass_ = nullptr; }
   constexpr const language::ClassDecl* insideClass() const noexcept { return currentClass_; }
-  bool isBaseOf(int classId, const Type& base) const;
-  bool isBaseOf(int classId, int baseId) const;
+  bool isSubClassOf(int classId, const Type& base) const;
+  bool isSubClassOf(int classId, int baseId) const;
   Ctx::ClassInfo& insertClass(const std::string& name, int id, size_t line);
   /* Only searches this context */
   ClsLookupRes lookupClass(const std::string& name) const;

@@ -82,7 +82,7 @@ bool Type::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx&) const 
 
 bool Class::isConvertibleTo(const Type& to, bool* isNarrowing, const Ctx& ctx) const noexcept {
   maybeSetFalse(isNarrowing);
-  return to.typeName == Type::Category::ANY || (canConvertConst(to) && ctx.isBaseOf(id, to));
+  return to.typeName == Type::Category::ANY || (canConvertConst(to) && ctx.isSubClassOf(id, to));
 }
 
 pair<long, long> Type::minMaxValue() const {

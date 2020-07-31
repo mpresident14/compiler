@@ -178,7 +178,7 @@ void Constructor::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   vector<im::StmtPtr> imStmts = paramsToImStmts(ctx);
 
   if (supClass_) {
-    if (ctx.isBaseOf(static_cast<const Class*>(returnType_.get())->id, *supClass_)) {
+    if (ctx.isSubClassOf(static_cast<const Class*>(returnType_.get())->id, *supClass_)) {
       ExprStmt(
           make_unique<Call>(
               move(supClass_->qualifiers), supClass_->className, move(supParams_), line_, false))
@@ -293,7 +293,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   for (const auto& [access, type, name, line] : fields_) {
     ctx.checkType(*type, line_);
     auto p = classInfo.fields.try_emplace(
-        name, type, classInfo.numBytes, access, ctx.getFilename(), line_);
+        name, type, classInfo.numBytes, access, ctx.getFilename(), line_, id_);
     if (p.second) {
       classInfo.numBytes += type->numBytes;
     } else {

@@ -105,15 +105,15 @@ Ctx::ClassInfo& Ctx::insertClass(const string& className, int id, size_t line) {
   return p.first->second;
 }
 
-bool Ctx::isBaseOf(int classId, const Type& base) const {
+bool Ctx::isSubClassOf(int classId, const Type& base) const {
   if (base.typeName != Type::Category::CLASS) {
     return false;
   }
 
-  return isBaseOf(classId, static_cast<const Class&>(base).id);
+  return isSubClassOf(classId, static_cast<const Class&>(base).id);
 }
 
-bool Ctx::isBaseOf(int classId, int baseId) const {
+bool Ctx::isSubClassOf(int classId, int baseId) const {
   const ClassInfo* classInfo = lookupClass(classId);
 
   while (classInfo) {

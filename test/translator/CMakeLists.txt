@@ -229,6 +229,24 @@ error_test(const
     ('Error','35','Expected')
     ('Error','36','Expected')
     ('Error','37','Object')")
+error_test(access
+    "('Error','27','Method')
+    ('Error','32','Method')
+    ('Error','35','Undefined')
+    ('Error','39','Method')
+    ('Error','42','Undefined')
+    ('Error','46','Method')
+    ('Error','50','Field')
+    ('Error','56','Method')
+    ('Error','57','Method')
+    ('Error','60','Method')
+    ('Error','61','Method')
+    ('Error','64','Method')
+    ('Error','65','Method')
+    ('Error','68','Method')
+    ('Error','69','Method')
+    ('Error','72','Field')
+    ('Error','73','Field')")
 
 add_custom_target(
     translator_check

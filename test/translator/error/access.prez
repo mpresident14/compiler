@@ -1,0 +1,74 @@
+class Base {
+  public int mPub;
+  protected int mProt;
+  private int mPriv;
+
+  public static void statPub() {}
+  protected static void statProt() {}
+  private static void statPriv() {}
+
+  public Base() {}
+  protected Base(int x) { this.mPub = x; }
+  private Base(int x, int y) { this.mPub = x + y; }
+
+  public void nonvirtPub() { print(this.mPub); }
+  protected void nonvirtProt() { print(this.mPub); }
+  private void nonvirtPriv() { print(this.mPub); }
+
+  public virtual void virtPub() {}
+  protected virtual void virtProt() {}
+  private virtual void virtPriv() {}
+}
+
+
+class Derived : Base {
+  public Derived() : Base() {}
+  public Derived(int x) : Base(x) {}
+  public Derived(int x, int y) : Base(x,y) {} // ERROR
+
+  public void f() {
+    Base.nonvirtPub();
+    Base.nonvirtProt();
+    Base.nonvirtPriv(); // ERROR
+    this.nonvirtPub();
+    this.nonvirtProt();
+    this.nonvirtPriv(); // ERROR
+
+    Base.virtPub();
+    Base.virtProt();
+    Base.virtPriv(); // ERROR
+    this.virtPub();
+    this.virtProt();
+    this.virtPriv(); // ERROR
+
+    Base.statPub();
+    Base.statProt();
+    Base.statPriv(); // ERROR
+
+    this.mPub = 1;
+    this.mProt = 1;
+    this.mPriv = 1; // ERROR
+  }
+}
+
+void main() {
+  Base b = Base();
+  b = Base(1);   // ERROR
+  b = Base(1,2); // ERROR
+
+  b.nonvirtPub();
+  b.nonvirtProt(); // ERROR
+  b.nonvirtPriv(); // ERROR
+
+  b.virtPub();
+  b.virtProt(); // ERROR
+  b.virtPriv(); // ERROR
+
+  Base.statPub();
+  Base.statProt(); // ERROR
+  Base.statPriv(); // ERROR
+
+  b.mPub = 1;
+  b.mProt = 1; // ERROR
+  b.mPriv = 1; // ERROR
+}
