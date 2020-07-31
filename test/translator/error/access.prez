@@ -32,7 +32,7 @@ class Derived : Base {
     Base.nonvirtPriv(); // ERROR
     this.nonvirtPub();
     this.nonvirtProt();
-    this.nonvirtPriv(); // ERROR
+    this.nonvirtPriv();
 
     Base.virtPub();
     Base.virtProt();
@@ -49,7 +49,14 @@ class Derived : Base {
     this.mProt = 1;
     this.mPriv = 1; // ERROR
   }
+
+  protected void nonvirtProt() { print(this.mPub); } // ERROR
+  private void nonvirtPriv() { print(this.mPub); }
+
+  protected virtual void virtProt() {} // ERROR
+  private override void virtPriv() {}  // ERROR
 }
+
 
 void main() {
   Base b = Base();

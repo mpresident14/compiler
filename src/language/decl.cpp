@@ -332,7 +332,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
         supMethRange.second,
         [&method](const pair<const string, const Ctx::FnInfo>& p) {
           const Ctx::FnInfo& supMethInfo = p.second;
-          return Func::isVirtual(supMethInfo.modifiers)
+          return !Func::isPrivate(supMethInfo.modifiers) && Func::isVirtual(supMethInfo.modifiers)
                  && equal(
                      supMethInfo.paramTypes.cbegin(),
                      supMethInfo.paramTypes.cend(),
