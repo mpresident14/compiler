@@ -264,7 +264,13 @@ ClassDecl::ClassDecl(
   superName_ = superName;
 }
 
-
+/*
+ * INHERITANCE
+ *
+ * Neither static nor private methods are inherited (and thus they can be redeclared in a subclass).
+ * Only public and protected methods/fields can be accessed by a subclass.
+ *
+ */
 void ClassDecl::addToCtx(Ctx& ctx) {
   // We are inside the same file as the class declaration, so no qualifiers
   shared_ptr<Class> classTy = make_shared<Class>(vector<string>(), name_);
@@ -314,7 +320,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
     // No superclass
     if (!superInfo) {
-      ostream& err = ctx.getLogger().logError(line_);
+      ostream& err = ctx.getLogger().logError(method->line_);
       err << "Method '" << name_ << "::" << *method << "' is declared override, but class '"
           << name_ << "' has no superclass";
       continue;
@@ -336,7 +342,7 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
     // No identical virtual method in superclass
     if (supMethIter == supMethRange.second) {
-      ostream& err = ctx.getLogger().logError(line_);
+      ostream& err = ctx.getLogger().logError(method->line_);
       err << "Method '" << name_ << "::" << *method
           << "' is declared override, but does not override a virtual method from the superclass";
       continue;
