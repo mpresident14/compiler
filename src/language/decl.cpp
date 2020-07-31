@@ -90,7 +90,7 @@ void Func::checkForReturn(Ctx& ctx) {
       body_->stmts_.push_back(make_unique<Return>(optional<ExprPtr>(), 0));
     } else {
       const ClassDecl* enclosingClass = ctx.insideClass();
-      ostringstream& error = ctx.getLogger().logError(line_);
+      ostream& error = ctx.getLogger().logError(line_);
       error << "Some paths through non-void function '" << *returnType_ << ' ';
       if (enclosingClass) {
         error << enclosingClass->name_ << "::" << name_;
@@ -290,18 +290,17 @@ void ClassDecl::addToCtx(Ctx& ctx) {
   }
 
   // Add fields declared in this class
-  // TODO: Add declfile and line on redefinition error
   for (const auto& [access, type, name, line] : fields_) {
     ctx.checkType(*type, line_);
-    // TODO: Use try_emplace (needs FieldInfo ctor)
-    if (classInfo.fields
-            .emplace(
-                name, Ctx::FieldInfo{ type, classInfo.numBytes, access, ctx.getFilename(), line_ })
-            .second) {
+    auto p = classInfo.fields.try_emplace(
+        name, type, classInfo.numBytes, access, ctx.getFilename(), line_);
+    if (p.second) {
       classInfo.numBytes += type->numBytes;
     } else {
-      ostringstream& err = ctx.getLogger().logError(line);
-      err << "Redefinition of field '" << name << "' in class '" << name_ << '\'';
+      const Ctx::FieldInfo& info = p.first->second;
+      ostream& err = ctx.getLogger().logError(line);
+      err << "Redefinition of field '" << name << "' in class '" << name_
+          << "' (Originally declared in " << info.declFile << " on line " << info.line;
     }
   }
 

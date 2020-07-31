@@ -43,6 +43,9 @@ public:
   };
 
   struct FieldInfo {
+    FieldInfo(const TypePtr& aType, size_t off, int access, std::string_view file, size_t aLine)
+        : type(aType), offset(off), accessMod(access), declFile(file), line(aLine) {}
+
     TypePtr type;
     size_t offset;
     int accessMod;
