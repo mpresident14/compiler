@@ -1,15 +1,15 @@
 class Base {
-  static String test() {
+  public static String test() {
     return "Base";
   }
 }
 
 class Derived : Base {
-  static String test() {
+  public static String test() {
     return Derived.test(false);
   }
 
-  static String test(bool useBase) {
+  public static String test(bool useBase) {
     return useBase ? Base.test() : "Derived";
   }
 }

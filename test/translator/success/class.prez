@@ -6,11 +6,11 @@ class Vehicle {
     this.wheels = 4;
   }
 
-  int getSeats() {
+  public int getSeats() {
     return this.seats;
   }
 
-  void setSeats(int seats) {
+  public void setSeats(int seats) {
     this.seats = seats;
   }
 
@@ -21,11 +21,11 @@ class Vehicle {
     this.wheels = wheels;
   }
 
-  int getWheels() {
+  public int getWheels() {
     return this.wheels;
   }
 
-  void setWheels(int wheels) {
+  public void setWheels(int wheels) {
     this.wheels = wheels;
   }
 }

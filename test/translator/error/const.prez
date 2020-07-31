@@ -1,25 +1,25 @@
 class Obj {
   String str;
 
-  static void f() const {}
+  public static void f() const {}
 
   Obj(String s) {
     this.str = s;
   }
 
-  long method() const {
+  public long method() const {
     return this.str.len;
   }
 
-  long method() {
+  public long method() {
     return this.str.len + 1;
   }
 
-  String getStr() const {
+  public String getStr() const {
     return this.str;
   }
 
-  const String getConstStr() const {
+  public const String getConstStr() const {
     return this.str;
   }
 }

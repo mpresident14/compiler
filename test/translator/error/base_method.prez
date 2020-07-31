@@ -1,0 +1,14 @@
+class A {
+  public static void f(){}
+
+  public virtual String name() {
+    return "A";
+  }
+}
+
+class B {
+  public void f() {
+    A.f();
+    A.name(); //
+  }
+}

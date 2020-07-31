@@ -27,10 +27,10 @@ void main() {
 
 class Base {
   Base(){}
-  virtual String name() { return "Base"; }
+  public virtual String name() { return "Base"; }
 }
 
 class Derived : Base {
   Derived(){}
-  override String name() { return "Derived"; }
+  public override String name() { return "Derived"; }
 }

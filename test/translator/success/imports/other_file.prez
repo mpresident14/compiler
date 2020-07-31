@@ -12,7 +12,7 @@ class Rectangle {
     this.width = wid;
   }
 
-  long perimeter() {
+  public long perimeter() {
     return this.length * 2 + this.width * 2;
   }
 }

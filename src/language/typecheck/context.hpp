@@ -154,7 +154,6 @@ public:
   CtxTree& getCtxTree() noexcept;
   const Type& getCurrentRetType() const noexcept;
   void setCurrentRetType(const TypePtr& type) noexcept;
-  constexpr int getCurrentClass() const noexcept { return currentClass_->id_; }
 
   void includeDecls(Ctx& ctx);
   int insertVar(const std::string& name, const TypePtr& type, size_t line);

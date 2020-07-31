@@ -8,7 +8,7 @@ class Derived : file2::Base {
     this.b = b;
   }
 
-  override String name() {
+  public override String name() {
     return "Derived";
   }
 }
@@ -18,7 +18,7 @@ class GrandChild : Derived {
   GrandChild(int n, bool b) : Derived(n, b) {}
   GrandChild(int a, int b) : file2::Base(a + b) { this.b = false; }
 
-  void sayHi() {
+  public void sayHi() {
     print("Child of ".append(Derived.name()));
     print("Grandchild of ".append(file2::Base.name()));
   }

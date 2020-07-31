@@ -5,11 +5,11 @@ class Vehicle {
     this.seats = true;
   }
 
-  bool hasSeats() {
+  public bool hasSeats() {
     return this.seats;
   }
 
-  void setSeats(long seats) {
+  public void setSeats(long seats) {
     this.seats = seats;
   }
 }

@@ -1,7 +1,7 @@
 class Obj {
   final String str;
 
-  void setStr(String s) {
+  public void setStr(String s) {
     this.str = s;
   }
 }

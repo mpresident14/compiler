@@ -16,7 +16,7 @@ class Rectangle {
     this.width = wid;
   }
 
-  long area() {
+  public long area() {
     return this.length * this.width;
   }
 }

@@ -5,11 +5,11 @@ class Base {
     this.n = n;
   }
 
-  virtual String name() {
+  public virtual String name() {
     return "Base";
   }
 
-  String toString() {
+  public String toString() {
     return toString(this.n);
   }
 }
@@ -19,11 +19,11 @@ class Derived : Base {
     this.n = n;
   }
 
-  String name() {
+  public String name() {
     return "Derived";
   }
 
-  String toString() {
+  public String toString() {
     return toString(this.n);
   }
 }
@@ -31,7 +31,7 @@ class Derived : Base {
 class GrandChild : Derived {
   int n;
 
-  virtual String name() {
+  public virtual String name() {
     return "GrandChild";
   }
 }

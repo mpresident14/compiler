@@ -1,7 +1,7 @@
 class Base {
   int n;
 
-  static String test() {
+  public static String test() {
     print(this.n);
     return "Base";
   }

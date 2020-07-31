@@ -5,7 +5,7 @@ class Base {
     this.n = n;
   }
 
-  virtual String name() {
+  public virtual String name() {
     return "Base";
   }
 }

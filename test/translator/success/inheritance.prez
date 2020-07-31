@@ -5,15 +5,15 @@ class Base {
     this.n = n;
   }
 
-  virtual void vFunc() {
+  public virtual void vFunc() {
     print("vFunc");
   }
 
-  virtual String name() {
+  public virtual String name() {
     return "Base";
   }
 
-  String toString() {
+  public String toString() {
     return toString(this.n);
   }
 }
@@ -24,15 +24,15 @@ class Derived : Base {
     this.n = n;
   }
 
-  override String name() {
+  public override String name() {
     return "Derived";
   }
 
-  virtual void dvFunc() {
+  public virtual void dvFunc() {
     print("dvFunc");
   }
 
-  void nonVFunc() {
+  public void nonVFunc() {
     // Just to avoid note that this method can be static
     this.n = this.n;
     print("nonVFunc");
@@ -44,7 +44,7 @@ class GrandChild : Derived {
     this.n = n;
   }
 
-  override String name() {
+  public override String name() {
     return "GrandChild";
   }
 }

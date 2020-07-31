@@ -449,6 +449,32 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
  * MethodInvocation *
  ********************/
 
+namespace {
+
+  void checkAccess(
+      string_view methodName,
+      const Ctx::FnInfo& fnInfo,
+      const Class& classTy,
+      size_t line,
+      Ctx& ctx) {
+    const ClassDecl* enclosingClass = ctx.insideClass();
+    bool isPriv = Func::isPrivate(fnInfo.modifiers);
+
+    // Private methods accessible only within the same class
+    // Protected methods accessible only within the subclasses
+    if ((isPriv && !(enclosingClass && enclosingClass->id_ == classTy.id))
+        || (Func::isProtected(fnInfo.modifiers)
+            && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy.id)))) {
+      ostream& err = ctx.getLogger().logError(line);
+      err << "Method '" << classTy.className << "::" << methodName;
+      Type::streamParamTypes(fnInfo.paramTypes, err);
+      err << "' is not accessible (declared " << (isPriv ? "'private'" : "'protected'") << " in "
+          << fnInfo.declFile << " on line " << fnInfo.line << ')';
+    }
+  }
+
+}  // namespace
+
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   // The method below returns true as the second element if it actually returned the
   // QualifiedInvocation
@@ -483,24 +509,7 @@ Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
-
-  const ClassDecl* enclosingClass = ctx.insideClass();
-  if (Func::isPrivate(fnInfo->modifiers) && !(enclosingClass && enclosingClass->id_ == classTy->id)) {
-    // Private methods accessible only within the same class
-    ostream& err = ctx.getLogger().logError(line_);
-    err << "Method '" << classTy->className << "::" << methodName_;
-    Type::streamParamTypes(paramTypes, err);
-    err << "' is not accessible (declared 'private' in " << fnInfo->declFile << " on line "
-        << fnInfo->line << ')';
-  } else if (
-      Func::isProtected(fnInfo->modifiers) && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy->id))) {
-    // Protected methods accessible only within the subclasses
-    ostream& err = ctx.getLogger().logError(line_);
-    err << "Method '" << classTy->className << "::" << methodName_;
-    Type::streamParamTypes(paramTypes, err);
-    err << "' is not accessible (declared 'protected' in " << fnInfo->declFile << " on line "
-        << fnInfo->line << ')';
-  }
+  checkAccess(methodName_, *fnInfo, *classTy, line_, ctx);
 
   if (eInfo.type->isConst && !Func::isConst(fnInfo->modifiers)) {
     ostream& err = ctx.getLogger().logError(line_);
@@ -580,14 +589,17 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
     return dummyInfo();
   }
 
+  checkAccess(methodName_, *fnInfo, classTy_, line_, ctx);
+
+  const ClassDecl* enclosingClass = ctx.insideClass();
   if (!Func::isStatic(fnInfo->modifiers)) {
-    if (!(ctx.insideClass() && ctx.isBaseOf(ctx.getCurrentClass(), classTy_))) {
+    if (!(enclosingClass && ctx.isBaseOf(enclosingClass->id_, classTy_))) {
       ostream& err = ctx.getLogger().logError(line_);
-      err << "Cannot not invoke non-static method '"
+      err << "Can only invoke qualified non-static method '"
           << lang_utils::qualifiedName(classTy_.qualifiers, classTy_.className)
           << "::" << methodName_;
       Type::streamParamTypes(paramTypes, err);
-      err << "' from a function or non-subclass method";
+      err << "' from within a subclass of '" << enclosingClass->name_ << '\'';
       return dummyInfo();
     }
 

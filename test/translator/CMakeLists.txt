@@ -187,8 +187,6 @@ error_test(narrowing
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')
     ('Warning','11','Narrowing')")
-error_test(member
-    "('Error','3','Cannot')")
 error_test(class
     "('Error','5','Expected')
     ('Error','9','Expected')
@@ -211,6 +209,9 @@ error_test(static
     "('Error','5','Type')
     ('Error','5','Undefined')
     ('Error','13','Undefined')")
+error_test(base_method
+    "('Note','10','Method')
+    ('Error','12','Can')")
 error_test(final
     "('Error','5','Cannot')
     ('Error','10','Cannot')
