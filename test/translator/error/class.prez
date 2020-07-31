@@ -1,7 +1,7 @@
 class Vehicle {
-  int seats;
+  public int seats;
 
-  Vehicle() {
+  public Vehicle() {
     this.seats = true;
   }
 

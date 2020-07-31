@@ -1,7 +1,7 @@
 class Vehicle {
-  int seats;
+  public int seats;
 
-  Vehicle(int seats) {
+  public Vehicle(int seats) {
     this.seats = seats;
     this.wheels = 4;
   }
@@ -14,9 +14,9 @@ class Vehicle {
     this.seats = seats;
   }
 
-  int wheels;
+  public int wheels;
 
-  Vehicle(int seats, int wheels) {
+  public Vehicle(int seats, int wheels) {
     this.seats = seats;
     this.wheels = wheels;
   }

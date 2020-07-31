@@ -1,9 +1,9 @@
 import "file2.prez"
 
 class Derived : file2::Base {
-  bool b;
+  public bool b;
 
-  Derived(int n, bool b)
+  public Derived(int n, bool b)
       : file2::Base(n) {
     this.b = b;
   }
@@ -14,9 +14,9 @@ class Derived : file2::Base {
 }
 
 class GrandChild : Derived {
-  GrandChild(int n) : GrandChild(n, false) {}
-  GrandChild(int n, bool b) : Derived(n, b) {}
-  GrandChild(int a, int b) : file2::Base(a + b) { this.b = false; }
+  public GrandChild(int n) : GrandChild(n, false) {}
+  public GrandChild(int n, bool b) : Derived(n, b) {}
+  public GrandChild(int a, int b) : file2::Base(a + b) { this.b = false; }
 
   public void sayHi() {
     print("Child of ".append(Derived.name()));

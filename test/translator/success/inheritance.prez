@@ -1,7 +1,7 @@
 class Base {
-  int n;
+  public int n;
 
-  Base(int n) {
+  public Base(int n) {
     this.n = n;
   }
 
@@ -20,7 +20,7 @@ class Base {
 
 
 class Derived : Base {
-  Derived(int n) {
+  public Derived(int n) {
     this.n = n;
   }
 
@@ -40,7 +40,7 @@ class Derived : Base {
 }
 
 class GrandChild : Derived {
-  GrandChild(int n) {
+  public GrandChild(int n) {
     this.n = n;
   }
 

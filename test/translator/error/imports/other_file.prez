@@ -3,10 +3,10 @@ int otherFunc() {
 }
 
 class Rectangle {
-  long length;
-  long width;
+  public long length;
+  public long width;
 
-  Rectangle(long len, long wid) {
+  public Rectangle(long len, long wid) {
     this.length = len;
     this.width = wid;
   }

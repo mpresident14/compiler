@@ -26,11 +26,11 @@ void main() {
 }
 
 class Base {
-  Base(){}
+  public Base(){}
   public virtual String name() { return "Base"; }
 }
 
 class Derived : Base {
-  Derived(){}
+  public Derived(){}
   public override String name() { return "Derived"; }
 }

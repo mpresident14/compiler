@@ -1,9 +1,9 @@
 class Obj {
-  String str;
+  public String str;
 
   public static void f() const {}
 
-  Obj(String s) {
+  public Obj(String s) {
     this.str = s;
   }
 

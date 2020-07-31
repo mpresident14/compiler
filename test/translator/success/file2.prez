@@ -1,7 +1,7 @@
 class Base {
-  int n;
+  public int n;
 
-  Base(int n) {
+  public Base(int n) {
     this.n = n;
   }
 

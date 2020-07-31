@@ -1,5 +1,5 @@
 class Obj {
-  final String str;
+  public final String str;
 
   public void setStr(String s) {
     this.str = s;

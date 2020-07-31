@@ -1,5 +1,5 @@
 class Base {
-  int n;
+  public int n;
 
   public static String test() {
     print(this.n);
