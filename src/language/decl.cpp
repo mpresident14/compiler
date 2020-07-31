@@ -144,10 +144,15 @@ std::ostream& operator<<(std::ostream& out, const Func& func) {
  ***************/
 
 Constructor::Constructor(
-    string_view name, vector<pair<TypePtr, string>>&& params, unique_ptr<Block>&& body, size_t line)
-    : Constructor(name, move(params), {}, {}, move(body), line) {}
+    Modifier access,
+    string_view name,
+    vector<pair<TypePtr, string>>&& params,
+    unique_ptr<Block>&& body,
+    size_t line)
+    : Constructor(access, name, move(params), {}, {}, move(body), line) {}
 
 Constructor::Constructor(
+    Modifier access,
     std::string_view name,
     std::vector<std::pair<TypePtr, std::string>>&& params,
     std::optional<Class>&& supClass,
@@ -156,7 +161,7 @@ Constructor::Constructor(
     size_t line)
     // returnType_ is a nullptr for now b/c we assign it in ClassDecl::addToCtx to prevent
     // creating a new shared_ptr for each ctor
-    : Func(Func::Modifier::CTOR, nullptr, name, move(params), move(body), line),
+    : Func(Func::Modifier::CTOR | access, nullptr, name, move(params), move(body), line),
       supClass_(move(supClass)),
       supParams_(move(supParams)) {}
 
@@ -217,7 +222,7 @@ ClassDecl::ClassDecl(string_view name, vector<ClassElem>&& classElems, size_t li
         fields_.push_back(move(get<Field>(elem.elem)));
         break;
       case ClassElem::Type::CTOR:
-        ctors_.push_back(move(get<Constructor>(elem.elem)));
+        ctors_.push_back(move(get<std::unique_ptr<Constructor>>(elem.elem)));
         break;
       case ClassElem::Type::METHOD: {
         unique_ptr<Func>& method = get<unique_ptr<Func>>(elem.elem);
@@ -397,28 +402,28 @@ void ClassDecl::addToCtx(Ctx& ctx) {
 
   // Add constructors to this context
   bool hasVirtualFns = !vTableEntries_.empty();
-  for (Constructor& ctor : ctors_) {
-    if (ctor.name_ != name_) {
-      ostream& err = ctx.getLogger().logError(ctor.line_);
-      err << "Cannot declare a constructor for class '" << ctor.name_
+  for (std::unique_ptr<Constructor>& ctor : ctors_) {
+    if (ctor->name_ != name_) {
+      ostream& err = ctx.getLogger().logError(ctor->line_);
+      err << "Cannot declare a constructor for class '" << ctor->name_
           << "' inside declaration of class '" << name_ << '\'';
       continue;
     }
-    ctor.returnType_ = classTy;
+    ctor->returnType_ = classTy;
     if (hasVirtualFns) {
-      ctor.vTableName_.emplace(ClassDecl::vTableName(name_, id_));
+      ctor->vTableName_.emplace(ClassDecl::vTableName(name_, id_));
     }
-    ctor.addToCtx(ctx);
-    ctor.paramNames_.push_back(lang_utils::THIS);
-    ctor.paramTypes_.push_back(classTy);
+    ctor->addToCtx(ctx);
+    ctor->paramNames_.push_back(lang_utils::THIS);
+    ctor->paramTypes_.push_back(classTy);
   }
 }  // namespace language
 
 
 void ClassDecl::toImDecls(vector<im::DeclPtr>& imDecls, Ctx& ctx) {
   ctx.enterClass(this);
-  for (Constructor& ctor : ctors_) {
-    ctor.toImDecls(imDecls, ctx);
+  for (std::unique_ptr<Constructor>& ctor : ctors_) {
+    ctor->toImDecls(imDecls, ctx);
   }
   for (const unique_ptr<Func>& method : nonVMethods_) {
     method->toImDecls(imDecls, ctx);

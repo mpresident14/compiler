@@ -210,9 +210,35 @@ Expr::Info TernaryOp::toImExpr(Ctx& ctx) {
 }
 
 
-/************
+/********
  * Call *
- ************/
+ ********/
+
+namespace {
+
+  void checkAccess(
+      string_view methodName,
+      const Ctx::FnInfo& fnInfo,
+      const Class& classTy,
+      size_t line,
+      Ctx& ctx) {
+    const ClassDecl* enclosingClass = ctx.insideClass();
+    bool isPriv = Func::isPrivate(fnInfo.modifiers);
+
+    // Private methods accessible only within the same class
+    // Protected methods accessible only within the subclasses
+    if ((isPriv && !(enclosingClass && enclosingClass->id_ == classTy.id))
+        || (Func::isProtected(fnInfo.modifiers)
+            && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy.id)))) {
+      ostream& err = ctx.getLogger().logError(line);
+      err << "Method '" << classTy.className << "::" << methodName;
+      Type::streamParamTypes(fnInfo.paramTypes, err);
+      err << "' is not accessible (declared " << (isPriv ? "'private'" : "'protected'") << " in "
+          << fnInfo.declFile << " on line " << fnInfo.line << ')';
+    }
+  }
+
+}  // namespace
 
 Expr::Info Call::toImExpr(Ctx& ctx) {
   vector<im::ExprPtr> paramImExprs;
@@ -232,11 +258,14 @@ Expr::Info Call::toImExpr(Ctx& ctx) {
   }
 
   if (Func::isCtor(fnInfo->modifiers)) {
-    int classId = static_cast<const Class*>(fnInfo->returnType.get())->id;
+    const Class* classTy = static_cast<const Class*>(fnInfo->returnType.get());
+    int classId = classTy->id;
     const Ctx::ClassInfo* classInfo = ctx.lookupClass(classId);
     if (!classInfo) {
       throw runtime_error("CallExpr::toImExpr");
     }
+
+    checkAccess(name_, *fnInfo, *classTy, line_, ctx);
 
     // Allocate the object
     if (ctorAlloc_) {
@@ -449,32 +478,6 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
  * MethodInvocation *
  ********************/
 
-namespace {
-
-  void checkAccess(
-      string_view methodName,
-      const Ctx::FnInfo& fnInfo,
-      const Class& classTy,
-      size_t line,
-      Ctx& ctx) {
-    const ClassDecl* enclosingClass = ctx.insideClass();
-    bool isPriv = Func::isPrivate(fnInfo.modifiers);
-
-    // Private methods accessible only within the same class
-    // Protected methods accessible only within the subclasses
-    if ((isPriv && !(enclosingClass && enclosingClass->id_ == classTy.id))
-        || (Func::isProtected(fnInfo.modifiers)
-            && !(enclosingClass && !ctx.isBaseOf(enclosingClass->id_, classTy.id)))) {
-      ostream& err = ctx.getLogger().logError(line);
-      err << "Method '" << classTy.className << "::" << methodName;
-      Type::streamParamTypes(fnInfo.paramTypes, err);
-      err << "' is not accessible (declared " << (isPriv ? "'private'" : "'protected'") << " in "
-          << fnInfo.declFile << " on line " << fnInfo.line << ')';
-    }
-  }
-
-}  // namespace
-
 Expr::Info MethodInvocation::toImExpr(Ctx& ctx) {
   // The method below returns true as the second element if it actually returned the
   // QualifiedInvocation
@@ -584,7 +587,7 @@ Expr::Info QualifiedInvocation::toImExpr(Ctx& ctx) {
       ctx.lookupMethod(classTy_.id, classTy_.className, methodName_, paramTypes, line_);
 
   const Ctx::FnInfo* fnInfo = classFnInfo.second;
-  if (!classFnInfo.second) {
+  if (!fnInfo) {
     // Undefined function
     return dummyInfo();
   }

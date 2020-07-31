@@ -218,18 +218,9 @@ ClassElements -> { vector<ClassDecl::ClassElem> }
    | ClassElements ClassElement   % (#0.push_back(move(#1)), move(#0)) %
 
 ClassElement -> { ClassDecl::ClassElem }
-  := NonVoid IDENT SEMI
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{move(#0), move(#1), #line } } %
-   | FINAL NonVoid IDENT SEMI
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, ClassDecl::Field{Type::makeFinal(#1), move(#2), #line } } %
-   | IDENT LPAREN Params RPAREN Block
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), move(#4), #line) } %
-   | IDENT LPAREN Params RPAREN COLON IDENT LPAREN Exprs RPAREN Block
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), Class(vector<string>(), #5), move(#7), move(#9), #line) } %
-   | IDENT LPAREN Params RPAREN COLON Qualifiers IDENT LPAREN Exprs RPAREN Block
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, Constructor(#0, move(#2), Class(move(#5), #6), move(#8), move(#10), #line) } %
-   | Method
-     % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, move(#0) } %
+  := Field   % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, move(#0) } %
+   | Ctor    % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, move(#0) } %
+   | Method  % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, move(#0) } %
 
 Function -> { std::unique_ptr<Func> }
   := NonVoid IDENT LPAREN Params RPAREN MaybeConst Block
@@ -238,8 +229,20 @@ Function -> { std::unique_ptr<Func> }
       % make_unique<Func>(#5, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#6), #line) %
 
 Method -> { std::unique_ptr<Func> }
-  := AccessMod Function          % (#1->modifiers_ |= #0, move(#1))%
-  |  AccessMod FuncMod Function  % (#2->modifiers_ |= (#0 | #1), move(#2)) %
+  := AccessMod Function             % (#1->modifiers_ |= #0, move(#1))%
+  |  AccessMod VirtMod Function     % (#2->modifiers_ |= (#0 | #1), move(#2)) %
+
+Ctor -> { std::unique_ptr<Constructor> }
+  := AccessMod IDENT LPAREN Params RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), move(#5), #line) %
+   | AccessMod IDENT LPAREN Params RPAREN COLON IDENT LPAREN Exprs RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), Class(vector<string>(), #6), move(#8), move(#10), #line) %
+   | AccessMod IDENT LPAREN Params RPAREN COLON Qualifiers IDENT LPAREN Exprs RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), Class(move(#6), #7), move(#9), move(#11), #line) %
+
+Field -> { ClassDecl::Field }
+ := NonVoid IDENT SEMI          % ClassDecl::Field{move(#0), move(#1), #line } %
+   | FINAL NonVoid IDENT SEMI   % ClassDecl::Field{Type::makeFinal(#1), move(#2), #line } %
 
 Block -> { std::unique_ptr<Block> }
   := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %
@@ -401,9 +404,8 @@ AccessMod -> { Func::Modifier }
    | PROTECTED  % Func::Modifier::PROTECTED %
    | PUBLIC     % Func::Modifier::PUBLIC %
 
-FuncMod -> { Func::Modifier }
-  :=         #prec EPSILON    % Func::Modifier::NONE %
-   | VIRTUAL                  % Func::Modifier::VIRTUAL %
+VirtMod -> { Func::Modifier }
+  := VIRTUAL                  % Func::Modifier::VIRTUAL %
    | OVERRIDE                 % Func::Modifier::OVERRIDE %
    | STATIC                   % Func::Modifier::STATIC %
 

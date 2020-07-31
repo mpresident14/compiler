@@ -87,6 +87,7 @@ private:
 class Constructor : public Func {
 public:
   Constructor(
+      Modifier access,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
       std::optional<Class>&& supClass,
@@ -94,6 +95,7 @@ public:
       std::unique_ptr<Block>&& body,
       size_t line);
   Constructor(
+      Modifier access,
       std::string_view name,
       std::vector<std::pair<TypePtr, std::string>>&& params,
       std::unique_ptr<Block>&& body,
@@ -119,7 +121,7 @@ public:
     enum class Type { FIELD, CTOR, METHOD };
 
     Type type;
-    std::variant<Field, Constructor, std::unique_ptr<Func>> elem;
+    std::variant<Field, std::unique_ptr<Constructor>, std::unique_ptr<Func>> elem;
   };
 
   static std::string vTableName(std::string_view className, int id);
@@ -139,7 +141,7 @@ public:
   std::vector<std::string> superQuals_;
   std::optional<std::string> superName_;
   std::vector<Field> fields_;
-  std::vector<Constructor> ctors_;
+  std::vector<std::unique_ptr<Constructor>> ctors_;
   std::vector<std::unique_ptr<Func>> staticMethods_;
   std::vector<std::unique_ptr<Func>> nonVMethods_;
   std::vector<std::unique_ptr<Func>> vMethods_;

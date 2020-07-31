@@ -2,12 +2,12 @@ class String {
   char[] arr;
   long len;
 
-  String() {
+  public String() {
     this.arr = char[](0);
     this.len = 0;
   }
 
-  String(char[] arr, bool literal) {
+  public String(char[] arr, bool literal) {
     if (literal) {
       this.arr = arr;
       this.len = arr.length;
