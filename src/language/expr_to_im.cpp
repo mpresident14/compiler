@@ -466,8 +466,6 @@ Expr::Info MemberAccess::toImExpr(Ctx& ctx) {
         || (Func::isProtected(fieldInfo.accessMod)
             && !(enclosingClass && ctx.isSubClassOf(enclosingClass->id_, fieldInfo.declClassId)))) {
       ostream& err = ctx.getLogger().logError(line_);
-      // TODO: Have Ctx::lookupClass return an iter so that we can access the class name in which
-      // the field was declared (here and for methods too)
       err << "Field '" << classTy->className << "::" << member_ << "' is not accessible (declared "
           << Func::accessStr(fieldInfo.accessMod) << " in " << fieldInfo.declFile << " on line "
           << fieldInfo.line << ')';
