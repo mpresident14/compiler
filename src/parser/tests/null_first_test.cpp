@@ -1,6 +1,6 @@
 #include "src/parser/null_first.hpp"
 
-#include "test/parser/utils/nullable_grammar.hpp"
+#include "src/parser/testing/nullable_grammar.hpp"
 
 #include <bitset>
 
@@ -33,7 +33,8 @@ void testGetFirsts() {
   boost::dynamic_bitset<> expectedX("0100"s);
   boost::dynamic_bitset<> expectedY("1010"s);
 
-  vector<boost::dynamic_bitset<>> actual = getNullsAndFirsts(GRAMMAR_DATA).second;
+  vector<boost::dynamic_bitset<>> actual =
+      getNullsAndFirsts(GRAMMAR_DATA).second;
   TESTER.assertEquals(expectedS, actual[S]);
   TESTER.assertEquals(expectedC, actual[C]);
   TESTER.assertEquals(expectedX, actual[X]);

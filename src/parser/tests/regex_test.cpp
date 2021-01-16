@@ -1,5 +1,4 @@
 
-// #include "src/parser/regex_parse.hpp"
 #include "src/parser/regex.hpp"
 
 #include "src/parser/dfa.hpp"

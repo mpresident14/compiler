@@ -1,5 +1,5 @@
 /* GENERATED FILE. DO NOT OVERWRITE BY HAND. */
-#include "../src/parser/regex_parser.hpp"
+#include "src/parser/regex_parser.hpp"
 
 #include <string.h>
 

@@ -1,6 +1,0 @@
-void main() {
-  String greeting = "Hello world!";
-  print(greeting);
-  print("Good".append("-bye!"));
-  print("E\"sca\tpe\nd");
-}
