@@ -1,6 +1,6 @@
-#include "test/parser/generated/bad_expr_parser.hpp"
-#include "test/parser/generated/expr_parser.hpp"
-#include "test/parser/utils/expr.hpp"
+#include "src/parser/testing/bad_expr_parser.hpp"
+#include "src/parser/testing/expr_parser.hpp"
+#include "src/parser/testing/expr.hpp"
 
 #include <memory>
 

@@ -20,9 +20,11 @@ Logger logger;
  * TO CODE *
  ***********/
 
-inline void strToCode(ostream& out, const string& str) { out << '"' << str << '"'; }
+inline void strToCode(ostream &out, const string &str) {
+  out << '"' << str << '"';
+}
 
-inline void tokToCode(ostream& out, const Token& token) {
+inline void tokToCode(ostream &out, const Token &token) {
   out << '{';
   strToCode(out, token.name);
   out << ',';
@@ -34,14 +36,14 @@ inline void tokToCode(ostream& out, const Token& token) {
   // Other fields not needed for shift-reducing
 }
 
-inline void concToCode(ostream& out, const Concrete& concrete) {
+inline void concToCode(ostream &out, const Concrete &concrete) {
   out << '{';
   intToCode(out, concrete.varType);
   out << '}';
   // Other fields not needed for shift-reducing
 }
 
-inline void varToCode(ostream& out, const Variable& var) {
+inline void varToCode(ostream &out, const Variable &var) {
   out << '{';
   strToCode(out, var.name);
   out << ',';
@@ -50,7 +52,7 @@ inline void varToCode(ostream& out, const Variable& var) {
   // Other fields not needed for shift-reducing
 }
 
-inline void gdToCode(ostream& out, const GrammarData& gd) {
+inline void gdToCode(ostream &out, const GrammarData &gd) {
   out << '{';
   vecToCode(out, gd.tokens, tokToCode);
   out << ',';
@@ -63,7 +65,8 @@ inline void gdToCode(ostream& out, const GrammarData& gd) {
 /*********************
  * STRING OPERATIONS *
  *********************/
-void replaceAll(ostream& out, string_view str, const string& from, const string& to) {
+void replaceAll(ostream &out, string_view str, const string &from,
+                const string &to) {
   size_t startPos = 0;
   size_t endPos = 0;
   while ((endPos = str.find(from, startPos)) != string::npos) {
@@ -87,42 +90,42 @@ string replaceAll(string_view str, char from, char to) {
   return s;
 }
 
-
-void streamSymbolNames(ostream& out, const vector<intptr_t>& symbols, const GrammarData& gd) {
+void streamSymbolNames(ostream &out, const vector<intptr_t> &symbols,
+                       const GrammarData &gd) {
   vector<string> symbolNames;
-  transform(symbols.begin(), symbols.end(), back_inserter(symbolNames), [&gd](int symbol) {
-    return symName(symbol, gd);
-  });
+  transform(symbols.begin(), symbols.end(), back_inserter(symbolNames),
+            [&gd](int symbol) { return symName(symbol, gd); });
   out << symbolNames;
 }
 
-
-string convertArgNum(
-    string_view argIndexStr, int argIndex, const Concrete& concrete, const GrammarData& gd) {
-  const vector<intptr_t>& argSymbols = concrete.argSymbols;
+string convertArgNum(string_view argIndexStr, int argIndex,
+                     const Concrete &concrete, const GrammarData &gd) {
+  const vector<intptr_t> &argSymbols = concrete.argSymbols;
   // These are user-provided numbers, so check the bounds
   if (argIndex < 0) {
-    ostringstream& error = logger.logError(concrete.declLine);
+    ostringstream &error = logger.logError(concrete.declLine);
     error << "Index " << argIndex << " is < 0 for rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
   }
   if ((size_t)argIndex >= argSymbols.size()) {
-    ostringstream& error = logger.logError(concrete.declLine);
-    error << "Index " << argIndex << " is greater than the number of elements in rule ";
+    ostringstream &error = logger.logError(concrete.declLine);
+    error << "Index " << argIndex
+          << " is greater than the number of elements in rule ";
     streamSymbolNames(error, argSymbols, gd);
     error << '\n';
     return "";
   }
 
   int argSymbol = argSymbols[argIndex];
-  string symbolType =
-      isToken(argSymbol) ? gd.tokens[tokToArrInd(argSymbol)].type : gd.variables[argSymbol].type;
+  string symbolType = isToken(argSymbol)
+                          ? gd.tokens[tokToArrInd(argSymbol)].type
+                          : gd.variables[argSymbol].type;
   // Make sure the symbol has data associated with it (only necessary for
   // tokens)
   if (symbolType.empty()) {
-    ostringstream& error = logger.logError(concrete.declLine);
+    ostringstream &error = logger.logError(concrete.declLine);
     error << "Token " << symName(argSymbol, gd)
           << " is passed as an argument, but has no data associated with it.\n";
     return "";
@@ -135,7 +138,8 @@ string convertArgNum(
       .append("].releaseObj()))");
 }
 
-void replacePounds(ostream& out, const Concrete& concrete, const GrammarData& gd) {
+void replacePounds(ostream &out, const Concrete &concrete,
+                   const GrammarData &gd) {
   size_t i = 0;
   string_view ctor = concrete.ctorExpr;
   size_t len = ctor.size();
@@ -147,7 +151,8 @@ void replacePounds(ostream& out, const Concrete& concrete, const GrammarData& gd
       string_view afterPound = ctor.substr(i);
       if (afterPound.starts_with(line)) {
         if (concrete.argSymbols.size() == 0) {
-          logger.logError(concrete.declLine, "#line cannot be used with empty rule");
+          logger.logError(concrete.declLine,
+                          "#line cannot be used with empty rule");
         }
         out << "args[0].getLine()";
         i += sizeof(line) - 1;
@@ -155,7 +160,8 @@ void replacePounds(ostream& out, const Concrete& concrete, const GrammarData& gd
         size_t numDigits;
         int argIndex = stoi(string(afterPound), &numDigits);
         i += numDigits;
-        out << convertArgNum(afterPound.substr(0, numDigits), argIndex, concrete, gd);
+        out << convertArgNum(afterPound.substr(0, numDigits), argIndex,
+                             concrete, gd);
       }
     } else {
       out << ctor[i++];
@@ -167,16 +173,16 @@ pair<string, string> getNamespaceAndGuard(string_view filePath) {
   string_view namespaceName = filePath.substr(filePath.find_last_of('/') + 1);
 
   string headerGuard = replaceAll(namespaceName, '/', '_');
-  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(), ::toupper);
-  return { string(namespaceName), move(headerGuard.append("_HPP")) };
+  transform(headerGuard.begin(), headerGuard.end(), headerGuard.begin(),
+            ::toupper);
+  return {string(namespaceName), move(headerGuard.append("_HPP"))};
 }
-
 
 /****************
  * GRAMMAR DATA *
  ****************/
 
-void tokenDecl(ostream& out) {
+void tokenDecl(ostream &out) {
   out << R"(struct Token {
       string name;
       string type;
@@ -186,14 +192,14 @@ void tokenDecl(ostream& out) {
     )";
 }
 
-void concreteDecl(ostream& out) {
+void concreteDecl(ostream &out) {
   out << R"(struct Concrete {
       int varType;
     };
     )";
 }
 
-void variableDecl(ostream& out) {
+void variableDecl(ostream &out) {
   out << R"(struct Variable {
       string name;
       string type;
@@ -201,7 +207,7 @@ void variableDecl(ostream& out) {
     )";
 }
 
-void gdDecl(ostream& out, const GrammarData& gd) {
+void gdDecl(ostream &out, const GrammarData &gd) {
   out << R"(struct GrammarData {
       vector<Token> tokens;
       vector<Concrete> concretes;
@@ -217,7 +223,7 @@ void gdDecl(ostream& out, const GrammarData& gd) {
  * STACK OBJECT *
  ****************/
 
-void stackObjDef(ostream& out, const GrammarData& gd) {
+void stackObjDef(ostream &out, const GrammarData &gd) {
   out << R"(
       class StackObj {
       public:
@@ -244,12 +250,13 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
   size_t numTokens = gd.tokens.size();
   // Case statement for each token with data
   for (size_t i = 0; i < numTokens; ++i) {
-    const Token& token = gd.tokens[i];
+    const Token &token = gd.tokens[i];
     if (!token.type.empty()) {
       out << "case " << arrIndToTok(i) << ':';
       if (!token.dtorStmt.empty()) {
         out << "if (!released_) {";
-        replaceAll(out, token.dtorStmt, "#obj", "(*static_cast<" + token.type + "*>(obj_))");
+        replaceAll(out, token.dtorStmt, "#obj",
+                   "(*static_cast<" + token.type + "*>(obj_))");
         out << '}';
       }
       out << "delete static_cast<" << token.type << "*>(obj_); break;";
@@ -259,11 +266,12 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
   size_t numVars = gd.variables.size();
   // Case statement for each variable
   for (size_t i = 0; i < numVars; ++i) {
-    const Variable& var = gd.variables[i];
+    const Variable &var = gd.variables[i];
     out << "case " << i << ':';
     if (!var.dtorStmt.empty()) {
       out << "if (!released_) {";
-      replaceAll(out, var.dtorStmt, "#obj", "(*static_cast<" + var.type + "*>(obj_))");
+      replaceAll(out, var.dtorStmt, "#obj",
+                 "(*static_cast<" + var.type + "*>(obj_))");
       out << '}';
     }
     out << "delete static_cast<" << var.type << "*>(obj_); break;";
@@ -289,29 +297,29 @@ void stackObjDef(ostream& out, const GrammarData& gd) {
     )";
 }
 
-void startDecl(ostream& out, const GrammarData& gd) {
+void startDecl(ostream &out, const GrammarData &gd) {
   string type = gd.variables[1].type;
   out << "struct Start {"
          "Start("
       << type << "&& r) : r_(move(r)) {}" << type << " r_; };";
 }
 
-void constructObjFn(ostream& out, const GrammarData& gd) {
+void constructObjFn(ostream &out, const GrammarData &gd) {
   out << R"(void* constructObj(int concrete, StackObj* args) {
       switch (concrete) {)";
   size_t numConcretes = gd.concretes.size();
   // Case statement for each concrete except SCONC (handled specially below)
   for (size_t i = 1; i < numConcretes; ++i) {
-    const Concrete& concrete = gd.concretes[i];
-    const Variable& var = gd.variables[concrete.varType];
+    const Concrete &concrete = gd.concretes[i];
+    const Variable &var = gd.variables[concrete.varType];
     out << "case " << i << ": return new " << var.type << '(';
 
     // Catch stoi aerrors
     try {
       replacePounds(out, concrete, gd);
-    } catch (const invalid_argument& e) {
+    } catch (const invalid_argument &e) {
       logger.logError(concrete.declLine, "Invalid argument #");
-    } catch (const out_of_range& e) {
+    } catch (const out_of_range &e) {
       logger.logError(concrete.declLine, "Argument # out of range of int");
     }
     out << ");";
@@ -323,7 +331,7 @@ void constructObjFn(ostream& out, const GrammarData& gd) {
   out << R"(default: throw ParseException("Can't construct object. Parser programmer error.");}})";
 }
 
-void constructFn(ostream& out) {
+void constructFn(ostream &out) {
   out << R"(StackObj construct(int concrete, vector<StackObj>& stk, size_t reduceStart) {
       size_t line = reduceStart == stk.size() ? 0 : stk[reduceStart].getLine();
       return StackObj(
@@ -333,12 +341,12 @@ void constructFn(ostream& out) {
     })";
 }
 
-void constructTokenObjFn(ostream& out, const GrammarData& gd) {
+void constructTokenObjFn(ostream &out, const GrammarData &gd) {
   out << R"(optional<StackObj> constructTokenObj(int token, string_view str, size_t currentLine) {
       switch (token) {)";
   size_t numTokens = gd.tokens.size();
   for (size_t i = 0; i < numTokens; ++i) {
-    const Token& token = gd.tokens[i];
+    const Token &token = gd.tokens[i];
     if (token.precedence == SKIP_TOKEN) {
       out << "case " << arrIndToTok(i) << ": return {};";
     } else if (!token.type.empty()) {
@@ -358,17 +366,18 @@ void constructTokenObjFn(ostream& out, const GrammarData& gd) {
 /********
  * DFAs *
  ********/
-void lexerDFA(ostream& out, const GrammarData& gd) {
+void lexerDFA(ostream &out, const GrammarData &gd) {
   out << "namespace lexer {";
   try {
     mergedRgxDFAToCode(out, gd);
-  } catch (const regex_parser::ParseException& e) {
+  } catch (const regex_parser::ParseException &e) {
     logger.logError(0, e.what());
   }
   out << '}';
 }
 
-void parserDFA(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags) {
+void parserDFA(ostream &out, const GrammarData &gd,
+               const ParseFlags &parseFlags) {
   out << "namespace parser {";
   condensedDFAToCode(out, gd, parseFlags);
   out << '}';
@@ -378,7 +387,7 @@ void parserDFA(ostream& out, const GrammarData& gd, const ParseFlags& parseFlags
  * LEXING *
  **********/
 
-void tokenizeFn(ostream& out) {
+void tokenizeFn(ostream &out) {
   out << R"(
       optional<StackObj> getToken(string_view& input, size_t& currentLine, bool& err) {
         size_t i = 0;
@@ -458,14 +467,14 @@ void tokenizeFn(ostream& out) {
     )";
 }
 
-void tokenizeFileFn(ostream& out) {
+void tokenizeFileFn(ostream &out) {
   out << R"(vector<StackObj> tokenize(istream& input) {
         return tokenize(string(istreambuf_iterator<char>{input}, istreambuf_iterator<char>{}));
       }
     )";
 }
 
-void tokenizeDecl(ostream& out) {
+void tokenizeDecl(ostream &out) {
   out << R"(
       std::vector<StackObj> tokenize(const std::string& input);
       std::vector<StackObj> tokenize(std::istream& input);
@@ -476,9 +485,11 @@ void tokenizeDecl(ostream& out) {
  * PARSING *
  ***********/
 
-void assocDecl(ostream& out) { out << "enum class Assoc { LEFT, RIGHT, NOT, NONE };"; }
+void assocDecl(ostream &out) {
+  out << "enum class Assoc { LEFT, RIGHT, NOT, NONE };";
+}
 
-void dfaRuleDecl(ostream& out) {
+void dfaRuleDecl(ostream &out) {
   out << R"(struct DFARule {
       int concrete;
       vector<int> symbols;
@@ -488,7 +499,7 @@ void dfaRuleDecl(ostream& out) {
     )";
 }
 
-void ruleDataDecl(ostream& out) {
+void ruleDataDecl(ostream &out) {
   out << R"(struct RuleData {
       DFARule reducibleRule;
       int precedence;
@@ -496,13 +507,14 @@ void ruleDataDecl(ostream& out) {
     )";
 }
 
-void parseDecl(ostream& out, const GrammarData& gd) {
-  const string& rootType = gd.variables[1].type;
+void parseDecl(ostream &out, const GrammarData &gd) {
+  const string &rootType = gd.variables[1].type;
   out << rootType << " parseString(const std::string& input);" << rootType
-      << " parse(std::istream& input);" << rootType << " parse(const std::string& filename);";
+      << " parse(std::istream& input);" << rootType
+      << " parse(const std::string& filename);";
 }
 
-void parseExceptionDecl(ostream& out) {
+void parseExceptionDecl(ostream &out) {
   out << R"(class ParseException : public std::exception {
       public:
         ParseException(const std::string& errMsg) : errMsg_(errMsg) {}
@@ -516,7 +528,7 @@ void parseExceptionDecl(ostream& out) {
       )";
 }
 
-void parseHelperFns(ostream& out) {
+void parseHelperFns(ostream &out) {
   out << R"(
       void parseError(
           vector<StackObj>& stk,
@@ -550,9 +562,10 @@ void parseHelperFns(ostream& out) {
     )";
 }
 
-void tryReduceFn(ostream& out) {
-  // If there is more than one reducible rule, then their lookahead sets are disjoint (see
-  // findReduceReduceConflicts in build_parser.cpp), so we only have to consider at most one rule
+void tryReduceFn(ostream &out) {
+  // If there is more than one reducible rule, then their lookahead sets are
+  // disjoint (see findReduceReduceConflicts in build_parser.cpp), so we only
+  // have to consider at most one rule
   out << R"(const DFARule* tryReduce(
         const parser::Node* node,
         int nextToken,
@@ -605,9 +618,9 @@ void tryReduceFn(ostream& out) {
     }
     return nullptr;
   })";
-}  // namespace
+} // namespace
 
-void shiftReduceFn(ostream& out, const GrammarData& gd) {
+void shiftReduceFn(ostream &out, const GrammarData &gd) {
   out << gd.variables[1].type << R"(shiftReduce(vector<StackObj>& inputTokens) {
         vector<StackObj> stk;
         vector<parser::Node*> dfaPath;
@@ -651,8 +664,8 @@ void shiftReduceFn(ostream& out, const GrammarData& gd) {
     )";
 }
 
-void parseFn(ostream& out, const GrammarData& gd) {
-  const string& rootType = gd.variables[1].type;
+void parseFn(ostream &out, const GrammarData &gd) {
+  const string &rootType = gd.variables[1].type;
   out << rootType << R"(
       parseString(const string& input) {
         vector<StackObj> stackObjs = tokenize(input);
@@ -686,15 +699,15 @@ void parseFn(ostream& out, const GrammarData& gd) {
  * MISC *
  ********/
 
-void parserHppIncludes(ostream& out) {
+void parserHppIncludes(ostream &out) {
   out << R"(
+      #include <boost/dynamic_bitset.hpp>
       #include <iostream>
       #include <string>
-      #include <boost/dynamic_bitset.hpp>
     )";
 }
 
-void lexerHppIncludes(ostream& out) {
+void lexerHppIncludes(ostream &out) {
   out << R"(
       #include <iostream>
       #include <string>
@@ -702,7 +715,7 @@ void lexerHppIncludes(ostream& out) {
     )";
 }
 
-void cppIncludes(ostream& out) {
+void cppIncludes(ostream &out) {
   out << R"(
       #include <string.h>
 
@@ -724,52 +737,50 @@ void cppIncludes(ostream& out) {
     )";
 }
 
-void noneDecl(ostream& out) {
+void noneDecl(ostream &out) {
   out << R"(
       constexpr int NONE = INT_MIN;
     )";
 }
 
-void epsilonDecl(ostream& out) {
+void epsilonDecl(ostream &out) {
   out << R"(
       constexpr int EPSILON = 0;
     )";
 }
 
-void sInt(ostream& out) {
+void sInt(ostream &out) {
   out << R"(
       constexpr int S = 0;
     )";
 }
 
-void tokenUtils(ostream& out) {
+void tokenUtils(ostream &out) {
   out << R"(
       bool isToken(int symbol) { return symbol < 0; }
       constexpr int lookaheadInd(int tokenId) noexcept { return -tokenId; }
     )";
 }
 
-void tokToArrIndFn(ostream& out) {
+void tokToArrIndFn(ostream &out) {
   out << R"(
       constexpr int tokToArrInd(int tokenId) noexcept { return -tokenId - 1; }
     )";
 }
 
-
 /********************
  * DRIVER FUNCTIONS *
  ********************/
 
-constexpr char generatedWarning[] = "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
+constexpr char generatedWarning[] =
+    "/* GENERATED FILE. DO NOT OVERWRITE BY HAND. */\n";
 
-string parserHppCode(
-    const string& namespaceName,
-    const string& headerGuard,
-    const string& addlHdrIncludes,
-    const GrammarData& gd) {
+string parserHppCode(const string &namespaceName, const string &headerGuard,
+                     const string &addlHdrIncludes, const GrammarData &gd) {
   ostringstream out;
 
-  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n' << endl;
+  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
+      << endl;
   out << generatedWarning;
   out << addlHdrIncludes;
   parserHppIncludes(out);
@@ -781,10 +792,12 @@ string parserHppCode(
   return out.str();
 }
 
-string lexerHppCode(const string& namespaceName, const string& headerGuard, const GrammarData& gd) {
+string lexerHppCode(const string &namespaceName, const string &headerGuard,
+                    const GrammarData &gd) {
   ostringstream out;
 
-  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n' << endl;
+  out << "#ifndef " << headerGuard << "\n#define " << headerGuard << '\n'
+      << endl;
   out << generatedWarning;
   lexerHppIncludes(out);
   out << "namespace " << namespaceName << '{';
@@ -796,13 +809,14 @@ string lexerHppCode(const string& namespaceName, const string& headerGuard, cons
   return out.str();
 }
 
-string parserCppCode(
-    const ParseFlags& parseFlags, const string& namespaceName, const ParseInfo& parseInfo) {
+string parserCppCode(const ParseFlags &parseFlags, const string &namespaceName,
+                     const ParseInfo &parseInfo) {
   ostringstream out;
-  const GrammarData& gd = parseInfo.gd;
+  const GrammarData &gd = parseInfo.gd;
 
   out << generatedWarning;
-  out << "#include \"" << parseFlags.parserFilePath << ".hpp\"\n";
+  out << "#include \"" << parseFlags.includeDir << parseFlags.name
+      << ".hpp\"\n";
   cppIncludes(out);
   out << parseInfo.addlCppCode << "using namespace std;"
       << "using namespace " << namespaceName << ";"
@@ -837,15 +851,12 @@ string parserCppCode(
   return out.str();
 }
 
-string lexerCppCode(
-    const string& lexerFilePath,
-    const string& namespaceName,
-    const string& addlCode,
-    const GrammarData& gd) {
+string lexerCppCode(const string &lexerIncludePath, const string &namespaceName,
+                    const string &addlCode, const GrammarData &gd) {
   ostringstream out;
 
   out << generatedWarning;
-  out << "#include \"" << lexerFilePath << ".hpp\"\n";
+  out << "#include \"" << lexerIncludePath << ".hpp\"\n";
   cppIncludes(out);
   out << addlCode << "using namespace std;"
       << "using namespace " << namespaceName << ";"
@@ -867,14 +878,14 @@ string lexerCppCode(
   return out.str();
 }
 
-}  // namespace
+} // namespace
 
-void generateParserCode(
-    const ParseInfo& parseInfo, const ParseFlags& parseFlags, std::ostream& warnings) {
-  const string& parserFilePath = parseFlags.parserFilePath;
+void generateParserCode(const ParseInfo &parseInfo,
+                        const ParseFlags &parseFlags, std::ostream &warnings) {
+  string parserFilePath = string(parseFlags.outDir).append(parseFlags.name);
   auto thePair = getNamespaceAndGuard(parserFilePath);
-  const string& namespaceName = thePair.first;
-  const string& headerGuard = thePair.second;
+  const string &namespaceName = thePair.first;
+  const string &headerGuard = thePair.second;
 
   std::string hppName = parserFilePath + ".hpp";
   ofstream hppFile(hppName);
@@ -883,7 +894,8 @@ void generateParserCode(
   ofstream cppFile(cppName);
   logger.checkFile(cppName, cppFile);
 
-  string hppCode = parserHppCode(namespaceName, headerGuard, parseInfo.addlHppCode, parseInfo.gd);
+  string hppCode = parserHppCode(namespaceName, headerGuard,
+                                 parseInfo.addlHppCode, parseInfo.gd);
   string cppCode = parserCppCode(parseFlags, namespaceName, parseInfo);
 
   if (logger.hasErrors()) {
@@ -895,11 +907,17 @@ void generateParserCode(
   cppFile << cppCode;
 }
 
+// TODO: Fix strings -> string_views, clean this whole thing up.
 
-void generateLexerCode(const string& lexerFilePath, const string& addlCode, const GrammarData& gd) {
+void generateLexerCode(std::string_view outDir,
+                       std::string_view lexerIncludeDir,
+                       std::string_view lexerName,
+                       std::string_view addlHdrIncludes,
+                       const GrammarData &gd) {
+  string lexerFilePath = string(outDir).append(lexerName);
   auto thePair = getNamespaceAndGuard(lexerFilePath);
-  const string& namespaceName = thePair.first;
-  const string& headerGuard = thePair.second;
+  const string &namespaceName = thePair.first;
+  const string &headerGuard = thePair.second;
 
   std::string hppName = lexerFilePath + ".hpp";
   ofstream hppFile(hppName);
@@ -909,7 +927,8 @@ void generateLexerCode(const string& lexerFilePath, const string& addlCode, cons
   logger.checkFile(cppName, cppFile);
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
-  string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
+  string cppCode = lexerCppCode(string(lexerIncludeDir).append(lexerName),
+                                namespaceName, string(addlHdrIncludes), gd);
 
   if (logger.hasErrors()) {
     throw Logger::Exception(logger);

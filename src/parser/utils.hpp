@@ -16,18 +16,17 @@
 
 #include <prez/print_stuff.hpp>
 
-
 enum class Assoc { NONE, LEFT, RIGHT, NOT };
-inline std::ostream& operator<<(std::ostream& out, const Assoc& assoc) {
+inline std::ostream &operator<<(std::ostream &out, const Assoc &assoc) {
   switch (assoc) {
-    case Assoc::LEFT:
-      return out << "LEFT";
-    case Assoc::RIGHT:
-      return out << "RIGHT";
-    case Assoc::NOT:
-      return out << "NOT";
-    default:
-      return out << "NONE";
+  case Assoc::LEFT:
+    return out << "LEFT";
+  case Assoc::RIGHT:
+    return out << "RIGHT";
+  case Assoc::NOT:
+    return out << "NOT";
+  default:
+    return out << "NONE";
   }
 }
 
@@ -86,7 +85,7 @@ constexpr int arrIndToSym(size_t i, size_t numVars) noexcept {
   return i >= numVars ? numVars - i - 1 : i;
 }
 
-inline std::string symName(int symbolId, const GrammarData& gd) {
+inline std::string symName(int symbolId, const GrammarData &gd) {
   if (isToken(symbolId)) {
     return gd.tokens[tokToArrInd(symbolId)].name;
   }
@@ -94,16 +93,18 @@ inline std::string symName(int symbolId, const GrammarData& gd) {
 }
 
 struct ParseFlags {
-  std::string parserFilePath;
+  std::string outDir;
+  std::string includeDir;
+  std::string name;
   std::string logFile;
 };
 
-inline void intToCode(std::ostream& out, int n) { out << n; }
+inline void intToCode(std::ostream &out, int n) { out << n; }
 
 template <typename T, typename F>
-void vecToCode(std::ostream& out, const std::vector<T>& v, F&& toCodeFn) {
+void vecToCode(std::ostream &out, const std::vector<T> &v, F &&toCodeFn) {
   out << '{';
-  for (const T& item : v) {
+  for (const T &item : v) {
     toCodeFn(out, item);
     out << ',';
   }
