@@ -815,8 +815,7 @@ string parserCppCode(const ParseFlags &parseFlags, const string &namespaceName,
   const GrammarData &gd = parseInfo.gd;
 
   out << generatedWarning;
-  out << "#include \"" << parseFlags.includeDir << parseFlags.name
-      << ".hpp\"\n";
+  out << "#include \"" << parseFlags.parserFilePath << ".hpp\"\n";
   cppIncludes(out);
   out << parseInfo.addlCppCode << "using namespace std;"
       << "using namespace " << namespaceName << ";"
@@ -882,7 +881,7 @@ string lexerCppCode(const string &lexerIncludePath, const string &namespaceName,
 
 void generateParserCode(const ParseInfo &parseInfo,
                         const ParseFlags &parseFlags, std::ostream &warnings) {
-  string parserFilePath = string(parseFlags.outDir).append(parseFlags.name);
+  const string &parserFilePath = parseFlags.parserFilePath;
   auto thePair = getNamespaceAndGuard(parserFilePath);
   const string &namespaceName = thePair.first;
   const string &headerGuard = thePair.second;
@@ -909,12 +908,8 @@ void generateParserCode(const ParseInfo &parseInfo,
 
 // TODO: Fix strings -> string_views, clean this whole thing up.
 
-void generateLexerCode(std::string_view outDir,
-                       std::string_view lexerIncludeDir,
-                       std::string_view lexerName,
-                       std::string_view addlHdrIncludes,
+void generateLexerCode(const string &lexerFilePath, const string &addlCode,
                        const GrammarData &gd) {
-  string lexerFilePath = string(outDir).append(lexerName);
   auto thePair = getNamespaceAndGuard(lexerFilePath);
   const string &namespaceName = thePair.first;
   const string &headerGuard = thePair.second;
@@ -927,8 +922,7 @@ void generateLexerCode(std::string_view outDir,
   logger.checkFile(cppName, cppFile);
 
   string hppCode = lexerHppCode(namespaceName, headerGuard, gd);
-  string cppCode = lexerCppCode(string(lexerIncludeDir).append(lexerName),
-                                namespaceName, string(addlHdrIncludes), gd);
+  string cppCode = lexerCppCode(lexerFilePath, namespaceName, addlCode, gd);
 
   if (logger.hasErrors()) {
     throw Logger::Exception(logger);

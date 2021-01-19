@@ -11,10 +11,7 @@
 void generateParserCode(const ParseInfo &parseInfo,
                         const ParseFlags &parseFlags, std::ostream &warnings);
 
-void generateLexerCode(std::string_view outDir,
-                       std::string_view lexerIncludeDir,
-                       std::string_view lexerName,
-                       std::string_view lexerIncludePath,
-                       const GrammarData &gd);
+void generateLexerCode(
+    const std::string& lexerFilePath, const std::string& addlHdrIncludes, const GrammarData& gd);
 
 #endif
