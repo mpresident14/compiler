@@ -1,0 +1,414 @@
+#header
+%
+  #include "src/language/language.hpp"
+%
+
+
+#source
+%
+  #include <memory>
+  #include <vector>
+  #include <string_view>
+  #include <sstream>
+
+  using namespace std;
+  using namespace language;
+
+  template<typename T>
+  vector<T> singletonVec(T&& item) {
+    vector<T> v;
+    v.push_back(move(item));
+    return v;
+  }
+
+  string_view removeQuotes(string_view sv) {
+    return sv.substr(1,sv.size() - 2);
+  }
+
+  char escape(char c) {
+    switch (c) {
+      case 'n': return '\n';
+      case 't': return '\t';
+      default: return c;
+    }
+  }
+
+  char maybeEscape(string_view str) {
+    if (str[0] == '\\') {
+      return escape(str[1]);
+    }
+    return str[0];
+  }
+
+  string escapeStrLit(string_view str) {
+    str = removeQuotes(str);
+    size_t len = str.size();
+    string ret;
+    ret.reserve(len);
+    size_t i = 0;
+    while (i < len) {
+      char c = str[i++];
+      if (c == '\\' && i != len) {
+        ret.push_back(escape(str[i]));
+        ++i;
+      } else {
+        ret.push_back(c);
+      }
+    }
+    return ret;
+  }
+
+  long stolThrow(string_view str, size_t* idx, int base, size_t line) {
+    try {
+      return stol(string(str), idx, base);
+    } catch (const logic_error&) {
+      ostringstream err;
+      err << "Lexer \033[1;31merror\033[0m on line " << line << ": "
+          << str << " is out of range of any integral type";
+      throw parser::ParseException(err.str());
+    }
+  }
+%
+
+
+#tokens
+
+#skip       "//[^\n]*\n"
+#skip       "[ \t\n]+"
+
+IF          "if"
+ELSE        "else"
+WHILE       "while"
+FOR         "for"
+RETURN      "return"
+
+PLUS        "\+"
+MINUS       "-"
+STAR        "\*"
+FSLASH      "/"
+MOD         "%"
+BITAND      "&"
+BITOR       "\|"
+XOR         "^"
+LSHIFT      "<<"
+ARSHIFT     ">>"
+
+PLUSEQ      "\+="
+MINUSEQ     "-="
+STAREQ      "\*="
+FSLASHEQ    "/="
+MODEQ       "%="
+BITANDEQ    "&="
+BITOREQ     "\|="
+XOREQ       "^="
+LSHIFTEQ    "<<="
+ARSHIFTEQ   ">>="
+INC         "\+\+"
+DEC         "--"
+
+AND         "&&"
+OR          "\|\|"
+EQEQ        "=="
+NEQ         "!="
+LT          "<"
+GT          ">"
+LTE         "<="
+GTE         ">="
+BANG        "!"
+
+SEMI        ";"
+COMMA       ","
+COLON       ":"
+QMARK       "\?"
+EQ          "="
+
+LBRACE      "{"
+RBRACE      "}"
+LPAREN      "\("
+RPAREN      "\)"
+LBRACKET    "\["
+RBRACKET    "\]"
+LRBRACKET   "\[\]"
+
+TRUE        "true"
+FALSE       "false"
+
+VOID        "void"
+LONG        "long"
+INT         "int"
+SHORT       "short"
+CHAR        "char"
+BOOL        "bool"
+
+IMPORT      "import"
+COLON2      "::"
+
+CLASS       "class"
+VIRTUAL     "virtual"
+OVERRIDE    "override"
+STATIC      "static"
+FINAL       "final"
+CONST       "const"
+PRIVATE     "private"
+PROTECTED   "protected"
+PUBLIC      "public"
+DOT         "\."
+
+PRINT       "print"
+
+NUM         "0|[1-9][0-9]*"                        -> { long }    % stolThrow(#str, nullptr, 10, #line) %
+HEXNUM      "0x([0-9]|[A-F]|[a-f])+"               -> { long }    % stolThrow(#str, nullptr, 16, #line) %
+IDENT       "([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*"  -> { string }  % #str %
+SRCFILE     "\"([^\n]*/)*[^\n]+\.prez\""           -> { string }  % removeQuotes(#str) %
+CHARLIT     "'(.|\\t|\\n)'"                        -> { char }    % maybeEscape(removeQuotes(#str)) %
+STRLIT      "\"([^\"]|\\\")*\""                    -> { string }  % escapeStrLit(#str) %
+
+#prec
+
+// Not an actual operator, just so that
+// we can push_back instead of push_front
+// for Params, Exprs, Decls, Imports, etc
+EPSILON                           #left
+
+QMARK                             #right
+OR                                #left
+AND                               #left
+XOR                               #left
+BITOR                             #left
+BITAND                            #left
+EQEQ NEQ LT GT LTE GTE            #nonassoc
+LSHIFT ARSHIFT                    #left
+PLUS MINUS                        #left
+STAR FSLASH MOD                   #left
+UNARY_MINUS BANG                  #nonassoc
+INC DEC PRE_INCDEC                #nonassoc
+CAST                              #nonassoc
+LPAREN LBRACKET LRBRACKET DOT     #left
+COLON2                            #left
+
+
+#grammar
+
+SrcFile -> { language::SrcFile }
+  := Imports Decls  % SrcFile(move(#0), move(#1)) %
+   | Decls          % SrcFile(vector<SrcFile::Import>(), move(#0)) %
+
+Imports -> { vector<SrcFile::Import> }
+  := Import             % singletonVec<SrcFile::Import>(move(#0)) %
+   | Imports Import     % (#0.push_back(move(#1)), move(#0)) %
+
+Import -> { SrcFile::Import }
+  := IMPORT SRCFILE     % { move(#1), #line } %
+
+Decls -> { vector<DeclPtr> }
+  :=              #prec EPSILON   % vector<DeclPtr>() %
+   | Decls Decl                   % (#0.push_back(move(#1)), move(#0)) %
+
+Decl -> { DeclPtr }
+  := Function                            % move(#0) %
+   | CLASS IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, move(#3), #line) %
+   | CLASS IDENT COLON IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, vector<string>(), #3, move(#5), #line) %
+   | CLASS IDENT COLON Qualifiers IDENT
+     LBRACE ClassElements RBRACE         % make_unique<ClassDecl>(#1, move(#3), #4, move(#6), #line) %
+
+ClassElements -> { vector<ClassDecl::ClassElem> }
+  :=              #prec EPSILON   % vector<ClassDecl::ClassElem>() %
+   | ClassElements ClassElement   % (#0.push_back(move(#1)), move(#0)) %
+
+ClassElement -> { ClassDecl::ClassElem }
+  := Field   % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::FIELD, move(#0) } %
+   | Ctor    % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::CTOR, move(#0) } %
+   | Method  % ClassDecl::ClassElem{ClassDecl::ClassElem::Type::METHOD, move(#0) } %
+
+Function -> { std::unique_ptr<Func> }
+  := NonVoid IDENT LPAREN Params RPAREN MaybeConst Block
+      % make_unique<Func>(#5, move(#0), #1, move(#3), move(#6), #line) %
+  |  VOID IDENT LPAREN Params RPAREN MaybeConst Block
+      % make_unique<Func>(#5, TypePtr(Type::VOID_TYPE), #1, move(#3), move(#6), #line) %
+
+Method -> { std::unique_ptr<Func> }
+  := AccessMod Function             % (#1->modifiers_ |= #0, move(#1))%
+  |  AccessMod VirtMod Function     % (#2->modifiers_ |= (#0 | #1), move(#2)) %
+
+Ctor -> { std::unique_ptr<Constructor> }
+  := AccessMod IDENT LPAREN Params RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), move(#5), #line) %
+   | AccessMod IDENT LPAREN Params RPAREN COLON IDENT LPAREN Exprs RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), Class(vector<string>(), #6), move(#8), move(#10), #line) %
+   | AccessMod IDENT LPAREN Params RPAREN COLON Qualifiers IDENT LPAREN Exprs RPAREN Block
+     % make_unique<Constructor>(#0, #1, move(#3), Class(move(#6), #7), move(#9), move(#11), #line) %
+
+Field -> { ClassDecl::Field }
+ := AccessMod NonVoid IDENT SEMI          % ClassDecl::Field{#0, move(#1), move(#2), #line } %
+  | AccessMod FINAL NonVoid IDENT SEMI    % ClassDecl::Field{#0, Type::makeFinal(#2), move(#3), #line } %
+
+Block -> { std::unique_ptr<Block> }
+  := LBRACE Stmts RBRACE   % make_unique<Block>(move(#1), #line) %
+
+Stmts -> { vector<StmtPtr> }
+  :=            #prec EPSILON  % vector<StmtPtr>() %
+   | Stmts Stmt                % (#0.push_back(move(#1)), move(#0)) %
+
+Stmt -> { StmtPtr }
+  := IF LPAREN Expr RPAREN Block                 % make_unique<If>(move(#2), move(#4), make_unique<Block>(vector<StmtPtr>(), #line), #line) %
+   | IF LPAREN Expr RPAREN Block ELSE ElseStmt   % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+   | WHILE LPAREN Expr RPAREN Block              % make_unique<While>(move(#2), move(#4), #line) %
+   | FOR LPAREN VarDecl Expr SEMI
+     ForUpdate RPAREN Block                      % make_unique<For>(move(#2), move(#3), move(#5), move(#7), #line) %
+   | RETURN SEMI                                 % make_unique<Return>(optional<ExprPtr>(), #line) %
+   | RETURN Expr SEMI                            % make_unique<Return>(optional<ExprPtr>(move(#1)), #line) %
+   | VarDecl                                     % move(#0) %
+   | Block                                       % move(#0) %
+   | StmtExpr SEMI                               % make_unique<ExprStmt>(move(#0)) %
+   | PRINT LPAREN Expr RPAREN SEMI               % make_unique<Print>(move(#2), #line) %
+   | UpdateStmt SEMI                             % move(#0) %
+
+VarDecl -> { std::unique_ptr<VarDecl> }
+  := NonVoid IDENT EQ Expr SEMI              % make_unique<VarDecl>(move(#0), #1, move(#3), #line) %
+  |  FINAL NonVoid IDENT EQ Expr SEMI        % make_unique<VarDecl>(Type::makeFinal(#1), #2, move(#4), #line) %
+
+ElseStmt -> { StmtPtr }
+  := Block                                       % move(#0) %
+   | IF LPAREN Expr RPAREN Block ELSE ElseStmt   % make_unique<If>(move(#2), move(#4), move(#6), #line) %
+
+Expr -> { ExprPtr }
+  := ExprNoVar                                  % move(#0) %
+   | IDENT                                      % make_unique<Var>(#0, #line) %
+
+// To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
+ExprNoVar -> { ExprPtr }
+  := NUM                                        % make_unique<ConstInt>(#0, #line) %
+   | HEXNUM                                     % make_unique<ConstInt>(#0, #line) %
+   | TRUE                                       % make_unique<ConstBool>(true, #line) %
+   | FALSE                                      % make_unique<ConstBool>(false, #line) %
+   | CHARLIT                                    % make_unique<ConstChar>(#0, #line) %
+   | STRLIT                                     % make_unique<StrLit>(#0, #line) %
+   | MINUS Expr   #prec UNARY_MINUS             % make_unique<UnaryOp>(move(#1), Expr::UOp::NEG, #line) %
+   | BANG Expr                                  % make_unique<UnaryOp>(move(#1), Expr::UOp::NOT, #line) %
+   | Expr PLUS Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::PLUS) %
+   | Expr MINUS Expr                            % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MINUS) %
+   | Expr STAR Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MUL) %
+   | Expr FSLASH Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::DIV) %
+   | Expr MOD Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::MOD) %
+   | Expr BITAND Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::BIT_AND) %
+   | Expr BITOR Expr                            % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::BIT_OR) %
+   | Expr XOR Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::XOR) %
+   | Expr LSHIFT Expr                           % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LSHIFT) %
+   | Expr ARSHIFT Expr                          % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::ARSHIFT) %
+   | Expr AND Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::AND) %
+   | Expr OR Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::OR) %
+   | Expr EQEQ Expr                             % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::EQ) %
+   | Expr NEQ Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::NEQ) %
+   | Expr LT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LT) %
+   | Expr GT Expr                               % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::GT) %
+   | Expr LTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::LTE) %
+   | Expr GTE Expr                              % make_unique<BinaryOp>(move(#0), move(#2), Expr::BOp::GTE) %
+   | Expr QMARK Expr COLON Expr                 % make_unique<TernaryOp>(move(#0), move(#2), move(#4)) %
+   | LPAREN NonVoidNoIdNoC RPAREN Expr
+     #prec CAST                                 % make_unique<Cast>(move(#1), move(#3), #line) %
+   | LPAREN CONST NonVoidNoIdNoC RPAREN Expr
+     #prec CAST                                 % make_unique<Cast>(Type::makeConst(#2), move(#4), #line) %
+   | LPAREN IDENT RPAREN Expr
+     #prec CAST    % make_unique<Cast>(make_shared<Class>(vector<string>(), move(#1)), move(#3), #line) %
+   // This syntax is used to avoid conflict between indexing "arr[index]" and a new array "MyClass[len]"
+   | NonVoidNoConst LRBRACKET
+     LPAREN Expr RPAREN                         % make_unique<NewArray>(move(#0), move(#3), #line) %
+   | NonVoidNoConst LRBRACKET
+     LBRACE Exprs RBRACE                        % make_unique<NewArray>(move(#0), move(#3), #line) %
+   | StmtExpr                                   % move(#0) %
+   | LPAREN ExprNoVar RPAREN                    % move(#1) %
+   | LPAREN IDENT RPAREN                        % make_unique<Var>(#1, #line) %
+   | Expr LBRACKET Expr RBRACKET                % make_unique<ArrayAccess>(move(#0), move(#2), #line) %
+   | Expr DOT IDENT                             % make_unique<MemberAccess>(move(#0), #2) %
+   | IDENT DOT IDENT                            % make_unique<MemberAccess>(#0, #2, #line) %
+
+
+ForUpdate -> { StmtPtr }
+  := UpdateStmt                                 % move(#0) %
+   | StmtExpr                                   % make_unique<ExprStmt>(move(#0)) %
+
+UpdateStmt -> { StmtPtr }
+   := Expr EQ Expr                              % make_unique<Assign>(move(#0), move(#2)) %
+   | Expr PLUSEQ Expr                           % make_unique<Update>(move(#0), Expr::BOp::PLUS, move(#2)) %
+   | Expr MINUSEQ Expr                          % make_unique<Update>(move(#0), Expr::BOp::MINUS, move(#2)) %
+   | Expr STAREQ Expr                           % make_unique<Update>(move(#0), Expr::BOp::MUL, move(#2)) %
+   | Expr FSLASHEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::DIV, move(#2)) %
+   | Expr MODEQ Expr                            % make_unique<Update>(move(#0), Expr::BOp::MOD, move(#2)) %
+   | Expr BITANDEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::BIT_AND, move(#2)) %
+   | Expr BITOREQ Expr                          % make_unique<Update>(move(#0), Expr::BOp::BIT_OR, move(#2)) %
+   | Expr XOREQ Expr                            % make_unique<Update>(move(#0), Expr::BOp::XOR, move(#2)) %
+   | Expr LSHIFTEQ Expr                         % make_unique<Update>(move(#0), Expr::BOp::LSHIFT, move(#2)) %
+   | Expr ARSHIFTEQ Expr                        % make_unique<Update>(move(#0), Expr::BOp::ARSHIFT, move(#2)) %
+
+StmtExpr -> { ExprPtr }
+  := INC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), true, true, #line) %
+   | DEC Expr     #prec PRE_INCDEC              % make_unique<IncDec>(move(#1), false, true, #line) %
+   | Expr INC                                   % make_unique<IncDec>(move(#0), true, false, #line) %
+   | Expr DEC                                   % make_unique<IncDec>(move(#0), false, false, #line) %
+   | IDENT LPAREN Exprs RPAREN                  % make_unique<Call>(vector<string>(), #0, move(#2), #line) %
+   | Qualifiers IDENT LPAREN Exprs RPAREN       % make_unique<Call>(move(#0), #1, move(#3), #line) %
+   | Expr DOT IDENT LPAREN Exprs RPAREN         % make_unique<MethodInvocation>(move(#0), #2, move(#4), #line) %
+   | IDENT DOT IDENT LPAREN Exprs RPAREN        % make_unique<MethodInvocation>(#0, #2, move(#4), #line) %
+   | Qualifiers IDENT DOT IDENT
+     LPAREN Exprs RPAREN                        % make_unique<QualifiedInvocation>(move(#0), #1, #3, move(#5), #line) %
+
+Exprs -> { vector<ExprPtr> }
+  :=          % vector<ExprPtr>() %
+   | Exprz    % move(#0) %
+
+Exprz -> { vector<ExprPtr> }
+  := Expr                           % singletonVec<ExprPtr>(move(#0)) %
+   | Exprz COMMA Expr               % (#0.push_back(move(#2)), move(#0)) %
+
+Params -> { vector<pair<TypePtr, string>> }
+  :=          % vector<pair<TypePtr, string>>() %
+   | Paramz   % move(#0) %
+
+Paramz -> { vector<pair<TypePtr, string>> }
+  := Param                            % singletonVec<pair<TypePtr, string>>(move(#0)) %
+   | Paramz COMMA Param               % (#0.push_back(move(#2)), move(#0)) %
+
+Param -> { pair<TypePtr, string> }
+  := NonVoid IDENT         % { move(#0), #1 } %
+   | FINAL NonVoid IDENT   % { Type::makeFinal(#1), #2 } %
+
+NonVoid -> { TypePtr }
+  := NonVoidNoConst         % move(#0) %
+   | CONST NonVoidNoConst   % Type::makeConst(#1) %
+
+NonVoidNoConst -> { TypePtr }
+  := NonVoidNoIdNoC         % move(#0) %
+   | IDENT                  % make_shared<Class>(vector<string>(), move(#0)) %
+
+// To avoid conflict between expression "(var)" class cast e.g. "(MyClass) obj"
+NonVoidNoIdNoC -> { TypePtr }
+  := LONG                        % Type::LONG_TYPE %
+   | INT                         % Type::INT_TYPE %
+   | SHORT                       % Type::SHORT_TYPE %
+   | CHAR                        % Type::CHAR_TYPE %
+   | BOOL                        % Type::BOOL_TYPE %
+   | NonVoidNoConst LRBRACKET    % make_shared<Array>(move(#0)) %
+   | Qualifiers IDENT            % make_shared<Class>(move(#0), move(#1)) %
+
+Qualifiers -> { vector<string> }
+  := Qualifier               % singletonVec<string>(move(#0)) %
+   | Qualifiers Qualifier    % (#0.push_back(move(#1)), move(#0)) %
+
+Qualifier -> { string }
+  := IDENT COLON2        % #0 %
+
+AccessMod -> { Func::Modifier }
+  := PRIVATE    % Func::Modifier::PRIVATE %
+   | PROTECTED  % Func::Modifier::PROTECTED %
+   | PUBLIC     % Func::Modifier::PUBLIC %
+
+VirtMod -> { Func::Modifier }
+  := VIRTUAL                  % Func::Modifier::VIRTUAL %
+   | OVERRIDE                 % Func::Modifier::OVERRIDE %
+   | STATIC                   % Func::Modifier::STATIC %
+
+MaybeConst -> { Func::Modifier }
+  :=           #prec EPSILON   % Func::Modifier::NONE %
+   | CONST                     % Func::Modifier::CONST %

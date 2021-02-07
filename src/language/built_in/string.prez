@@ -1,0 +1,120 @@
+class String {
+  // TODO: Figure out how to make these private without messing up language::Print
+  public char[] arr;
+  public long len;
+
+  public String() {
+    this.arr = char[](0);
+    this.len = 0;
+  }
+
+  public String(char[] arr, bool literal) {
+    if (literal) {
+      this.arr = arr;
+      this.len = arr.length;
+    } else {
+      long len = arr.length;
+      this.arr = char[](len);
+      for (long i = 0; i < len; ++i) {
+        this.arr[i] = arr[i];
+      }
+      this.len = len;
+    }
+  }
+
+  public String append(char c) {
+    if (this.arr.length == this.len) {
+      this.resize();
+    }
+
+    this.arr[this.len++] = c;
+    return this;
+  }
+
+  public String append(String str) {
+    long myLen = this.len;
+    long otherLen = str.len;
+    long sum = myLen + otherLen;
+
+    if (sum > this.arr.length) {
+      char[] newArr = char[](sum);
+      for (long i = 0; i < myLen; ++i) {
+        newArr[i] = this.arr[i];
+      }
+      this.arr = newArr;
+    }
+
+    for (long i = 0; i < otherLen; ++i) {
+      this.arr[myLen + i] = str.arr[i];
+    }
+
+    this.len = sum;
+    return this;
+  }
+
+  public void reverse() {
+    long left = 0;
+    long right = this.len - 1;
+    while (left < right) {
+      char tmp = this.arr[left];
+      this.arr[left] = this.arr[right];
+      this.arr[right] = tmp;
+      ++left;
+      --right;
+    }
+    return;
+  }
+
+  private void resize() {
+    // Add 1 in case this.arr.length == 0
+    char[] newArr = char[](this.arr.length * 2 + 1);
+    for (long i = 0; i < this.len; ++i) {
+      newArr[i] = this.arr[i];
+    }
+    this.arr = newArr;
+  }
+
+  public String toString() {
+    return this;
+  }
+}
+
+
+
+String toString(long n) {
+  String str = String();
+
+  if (n == 0) {
+    return str.append('0');
+  }
+
+  bool isNeg = false;
+  if (n < 0) {
+    n = -n;
+    isNeg = true;
+  }
+
+  while (n != 0) {
+    str.append((char)(n % 10 + '0'));
+    n = n / 10;
+  }
+
+  if (isNeg) {
+    str.append('-');
+  }
+
+  str.reverse();
+  return str;
+}
+
+String toString(bool b) {
+  if (b) {
+    return String(char[] {'t', 'r', 'u', 'e'}, true);
+  } else {
+    return String(char[] {'f', 'a', 'l', 's', 'e'}, false);
+  }
+}
+
+String toString(char c) {
+  return String().append(c);
+}
