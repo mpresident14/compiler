@@ -1,4 +1,4 @@
-from ast import literal_eval as make_tuple
+from ast import literal_eval
 import subprocess
 import sys
 import re
@@ -18,13 +18,10 @@ def runTest(expected : list, actual : list) -> bool:
 
 
 if __name__ == "__main__":
-  os.chdir(os.getcwd() + "/error")
-
   mainExe = sys.argv[1]
   prezFile = sys.argv[2]
-  asmFile = sys.argv[3]
 
-  proc = subprocess.run((mainExe, prezFile, asmFile), stderr=subprocess.PIPE)
+  proc = subprocess.run((mainExe, prezFile, "file.asm"), stderr=subprocess.PIPE)
   if proc.returncode < -1:
     print(f"Exited with error code {-proc.returncode}")
     exit(0)
@@ -41,8 +38,7 @@ if __name__ == "__main__":
       errOutput))
 
   expected = []
-  for check in sys.argv[4].split():
-    (msgType, line, firstWord) = make_tuple(check)
+  for (msgType, line, firstWord) in [literal_eval(sys.argv[i]) for i in range(3, len(sys.argv))]:
     expected.append(msgString(msgType, line, firstWord))
 
   if len(errOutput) != len(expected) or not runTest(expected, errOutput):
