@@ -35,7 +35,7 @@ def error_test_impl(ctx):
     #     outputs = [ctx.outputs.asm],
     #     inputs = [ctx.outputs.asm],
     #     arguments = [ctx.outputs.asm.path],
-    #     command = "cat $1",
+    #     command = "as $1",
     # )
 
     # runfiles = ctx.runfiles(files = ctx.file.prez_src)

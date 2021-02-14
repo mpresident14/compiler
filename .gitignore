@@ -46,7 +46,6 @@ build/
 # My generated files (not regex_parser b/c that was self-generated iteratively)
 **/generated/*
 **/log
-*.s
 src/parser/regex_parser_backup.hpp
 src/parser/regex_parser_backup.cpp
 src/parser/config_lexer.hpp
