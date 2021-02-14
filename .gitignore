@@ -31,29 +31,11 @@
 *.out
 *.app
 
-# Extensionless executables
-*
-!*.*
-!*/
-
 .vscode/
 
-# CMake
-bin/
-lib/
-build/
+# Bazel
+bazel-bin
+bazel-compiler
+bazel-out
+bazel-testlogs
 
-# My generated files (not regex_parser b/c that was self-generated iteratively)
-**/generated/*
-**/log
-src/parser/regex_parser_backup.hpp
-src/parser/regex_parser_backup.cpp
-src/parser/config_lexer.hpp
-src/parser/config_lexer.cpp
-src/main/parser.hpp
-src/main/parser.cpp
-
-
-# Playground files
-test/translator/sandbox.prez
-test/translator/second.prez
