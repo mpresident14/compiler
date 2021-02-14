@@ -1,0 +1,56 @@
+int fib() {
+  int a = 0;
+  int b = a + 1;
+  int c = b + a;
+  int d = c + b;
+  int e = d + c;
+  int f = e + d;
+  int g = f + e;
+  int h = g + f;
+  int i = h + g;
+  int j = i + h;
+  int k = j + i;
+  int l = k + j;
+  int m = l + k;
+  int n = m + l;
+  int o = n + m;
+  int p = o + n;
+  int q = p + o;
+  int r = q + p;
+  int s = r + q;
+  a = a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p + q + r + s;
+  return s;
+}
+
+void main() {
+  int a = 0;
+  int b = a + 1;
+  int c = b + a;
+  int d = c + b;
+  int e = d + c;
+  int f = e + d;
+  int g = f + e;
+  int h = g + f;
+  int i = h + g;
+  int j = i + h;
+  int k = j + i;
+  int l = k + j;
+  int m = l + k;
+  int n = m + l;
+
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  print(f);
+  print(g);
+  print(h);
+  print(i);
+  print(j);
+  print(k);
+  print(l);
+  print(m);
+  print(n);
+  print(fib());
+}

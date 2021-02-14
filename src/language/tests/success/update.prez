@@ -1,0 +1,29 @@
+int[] foo(int[] arr) {
+  arr[0] += 1;
+  return arr;
+}
+
+void main() {
+  int a = 0;
+  a += 1;
+  print(a);
+
+  a -= -1;
+  print(a);
+
+  a *= 1 + 1;
+  print(a);
+
+  a /= 4 * 1;
+  print(a);
+
+  int[] arr = int[]{1,2,3,4};
+  arr[0] |= 0x8;
+  print(arr[0]);
+
+  int[] otherArr = int[]{1,2,3};
+  foo(otherArr)[1] += 1;          // Should only call foo() once!
+  print(otherArr[0]);
+  print(otherArr[1]);
+  print(otherArr[2]);
+}

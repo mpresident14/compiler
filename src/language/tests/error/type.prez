@@ -1,0 +1,35 @@
+int add(int a, int b) {
+  return a + b;
+}
+
+void f(int p) {
+  bool b1 = p;
+  bool b2 = add(1, p);
+  int n1 = 1 + true;
+  int n2 = b1 || b2;
+  b1 = n1 + n2;
+  bool[] bArr = 3;
+  bArr[0] = 9;
+}
+
+void badWhile() {
+  long n = 0;
+  bool b2 = false;
+  bool b3 = true;
+  while (n < (b2 || b3)) {
+    n = n + 1;
+  }
+}
+
+void badUpdate() {
+  int[] arr = int[](5);
+  arr &= 1;
+  arr--;
+}
+
+void badFor() {
+  int n = 0;
+  for (int i = 3; i << 2; i++) {
+    n = n + 1;
+  }
+}

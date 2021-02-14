@@ -1,0 +1,11 @@
+class Base {
+  public int n;
+
+  public Base(int n) {
+    this.n = n;
+  }
+
+  public virtual String name() {
+    return "Base";
+  }
+}

@@ -1,0 +1,21 @@
+int f(int n) {
+  int n = 4;
+  return n;
+}
+
+void g() {
+  int n = 4;
+  int b = n;
+  bool b = false;
+  print(b);
+}
+
+int f(int n) {
+  return n + 3;
+}
+
+bool h(int a, int b, bool a) {
+  return a == b || a > b;
+}
+
+void main(){}

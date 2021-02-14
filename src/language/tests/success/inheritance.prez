@@ -1,0 +1,72 @@
+class Base {
+  public int n;
+
+  public Base(int n) {
+    this.n = n;
+  }
+
+  public virtual void vFunc() {
+    print("vFunc");
+  }
+
+  public virtual String name() {
+    return "Base";
+  }
+
+  public String toString() {
+    return toString(this.n);
+  }
+}
+
+
+class Derived : Base {
+  public Derived(int n) {
+    this.n = n;
+  }
+
+  public override String name() {
+    return "Derived";
+  }
+
+  public virtual void dvFunc() {
+    print("dvFunc");
+  }
+
+  public void nonVFunc() {
+    // Just to avoid note that this method can be static
+    this.n = this.n;
+    print("nonVFunc");
+  }
+}
+
+class GrandChild : Derived {
+  public GrandChild(int n) {
+    this.n = n;
+  }
+
+  public override String name() {
+    return "GrandChild";
+  }
+}
+
+
+void main() {
+  Base b = Base(100);
+  print(b);
+  b.vFunc();
+  print(b.name());
+
+  Derived d = Derived(200);
+  print(d);
+  d.vFunc();
+  print(d.name());
+  d.dvFunc();
+  d.nonVFunc();
+
+  GrandChild g = GrandChild(300);
+  print(g);
+  g.vFunc();
+  print(g.name());
+  g.dvFunc();
+  g.nonVFunc();
+}

@@ -1,0 +1,4 @@
+int f(int p) {
+  bool b1 = true;
+  return 1;
+}

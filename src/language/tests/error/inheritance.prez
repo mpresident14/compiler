@@ -1,0 +1,37 @@
+class Base {
+  public int n;
+
+  public Base(int n) {
+    this.n = n;
+  }
+
+  public virtual String name() {
+    return "Base";
+  }
+
+  public String toString() {
+    return toString(this.n);
+  }
+}
+
+class Derived : Base {
+  public Derived(int n) {
+    this.n = n;
+  }
+
+  public String name() {
+    return "Derived";
+  }
+
+  public String toString() {
+    return toString(this.n);
+  }
+}
+
+class GrandChild : Derived {
+  public int n;
+
+  public virtual String name() {
+    return "GrandChild";
+  }
+}

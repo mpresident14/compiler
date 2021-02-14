@@ -1,0 +1,9 @@
+import "imports.prez"
+
+int func() {
+  return 1;
+}
+
+int func(int n) {
+  return imports::add(n, 0);
+}

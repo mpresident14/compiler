@@ -1,0 +1,26 @@
+class Obj {
+  public final String str;
+
+  public void setStr(String s) {
+    this.str = s;
+  }
+}
+
+long f(final long num) {
+  return ++num;
+}
+
+void main() {
+  final int x = 3;
+  x = 4;
+  x += 1;
+  --x;
+
+  int y = x;
+  print(y);
+
+  int[] arr = int[]{1,2,3};
+  arr.length++;
+  arr.length = 7;
+}
+

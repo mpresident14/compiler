@@ -1,0 +1,15 @@
+void main() {
+  long[] arr = long[](3);
+  for (int i = 0; i < arr.length; i += 1) {
+    arr[i] = i;
+  }
+
+  for (int i = 0; i < arr.length; i++) {
+    print(arr[i]);
+  }
+
+  for (long i = arr.length - 1; i >= 0; --i) {
+    arr[i] -= i;
+    print(arr[i]);
+  }
+}

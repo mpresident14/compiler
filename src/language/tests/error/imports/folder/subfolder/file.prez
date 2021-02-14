@@ -1,0 +1,21 @@
+int func(int n) {
+  return n;
+}
+
+int func() {
+  return 7;
+}
+
+class Rectangle {
+  public long length;
+  public long width;
+
+  public Rectangle(long len, long wid) {
+    this.length = len;
+    this.width = wid;
+  }
+
+  public long area() {
+    return this.length * this.width;
+  }
+}

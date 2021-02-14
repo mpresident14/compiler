@@ -1,0 +1,12 @@
+void main() {
+  print(3 < 4 ? 8 + 2 : -1);
+
+  int a = 4;
+  int b = 5;
+  print(a == b ? a : b * 2);
+
+  print(a != b ? ++a : ++b);
+  print(a);
+  print(b);
+  return;
+}

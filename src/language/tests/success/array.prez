@@ -1,0 +1,35 @@
+int[] createArr() {
+  int[] arr = int[](5);
+  arr[0] = 0;
+  arr[1] = 1;
+  arr[2] = arr[arr[0]] + arr[arr[1]];
+  arr[3] = arr[1] + arr[2];
+  arr[4] = arr[2] + arr[3];
+  return arr;
+}
+
+void printArr(int[] arr) {
+  print(arr[0]);
+  print(arr[1]);
+  print(arr[2]);
+  print(arr[3]);
+  print(arr[4]);
+}
+
+void main() {
+  printArr(createArr());
+
+  char[] charArr = char[]{'a','b','c','d','e'};
+  charArr[0] = 'a';
+  if (charArr[0] == 'a') {
+    print(charArr.length);
+  }
+
+  long[] lArr = long[](8);
+  print(lArr.length);
+
+  int[] brackInit = int[] {13,21,34};
+  print(brackInit[0]);
+  print(brackInit[1]);
+  print(brackInit[2]);
+}

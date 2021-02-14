@@ -6,6 +6,7 @@
 #include "src/language/language.hpp"
 #include "src/language/parser.hpp"
 #include "src/language/type.hpp"
+#include "tools/cpp/runfiles/runfiles.h"
 
 #include <string.h>
 
@@ -21,14 +22,14 @@
 
 using namespace std;
 namespace fs = std::filesystem;
+namespace rfs = bazel::tools::cpp::runfiles;
 
 // TODO: Generate more informative parser errors by analyzing stack and
 // remaining tokens. Can also update the parser code itself (e.g., "expected
 // <token>" or "no reduction" error)
 
 /* Return true if no errors */
-bool compile(const string &srcFilename, const string &asmFilename,
-             vector<string> builtInFiles) {
+bool compile(const string& srcFilename, const string& asmFilename, vector<string> builtInFiles) {
   unordered_map<string, unique_ptr<language::SrcFile>> initializedProgs;
   Logger logger;
   bool hasErr = false;
@@ -36,7 +37,7 @@ bool compile(const string &srcFilename, const string &asmFilename,
     // Parse builtins first so that their function IDs will match the
     // precompiled assembly
     vector<language::SrcFile> builtIns;
-    auto classIds = make_shared<unordered_map<int, Ctx::ClassInfo *>>();
+    auto classIds = make_shared<unordered_map<int, Ctx::ClassInfo*>>();
     for (string builtInFile : builtInFiles) {
       fs::path builtInPath = fs::canonical(builtInFile);
       language::SrcFile prog = parser::parse(builtInPath);
@@ -48,21 +49,18 @@ bool compile(const string &srcFilename, const string &asmFilename,
     error_code ec;
     fs::path srcPath = fs::canonical(srcFilename, ec);
     if (ec) {
-      logger.logFatal(
-          0, ec.message().append(" \"").append(srcFilename).append(1, '"'));
+      logger.logFatal(0, ec.message().append(" \"").append(srcFilename).append(1, '"'));
     }
 
-    auto iter =
-        initializedProgs
-            .emplace(srcPath,
-                     make_unique<language::SrcFile>(parser::parse(srcFilename)))
-            .first;
+    auto iter = initializedProgs
+                    .emplace(srcPath, make_unique<language::SrcFile>(parser::parse(srcFilename)))
+                    .first;
     // Recursively record all declarations
     iter->second->initContext(srcPath, initializedProgs, builtIns, classIds);
 
     // Convert to assembly
     vector<assem::SrcFile> assemProgs;
-    for (const auto &[filename, prog] : initializedProgs) {
+    for (const auto& [filename, prog] : initializedProgs) {
       if (prog) {
         assemProgs.push_back(prog->toAssemProg());
         // Print any warnings or non-fatal errors
@@ -74,19 +72,19 @@ bool compile(const string &srcFilename, const string &asmFilename,
     if (!hasErr) {
       ofstream asmFile(asmFilename);
       logger.checkFile(asmFilename, asmFile);
-      for (assem::SrcFile &prog : assemProgs) {
+      for (assem::SrcFile& prog : assemProgs) {
         prog.toCode(asmFile);
       }
     }
-  } catch (const Logger::Exception &) {
+  } catch (const Logger::Exception&) {
     hasErr = true;
-  } catch (const parser::ParseException &e) {
+  } catch (const parser::ParseException& e) {
     hasErr = true;
     cerr << e.what() << endl;
   }
 
   logger.streamLog();
-  for (const auto &[filename, prog] : initializedProgs) {
+  for (const auto& [filename, prog] : initializedProgs) {
     if (prog) {
       prog->ctx_->displayLogs();
     }
@@ -95,21 +93,24 @@ bool compile(const string &srcFilename, const string &asmFilename,
   return hasErr;
 }
 
-int main(int argc, char **argv) {
-  char *srcFile = argv[1];
-  char *asmFile = argv[2];
-  char *builtInPath = std::getenv("PREZ_BUILT_IN");
+int main(int argc, char** argv) {
+  char* srcFile = argv[1];
+  char* asmFile = argv[2];
 
-  std::vector<string> builtInSrcs = {"string.prez"};
-  std::vector<std::string> builtIns;
-  for (const std::string &src : builtInSrcs) {
-    builtIns.push_back(string(builtInPath).append(src));
+  std::string error;
+  std::unique_ptr<rfs::Runfiles> runfiles(rfs::Runfiles::Create(argv[0], &error));
+  if (runfiles == nullptr) {
+    throw std::runtime_error(error);
   }
+
+  std::cout << "Current path is " << fs::current_path() << '\n';
+
 
   // For built-in files
   if (argc == 4) {
     return compile(srcFile, asmFile, {});
   }
 
-  return compile(srcFile, asmFile, builtIns);
+  return compile(
+      srcFile, asmFile, {runfiles->Rlocation("__main__/src/language/built_in/string.prez")});
 }
