@@ -2,65 +2,50 @@
 
 load("//src/language:compile_and_run.bzl", "compile_and_run")
 
-def compile_and_run_success(file, **kwargs):
+def test_success(name, expected, imports = []):
     compile_and_run(
-        file = file,
-        src = "//src/language/tests:success/%s.prez" % file,
-        **kwargs
+        file = name,
+        src = "//src/language/tests:success/%s.prez" % name,
     )
-
-def test_success(name, exe):
     native.sh_test(
-        name = name,
+        name = name + "_test",
         srcs = ["test_success.bash"],
-        args = [Label(exe), "test"],
-        data = [":arith"],
+        args = ["src/language/tests/" + name, "'%s'" % expected],
+        data = [":" + name],
     )
 
-def _check_success_output(exe, expected):
+# FOR FUTURE REFERENCE ONLY
+
+# def _check_success_output(exe, expected):
 #     return """
-# # EXPECTED_OUTPUT=$(echo "{}" | sed 's/,/\n/g')
-
-# OUTPUT=$({})
-# echo $OUTPUT
-# # if [[ "$OUTPUT" == "$EXPECTED_OUTPUT" ]]; then
-# #   echo "Pass!"
-# #   exit(0)
-# # else
-# #   echo "Failure..."
-# #   echo "Expected:"
-# #   echo "$EXPECTED_OUTPUT"
-# #   echo
-# #   echo "Got"
-# #   echo "$OUTPUT"
-# #   exit(1)
-# # fi
+# #!/bin/bash
+# pwd
+# ls -R
+# echo $(src/language/tests/arith)
+# exit 0
 # """.format(exe)
-    return """
-echo $({0})
-exit(0)
-""".format(exe)
 
-def _success_test_impl(ctx):
-    ctx.actions.write(
-        output = ctx.outputs.executable,
-        content = _check_success_output(ctx.file.exe.path, ctx.attr.expected),
-    )
-    runfiles = ctx.runfiles(files = [ctx.file.exe])
-    return [DefaultInfo(runfiles = runfiles)]
+# def _success_test_impl(ctx):
+#     ctx.actions.write(
+#         output = ctx.outputs.executable,
+#         content = _check_success_output(ctx.file.exe.path, ctx.attr.expected),
+#         is_executable = True,
+#     )
+#     runfiles = ctx.runfiles(files = [ctx.file.exe])
+#     return [DefaultInfo(runfiles = runfiles, executable = ctx.outputs.executable)]
 
-success_test = rule(
-    implementation = _success_test_impl,
-    attrs = {
-        "exe": attr.label(
-            mandatory = True,
-            allow_single_file = True,
-        ),
-        "expected": attr.string(
-            mandatory = True,
-        ),
+# success_test = rule(
+#     implementation = _success_test_impl,
+#     attrs = {
+#         "exe": attr.label(
+#             mandatory = True,
+#             allow_single_file = True,
+#         ),
+#         "expected": attr.string(
+#             mandatory = True,
+#         ),
 
-        # "expected": attr.label(mandatory = True),
-    },
-    test = True,
-)
+#         # "expected": attr.label(mandatory = True),
+#     },
+#     test = True,
+# )

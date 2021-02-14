@@ -1,12 +1,13 @@
 #!/bin/bash
 
 TEST="$1"
+echo "$2"
 EXPECTED_OUTPUT=$(echo "$2" | sed 's/,/\n/g')
 
 OUTPUT=$($TEST)
 if [[ "$OUTPUT" == "$EXPECTED_OUTPUT" ]]; then
   echo "Pass!"
-  exit(0)
+  exit 0
 else
   echo "Failure..."
   echo "Expected:"
@@ -14,5 +15,5 @@ else
   echo
   echo "Got"
   echo "$OUTPUT"
-  exit(1)
+  exit 1
 fi
