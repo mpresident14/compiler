@@ -6,7 +6,6 @@
 #include "src/language/language.hpp"
 #include "src/language/parser.hpp"
 #include "src/language/type.hpp"
-#include "tools/cpp/runfiles/runfiles.h"
 
 #include <string.h>
 
@@ -22,7 +21,6 @@
 
 using namespace std;
 namespace fs = std::filesystem;
-namespace rfs = bazel::tools::cpp::runfiles;
 
 // TODO: Generate more informative parser errors by analyzing stack and
 // remaining tokens. Can also update the parser code itself (e.g., "expected
@@ -94,27 +92,14 @@ bool compile(const string& srcFilename, const string& asmFilename, vector<string
 }
 
 int main(int argc, char** argv) {
+  // TODO: Parse arguments
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 
-  // std::string error;
-  // std::unique_ptr<rfs::Runfiles> runfiles(rfs::Runfiles::Create(argv[0], &error));
-  // if (runfiles == nullptr) {
-  //   throw std::runtime_error(error);
-  // }
-
-  // std::cout << "CURRENT path is " << fs::current_path() << '\n';
-  // for (const auto & entry : fs::recursive_directory_iterator (fs::current_path()))
-  //       std::cout << entry.path() << std::endl;
-
-
-  // For built-in files
+  // For built-in files. TODO: This sucks
   if (argc == 4) {
     return compile(srcFile, asmFile, {});
   }
-
-  // return compile(
-  //     srcFile, asmFile, {runfiles->Rlocation("__main__/src/language/built_in/string.prez")});
 
   return compile(srcFile, asmFile, {"src/language/built_in/string.prez"});
 }
