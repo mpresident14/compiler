@@ -97,13 +97,15 @@ int main(int argc, char** argv) {
   char* srcFile = argv[1];
   char* asmFile = argv[2];
 
-  std::string error;
-  std::unique_ptr<rfs::Runfiles> runfiles(rfs::Runfiles::Create(argv[0], &error));
-  if (runfiles == nullptr) {
-    throw std::runtime_error(error);
-  }
+  // std::string error;
+  // std::unique_ptr<rfs::Runfiles> runfiles(rfs::Runfiles::Create(argv[0], &error));
+  // if (runfiles == nullptr) {
+  //   throw std::runtime_error(error);
+  // }
 
-  std::cout << "Current path is " << fs::current_path() << '\n';
+  // std::cout << "CURRENT path is " << fs::current_path() << '\n';
+  // for (const auto & entry : fs::recursive_directory_iterator (fs::current_path()))
+  //       std::cout << entry.path() << std::endl;
 
 
   // For built-in files
@@ -111,6 +113,8 @@ int main(int argc, char** argv) {
     return compile(srcFile, asmFile, {});
   }
 
-  return compile(
-      srcFile, asmFile, {runfiles->Rlocation("__main__/src/language/built_in/string.prez")});
+  // return compile(
+  //     srcFile, asmFile, {runfiles->Rlocation("__main__/src/language/built_in/string.prez")});
+
+  return compile(srcFile, asmFile, {"src/language/built_in/string.prez"});
 }

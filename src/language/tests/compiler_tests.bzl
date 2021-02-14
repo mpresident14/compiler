@@ -31,12 +31,14 @@ def error_test_impl(ctx):
         progress_message = "Compiling %s into %s" % (ctx.file.src.path, ctx.outputs.asm.path),
     )
 
-    # ctx.actions.run_shell(
-    #     outputs = [ctx.outputs.asm],
-    #     inputs = [ctx.outputs.asm],
-    #     arguments = [ctx.outputs.asm.path],
-    #     command = "as $1",
-    # )
+    ctx.actions.run_shell(
+        outputs = [ctx.outputs.o],
+        inputs = [ctx.outputs.asm],
+        arguments = [ctx.outputs.asm.path],
+        command = "echo && pwd && ls -R && echo && echo %s && echo $1 && echo %s && echo %s" % (ctx.file.src.path, ctx.file.asm_built_in.path, ctx.file.asm_syscall.path),
+        # command = "echo && pwd && ls -R && as $1 %s %s" % (ctx.file.asm_built_in.path, ctx.file.asm_syscall.path),
+        progress_message = "Assembling",
+    )
 
     # runfiles = ctx.runfiles(files = ctx.file.prez_src)
     # return [DefaultInfo(runfiles = runfiles)]
@@ -55,8 +57,23 @@ my_rule = rule(
             mandatory = True,
             allow_single_file = True,
         ),
+        "src_str": attr.label(
+            allow_single_file = True,
+            default = Label("//src/language/built_in:string.prez"),
+        ),
         "asm": attr.output(
             mandatory = True,
+        ),
+        "o": attr.output(
+            mandatory = True,
+        ),
+        "asm_built_in": attr.label(
+            allow_single_file = True,
+            default = Label("//src/language/built_in:compile_string"),
+        ),
+        "asm_syscall": attr.label(
+            allow_single_file = True,
+            default = Label("//src/language/built_in:syscall.s"),
         ),
         # "expected": attr.label(mandatory = True),
     },
