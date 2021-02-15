@@ -45,9 +45,9 @@ cc_library(
     deps = [
         "//src/assembly",
         "//src/intermediate",
-        "//src/misc:logger",
         "@boost//:algorithm",
         "@boost//:dynamic_bitset",
+        "@mpresident14_cpplibs//src/logger",
     ],
 )
 
@@ -60,7 +60,7 @@ genrule(
         "parser.hpp",
         "parser.cpp",
     ],
-    cmd_bash = "$(execpath //src/parser:parsegen) -g $(rootpath lang.pgen) -f $(RULEDIR)/parser",
+    cmd_bash = "$(execpath @mpresident14_parsers//src/generator:parsegen) -g $(rootpath lang.pgen) -d $(RULEDIR)/ -i src/language/ -n parser",
     message = "Generating parser",
-    tools = ["//src/parser:parsegen"],
+    tools = ["@mpresident14_parsers//src/generator:parsegen"],
 )

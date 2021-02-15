@@ -1,5 +1,8 @@
 package(
-    default_visibility = ["//src/language:__subpackages__"],
+    default_visibility = [
+        "//sandbox:__subpackages__",
+        "//src/language:__subpackages__",
+    ],
 )
 
 # "exports_files" + putting target in "data" section of
@@ -10,7 +13,6 @@ exports_files(
     ]) + [
         "syscall.s",
     ],
-    visibility = ["//src/language:__subpackages__"],
 )
 
 genrule(

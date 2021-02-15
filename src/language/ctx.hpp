@@ -4,7 +4,7 @@
 #include "src/assembly/temp.hpp"
 #include "src/language/decl.hpp"
 #include "src/language/type.hpp"
-#include "src/misc/logger.hpp"
+#include "src/logger/logger.hpp"
 
 #include <ostream>
 #include <unordered_map>
