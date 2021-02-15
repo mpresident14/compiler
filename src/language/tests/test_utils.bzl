@@ -15,6 +15,8 @@ def test_success(testname, expected):
         data = [":" + testname],
     )
 
+
+
 def test_error(testname, expected):
     quoted_expected = ["\"%s\"" % check for check in expected]
     py_test(

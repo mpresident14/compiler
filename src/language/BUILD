@@ -46,7 +46,8 @@ cc_library(
         "//src/assembly",
         "//src/intermediate",
         "//src/misc:logger",
-        "@boost//:boost_headers",
+        "@boost//:algorithm",
+        "@boost//:dynamic_bitset",
     ],
 )
 

@@ -63,7 +63,7 @@ cc_test(
     ],
     deps = [
         "//src/parser/testing:expr",
-        "@boost//:boost_headers",
+        "@boost//:dynamic_bitset",
     ],
 )
 

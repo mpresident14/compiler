@@ -22,7 +22,7 @@ cc_library(
     hdrs = ["null_first.hpp"],
     deps = [
         ":common",
-        "@boost//:boost_headers",
+        "@boost//:dynamic_bitset",
     ],
 )
 
@@ -46,7 +46,7 @@ cc_library(
         ":dfa",
         ":null_first",
         "//src/misc:logger",
-        "@boost//:boost_headers",
+        "@boost//:dynamic_bitset",
     ],
 )
 
