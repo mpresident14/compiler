@@ -13,9 +13,8 @@ def test_success(testname, expected):
         srcs = ["test_success.bash"],
         args = ["src/language/tests/" + testname, "'%s'" % expected],
         data = [":" + testname],
+        size = "small",
     )
-
-
 
 def test_error(testname, expected):
     quoted_expected = ["\"%s\"" % check for check in expected]
@@ -31,40 +30,5 @@ def test_error(testname, expected):
             "//src/language/tests:error/%s.prez" % testname,
             "//src/language:main",
         ],
+        size = "small",
     )
-
-# FOR FUTURE REFERENCE ONLY
-
-# def _check_success_output(exe, expected):
-#     return """
-# #!/bin/bash
-# pwd
-# ls -R
-# echo $(src/language/tests/arith)
-# exit 0
-# """.format(exe)
-
-# def _success_test_impl(ctx):
-#     ctx.actions.write(
-#         output = ctx.outputs.executable,
-#         content = _check_success_output(ctx.file.exe.path, ctx.attr.expected),
-#         is_executable = True,
-#     )
-#     runfiles = ctx.runfiles(files = [ctx.file.exe])
-#     return [DefaultInfo(runfiles = runfiles, executable = ctx.outputs.executable)]
-
-# success_test = rule(
-#     implementation = _success_test_impl,
-#     attrs = {
-#         "exe": attr.label(
-#             mandatory = True,
-#             allow_single_file = True,
-#         ),
-#         "expected": attr.string(
-#             mandatory = True,
-#         ),
-
-#         # "expected": attr.label(mandatory = True),
-#     },
-#     test = True,
-# )
