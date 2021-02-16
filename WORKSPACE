@@ -18,12 +18,6 @@ load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
 boost_deps()
 
 git_repository(
-    name = "mpresident14_parsers",
-    branch = "main",
-    remote = "https://github.com/mpresident14/parsers",
-)
-
-git_repository(
     name = "mpresident14_cpplibs",
     branch = "main",
     remote = "https://github.com/mpresident14/cpplibs",

@@ -60,7 +60,7 @@ genrule(
         "parser.hpp",
         "parser.cpp",
     ],
-    cmd_bash = "$(execpath @mpresident14_parsers//src/generator:parsegen) -g $(rootpath lang.pgen) -d $(RULEDIR)/ -i src/language/ -n parser",
+    cmd_bash = "$(execpath @mpresident14_cpplibs//src/parsers/generator:parsegen) -g $(rootpath lang.pgen) -d $(RULEDIR)/ -i src/language/ -n parser",
     message = "Generating parser",
-    tools = ["@mpresident14_parsers//src/generator:parsegen"],
+    tools = ["@mpresident14_cpplibs//src/parsers/generator:parsegen"],
 )
