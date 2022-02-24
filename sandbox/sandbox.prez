@@ -1,4 +1,23 @@
+import "stringutil.prez"
+
+class Car {
+  public String brand;
+  public int mpg;
+
+  public Car(String brand, int mpg) {
+    this.brand = brand;
+    this.mpg = mpg;
+  }
+
+  public String getBrand() {
+    return this.brand;
+  }
+}
+
 void main() {
-  String str = "Hello, World!";
-  print(str);
+  Car car = Car("Ford", 26);
+  print(car.brand);
+  print(car.mpg);
+
+  print(stringutil::strcat("Hello, ", "World!"));
 }

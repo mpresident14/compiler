@@ -1,0 +1,4 @@
+String strcat(String str1, String str2) {
+  String result =  String();
+  return result.append(str1).append(str2);
+}
